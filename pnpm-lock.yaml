@@ -43,13 +43,13 @@ importers:
         version: 0.8.3(prettier-plugin-astro@0.14.1)(prettier@3.4.1)(typescript@5.5.4)
       '@astrojs/mdx':
         specifier: ^3.1.3
-        version: 3.1.9(astro@4.16.16(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4))
+        version: 3.1.9(astro@4.16.17(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4))
       '@astrojs/react':
         specifier: ^3.6.0
         version: 3.6.3(@types/node@22.10.1)(@types/react-dom@18.3.1)(@types/react@18.3.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@astrojs/tailwind':
         specifier: ^5.1.0
-        version: 5.1.2(astro@4.16.16(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4))(tailwindcss@3.4.15)
+        version: 5.1.2(astro@4.16.17(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4))(tailwindcss@3.4.15)
       '@fontsource-variable/jetbrains-mono':
         specifier: ^5.0.21
         version: 5.1.1
@@ -81,8 +81,8 @@ importers:
         specifier: ^18.3.3
         version: 18.3.12
       astro:
-        specifier: ^4.12.2
-        version: 4.16.16(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4)
+        specifier: ^4.16.17
+        version: 4.16.17(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4)
       class-variance-authority:
         specifier: ^0.7.0
         version: 0.7.1
@@ -109,7 +109,7 @@ importers:
         version: 3.0.0
       simple-icons-astro:
         specifier: ^13.3.0
-        version: 13.19.0(astro@4.16.16(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4))
+        version: 13.19.0(astro@4.16.17(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4))
       tailwind-merge:
         specifier: ^2.4.0
         version: 2.5.5
@@ -1365,8 +1365,8 @@ packages:
     resolution: {integrity: sha512-LElXdjswlqjWrPpJFg1Fx4wpkOCxj1TDHlSV4PlaRxHGWko024xICaa97ZkMfs6DRKlCguiAI+rbXv5GWwXIkg==}
     hasBin: true
 
-  astro@4.16.16:
-    resolution: {integrity: sha512-H1CttrV6+JFrDBQx0Mcbq5i5AeLhCbztB786+9wEu3svWL/QPNeCGqF0dgNORAYmP+rODGCPu/y9qKSh87iLuA==}
+  astro@4.16.17:
+    resolution: {integrity: sha512-OuD+BP7U6OqQLKtZ/FJkU2S+TOlifxS/OKUbZOb5p6y+LLBa1J3zHRJrIl7DUSq6eXY+9wSWwbJpD9JS+lqhxA==}
     engines: {node: ^18.17.1 || ^20.3.0 || >=21.0.0, npm: '>=9.6.5', pnpm: '>=7.1.0'}
     hasBin: true
 
@@ -2746,10 +2746,6 @@ packages:
     resolution: {integrity: sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==}
     engines: {node: '>=8'}
 
-  source-map-js@1.2.0:
-    resolution: {integrity: sha512-itJW8lvSA0TXEphiRoawsCksnlf8SyvmFzIhltqAHluXd88pkCd+cXJVHTDwdCr0IzwptSm035IHQktUu1QUMg==}
-    engines: {node: '>=0.10.0'}
-
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
@@ -3344,12 +3340,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@astrojs/mdx@3.1.9(astro@4.16.16(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4))':
+  '@astrojs/mdx@3.1.9(astro@4.16.17(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4))':
     dependencies:
       '@astrojs/markdown-remark': 5.3.0
       '@mdx-js/mdx': 3.1.0(acorn@8.14.0)
       acorn: 8.14.0
-      astro: 4.16.16(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4)
+      astro: 4.16.17(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4)
       es-module-lexer: 1.5.4
       estree-util-visit: 2.0.0
       gray-matter: 4.0.3
@@ -3388,9 +3384,9 @@ snapshots:
       - supports-color
       - terser
 
-  '@astrojs/tailwind@5.1.2(astro@4.16.16(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4))(tailwindcss@3.4.15)':
+  '@astrojs/tailwind@5.1.2(astro@4.16.17(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4))(tailwindcss@3.4.15)':
     dependencies:
-      astro: 4.16.16(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4)
+      astro: 4.16.17(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4)
       autoprefixer: 10.4.20(postcss@8.4.49)
       postcss: 8.4.49
       postcss-load-config: 4.0.2(postcss@8.4.49)
@@ -3418,7 +3414,7 @@ snapshots:
     dependencies:
       '@babel/helper-validator-identifier': 7.25.9
       js-tokens: 4.0.0
-      picocolors: 1.0.1
+      picocolors: 1.1.1
 
   '@babel/compat-data@7.26.2': {}
 
@@ -4463,7 +4459,7 @@ snapshots:
 
   astring@1.9.0: {}
 
-  astro@4.16.16(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4):
+  astro@4.16.17(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4):
     dependencies:
       '@astrojs/compiler': 2.10.3
       '@astrojs/internal-helpers': 0.4.1
@@ -5306,7 +5302,7 @@ snapshots:
     dependencies:
       '@babel/parser': 7.26.2
       '@babel/types': 7.26.0
-      source-map-js: 1.2.0
+      source-map-js: 1.2.1
 
   markdown-extensions@2.0.0: {}
 
@@ -5743,7 +5739,7 @@ snapshots:
   micromark@4.0.1:
     dependencies:
       '@types/debug': 4.1.12
-      debug: 4.3.6
+      debug: 4.3.7
       decode-named-character-reference: 1.0.2
       devlop: 1.1.0
       micromark-core-commonmark: 2.0.2
@@ -6320,9 +6316,9 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
-  simple-icons-astro@13.19.0(astro@4.16.16(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4)):
+  simple-icons-astro@13.19.0(astro@4.16.17(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4)):
     dependencies:
-      astro: 4.16.16(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4)
+      astro: 4.16.17(@types/node@22.10.1)(rollup@4.21.0)(typescript@5.5.4)
 
   simple-swizzle@0.2.2:
     dependencies:
@@ -6332,8 +6328,6 @@ snapshots:
   sisteransi@1.0.5: {}
 
   slash@3.0.0: {}
-
-  source-map-js@1.2.0: {}
 
   source-map-js@1.2.1: {}
 
