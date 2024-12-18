@@ -38,7 +38,7 @@
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-toggle": "^1.1.0",
     "@types/react": "^18.3.3",
-    "astro": "^4.12.2",
+    "astro": "^4.16.17",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
