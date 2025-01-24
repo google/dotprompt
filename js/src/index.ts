@@ -14,14 +14,7 @@
  * limitations under the License.
  */
 
-import { DotpromptEnvironment, DotpromptOptions } from "./environment.js";
+import { Dotprompt, DotpromptOptions } from "./environment.js";
 export { picoschema, PicoschemaOptions, PicoschemaParser } from "./picoschema.js";
 export type * from "./types.js";
-export { DotpromptEnvironment, DotpromptOptions };
-
-/**
- * Create a Dotprompt environment with a unique namespace for registering helpers, partials, and schemas.
- */
-export function dotprompt(options?: DotpromptOptions): DotpromptEnvironment {
-  return new DotpromptEnvironment(options);
-}
+export { Dotprompt, DotpromptOptions };

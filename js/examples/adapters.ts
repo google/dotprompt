@@ -16,9 +16,9 @@
 
 import { toGeminiRequest } from "../src/adapters/gemini.js";
 import { toOpenAIRequest } from "../src/adapters/openai.js";
-import { dotprompt } from "../src/index.js";
+import { Dotprompt } from "../src/index.js";
 
-const prompts = dotprompt();
+const prompts = new Dotprompt();
 
 async function main() {
   const rendered = await prompts.render(

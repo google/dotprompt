@@ -18,7 +18,7 @@ import { describe, it, expect, suite } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { parse } from "yaml";
 import { join, relative } from "node:path";
-import { DotpromptEnvironment } from "../src/environment";
+import { Dotprompt } from "../src/environment";
 import { DataArgument, JSONSchema, ToolDefinition } from "../src/types";
 
 const specDir = join("..", "spec");
@@ -50,7 +50,7 @@ files
           // Create a test for each test case in the suite
           s.tests.forEach((tc) => {
             it(tc.desc || "should match expected output", async () => {
-              const env = new DotpromptEnvironment({
+              const env = new Dotprompt({
                 schemas: s.schemas,
                 tools: s.tools,
                 partialResolver: (name: string) => s.resolverPartials?.[name] || null,

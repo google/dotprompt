@@ -61,7 +61,7 @@ export interface DotpromptOptions {
   store?: PromptStore;
 }
 
-export class DotpromptEnvironment {
+export class Dotprompt {
   private handlebars: typeof Handlebars;
   private knownHelpers: Record<string, true> = {};
   private defaultModel?: string;
