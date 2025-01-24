@@ -55,8 +55,8 @@ export class PicoschemaParser {
     if (typeof schema === "string") {
       const [type, description] = extractDescription(schema);
       if (JSON_SCHEMA_SCALAR_TYPES.includes(type)) {
-        const out: JSONSchema = { type };
-        if (description) out.description = description;
+        let out: JSONSchema = { type };
+        if (description) out = { ...out, description };
         return out;
       }
       const resolvedSchema = await this.mustResolveSchema(type);
@@ -80,7 +80,7 @@ export class PicoschemaParser {
       const [type, description] = extractDescription(obj);
       if (!JSON_SCHEMA_SCALAR_TYPES.includes(type)) {
         let resolvedSchema = await this.mustResolveSchema(type);
-        if (description) resolvedSchema.description = description;
+        if (description) resolvedSchema = { ...resolvedSchema, description };
         return resolvedSchema;
       }
 
@@ -139,7 +139,7 @@ export class PicoschemaParser {
         schema.properties[propertyName] = prop;
       } else if (type === "enum") {
         const prop = { enum: obj[key] };
-        if (isOptional) prop.enum.push(null);
+        if (isOptional && !prop.enum.includes(null)) prop.enum.push(null);
         schema.properties[propertyName] = prop;
       } else {
         throw new Error(
