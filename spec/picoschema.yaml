@@ -24,6 +24,22 @@
         messages: []
         output:
           schema: { type: string }
+- name: input_and_output
+  template: |
+    ---
+    input:
+      schema: string
+    output:
+      schema: string
+    ---
+  tests:
+    - desc: returns as expected
+      expect:
+        messages: []
+        output:
+          schema: { type: string }
+        input:
+          schema: { type: string }
 - name: simple_scalar_description
   template: |
     ---
@@ -322,9 +338,9 @@
             additionalProperties: false
             required: [foo]
             properties:
-              foo: 
+              foo:
                 type: number
                 description: a foo
               foo2:
-                type: [number, 'null']
+                type: [number, "null"]
                 description: this one is optional

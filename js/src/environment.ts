@@ -172,7 +172,6 @@ export class DotpromptEnvironment {
       out = { ...out, ...merges[i] };
       out.config = { ...config, ...(merges[i]?.config || {}) };
     }
-    delete out.input;
     delete (out as any).template;
     out = removeUndefinedFields(out);
     out = await this.resolveTools(out);
@@ -268,8 +267,9 @@ export class DotpromptEnvironment {
       knownHelpersOnly: true,
     });
 
-    const outFunc = async (data: DataArgument, options?: PromptMetadata<ModelConfig>) => {
-      const mergedMetadata = await this.renderMetadata(source);
+    const renderFunc = async (data: DataArgument, options?: PromptMetadata<ModelConfig>) => {
+      // discard the input schema as once rendered it doesn't make sense
+      const { input, ...mergedMetadata } = await this.renderMetadata(source);
 
       const renderedString = renderString(
         { ...(options?.input?.default || {}), ...data.input },
@@ -280,13 +280,14 @@ export class DotpromptEnvironment {
           },
         }
       );
+
       return {
         ...mergedMetadata,
         messages: toMessages<ModelConfig>(renderedString, data),
       };
     };
-    (outFunc as PromptFunction<ModelConfig>).prompt = source;
-    return outFunc as PromptFunction<ModelConfig>;
+    (renderFunc as PromptFunction<ModelConfig>).prompt = source;
+    return renderFunc as PromptFunction<ModelConfig>;
   }
 
   async renderMetadata<ModelConfig>(

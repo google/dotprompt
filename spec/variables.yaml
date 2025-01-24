@@ -29,6 +29,9 @@
       options:
         input: { default: { name: "User" } }
       expect:
+        input:
+          default:
+            name: User
         messages:
           - role: user
             content: [{ text: "Hello, User!\n" }]
@@ -38,6 +41,9 @@
       options:
         input: { default: { name: "User" } }
       expect:
+        input:
+          default:
+            name: User
         messages:
           - role: user
             content: [{ text: "Hello, Pavel!\n" }]

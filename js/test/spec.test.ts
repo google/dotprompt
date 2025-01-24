@@ -64,7 +64,7 @@ files
 
               const result = await env.render(s.template, { ...s.data, ...tc.data }, tc.options);
               const { raw, ...prunedResult } = result;
-              const { raw: expectRaw, ...expected } = tc.expect;
+              const { raw: expectRaw, input: discardInputForRender, ...expected } = tc.expect;
               expect(prunedResult, "render should produce the expected result").toEqual({
                 ...expected,
                 ext: expected.ext || {},
