@@ -65,7 +65,7 @@ files
               const result = await env.render(s.template, { ...s.data, ...tc.data }, tc.options);
               const { raw, ...prunedResult } = result;
               const { raw: expectRaw, ...expected } = tc.expect;
-              expect(prunedResult).toEqual({
+              expect(prunedResult, "render should produce the expected result").toEqual({
                 ...expected,
                 ext: expected.ext || {},
                 config: expected.config || {},
@@ -75,6 +75,19 @@ files
               if (tc.expect.raw) {
                 expect(raw).toEqual(expectRaw);
               }
+
+              const metadataResult = await env.renderMetadata(s.template, tc.options);
+              const { raw: metadataResultRaw, ...prunedMetadataResult } = metadataResult;
+              const { messages, raw: metadataExpectRaw, ...expectedMetadata } = tc.expect;
+              expect(
+                prunedMetadataResult,
+                "renderMetadata should produce the expected result"
+              ).toEqual({
+                ...expectedMetadata,
+                ext: expectedMetadata.ext || {},
+                config: expectedMetadata.config || {},
+                metadata: expectedMetadata.metadata || {},
+              });
             });
           });
         });

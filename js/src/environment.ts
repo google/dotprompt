@@ -161,7 +161,7 @@ export class DotpromptEnvironment {
     return null;
   }
 
-  private async renderMetadata<ModelConfig = Record<string, any>>(
+  private async resolveMetadata<ModelConfig = Record<string, any>>(
     base: PromptMetadata<ModelConfig>,
     ...merges: (PromptMetadata<ModelConfig> | undefined)[]
   ): Promise<PromptMetadata<ModelConfig>> {
@@ -242,8 +242,7 @@ export class DotpromptEnvironment {
       Array.from(partials).map(async (name) => {
         if (!this.handlebars.partials[name]) {
           const content =
-            (await this.partialResolver!(name)) ||
-            (await this.store?.loadPartial(name))?.source;
+            (await this.partialResolver!(name)) || (await this.store?.loadPartial(name))?.source;
           if (content) {
             this.definePartial(name, content);
             // Recursively resolve partials in the partial content
@@ -270,13 +269,7 @@ export class DotpromptEnvironment {
     });
 
     const outFunc = async (data: DataArgument, options?: PromptMetadata<ModelConfig>) => {
-      const selectedModel = options?.model || source.model || this.defaultModel;
-      const modelConfig = this.modelConfigs[selectedModel!] as ModelConfig;
-      const mergedMetadata = await this.renderMetadata<ModelConfig>(
-        modelConfig ? { config: modelConfig } : {},
-        source,
-        options
-      );
+      const mergedMetadata = await this.renderMetadata(source);
 
       const renderedString = renderString(
         { ...(options?.input?.default || {}), ...data.input },
@@ -292,17 +285,23 @@ export class DotpromptEnvironment {
         messages: toMessages<ModelConfig>(renderedString, data),
       };
     };
-    (outFunc as PromptFunction<ModelConfig>).prompt = await this.renderSchemasInParsedPrompt(source);
+    (outFunc as PromptFunction<ModelConfig>).prompt = source;
     return outFunc as PromptFunction<ModelConfig>;
   }
 
-  private async renderSchemasInParsedPrompt<ModelConfig>(
-    prompt: ParsedPrompt<ModelConfig>
-  ): Promise<ParsedPrompt<ModelConfig>> {
-    return {
-      ...(await this.renderPicoschema(prompt)),
-      template: prompt.template,
-    };
+  async renderMetadata<ModelConfig>(
+    source: string | ParsedPrompt<ModelConfig>,
+    additionalMetadata?: PromptMetadata<ModelConfig>
+  ): Promise<PromptMetadata<ModelConfig>> {
+    if (typeof source === "string") source = this.parse<ModelConfig>(source);
+
+    const selectedModel = additionalMetadata?.model || source.model || this.defaultModel;
+    const modelConfig = this.modelConfigs[selectedModel!] as ModelConfig;
+    return this.resolveMetadata<ModelConfig>(
+      modelConfig ? { config: modelConfig } : {},
+      source,
+      additionalMetadata
+    );
   }
 
   get<Variables = any, ModelConfig = Record<string, any>>(
