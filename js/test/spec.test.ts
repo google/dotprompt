@@ -63,7 +63,18 @@ files
               }
 
               const result = await env.render(s.template, { ...s.data, ...tc.data }, tc.options);
-              expect(result).toEqual({ ...tc.expect, config: tc.expect.config || {} });
+              const { raw, ...prunedResult } = result;
+              const { raw: expectRaw, ...expected } = tc.expect;
+              expect(prunedResult).toEqual({
+                ...expected,
+                ext: expected.ext || {},
+                config: expected.config || {},
+                metadata: expected.metadata || {},
+              });
+              // only compare raw if the spec demands it
+              if (tc.expect.raw) {
+                expect(raw).toEqual(expectRaw);
+              }
             });
           });
         });

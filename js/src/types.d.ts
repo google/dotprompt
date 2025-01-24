@@ -72,6 +72,19 @@ export interface PromptMetadata<ModelConfig = Record<string, any>> extends HasMe
     /** Schema defining the output structure. */
     schema?: Schema;
   };
+  /**
+   * This field will contain the raw frontmatter as parsed with no additional processing
+   * or substitutions. If your implementation requires custom fields they will be available
+   * here.
+   **/
+  raw?: Record<string, any>;
+  /**
+   * Fields that contain a period will be considered "extension fields" in the frontmatter
+   * and will be gathered by namespace. For example, `myext.foo: 123` would be available
+   * at `parsedPrompt.ext.myext.foo`. Nested namespaces will be flattened, so `myext.foo.bar: 123`
+   * would be available at `parsedPrompt.ext["myext.foo"].bar`.
+   */
+  ext?: Record<string, Record<string, any>>;
 }
 
 export interface ParsedPrompt<ModelConfig = Record<string, any>>

@@ -50,3 +50,52 @@
         messages:
           - role: user
             content: [{ text: "Current count is 100\nStatus is pending\n" }]
+- name: raw
+  template: |
+    ---
+    config:
+      temperature: 3
+    custom: prop
+    ---
+    Hello, world.
+  tests:
+    - desc: raw frontmatter is provided on top of parsed frontmatter
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, world." }]
+        config:
+          temperature: 3
+        raw:
+          config:
+            temperature: 3
+          custom: prop
+- name: ext
+  template: |
+    ---
+    model: cool-model
+    config:
+      temperature: 3
+    ext1.foo: bar
+    ext1.foo1: bar1
+    ext1.sub1.foo: baz
+    ext1.sub2.bar: qux
+    ext2.foo: bar2
+    ---
+  tests:
+    - desc: extension fields are parsed and added to 'ext'
+      expect:
+        messages: []
+        model: cool-model
+        config:
+          temperature: 3
+        ext:
+          ext1:
+            foo: bar
+            foo1: bar1
+          ext1.sub1:
+            foo: baz
+          ext1.sub2:
+            bar: qux
+          ext2:
+            foo: bar2
