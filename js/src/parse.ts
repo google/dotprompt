@@ -17,7 +17,6 @@
 import { parse } from "yaml";
 import {
   DataArgument,
-  Document,
   MediaPart,
   Message,
   ParsedPrompt,
@@ -41,10 +40,10 @@ const RESERVED_METADATA_KEYWORDS: (keyof PromptMetadata)[] = [
   "ext",
 ];
 
-const BASE_METADATA: PromptMetadata<ModelConfig> = {
+const BASE_METADATA: PromptMetadata<any> = {
   ext: {},
   metadata: {},
-  config: {} as ModelConfig,
+  config: {},
 };
 
 export function parseDocument<ModelConfig = Record<string, any>>(

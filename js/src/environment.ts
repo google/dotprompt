@@ -133,16 +133,26 @@ export class DotpromptEnvironment {
   private async renderPicoschema<ModelConfig>(
     meta: PromptMetadata<ModelConfig>
   ): Promise<PromptMetadata<ModelConfig>> {
-    if (!meta.output?.schema) return meta;
-    return {
-      ...meta,
-      output: {
+    if (!meta.output?.schema && !meta.input?.schema) return meta;
+
+    const newMeta = { ...meta };
+    if (meta.input?.schema) {
+      newMeta.input = {
+        ...meta.input,
+        schema: await picoschema(meta.input.schema, {
+          schemaResolver: this.wrappedSchemaResolver.bind(this),
+        }),
+      };
+    }
+    if (meta.output?.schema) {
+      newMeta.output = {
         ...meta.output,
         schema: await picoschema(meta.output.schema, {
           schemaResolver: this.wrappedSchemaResolver.bind(this),
         }),
-      },
-    };
+      };
+    }
+    return newMeta;
   }
 
   private async wrappedSchemaResolver(name: string): Promise<JSONSchema | null> {
@@ -232,7 +242,8 @@ export class DotpromptEnvironment {
       Array.from(partials).map(async (name) => {
         if (!this.handlebars.partials[name]) {
           const content =
-            (await this.partialResolver!(name)) || (await this.store?.loadPartial(name))?.source;
+            (await this.partialResolver!(name)) ||
+            (await this.store?.loadPartial(name))?.source;
           if (content) {
             this.definePartial(name, content);
             // Recursively resolve partials in the partial content
@@ -281,8 +292,17 @@ export class DotpromptEnvironment {
         messages: toMessages<ModelConfig>(renderedString, data),
       };
     };
-    (outFunc as PromptFunction<ModelConfig>).prompt = source;
+    (outFunc as PromptFunction<ModelConfig>).prompt = await this.renderSchemasInParsedPrompt(source);
     return outFunc as PromptFunction<ModelConfig>;
+  }
+
+  private async renderSchemasInParsedPrompt<ModelConfig>(
+    prompt: ParsedPrompt<ModelConfig>
+  ): Promise<ParsedPrompt<ModelConfig>> {
+    return {
+      ...(await this.renderPicoschema(prompt)),
+      template: prompt.template,
+    };
   }
 
   get<Variables = any, ModelConfig = Record<string, any>>(
