@@ -132,3 +132,41 @@ metadata:
 ### `metadata`
 - **Type:** `Map<string, any>`
 - **Description:** Arbitrary metadata to be used by code, tools, and libraries.
+
+## Frontmatter Extensions
+
+In the frontmatter, Dotprompt implementations will automatically collect namespaced fields (i.e. fields with a `.` in them) into a special `ext` property on the resulting metadata. For example, the following frontmatter:
+
+```handlebars
+---
+config:
+  temperature: 3
+mycorp.auth:
+  type: FIREBASE
+  role: admin # only admins can use this
+mycorp.ownerId: 12345
+mycorp.subunit.level: 5
+---
+```
+
+Would be parsed into this equivalent metadata:
+
+```js
+{
+  config: {temperature: 3},
+  ext: {
+    mycorp: {
+      auth: {
+        type: 'FIREBASE',
+        role: 'admin',
+      },
+      ownerId: 12345,
+    },
+    'mycorp.subunit': {
+      level: 5,
+    },
+  }
+}
+```
+
+Note that nested namespaces are flattened into dotted keys to avoid conflicts between nested properties and nested namespaces.
