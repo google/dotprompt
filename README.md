@@ -25,22 +25,11 @@ This combination of features makes it possible to treat a Dotprompt file as an e
 Here's an example of a Dotprompt file that extracts structured data from provided text:
 
 ```handlebars
----
-model: googleai/gemini-1.5-pro
-input:
-  schema:
-    text: string
-output:
-  format: json
-  schema:
-    name?: string, the full name of the person
-    age?: number, the age of the person
-    occupation?: string, the person's occupation
----
-
-Extract the requested information from the given text.
-If a piece of information is not present, omit that field from the output.
-Text: {{text}}
+--- model: googleai/gemini-1.5-pro input: schema: text: string output: format: json schema: name?:
+string, the full name of the person age?: number, the age of the person occupation?: string, the
+person's occupation --- Extract the requested information from the given text. If a piece of
+information is not present, omit that field from the output. Text:
+{{text}}
 ```
 
 This Dotprompt file:
@@ -55,7 +44,7 @@ When executed, this prompt would take a text input, analyze it using the specifi
 
 ## Installation
 
-The remainder of this getting started guide will use the reference Dotprompt implementation included as part of the [Firebase Genkit](https://github.com/firebase/genkit) GenAI framework. To use other implementations of Dotprompt, see the [list of Implementations](/implementations).
+The remainder of this getting started guide will use the reference Dotprompt implementation included as part of the [Firebase Genkit](https://github.com/firebase/genkit) GenAI SDK. To use other implementations of Dotprompt, see the [list of Implementations](/implementations).
 
 First, install the necessary packages using NPM. Here we'll be using the [Gemini API](https://ai.google.dev/gemini-api) from Google as our model implementation:
 
@@ -83,12 +72,10 @@ const ai = genkit({
 With this setup, you can now create `.prompt` files in your project and use them in your code. For example, if you have a file named `extractInfo.prompt` with the content from the earlier example, you can use it like this:
 
 ```typescript
-const extractInfoPrompt = promptRef("extractInfo");
+const extractInfo = ai.prompt("extractInfo");
 
-const { output } = await extractInfoPrompt.generate({
-  input: {
-    text: "John Doe is a 35-year-old software engineer living in New York.",
-  },
+const { output } = await extractInfo({
+  text: "John Doe is a 35-year-old software engineer living in New York.",
 });
 
 console.log(output);
