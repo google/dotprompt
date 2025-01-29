@@ -60,7 +60,7 @@ export class PicoschemaParser {
         return out;
       }
       const resolvedSchema = await this.mustResolveSchema(type);
-      return { ...resolvedSchema, description };
+      return description ? { ...resolvedSchema, description } : resolvedSchema;
     }
 
     // if there's a JSON schema-ish type at the top level, treat as JSON schema
