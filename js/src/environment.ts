@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { default as Handlebars } from "handlebars";
+import * as Handlebars from "handlebars";
 import * as helpers from "./helpers";
 import {
   PromptFunction,

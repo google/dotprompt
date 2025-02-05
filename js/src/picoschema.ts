@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { parse } from "yaml";
 import { JSONSchema, SchemaResolver } from "./types.js";
 
 const JSON_SCHEMA_SCALAR_TYPES = ["string", "boolean", "null", "number", "integer", "any"];
