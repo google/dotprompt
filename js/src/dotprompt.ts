@@ -57,8 +57,6 @@ export interface DotpromptOptions {
   schemaResolver?: SchemaResolver;
   /** Provide a lookup implementation to resolve partial names to their content. */
   partialResolver?: PartialResolver;
-  /** An optional store of existing prompts and partials that will be used. */
-  store?: PromptStore;
 }
 
 export class Dotprompt {
@@ -303,35 +301,5 @@ export class Dotprompt {
       source,
       additionalMetadata
     );
-  }
-
-  get<Variables = any, ModelConfig = Record<string, any>>(
-    name: string,
-    options?: { variant?: string; version?: string }
-  ): PromptRefFunction<ModelConfig> {
-    if (!this.store)
-      throw new Error(
-        "Dotprompt: Must supply a {store} option when initializing dotprompt to use get()"
-      );
-
-    const fn = (async (data, options) => {
-      const execFn = await this.load<Variables, ModelConfig>(name, options);
-      return execFn(data, options);
-    }) as PromptRefFunction<ModelConfig>;
-    fn.promptRef = { name, ...options };
-    return fn;
-  }
-
-  async load<Variables = any, ModelConfig = Record<string, any>>(
-    name: string,
-    options?: { variant?: string; version?: string }
-  ): Promise<PromptFunction<ModelConfig>> {
-    if (!this.store)
-      throw new Error(
-        "Dotprompt: Must supply a {store} option when initializing dotprompt to use load()"
-      );
-
-    const promptData = await this.store.load(name, options);
-    return this.compile(promptData.source, promptData);
   }
 }
