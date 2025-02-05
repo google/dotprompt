@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#
+# Build distributions for all projects
+#
+# Copyright 2025 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
+set -euo pipefail
+
+if ((EUID == 0)); then
+  echo "Please do not run as root"
+  exit
+fi
+
+TOP_DIR=$(git rev-parse --show-toplevel)
+
+PROJECT_DIRS=(
+  "packages/dotpromptz"
+  "packages/handlebarz"
+)
+
+for PROJECT_DIR in "${PROJECT_DIRS[@]}"; do
+  uv \
+    --directory=${TOP_DIR}/python \
+    --project "$PROJECT_DIR" \
+    build
+done

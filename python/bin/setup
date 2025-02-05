@@ -1,0 +1,234 @@
+#!/usr/bin/env bash
+#
+# Setup script for dotprompt engineering.
+#
+# Copyright 2025 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
+if ((EUID == 0)) && [[ -z ${DANGEROUSLY_RUN_AS_ROOT+x} ]]; then
+  echo "Please do not run as root unless DANGEROUSLY_RUN_AS_ROOT is set."
+  exit 1
+fi
+
+[[ ${EUID} != 0 ]] && set -euo pipefail
+
+TOP_DIR=$(git rev-parse --show-toplevel)
+
+AUDIENCE="eng"
+while getopts ":a:" opt; do
+  case ${opt} in
+  a)
+    AUDIENCE="${OPTARG}"
+    ;;
+  \?)
+    echo "Invalid option: -${OPTARG}" >&2
+    exit 1
+    ;;
+  *)
+    echo "Unsupported option: -${OPTARG}" >&2
+    exit 1
+    ;;
+  esac
+done
+
+if [[ -z ${AUDIENCE} ]]; then
+  echo "Audience flag (-a) is required."
+  echo "Usage: $0 -a <eng|ci>"
+  exit 1
+fi
+
+OS_NAME=$(uname)
+
+PYTHON_CLI_TOOLS=(
+  "httpie" # HTTP client.                  See: https://httpie.io/
+  "mypy"   # Static type checker.          See: https://mypy.readthedocs.io/en/stable/
+  "ruff"   # Fast linter.                  See: https://github.com/astral-sh/ruff
+)
+
+# Updates your shell profile to include a path.
+function dotpromptz::update_path() {
+  local new_path="$1"
+
+  # Remove trailing slash if present.
+  new_path="${new_path%/}"
+
+  # Check if path is already in PATH
+  if [[ ":$PATH:" != *":$new_path:"* ]]; then
+    if [ -n "${ZSH_VERSION:-}" ]; then
+      echo "export PATH=\"$new_path:\$PATH\"" >>"$HOME/.zshrc"
+    else
+      echo "export PATH=\"$new_path:\$PATH\"" >>"$HOME/.bashrc"
+    fi
+
+    export PATH="$new_path:$PATH"
+    echo "Path $new_path added successfully"
+  else
+    echo "Path $new_path already exists in PATH"
+  fi
+}
+
+function dotpromptz::preconfigure_environment() {
+  git clean -Xfd
+  dotpromptz::update_path "$HOME/.cargo/bin"
+  dotpromptz::update_path "$HOME/.local/bin"
+  dotpromptz::update_path "$HOME/go/bin"
+  dotpromptz::update_path "$HOME/google-cloud-sdk/bin"
+}
+
+# Install all the required tools common to all audiences.
+function dotpromptz::install_prerequisites() {
+  dotpromptz::preconfigure_environment
+
+  if [[ ${OS_NAME} == "Darwin" && -x "$(command -v brew)" ]]; then
+    # Darwin-based systems.
+    brew install \
+      curl \
+      fd \
+      gh \
+      go \
+      node \
+      python3 \
+      ripgrep
+  elif [[ -x "$(command -v apt)" ]]; then
+    # Debian-based systems.
+    sudo apt install -y \
+      curl \
+      fd-find \
+      gh \
+      golang \
+      nodejs \
+      python3 \
+      ripgrep
+  elif [[ -x "$(command -v dnf)" ]]; then
+    # Fedora-based systems.
+    sudo dnf install -y \
+      curl \
+      fd-find \
+      gh \
+      go \
+      node \
+      python3 \
+      ripgrep
+  else
+    echo "Unsupported OS. Please install protoc manually."
+  fi
+
+  # Install rust.
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  rustup update
+
+  # Install uv for Python versioning, packaging, and workspace management.
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+}
+
+# Install the Google Cloud SDK.
+function dotpromptz::install_google_cloud_sdk() {
+  # This depends on Python 3.11 and installs it for the user on some systems.
+  if command -v gcloud &>/dev/null; then
+    gcloud config set disable_usage_reporting true
+    gcloud components update
+    return 0
+  fi
+
+  curl https://sdk.cloud.google.com | bash -s -- --disable-prompts
+  gcloud config set disable_usage_reporting true
+}
+
+# Install all the required tools that have been written in Go.
+function dotpromptz::install_go_cli_tools_ci() {
+  go install github.com/google/go-licenses@latest
+  go install golang.org/x/vuln/cmd/govulncheck@latest
+  go install oss.terrastruct.com/d2@latest
+}
+
+# Install all the required tools that have been written in Go.
+function dotpromptz::install_go_cli_tools_eng() {
+  go install github.com/Gelio/go-global-update@latest
+  go install github.com/captainhook-go/captainhook/cmd/captainhook@latest
+  go install github.com/google/addlicense@latest
+  go install github.com/google/go-licenses@latest
+  go install github.com/jesseduffield/lazygit@latest
+  go install golang.org/x/vuln/cmd/govulncheck@latest
+  go install oss.terrastruct.com/d2@latest
+}
+
+# Install all the required tools that have been written in Rust.  We're assuming
+# that the user has already installed rust and cargo.
+function dotpromptz::install_cargo_cli_tools_eng() {
+  cargo install --locked \
+    convco \
+    rust-parallel \
+    taplo-cli
+}
+
+# Install all the Python-related formatter and static analysis tools.
+function dotpromptz::install_python_cli_tools() {
+  for package in "${PYTHON_CLI_TOOLS[@]}"; do
+    uv tool install "${package}"
+  done
+}
+
+# Install documentation site generator.
+function dotpromptz::install_docs_cli_tools() {
+  # Install d2.
+  curl -fsSL https://d2lang.com/install.sh | sh -s --
+
+  # Engineering documentation site generator.
+  # See: https://squidfunk.github.io/mkdocs-material/
+  uv tool install \
+    mkdocs \
+    --with mkdocs-autorefs \
+    --with mkdocs-d2-plugin \
+    --with mkdocs-literate-nav \
+    --with mkdocs-material \
+    --with mkdocs-mermaid2-plugin \
+    --with mkdocs-minify-plugin \
+    --with mkdocstrings[python]
+}
+
+# Install pre-commit hooks.
+function dotpromptz::install_pre_commit_hooks() {
+  captainhook install -f -c "${TOP_DIR}/python/captainhook.json"
+}
+
+# Install all the common packages.
+function dotpromptz::install_common_packages() {
+  dotpromptz::install_prerequisites
+  dotpromptz::install_python_cli_tools
+  dotpromptz::install_docs_cli_tools
+}
+
+# Install all the required tools for CI.
+function dotpromptz::install_ci_packages() {
+  dotpromptz::install_common_packages
+  dotpromptz::install_go_cli_tools_ci
+}
+
+# Install all the required tools for engineering.
+function dotpromptz::install_eng_packages() {
+  dotpromptz::install_common_packages
+  dotpromptz::install_go_cli_tools_eng
+  dotpromptz::install_cargo_cli_tools_eng
+  dotpromptz::install_google_cloud_sdk
+  dotpromptz::install_pre_commit_hooks
+}
+
+# Entry point for the setup script.
+function dotpromptz::main() {
+  case "${AUDIENCE}" in
+  eng)
+    dotpromptz::install_eng_packages
+    ;;
+  ci)
+    dotpromptz::install_ci_packages
+    ;;
+  *)
+    echo "Unsupported audience: ${AUDIENCE}"
+    exit 1
+    ;;
+  esac
+
+  echo "Please restart your shell."
+}
+
+dotpromptz::main

@@ -1,0 +1,79 @@
+{
+  "config": {
+    "git-directory": ".git"
+  },
+  "hooks": {
+    "commit-msg": {
+      "actions": [
+        {
+          "run": "convco check -n 1"
+        }
+      ]
+    },
+    "pre-commit": {
+      "actions": [
+        {
+          "run": "python/.hooks/no-commits-on-branches main"
+        },
+        {
+          "run": "CaptainHook::File.MaxSize",
+          "config": {
+            "allow-failure": true
+          },
+          "options": {
+            "max-size": "1M"
+          }
+        },
+        {
+          "run": "CaptainHook::File.BlockSecrets",
+          "options": {
+            "presets": ["Aws", "GitHub", "Stripe", "Google"]
+          }
+        },
+        {
+          "run": "python/bin/fmt"
+        },
+        {
+          "run": "uvx --directory python ruff check --fix ."
+        },
+        {
+          "run": "python/bin/run_tests"
+        },
+        {
+          "run": "python/bin/build_dists"
+        }
+      ]
+    },
+    "pre-push": {
+      "actions": [
+        {
+          "run": "CaptainHook::Branch.PreventPushOfFixupAndSquashCommits",
+          "options": {
+            "branches-to-protect": ["main"]
+          }
+        },
+        {
+          "run": "CaptainHook::Branch.EnsureNaming",
+          "options": {
+            "regex": "^main|[a-z_][0-9a-z_]+-(build|chore|ci|docs|feat|fix|perf|refactor|revert|release|style|test)-[a-z][0-9a-z_]+-?([A-Za-z0-9a_-])*$"
+          }
+        },
+        {
+          "run": "python/bin/fmt"
+        },
+        {
+          "run": "uvx --directory python ruff check --fix ."
+        },
+        {
+          "run": "python/bin/run_tests"
+        },
+        {
+          "run": "python/bin/build_dists"
+        },
+        {
+          "run": "python/.hooks/commit-message-format-pre-push"
+        }
+      ]
+    }
+  }
+}
