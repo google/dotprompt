@@ -18,7 +18,7 @@ import { describe, it, expect, suite } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { parse } from "yaml";
 import { join, relative } from "node:path";
-import { Dotprompt } from "../src/environment";
+import { Dotprompt } from "../src/dotprompt";
 import { DataArgument, JSONSchema, ToolDefinition } from "../src/types";
 
 const specDir = join("..", "spec");
