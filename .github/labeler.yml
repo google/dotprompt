@@ -51,11 +51,6 @@ dotpromptz:
       - any-glob-to-any-file:
           - "**/dotpromptz/**"
 
-handlebarz:
-  - changed-files:
-      - any-glob-to-any-file:
-          - "**/handlebarz/**"
-
 # Automatically add labels to any PR also based on branch naming conventions.
 build:
   - head-branch: [^.*/build/.*, build]

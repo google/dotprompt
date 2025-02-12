@@ -110,7 +110,7 @@ function dotpromptz::install_prerequisites() {
       python3 \
       ripgrep
   else
-    echo "Unsupported OS. Please install protoc manually."
+    echo "Unsupported OS. Please install tools manually."
   fi
 
   # Install rust.

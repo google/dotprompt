@@ -1,5 +1,5 @@
 [project]
-dependencies = ["dotpromptz", "handlebarz"]
+dependencies = ["dotpromptz"]
 description = "Workspace for Dotprompt packages"
 license = { text = "Apache-2.0" }
 name = "dotprompt-workspace"
@@ -28,8 +28,7 @@ py-modules = []
 [tool.pytest]
 asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "strict"
-python_files = ["packages/**/*_test.py"]
-testpaths = ["packages"]
+python_files = ["**/*_test.py"]
 
 [tool.pytest.ini_options]
 addopts = "--cov"
@@ -43,19 +42,69 @@ default-groups = ["dev", "lint"]
 
 [tool.uv.sources]
 dotpromptz = { workspace = true }
-handlebarz = { workspace = true }
 
 [tool.uv.workspace]
-members = ["packages/*"]
+members = ["dotpromptz", "tests/*"]
 
 # Ruff checks and formatting.
 [tool.ruff]
+exclude = [
+  ".bzr",
+  ".direnv",
+  ".eggs",
+  ".git",
+  ".git-rewrite",
+  ".hg",
+  ".ipynb_checkpoints",
+  ".mypy_cache",
+  ".nox",
+  ".pants.d",
+  ".pyenv",
+  ".pytest_cache",
+  ".pytype",
+  ".ruff_cache",
+  ".svn",
+  ".tox",
+  ".venv",
+  ".vscode",
+  "__pypackages__",
+  "_build",
+  "buck-out",
+  "build",
+  "dist",
+  "node_modules",
+  "site-packages",
+  "venv",
+]
 indent-width = 4
 line-length = 80
+target-version = "py312"
+
+[tool.ruff.lint]
+fixable = ["ALL"]
+per-file-ignores = { "schemas.py" = [
+  "N815",
+  "E501",
+], "sanitize_schemas.py" = [
+  "N802",
+  "N815",
+  "E501",
+] }
+select = [
+  "E",  # pycodestyle (errors)
+  "W",  # pycodestyle (warnings)
+  "F",  # pyflakes
+  "I",  # isort (import sorting)
+  "UP", # pyupgrade (Python version upgrades)
+  "B",  # flake8-bugbear (common bugs)
+  "N",  # pep8-naming (naming conventions)
+]
 
 [tool.ruff.format]
+indent-style = "space"
 line-ending = "lf"
 quote-style = "single"
+skip-magic-trailing-comma = false
 
 # Static type checking.
 [tool.mypy]

@@ -15,8 +15,7 @@ fi
 TOP_DIR=$(git rev-parse --show-toplevel)
 
 PROJECT_DIRS=(
-  "packages/dotpromptz"
-  "packages/handlebarz"
+  "dotpromptz"
 )
 
 for PROJECT_DIR in "${PROJECT_DIRS[@]}"; do

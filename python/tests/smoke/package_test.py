@@ -5,7 +5,6 @@
 
 # TODO: Replace this with proper imports once we have a proper implementation.
 from dotpromptz import package_name as dotpromptz_package_name
-from handlebarz import package_name as handlebarz_package_name
 
 
 def square(n: int | float) -> int | float:
@@ -13,7 +12,6 @@ def square(n: int | float) -> int | float:
 
 
 def test_package_names() -> None:
-    assert handlebarz_package_name() == 'handlebarz'
     assert dotpromptz_package_name() == 'dotpromptz'
 
 

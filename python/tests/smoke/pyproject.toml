@@ -13,7 +13,7 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
   "Topic :: Software Development :: Libraries",
 ]
-dependencies = ["dotpromptz", "handlebarz"]
+dependencies = ["dotpromptz"]
 description = "Packaging smoke test"
 license = { text = "Apache-2.0" }
 name = "smoke"
