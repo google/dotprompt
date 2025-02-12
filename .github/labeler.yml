@@ -17,7 +17,7 @@ python:
       - any-glob-to-any-file:
           - "**/*.py"
           - "**/pyproject.toml"
-          - "py/**"
+          - "python/**"
 
 js:
   - changed-files:

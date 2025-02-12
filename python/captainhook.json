@@ -37,6 +37,9 @@
           "run": "uvx --directory python ruff check --fix ."
         },
         {
+          "run": "uvx --directory python mypy ."
+        },
+        {
           "run": "python/bin/run_tests"
         },
         {
@@ -63,6 +66,9 @@
         },
         {
           "run": "uvx --directory python ruff check --fix ."
+        },
+        {
+          "run": "uvx --directory python mypy ."
         },
         {
           "run": "python/bin/run_tests"

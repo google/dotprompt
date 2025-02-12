@@ -33,6 +33,9 @@ jobs:
       - name: Lint with ruff
         run: uv run ruff check .
 
+      - name: Static type check
+        run: uv run mypy .
+
       - name: Run tests
         run: ./bin/run_tests
 
