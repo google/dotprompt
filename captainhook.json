@@ -6,14 +6,14 @@
     "commit-msg": {
       "actions": [
         {
-          "run": "convco check -n 1"
+          "run": ".hooks/conventional-commit-msg {$MESSAGE_FILE}"
         }
       ]
     },
     "pre-commit": {
       "actions": [
         {
-          "run": "python/.hooks/no-commits-on-branches main"
+          "run": ".hooks/no-commits-on-branches main"
         },
         {
           "run": "CaptainHook::File.MaxSize",
@@ -31,19 +31,22 @@
           }
         },
         {
-          "run": "python/bin/fmt"
+          "run": "bin/fmt"
         },
         {
-          "run": "uvx --directory python ruff check --fix ."
+          "run": "bin/check_license"
         },
         {
-          "run": "uvx --directory python mypy ."
+          "run": "uv run --directory python ruff check --fix ."
         },
         {
-          "run": "python/bin/run_tests"
+          "run": "uv run --directory python mypy ."
         },
         {
-          "run": "python/bin/build_dists"
+          "run": "bin/run_python_tests"
+        },
+        {
+          "run": "bin/build_dists"
         }
       ]
     },
@@ -62,22 +65,25 @@
           }
         },
         {
-          "run": "python/bin/fmt"
+          "run": "bin/fmt"
         },
         {
-          "run": "uvx --directory python ruff check --fix ."
+          "run": "bin/check_license"
         },
         {
-          "run": "uvx --directory python mypy ."
+          "run": "uv run --directory python ruff check --fix ."
         },
         {
-          "run": "python/bin/run_tests"
+          "run": "uv run --directory python mypy ."
         },
         {
-          "run": "python/bin/build_dists"
+          "run": "bin/run_python_tests"
         },
         {
-          "run": "python/.hooks/commit-message-format-pre-push"
+          "run": "bin/build_dists"
+        },
+        {
+          "run": ".hooks/commit-message-format-pre-push"
         }
       ]
     }

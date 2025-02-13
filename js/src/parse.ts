@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { parse } from "yaml";
+import { parse } from 'yaml';
 import {
   DataArgument,
   MediaPart,
@@ -22,22 +22,22 @@ import {
   ParsedPrompt,
   Part,
   PromptMetadata,
-} from "./types";
+} from './types';
 
 const FRONTMATTER_REGEX = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
 const RESERVED_METADATA_KEYWORDS: (keyof PromptMetadata)[] = [
-  "name",
-  "variant",
-  "version",
-  "description",
-  "model",
-  "tools",
-  "toolDefs",
-  "config",
-  "input",
-  "output",
-  "raw",
-  "ext",
+  'name',
+  'variant',
+  'version',
+  'description',
+  'model',
+  'tools',
+  'toolDefs',
+  'config',
+  'input',
+  'output',
+  'raw',
+  'ext',
 ];
 
 const BASE_METADATA: PromptMetadata<any> = {
@@ -56,13 +56,13 @@ export function parseDocument<ModelConfig = Record<string, any>>(
       const parsedMetadata = parse(frontmatter) as PromptMetadata<ModelConfig>;
       const raw = { ...parsedMetadata };
       const pruned: PromptMetadata<ModelConfig> = { ...BASE_METADATA };
-      const ext: PromptMetadata["ext"] = {};
+      const ext: PromptMetadata['ext'] = {};
       for (const k in raw) {
         const key = k as keyof PromptMetadata;
         if (RESERVED_METADATA_KEYWORDS.includes(key)) {
           pruned[key] = raw[key] as any;
-        } else if (key.includes(".")) {
-          const lastDotIndex = key.lastIndexOf(".");
+        } else if (key.includes('.')) {
+          const lastDotIndex = key.lastIndexOf('.');
           const namespace = key.substring(0, lastDotIndex);
           const fieldName = key.substring(lastDotIndex + 1);
           ext[namespace] = ext[namespace] || {};
@@ -71,7 +71,7 @@ export function parseDocument<ModelConfig = Record<string, any>>(
       }
       return { ...pruned, raw, ext, template: content.trim() };
     } catch (error) {
-      console.error("Dotprompt: Error parsing YAML frontmatter:", error);
+      console.error('Dotprompt: Error parsing YAML frontmatter:', error);
       return { ...BASE_METADATA, template: source.trim() };
     }
   }
@@ -86,35 +86,37 @@ export function toMessages<ModelConfig = Record<string, any>>(
   data?: DataArgument
 ): Message[] {
   let currentMessage: { role: string; source: string } = {
-    role: "user",
-    source: "",
+    role: 'user',
+    source: '',
   };
   const messageSources: {
     role: string;
     source?: string;
-    content?: Message["content"];
+    content?: Message['content'];
     metadata?: Record<string, unknown>;
   }[] = [currentMessage];
 
-  for (const piece of renderedString.split(ROLE_REGEX).filter((s) => s.trim() !== "")) {
-    if (piece.startsWith("<<<dotprompt:role:")) {
+  for (const piece of renderedString
+    .split(ROLE_REGEX)
+    .filter(s => s.trim() !== '')) {
+    if (piece.startsWith('<<<dotprompt:role:')) {
       const role = piece.substring(18);
       if (currentMessage.source.trim()) {
-        currentMessage = { role, source: "" };
+        currentMessage = { role, source: '' };
         messageSources.push(currentMessage);
       } else {
         currentMessage.role = role;
       }
-    } else if (piece.startsWith("<<<dotprompt:history")) {
+    } else if (piece.startsWith('<<<dotprompt:history')) {
       messageSources.push(
-        ...(data?.messages?.map((m) => {
+        ...(data?.messages?.map(m => {
           return {
             ...m,
-            metadata: { ...(m.metadata || {}), purpose: "history" },
+            metadata: { ...(m.metadata || {}), purpose: 'history' },
           };
         }) || [])
       );
-      currentMessage = { role: "model", source: "" };
+      currentMessage = { role: 'model', source: '' };
       messageSources.push(currentMessage);
     } else {
       currentMessage.source += piece;
@@ -122,10 +124,10 @@ export function toMessages<ModelConfig = Record<string, any>>(
   }
 
   const messages: Message[] = messageSources
-    .filter((ms) => ms.content || ms.source)
-    .map((m) => {
+    .filter(ms => ms.content || ms.source)
+    .map(m => {
       const out: Message = {
-        role: m.role as Message["role"],
+        role: m.role as Message['role'],
         content: m.content || toParts(m.source!),
       };
       if (m.metadata) out.metadata = m.metadata;
@@ -135,9 +137,13 @@ export function toMessages<ModelConfig = Record<string, any>>(
   return insertHistory(messages, data?.messages);
 }
 
-function insertHistory(messages: Message[], history: Message[] = []): Message[] {
-  if (!history || messages.find((m) => m.metadata?.purpose === "history")) return messages;
-  if (messages.at(-1)?.role === "user") {
+function insertHistory(
+  messages: Message[],
+  history: Message[] = []
+): Message[] {
+  if (!history || messages.find(m => m.metadata?.purpose === 'history'))
+    return messages;
+  if (messages.at(-1)?.role === 'user') {
     return [...messages.slice(0, -1)!, ...history!, messages.at(-1)!];
   }
   return [...messages, ...history];
@@ -147,23 +153,23 @@ const PART_REGEX = /(<<<dotprompt:(?:media:url|section).*?)>>>/g;
 
 function toParts(source: string): Part[] {
   const parts: Part[] = [];
-  const pieces = source.split(PART_REGEX).filter((s) => s.trim() !== "");
+  const pieces = source.split(PART_REGEX).filter(s => s.trim() !== '');
   for (let i = 0; i < pieces.length; i++) {
     const piece = pieces[i];
-    if (piece.startsWith("<<<dotprompt:media:")) {
-      const [_, url, contentType] = piece.split(" ");
+    if (piece.startsWith('<<<dotprompt:media:')) {
+      const [_, url, contentType] = piece.split(' ');
       const part: MediaPart = { media: { url } };
       if (contentType) part.media.contentType = contentType;
       parts.push(part);
-    } else if (piece.startsWith("<<<dotprompt:section")) {
-      const [_, sectionType] = piece.split(" ");
+    } else if (piece.startsWith('<<<dotprompt:section')) {
+      const [_, sectionType] = piece.split(' ');
       parts.push({ metadata: { purpose: sectionType, pending: true } });
     } else {
       parts.push({ text: piece });
     }
   }
 
-  const apart: Part = { text: "foo" };
+  const apart: Part = { text: 'foo' };
 
   return parts;
 }

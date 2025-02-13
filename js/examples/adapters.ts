@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { toGeminiRequest } from "../src/adapters/gemini.js";
-import { toOpenAIRequest } from "../src/adapters/openai.js";
-import { Dotprompt } from "../src/index.js";
+import { toGeminiRequest } from '../src/adapters/gemini.js';
+import { toOpenAIRequest } from '../src/adapters/openai.js';
+import { Dotprompt } from '../src/index.js';
 
 const prompts = new Dotprompt();
 
@@ -30,32 +30,38 @@ input:
 ---
 {{role "user"}}Tell me a story about {{subject}}.
   `,
-    { input: { subject: "a birthday party" } }
+    { input: { subject: 'a birthday party' } }
   );
 
   const geminiFormat = toGeminiRequest(rendered);
-  console.log("> sending to gemini endpoint:", JSON.stringify(geminiFormat.request, null, 2));
+  console.log(
+    '> sending to gemini endpoint:',
+    JSON.stringify(geminiFormat.request, null, 2)
+  );
   const geminiResponse = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${geminiFormat.model}:generateContent?key=${process.env.GOOGLE_GENAI_API_KEY}`,
     {
-      method: "POST",
+      method: 'POST',
       body: JSON.stringify(geminiFormat.request),
-      headers: { "content-type": "application/json" },
+      headers: { 'content-type': 'application/json' },
     }
   );
   console.log(geminiResponse.status, await geminiResponse.text());
 
   const openaiFormat = toOpenAIRequest(rendered);
-  console.log("sending to openai endpoint:", JSON.stringify(openaiFormat, null, 2));
+  console.log(
+    'sending to openai endpoint:',
+    JSON.stringify(openaiFormat, null, 2)
+  );
 
   const openaiResponse = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`,
     {
-      method: "POST",
+      method: 'POST',
       body: JSON.stringify(openaiFormat),
       headers: {
-        "content-type": "application/json",
-        authorization: "Bearer " + process.env.GOOGLE_GENAI_API_KEY,
+        'content-type': 'application/json',
+        authorization: 'Bearer ' + process.env.GOOGLE_GENAI_API_KEY,
       },
     }
   );

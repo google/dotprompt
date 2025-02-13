@@ -15,12 +15,12 @@
  */
 
 export function removeUndefinedFields(obj: any): any {
-  if (obj === null || typeof obj !== "object") {
+  if (obj === null || typeof obj !== 'object') {
     return obj;
   }
 
   if (Array.isArray(obj)) {
-    return obj.map((item) => removeUndefinedFields(item));
+    return obj.map(item => removeUndefinedFields(item));
   }
 
   const result: { [key: string]: any } = {};

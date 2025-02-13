@@ -14,10 +14,15 @@
  * limitations under the License.
  */
 
-import { SafeString } from "handlebars";
+import { SafeString } from 'handlebars';
 
-export function json(serializable: any, options: { hash: { indent?: number } }) {
-  return new SafeString(JSON.stringify(serializable, null, options.hash.indent || 0));
+export function json(
+  serializable: any,
+  options: { hash: { indent?: number } }
+) {
+  return new SafeString(
+    JSON.stringify(serializable, null, options.hash.indent || 0)
+  );
 }
 
 export function role(role: string) {
@@ -25,7 +30,7 @@ export function role(role: string) {
 }
 
 export function history() {
-  return new SafeString("<<<dotprompt:history>>>");
+  return new SafeString('<<<dotprompt:history>>>');
 }
 
 export function section(name: string) {
@@ -35,15 +40,25 @@ export function section(name: string) {
 export function media(options: Handlebars.HelperOptions) {
   return new SafeString(
     `<<<dotprompt:media:url ${options.hash.url}${
-      options.hash.contentType ? ` ${options.hash.contentType}` : ""
+      options.hash.contentType ? ` ${options.hash.contentType}` : ''
     }>>>`
   );
 }
 
-export function ifEquals(this: any, arg1: any, arg2: any, options: Handlebars.HelperOptions) {
+export function ifEquals(
+  this: any,
+  arg1: any,
+  arg2: any,
+  options: Handlebars.HelperOptions
+) {
   return arg1 == arg2 ? options.fn(this) : options.inverse(this);
 }
 
-export function unlessEquals(this: any, arg1: any, arg2: any, options: Handlebars.HelperOptions) {
+export function unlessEquals(
+  this: any,
+  arg1: any,
+  arg2: any,
+  options: Handlebars.HelperOptions
+) {
   return arg1 != arg2 ? options.fn(this) : options.inverse(this);
 }

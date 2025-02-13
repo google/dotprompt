@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-import type { RenderedPrompt, Part, Message } from "../types.js";
+import type { RenderedPrompt, Part, Message } from '../types.js';
 
 export interface OpenAIMessage {
-  role: "system" | "user" | "assistant" | "tool";
+  role: 'system' | 'user' | 'assistant' | 'tool';
   content:
     | string
     | null
     | Array<{
-        type: "text" | "image_url";
+        type: 'text' | 'image_url';
         text?: string;
         image_url?: {
           url: string;
-          detail?: "auto" | "low" | "high";
+          detail?: 'auto' | 'low' | 'high';
         };
       }>;
   name?: string;
   tool_calls?: Array<{
     id: string;
-    type: "function";
+    type: 'function';
     function: {
       name: string;
       arguments: string;
@@ -42,7 +42,7 @@ export interface OpenAIMessage {
 }
 
 export interface OpenAIToolDefintiion {
-  type: "function";
+  type: 'function';
   function: {
     name: string;
     description?: string;
@@ -59,17 +59,17 @@ export interface OpenAIRequest {
   n?: number;
   presence_penalty?: number;
   response_format?: {
-    type: "text" | "json_object";
+    type: 'text' | 'json_object';
   };
   seed?: number;
   stop?: string | Array<string>;
   stream?: boolean;
   temperature?: number;
   tool_choice?:
-    | "none"
-    | "auto"
+    | 'none'
+    | 'auto'
     | {
-        type: "function";
+        type: 'function';
         function: {
           name: string;
         };
@@ -79,27 +79,27 @@ export interface OpenAIRequest {
   user?: string;
 }
 
-function convertRole(role: Message["role"]): OpenAIMessage["role"] {
-  if (role === "model") return "assistant";
+function convertRole(role: Message['role']): OpenAIMessage['role'] {
+  if (role === 'model') return 'assistant';
   return role;
 }
 
-function convertContent(parts: Part[]): OpenAIMessage["content"] {
+function convertContent(parts: Part[]): OpenAIMessage['content'] {
   const result: Array<{
-    type: "text" | "image_url";
+    type: 'text' | 'image_url';
     text?: string;
-    image_url?: { url: string; detail?: "auto" };
+    image_url?: { url: string; detail?: 'auto' };
   }> = [];
 
   for (const part of parts) {
     if (part.text) {
-      result.push({ type: "text", text: part.text });
+      result.push({ type: 'text', text: part.text });
     } else if (part.media) {
       result.push({
-        type: "image_url",
+        type: 'image_url',
         image_url: {
           url: part.media.url,
-          detail: "auto",
+          detail: 'auto',
         },
       });
     } else if (part.toolRequest) {
@@ -111,11 +111,13 @@ function convertContent(parts: Part[]): OpenAIMessage["content"] {
   return result;
 }
 
-function convertTools(prompt: RenderedPrompt): OpenAIToolDefintiion[] | undefined {
+function convertTools(
+  prompt: RenderedPrompt
+): OpenAIToolDefintiion[] | undefined {
   if (!prompt.toolDefs?.length) return undefined;
 
-  return prompt.toolDefs.map((tool) => ({
-    type: "function",
+  return prompt.toolDefs.map(tool => ({
+    type: 'function',
     function: {
       name: tool.name,
       description: tool.description,
@@ -125,7 +127,7 @@ function convertTools(prompt: RenderedPrompt): OpenAIToolDefintiion[] | undefine
 }
 
 export function toOpenAIRequest(source: RenderedPrompt): OpenAIRequest {
-  const messages: OpenAIMessage[] = source.messages.map((msg) => {
+  const messages: OpenAIMessage[] = source.messages.map(msg => {
     const base: OpenAIMessage = {
       role: convertRole(msg.role),
       content: convertContent(msg.content),
@@ -133,12 +135,12 @@ export function toOpenAIRequest(source: RenderedPrompt): OpenAIRequest {
 
     // Handle tool requests
     const toolRequests = msg.content.filter(
-      (p): p is Extract<Part, { toolRequest: any }> => "toolRequest" in p
+      (p): p is Extract<Part, { toolRequest: any }> => 'toolRequest' in p
     );
     if (toolRequests.length > 0) {
       base.tool_calls = toolRequests.map((p, idx) => ({
         id: p.toolRequest.ref || `call_${idx}`,
-        type: "function",
+        type: 'function',
         function: {
           name: p.toolRequest.name,
           arguments: JSON.stringify(p.toolRequest.input || {}),
@@ -148,7 +150,7 @@ export function toOpenAIRequest(source: RenderedPrompt): OpenAIRequest {
 
     // Handle tool responses
     const toolResponse = msg.content.find(
-      (p): p is Extract<Part, { toolResponse: any }> => "toolResponse" in p
+      (p): p is Extract<Part, { toolResponse: any }> => 'toolResponse' in p
     );
     if (toolResponse) {
       base.tool_call_id = toolResponse.toolResponse.ref;
@@ -163,7 +165,7 @@ export function toOpenAIRequest(source: RenderedPrompt): OpenAIRequest {
 
   const request: OpenAIRequest = {
     messages,
-    model: source.model || "gpt-4",
+    model: source.model || 'gpt-4',
   };
 
   // Handle configuration options
@@ -184,12 +186,12 @@ export function toOpenAIRequest(source: RenderedPrompt): OpenAIRequest {
   const tools = convertTools(source);
   if (tools) {
     request.tools = tools;
-    request.tool_choice = "auto";
+    request.tool_choice = 'auto';
   }
 
   // Handle output format
-  if (source.output?.format === "json") {
-    request.response_format = { type: "json_object" };
+  if (source.output?.format === 'json') {
+    request.response_format = { type: 'json_object' };
   }
 
   return request;

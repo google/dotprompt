@@ -14,11 +14,18 @@
  * limitations under the License.
  */
 
-import { JSONSchema, SchemaResolver } from "./types.js";
+import { JSONSchema, SchemaResolver } from './types.js';
 
-const JSON_SCHEMA_SCALAR_TYPES = ["string", "boolean", "null", "number", "integer", "any"];
+const JSON_SCHEMA_SCALAR_TYPES = [
+  'string',
+  'boolean',
+  'null',
+  'number',
+  'integer',
+  'any',
+];
 
-const WILDCARD_PROPERTY_NAME = "(*)";
+const WILDCARD_PROPERTY_NAME = '(*)';
 
 export interface PicoschemaOptions {
   schemaResolver?: SchemaResolver;
@@ -42,7 +49,9 @@ export class PicoschemaParser {
 
     const val = await this.schemaResolver(schemaName);
     if (!val) {
-      throw new Error(`Picoschema: could not find schema with name '${schemaName}'`);
+      throw new Error(
+        `Picoschema: could not find schema with name '${schemaName}'`
+      );
     }
     return val;
   }
@@ -51,7 +60,7 @@ export class PicoschemaParser {
     if (!schema) return null;
 
     // Allow for top-level named schemas
-    if (typeof schema === "string") {
+    if (typeof schema === 'string') {
       const [type, description] = extractDescription(schema);
       if (JSON_SCHEMA_SCALAR_TYPES.includes(type)) {
         let out: JSONSchema = { type };
@@ -63,19 +72,23 @@ export class PicoschemaParser {
     }
 
     // if there's a JSON schema-ish type at the top level, treat as JSON schema
-    if ([...JSON_SCHEMA_SCALAR_TYPES, "object", "array"].includes((schema as any)?.type)) {
+    if (
+      [...JSON_SCHEMA_SCALAR_TYPES, 'object', 'array'].includes(
+        (schema as any)?.type
+      )
+    ) {
       return schema;
     }
 
-    if (typeof (schema as any)?.properties === "object") {
-      return { ...schema, type: "object" };
+    if (typeof (schema as any)?.properties === 'object') {
+      return { ...schema, type: 'object' };
     }
 
     return this.parsePico(schema);
   }
 
   private async parsePico(obj: any, path: string[] = []): Promise<JSONSchema> {
-    if (typeof obj === "string") {
+    if (typeof obj === 'string') {
       const [type, description] = extractDescription(obj);
       if (!JSON_SCHEMA_SCALAR_TYPES.includes(type)) {
         let resolvedSchema = await this.mustResolveSchema(type);
@@ -83,19 +96,20 @@ export class PicoschemaParser {
         return resolvedSchema;
       }
 
-      if (type === "any") {
+      if (type === 'any') {
         return description ? { description } : {};
       }
 
       return description ? { type, description } : { type };
-    } else if (typeof obj !== "object") {
+    } else if (typeof obj !== 'object') {
       throw new Error(
-        "Picoschema: only consists of objects and strings. Got: " + JSON.stringify(obj)
+        'Picoschema: only consists of objects and strings. Got: ' +
+          JSON.stringify(obj)
       );
     }
 
     const schema: JSONSchema = {
-      type: "object",
+      type: 'object',
       properties: {},
       required: [],
       additionalProperties: false,
@@ -104,12 +118,15 @@ export class PicoschemaParser {
     for (const key in obj) {
       // wildcard property
       if (key === WILDCARD_PROPERTY_NAME) {
-        schema.additionalProperties = await this.parsePico(obj[key], [...path, key]);
+        schema.additionalProperties = await this.parsePico(obj[key], [
+          ...path,
+          key,
+        ]);
         continue;
       }
 
-      const [name, typeInfo] = key.split("(");
-      const isOptional = name.endsWith("?");
+      const [name, typeInfo] = key.split('(');
+      const isOptional = name.endsWith('?');
       const propertyName = isOptional ? name.slice(0, -1) : name;
 
       if (!isOptional) {
@@ -119,30 +136,33 @@ export class PicoschemaParser {
       if (!typeInfo) {
         const prop = { ...(await this.parsePico(obj[key], [...path, key])) };
         // make all optional fields also nullable
-        if (isOptional && typeof prop.type === "string") {
-          prop.type = [prop.type, "null"];
+        if (isOptional && typeof prop.type === 'string') {
+          prop.type = [prop.type, 'null'];
         }
         schema.properties[propertyName] = prop;
         continue;
       }
 
-      const [type, description] = extractDescription(typeInfo.substring(0, typeInfo.length - 1));
-      if (type === "array") {
+      const [type, description] = extractDescription(
+        typeInfo.substring(0, typeInfo.length - 1)
+      );
+      if (type === 'array') {
         schema.properties[propertyName] = {
-          type: isOptional ? ["array", "null"] : "array",
+          type: isOptional ? ['array', 'null'] : 'array',
           items: await this.parsePico(obj[key], [...path, key]),
         };
-      } else if (type === "object") {
+      } else if (type === 'object') {
         const prop = await this.parsePico(obj[key], [...path, key]);
-        if (isOptional) prop.type = [prop.type, "null"];
+        if (isOptional) prop.type = [prop.type, 'null'];
         schema.properties[propertyName] = prop;
-      } else if (type === "enum") {
+      } else if (type === 'enum') {
         const prop = { enum: obj[key] };
         if (isOptional && !prop.enum.includes(null)) prop.enum.push(null);
         schema.properties[propertyName] = prop;
       } else {
         throw new Error(
-          "Picoschema: parenthetical types must be 'object' or 'array', got: " + type
+          "Picoschema: parenthetical types must be 'object' or 'array', got: " +
+            type
         );
       }
       if (description) {
@@ -156,7 +176,7 @@ export class PicoschemaParser {
 }
 
 function extractDescription(input: string): [string, string | null] {
-  if (!input.includes(",")) return [input, null];
+  if (!input.includes(',')) return [input, null];
 
   const match = input.match(/(.*?), *(.*)$/);
   return [match![1], match![2]];

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import * as Handlebars from "handlebars";
-import * as helpers from "./helpers";
+import * as Handlebars from 'handlebars';
+import * as helpers from './helpers';
 import {
   PromptFunction,
   DataArgument,
@@ -28,10 +28,10 @@ import {
   ParsedPrompt,
   PromptStore,
   PromptRefFunction,
-} from "./types";
-import { parseDocument, toMessages } from "./parse";
-import { picoschema } from "./picoschema";
-import { removeUndefinedFields } from "./util";
+} from './types';
+import { parseDocument, toMessages } from './parse';
+import { picoschema } from './picoschema';
+import { removeUndefinedFields } from './util';
 
 /** Function to resolve partial names to their content */
 export interface PartialResolver {
@@ -115,11 +115,16 @@ export class Dotprompt {
     return this;
   }
 
-  parse<ModelConfig = Record<string, any>>(source: string): ParsedPrompt<ModelConfig> {
+  parse<ModelConfig = Record<string, any>>(
+    source: string
+  ): ParsedPrompt<ModelConfig> {
     return parseDocument<ModelConfig>(source);
   }
 
-  async render<Variables = Record<string, any>, ModelConfig = Record<string, any>>(
+  async render<
+    Variables = Record<string, any>,
+    ModelConfig = Record<string, any>,
+  >(
     source: string,
     data: DataArgument<Variables> = {},
     options?: PromptMetadata<ModelConfig>
@@ -153,7 +158,9 @@ export class Dotprompt {
     return newMeta;
   }
 
-  private async wrappedSchemaResolver(name: string): Promise<JSONSchema | null> {
+  private async wrappedSchemaResolver(
+    name: string
+  ): Promise<JSONSchema | null> {
     if (this.schemas[name]) return this.schemas[name];
     if (this.schemaResolver) return await this.schemaResolver(name);
     return null;
@@ -187,7 +194,7 @@ export class Dotprompt {
       out.toolDefs = out.toolDefs || [];
 
       await Promise.all(
-        out.tools.map(async (toolName) => {
+        out.tools.map(async toolName => {
           if (this.tools[toolName]) {
             out.toolDefs!.push(this.tools[toolName]);
           } else if (this.toolResolver) {
@@ -219,7 +226,7 @@ export class Dotprompt {
       }
 
       PartialStatement(partial: any) {
-        if ("original" in partial.name) {
+        if ('original' in partial.name) {
           this.partials.add(partial.name.original);
         }
       }
@@ -236,10 +243,11 @@ export class Dotprompt {
 
     // Resolve and register each partial
     await Promise.all(
-      Array.from(partials).map(async (name) => {
+      Array.from(partials).map(async name => {
         if (!this.handlebars.partials[name]) {
           const content =
-            (await this.partialResolver!(name)) || (await this.store?.loadPartial(name))?.source;
+            (await this.partialResolver!(name)) ||
+            (await this.store?.loadPartial(name))?.source;
           if (content) {
             this.definePartial(name, content);
             // Recursively resolve partials in the partial content
@@ -254,7 +262,7 @@ export class Dotprompt {
     source: string | ParsedPrompt<ModelConfig>,
     additionalMetadata?: PromptMetadata<ModelConfig>
   ): Promise<PromptFunction<ModelConfig>> {
-    if (typeof source === "string") source = this.parse<ModelConfig>(source);
+    if (typeof source === 'string') source = this.parse<ModelConfig>(source);
     if (additionalMetadata) source = { ...source, ...additionalMetadata };
 
     // Resolve all partials before compilation
@@ -265,7 +273,10 @@ export class Dotprompt {
       knownHelpersOnly: true,
     });
 
-    const renderFunc = async (data: DataArgument, options?: PromptMetadata<ModelConfig>) => {
+    const renderFunc = async (
+      data: DataArgument,
+      options?: PromptMetadata<ModelConfig>
+    ) => {
       // discard the input schema as once rendered it doesn't make sense
       const { input, ...mergedMetadata } = await this.renderMetadata(source);
 
@@ -273,7 +284,11 @@ export class Dotprompt {
         { ...(options?.input?.default || {}), ...data.input },
         {
           data: {
-            metadata: { prompt: mergedMetadata, docs: data.docs, messages: data.messages },
+            metadata: {
+              prompt: mergedMetadata,
+              docs: data.docs,
+              messages: data.messages,
+            },
             ...(data.context || {}),
           },
         }
@@ -292,9 +307,10 @@ export class Dotprompt {
     source: string | ParsedPrompt<ModelConfig>,
     additionalMetadata?: PromptMetadata<ModelConfig>
   ): Promise<PromptMetadata<ModelConfig>> {
-    if (typeof source === "string") source = this.parse<ModelConfig>(source);
+    if (typeof source === 'string') source = this.parse<ModelConfig>(source);
 
-    const selectedModel = additionalMetadata?.model || source.model || this.defaultModel;
+    const selectedModel =
+      additionalMetadata?.model || source.model || this.defaultModel;
     const modelConfig = this.modelConfigs[selectedModel!] as ModelConfig;
     return this.resolveMetadata<ModelConfig>(
       modelConfig ? { config: modelConfig } : {},

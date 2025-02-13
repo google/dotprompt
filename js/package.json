@@ -16,13 +16,7 @@
     "test": "vitest --run",
     "test:watch": "vitest"
   },
-  "keywords": [
-    "genai",
-    "prompting",
-    "llms",
-    "templating",
-    "handlebars"
-  ],
+  "keywords": ["genai", "prompting", "llms", "templating", "handlebars"],
   "author": "",
   "license": "ISC",
   "devDependencies": {
