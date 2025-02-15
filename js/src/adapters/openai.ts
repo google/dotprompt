@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { RenderedPrompt, Part, Message } from '../types.js';
+import type { Message, Part, RenderedPrompt } from '../types.js';
 
 export interface OpenAIMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
@@ -116,7 +116,7 @@ function convertTools(
 ): OpenAIToolDefintiion[] | undefined {
   if (!prompt.toolDefs?.length) return undefined;
 
-  return prompt.toolDefs.map(tool => ({
+  return prompt.toolDefs.map((tool) => ({
     type: 'function',
     function: {
       name: tool.name,
@@ -127,7 +127,7 @@ function convertTools(
 }
 
 export function toOpenAIRequest(source: RenderedPrompt): OpenAIRequest {
-  const messages: OpenAIMessage[] = source.messages.map(msg => {
+  const messages: OpenAIMessage[] = source.messages.map((msg) => {
     const base: OpenAIMessage = {
       role: convertRole(msg.role),
       content: convertContent(msg.content),

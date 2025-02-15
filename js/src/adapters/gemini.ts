@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { RenderedPrompt, Part, Message } from '../types.js';
+import type { Message, Part, RenderedPrompt } from '../types.js';
 
 export interface GeminiContent {
   role: 'user' | 'model';
@@ -119,7 +119,7 @@ function convertTools(prompt: RenderedPrompt): GeminiTool | undefined {
   if (!prompt.toolDefs?.length) return undefined;
 
   return {
-    functionDeclarations: prompt.toolDefs.map(tool => ({
+    functionDeclarations: prompt.toolDefs.map((tool) => ({
       name: tool.name,
       description: tool.description,
       parameters: tool.inputSchema,

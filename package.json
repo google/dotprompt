@@ -1,6 +1,8 @@
 {
   "packageManager": "pnpm@9.13.2+sha256.ccce81bf7498c5f0f80e31749c1f8f03baba99d168f64590fc7e13fad3ea1938",
   "scripts": {
-    "format": "pnpm dlx @biomejs/biome format --write ."
+    "format": "pnpm dlx @biomejs/biome check --formatter-enabled=true --linter-enabled=false --organize-imports-enabled=true --fix . && bin/add_license",
+    "format:check": "pnpm dlx @biomejs/biome ci --linter-enabled=false --formatter-enabled=true --organize-imports-enabled=false . && bin/check_license",
+    "lint": "pnpm dlx @biomejs/biome lint --fix . && bin/add_license"
   }
 }

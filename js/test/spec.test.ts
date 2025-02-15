@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, suite } from 'vitest';
-import { readdirSync, readFileSync } from 'node:fs';
-import { parse } from 'yaml';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { describe, expect, it, suite } from 'vitest';
+import { parse } from 'yaml';
 import { Dotprompt } from '../src/dotprompt';
-import { DataArgument, JSONSchema, ToolDefinition } from '../src/types';
+import type { DataArgument, JSONSchema, ToolDefinition } from '../src/types';
 
 const specDir = join('..', 'spec');
 const files = readdirSync(specDir, { recursive: true, withFileTypes: true });
@@ -37,8 +37,8 @@ interface SpecSuite {
 
 // Process each YAML file
 files
-  .filter(file => !file.isDirectory() && file.name.endsWith('.yaml'))
-  .forEach(file => {
+  .filter((file) => !file.isDirectory() && file.name.endsWith('.yaml'))
+  .forEach((file) => {
     const suiteName = join(
       relative(specDir, file.path),
       file.name.replace(/\.yaml$/, '')
@@ -50,10 +50,10 @@ files
     // Create a describe block for each YAML file
     suite(suiteName, () => {
       // Create a describe block for each suite in the file
-      suites.forEach(s => {
+      suites.forEach((s) => {
         describe(s.name, () => {
           // Create a test for each test case in the suite
-          s.tests.forEach(tc => {
+          s.tests.forEach((tc) => {
             it(tc.desc || 'should match expected output', async () => {
               const env = new Dotprompt({
                 schemas: s.schemas,

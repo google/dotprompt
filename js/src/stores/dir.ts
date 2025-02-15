@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
+import { createHash } from 'crypto';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { createHash } from 'crypto';
-import {
+import type {
+  PartialRef,
   PromptData,
   PromptRef,
   PromptStoreWritable,
-  PartialRef,
 } from '../types';
 
 interface DirStoreOptions {
@@ -60,7 +60,7 @@ export class DirStore implements PromptStoreWritable {
   }
 
   private async scanDirectory(
-    dir: string = '',
+    dir = '',
     results: string[] = []
   ): Promise<string[]> {
     const fullPath = path.join(this.directory, dir);

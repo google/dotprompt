@@ -16,27 +16,27 @@
 
 import * as Handlebars from 'handlebars';
 import * as helpers from './helpers';
-import {
-  PromptFunction,
-  DataArgument,
-  JSONSchema,
-  PromptMetadata,
-  RenderedPrompt,
-  SchemaResolver,
-  ToolDefinition,
-  ToolResolver,
-  ParsedPrompt,
-  PromptStore,
-  PromptRefFunction,
-} from './types';
 import { parseDocument, toMessages } from './parse';
 import { picoschema } from './picoschema';
+import {
+  type DataArgument,
+  type JSONSchema,
+  type ParsedPrompt,
+  type PromptFunction,
+  type PromptMetadata,
+  PromptRefFunction,
+  type PromptStore,
+  type RenderedPrompt,
+  type SchemaResolver,
+  type ToolDefinition,
+  type ToolResolver,
+} from './types';
 import { removeUndefinedFields } from './util';
 
 /** Function to resolve partial names to their content */
-export interface PartialResolver {
-  (partialName: string): string | null | Promise<string | null>;
-}
+export type PartialResolver = (
+  partialName: string
+) => string | null | Promise<string | null>;
 
 export interface DotpromptOptions {
   /** A default model to use if none is supplied. */
@@ -194,7 +194,7 @@ export class Dotprompt {
       out.toolDefs = out.toolDefs || [];
 
       await Promise.all(
-        out.tools.map(async toolName => {
+        out.tools.map(async (toolName) => {
           if (this.tools[toolName]) {
             out.toolDefs!.push(this.tools[toolName]);
           } else if (this.toolResolver) {
@@ -243,7 +243,7 @@ export class Dotprompt {
 
     // Resolve and register each partial
     await Promise.all(
-      Array.from(partials).map(async name => {
+      Array.from(partials).map(async (name) => {
         if (!this.handlebars.partials[name]) {
           const content =
             (await this.partialResolver!(name)) ||

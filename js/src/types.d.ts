@@ -158,18 +158,18 @@ export type JSONSchema = any;
  * an underlying JSON schema, utilized for shorthand to a schema library
  * provided by an external tool.
  **/
-export interface SchemaResolver {
-  (schemaName: string): JSONSchema | null | Promise<JSONSchema | null>;
-}
+export type SchemaResolver = (
+  schemaName: string
+) => JSONSchema | null | Promise<JSONSchema | null>;
 
 /**
  * SchemaResolver is a function that can resolve a provided tool name to
  * an underlying ToolDefinition, utilized for shorthand to a tool registry
  * provided by an external library.
  **/
-export interface ToolResolver {
-  (toolName: string): ToolDefinition | null | Promise<ToolDefinition | null>;
-}
+export type ToolResolver = (
+  toolName: string
+) => ToolDefinition | null | Promise<ToolDefinition | null>;
 
 /**
  * RenderedPrompt is the final result of rendering a Dotprompt template.

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { createHash } from 'crypto';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { createHash } from 'crypto';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DirStore } from '../../src/stores/dir';
-import { PromptData } from '../../src/types';
+import type { PromptData } from '../../src/types';
 
 describe('DirStore', () => {
   const tempDir = path.join(process.cwd(), 'test-prompts');
@@ -38,10 +38,7 @@ describe('DirStore', () => {
     return createHash('sha1').update(content).digest('hex').substring(0, 8);
   }
 
-  async function createPromptFile(
-    name: string,
-    content: string = 'test source'
-  ) {
+  async function createPromptFile(name: string, content = 'test source') {
     const filePath = path.join(tempDir, name);
     await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, content);

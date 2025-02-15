@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { JSONSchema, SchemaResolver } from './types.js';
+import type { JSONSchema, SchemaResolver } from './types.js';
 
 const JSON_SCHEMA_SCALAR_TYPES = [
   'string',

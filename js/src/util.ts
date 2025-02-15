@@ -20,7 +20,7 @@ export function removeUndefinedFields(obj: any): any {
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item => removeUndefinedFields(item));
+    return obj.map((item) => removeUndefinedFields(item));
   }
 
   const result: { [key: string]: any } = {};
