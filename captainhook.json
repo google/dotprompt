@@ -46,6 +46,9 @@
           "run": "bin/run_python_tests"
         },
         {
+          "run": "uv run mkdocs build"
+        },
+        {
           "run": "bin/build_dists"
         }
       ]
@@ -78,6 +81,9 @@
         },
         {
           "run": "bin/run_python_tests"
+        },
+        {
+          "run": "uv run mkdocs build"
         },
         {
           "run": "bin/build_dists"

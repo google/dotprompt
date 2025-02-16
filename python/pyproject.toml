@@ -1,11 +1,11 @@
 [project]
-dependencies = ["dotpromptz"]
-description = "Workspace for Dotprompt packages"
-license = { text = "Apache-2.0" }
-name = "dotprompt-workspace"
-readme = "README.md"
+dependencies    = ["dotpromptz"]
+description     = "Workspace for Dotprompt packages"
+license         = { text = "Apache-2.0" }
+name            = "dotprompt-workspace"
+readme          = "README.md"
 requires-python = ">=3.12"
-version = "0.1.0"
+version         = "0.1.0"
 
 [dependency-groups]
 dev = [
@@ -27,8 +27,8 @@ py-modules = []
 # Pytest for unit testing and coverage.
 [tool.pytest]
 asyncio_default_fixture_loop_scope = "function"
-asyncio_mode = "strict"
-python_files = ["**/*_test.py"]
+asyncio_mode                       = "strict"
+python_files                       = ["**/*_test.py"]
 
 [tool.pytest.ini_options]
 addopts = "--cov"
@@ -101,13 +101,13 @@ select = [
 ]
 
 [tool.ruff.format]
-indent-style = "space"
-line-ending = "lf"
-quote-style = "single"
+indent-style              = "space"
+line-ending               = "lf"
+quote-style               = "single"
 skip-magic-trailing-comma = false
 
 # Static type checking.
 [tool.mypy]
 disallow_incomplete_defs = true
-disallow_untyped_defs = true
-warn_unused_configs = true
+disallow_untyped_defs    = true
+warn_unused_configs      = true

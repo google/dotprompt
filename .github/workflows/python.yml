@@ -42,5 +42,8 @@ jobs:
       - name: Run tests
         run: ./bin/run_python_tests
 
+      - name: Build documentation
+        run: uv run mkdocs build --strict
+
       - name: Build distributions
         run: ./bin/build_dists

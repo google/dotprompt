@@ -19,7 +19,7 @@ fi
 TOP_DIR=$(git rev-parse --show-toplevel)
 
 PNPM_VERSION="10.2.0"
-NODE_VERSION="23"
+NODE_VERSION="22" # See: https://github.com/firebase/genkit/issues/1995
 NVM_VERSION="0.40.1"
 
 AUDIENCE="eng"
@@ -204,6 +204,7 @@ function dotpromptz::install_go_cli_tools_eng() {
 function dotpromptz::install_cargo_cli_tools_eng() {
   cargo install --locked \
     convco \
+    pylyzer \
     rust-parallel \
     taplo-cli
 }
@@ -244,7 +245,6 @@ function dotpromptz::configure_commit_template() {
 function dotpromptz::install_pre_commit_hooks() {
   dotpromptz::configure_commit_template
   captainhook install -f -c "${TOP_DIR}/captainhook.json"
-  #git config --local include.path ../.gitconfig
 }
 
 # Install all the common packages.
