@@ -1,5 +1,6 @@
-/js/dist
-node_modules
+.cache
 .firebaserc
 .idea
+/js/dist
 /third_party/docsite/src/content/refdocs
+node_modules
