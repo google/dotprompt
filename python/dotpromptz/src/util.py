@@ -15,19 +15,20 @@ limitations under the License.
 """
 
 
-def removeUndefinedFields(obj):
+def remove_undefined_fields(obj):
     """
-    Recursively removes None values from dictionaries, lists, and nested structures.
+    Recursively removes None values from dictionaries, lists,
+    and nested structures.
     """
-    if obj is None or not isinstance(obj, (dict, list)):
+    if obj is None or not isinstance(obj, dict | list):
         return obj
 
     if isinstance(obj, list):
-        return [removeUndefinedFields(item) for item in obj]
+        return [remove_undefined_fields(item) for item in obj]
 
     result = {}
     for key, value in obj.items():
         if value is not None:
-            result[key] = removeUndefinedFields(value)
+            result[key] = remove_undefined_fields(value)
 
     return result
