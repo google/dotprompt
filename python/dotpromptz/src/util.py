@@ -15,20 +15,19 @@ limitations under the License.
 """
 
 
-def remove_undefined_fields(obj):
+from typing import Any, Dict, List, Union
+
+def remove_undefined_fields(obj: Union[Dict[str, Any], List[Any], None]) -> Union[Dict[str, Any], List[Any], None]:
     """
-    Recursively removes None values from dictionaries, lists,
-    and nested structures.
+    Recursively removes None values from dictionaries, lists, and nested structures.
     """
-    if obj is None or not isinstance(obj, dict | list):
+    if obj is None or not isinstance(obj, (dict, list)):
         return obj
 
+    if isinstance(obj, dict):
+        return {k: remove_undefined_fields(v) for k, v in obj.items() if v is not None}
+
     if isinstance(obj, list):
-        return [remove_undefined_fields(item) for item in obj]
+        return [remove_undefined_fields(v) for v in obj if v is not None]
 
-    result = {}
-    for key, value in obj.items():
-        if value is not None:
-            result[key] = remove_undefined_fields(value)
-
-    return result
+    return obj
