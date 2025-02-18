@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import type { RenderedPrompt, Part, Message } from "../types.js";
+import type { Message, Part, RenderedPrompt } from '../types.js';
 
 export interface GeminiContent {
-  role: "user" | "model";
+  role: 'user' | 'model';
   parts: Array<
     | {
         text: string;
@@ -41,22 +41,22 @@ export interface GeminiTool {
 
 export interface GeminiSafetySetting {
   category:
-    | "HARM_CATEGORY_HARASSMENT"
-    | "HARM_CATEGORY_HATE_SPEECH"
-    | "HARM_CATEGORY_SEXUALLY_EXPLICIT"
-    | "HARM_CATEGORY_DANGEROUS_CONTENT";
+    | 'HARM_CATEGORY_HARASSMENT'
+    | 'HARM_CATEGORY_HATE_SPEECH'
+    | 'HARM_CATEGORY_SEXUALLY_EXPLICIT'
+    | 'HARM_CATEGORY_DANGEROUS_CONTENT';
   threshold:
-    | "BLOCK_NONE"
-    | "BLOCK_LOW_AND_ABOVE"
-    | "BLOCK_MEDIUM_AND_ABOVE"
-    | "BLOCK_HIGH_AND_ABOVE";
+    | 'BLOCK_NONE'
+    | 'BLOCK_LOW_AND_ABOVE'
+    | 'BLOCK_MEDIUM_AND_ABOVE'
+    | 'BLOCK_HIGH_AND_ABOVE';
 }
 
 export interface GeminiRequest {
   model: string;
   request: {
     contents: GeminiContent[];
-    systemInstruction?: { parts: GeminiContent["parts"] };
+    systemInstruction?: { parts: GeminiContent['parts'] };
     tools?: GeminiTool;
     safetySettings?: GeminiSafetySetting[];
     generationConfig?: {
@@ -70,15 +70,18 @@ export interface GeminiRequest {
   };
 }
 
-function convertRole(role: Message["role"]): GeminiContent["role"] {
-  if (role === "user") return "user";
-  return "model";
+function convertRole(role: Message['role']): GeminiContent['role'] {
+  if (role === 'user') return 'user';
+  return 'model';
 }
 
-function extractBase64FromDataUrl(dataUrl: string): { mimeType: string; data: string } {
+function extractBase64FromDataUrl(dataUrl: string): {
+  mimeType: string;
+  data: string;
+} {
   const matches = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
   if (!matches) {
-    throw new Error("Invalid data URL format");
+    throw new Error('Invalid data URL format');
   }
   return {
     mimeType: matches[1],
@@ -86,14 +89,14 @@ function extractBase64FromDataUrl(dataUrl: string): { mimeType: string; data: st
   };
 }
 
-function convertContent(parts: Part[]): GeminiContent["parts"] {
-  const result: GeminiContent["parts"] = [];
+function convertContent(parts: Part[]): GeminiContent['parts'] {
+  const result: GeminiContent['parts'] = [];
 
   for (const part of parts) {
     if (part.text) {
       result.push({ text: part.text });
     } else if (part.media) {
-      if (part.media.url.startsWith("data:")) {
+      if (part.media.url.startsWith('data:')) {
         const { mimeType, data } = extractBase64FromDataUrl(part.media.url);
         result.push({
           inlineData: {
@@ -104,7 +107,7 @@ function convertContent(parts: Part[]): GeminiContent["parts"] {
       } else {
         // For non-data URLs, we might need to fetch and convert to base64
         // This would require additional handling
-        console.warn("Non-data URLs are not supported for media content");
+        console.warn('Non-data URLs are not supported for media content');
       }
     }
   }
@@ -126,17 +129,17 @@ function convertTools(prompt: RenderedPrompt): GeminiTool | undefined {
 
 export function toGeminiRequest(source: RenderedPrompt): GeminiRequest {
   const contents: GeminiContent[] = [];
-  const systemInstruction: { parts: GeminiContent["parts"] } = { parts: [] };
+  const systemInstruction: { parts: GeminiContent['parts'] } = { parts: [] };
 
   for (const msg of source.messages) {
     // Handle system messages separately
-    if (msg.role === "system") {
+    if (msg.role === 'system') {
       systemInstruction.parts.push(...convertContent(msg.content));
       continue;
     }
 
     // Skip tool responses as they're handled differently in Gemini
-    if (msg.role === "tool") continue;
+    if (msg.role === 'tool') continue;
 
     const content: GeminiContent = {
       role: convertRole(msg.role),
@@ -146,7 +149,7 @@ export function toGeminiRequest(source: RenderedPrompt): GeminiRequest {
     contents.push(content);
   }
 
-  const request: GeminiRequest["request"] = {
+  const request: GeminiRequest['request'] = {
     contents,
   };
 

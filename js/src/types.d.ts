@@ -40,7 +40,8 @@ export interface PromptData extends PromptRef {
   source: string;
 }
 
-export interface PromptMetadata<ModelConfig = Record<string, any>> extends HasMetadata {
+export interface PromptMetadata<ModelConfig = Record<string, any>>
+  extends HasMetadata {
   /** The name of the prompt. */
   name?: string;
   /** The variant name for the prompt. */
@@ -68,7 +69,7 @@ export interface PromptMetadata<ModelConfig = Record<string, any>> extends HasMe
   /** Defines the expected model output format. */
   output?: {
     /** Desired output format for this prompt. */
-    format?: string | "json" | "text";
+    format?: string | 'json' | 'text';
     /** Schema defining the output structure. */
     schema?: Schema;
   };
@@ -101,16 +102,20 @@ interface EmptyPart extends HasMetadata {
   toolResponse?: never;
 }
 
-export type TextPart = Omit<EmptyPart, "text"> & { text: string };
-export type DataPart = Omit<EmptyPart, "data"> & { data: Record<string, any> };
-export type MediaPart = Omit<EmptyPart, "media"> & { media: { url: string; contentType?: string } };
-export type ToolRequestPart<Input = any> = Omit<EmptyPart, "toolRequest"> & {
+export type TextPart = Omit<EmptyPart, 'text'> & { text: string };
+export type DataPart = Omit<EmptyPart, 'data'> & { data: Record<string, any> };
+export type MediaPart = Omit<EmptyPart, 'media'> & {
+  media: { url: string; contentType?: string };
+};
+export type ToolRequestPart<Input = any> = Omit<EmptyPart, 'toolRequest'> & {
   toolRequest: { name: string; input?: Input; ref?: string };
 };
-export type ToolResponsePart<Output = any> = Omit<EmptyPart, "toolResponse"> & {
+export type ToolResponsePart<Output = any> = Omit<EmptyPart, 'toolResponse'> & {
   toolResponse: { name: string; output?: Output; ref?: string };
 };
-export type PendingPart = EmptyPart & { metadata: { pending: true; [key: string]: any } };
+export type PendingPart = EmptyPart & {
+  metadata: { pending: true; [key: string]: any };
+};
 export type Part =
   | TextPart
   | DataPart
@@ -120,7 +125,7 @@ export type Part =
   | PendingPart;
 
 export interface Message extends HasMetadata {
-  role: "user" | "model" | "tool" | "system";
+  role: 'user' | 'model' | 'tool' | 'system';
   content: Part[];
 }
 
@@ -153,18 +158,18 @@ export type JSONSchema = any;
  * an underlying JSON schema, utilized for shorthand to a schema library
  * provided by an external tool.
  **/
-export interface SchemaResolver {
-  (schemaName: string): JSONSchema | null | Promise<JSONSchema | null>;
-}
+export type SchemaResolver = (
+  schemaName: string
+) => JSONSchema | null | Promise<JSONSchema | null>;
 
 /**
  * SchemaResolver is a function that can resolve a provided tool name to
  * an underlying ToolDefinition, utilized for shorthand to a tool registry
  * provided by an external library.
  **/
-export interface ToolResolver {
-  (toolName: string): ToolDefinition | null | Promise<ToolDefinition | null>;
-}
+export type ToolResolver = (
+  toolName: string
+) => ToolDefinition | null | Promise<ToolDefinition | null>;
 
 /**
  * RenderedPrompt is the final result of rendering a Dotprompt template.
@@ -182,7 +187,10 @@ export interface RenderedPrompt<ModelConfig = Record<string, any>>
  * a rendered prompt result.
  */
 export interface PromptFunction<ModelConfig = Record<string, any>> {
-  (data: DataArgument, options?: PromptMetadata<ModelConfig>): Promise<RenderedPrompt<ModelConfig>>;
+  (
+    data: DataArgument,
+    options?: PromptMetadata<ModelConfig>
+  ): Promise<RenderedPrompt<ModelConfig>>;
   prompt: ParsedPrompt<ModelConfig>;
 }
 
@@ -191,7 +199,10 @@ export interface PromptFunction<ModelConfig = Record<string, any>> {
  * a rendered prompt result after loading a prompt via reference.
  */
 export interface PromptRefFunction<ModelConfig = Record<string, any>> {
-  (data: DataArgument, options?: PromptMetadata<ModelConfig>): Promise<RenderedPrompt<ModelConfig>>;
+  (
+    data: DataArgument,
+    options?: PromptMetadata<ModelConfig>
+  ): Promise<RenderedPrompt<ModelConfig>>;
   promptRef: PromptRef;
 }
 
@@ -224,9 +235,15 @@ export interface PromptStore {
     cursor?: string;
   }>;
   /** Retrieve a prompt from the store.  */
-  load(name: string, options?: { variant?: string; version?: string }): Promise<PromptData>;
+  load(
+    name: string,
+    options?: { variant?: string; version?: string }
+  ): Promise<PromptData>;
   /** Retrieve a partial from the store. */
-  loadPartial(name: string, options?: { variant?: string; version?: string }): Promise<PromptData>;
+  loadPartial(
+    name: string,
+    options?: { variant?: string; version?: string }
+  ): Promise<PromptData>;
 }
 
 /**

@@ -1,4 +1,9 @@
-/js/dist
-node_modules
+.DS_Store
+.cache
 .firebaserc
+.idea
+/js/dist
 /third_party/docsite/src/content/refdocs
+bazel-*
+node_modules
+site/

@@ -1,4 +1,15 @@
-# Dotprompt: Executable GenAI Prompt Templates
+# Dotprompt
+
+A **prompt** is an instruction provided to a model. Prompt engineering involves
+tweaking these prompts to attempt to coax the model to do what you want. A
+**prompt action** is used to render a prompt template producing a request that
+can be passed to a **model**. Prompt actions are defined as either code or as
+configuration files bearing the `.prompt` (read "dotprompt") extension.
+
+Dotprompt is designed around the premise that **prompts are code**.  This
+decouples prompt engineering from application development and allows prompt
+engineers to rapidly iterate and test prompts independently of application
+development.
 
 **Dotprompt** is an executable prompt template file format for Generative AI. It
 is designed to be agnostic to programming language and model provider to allow
@@ -51,7 +62,8 @@ input:
     text: string
 output:
   format: json
-    schema: name?: string, the full name of the person
+  schema:
+    name?: string, the full name of the person
     age?: number, the age of the person
     occupation?: string, the person's occupation
 ---
@@ -75,60 +87,5 @@ When executed, this prompt would take a text input, analyze it using the
 specified AI model, and return a structured JSON object with the extracted
 information.
 
-## Installation
-
-The remainder of this getting started guide will use the reference Dotprompt
-implementation included as part of the [Firebase
-Genkit](https://github.com/firebase/genkit) GenAI SDK. To use other
-implementations of Dotprompt, see the [list of
-Implementations](/implementations).
-
-First, install the necessary packages using NPM. Here we'll be using the [Gemini
-API](https://ai.google.dev/gemini-api) from Google as our model implementation:
-
-```bash
-npm i genkit @genkit-ai/googleai
-```
-
-After installation, you'll need to set up your environment and initialize the
-Dotprompt system. Here's a basic setup:
-
-```typescript
-import { genkit } from "genkit";
-import { googleAI } from "@genkit-ai/googleai";
-
-// Configure Genkit with the GoogleAI provider and Dotprompt plugin
-const ai = genkit({
-  plugins: [googleAI()],
-  // promptDir: 'prompts', /* this is the default value */
-});
-
-// Now you're ready to use Dotprompt!
-```
-
-**Note:** You will need to set your Google AI API key to the `GOOGLE_API_KEY`
-environment variable or pass it as an option to the `googleAI()` plugin
-configuration.
-
-With this setup, you can now create `.prompt` files in your project and use them
-in your code. For example, if you have a file named `extractInfo.prompt` with
-the content from the earlier example, you can use it like this:
-
-```typescript
-const extractInfo = ai.prompt("extractInfo");
-
-const { output } = await extractInfo({
-  text: "John Doe is a 35-year-old software engineer living in New York.",
-});
-
-console.log(output);
-// Output: { "name": "John Doe", "age": 35, "occupation": "software engineer" }
-```
-
-This setup allows you to leverage the power of Dotprompt, making your AI
-interactions more structured, reusable, and maintainable.
-
-By following these steps, you'll have a basic Dotprompt setup ready to go. From
-here, you can create more complex prompts, integrate them into your application,
-and start harnessing the full power of generative AI in a structured,
-template-driven way.
+You can use `.prompt` files with [Firebase
+Genkit](https://firebase.google.com/docs/genkit/dotprompt).

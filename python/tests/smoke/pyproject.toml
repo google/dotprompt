@@ -23,7 +23,7 @@ version = "0.1.0"
 
 [tool.pytest]
 python_files = ["**/*_test.py"]
-testpaths = ["."]
+testpaths    = ["."]
 
 [tool.hatch.build.targets.wheel]
 packages = ["smoke"]

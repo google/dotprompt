@@ -1,0 +1,72 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "organizeImports": {
+    "enabled": true
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true
+    }
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "ignore": [
+      "**/.cache/**",
+      "**/.dist/**",
+      "**/.eggs/**",
+      "**/.idea/**",
+      "**/.mypy_cache/**",
+      "**/.next/**",
+      "**/.output/**",
+      "**/.pytest_cache/**",
+      "**/.ruff_cache/**",
+      "**/.venv/**",
+      "**/.wxt/**",
+      "**/__pycache__/**",
+      "**/coverage/**",
+      "**/develop-eggs/**",
+      "**/dist/**",
+      "**/manifest.*.json",
+      "**/node_modules/**",
+      ".nx/**",
+      ".trunk/**",
+      "bazel-*/**",
+      "go/**",
+      "node_modules/**",
+      "python/**",
+      "third_party/**"
+    ]
+  },
+  "formatter": {
+    "useEditorconfig": true
+  },
+  "vcs": {
+    "clientKind": "git",
+    "defaultBranch": "main",
+    "enabled": true,
+    "useIgnoreFile": true
+  },
+  "javascript": {
+    "formatter": {
+      "arrowParentheses": "always",
+      "attributePosition": "auto",
+      "bracketSpacing": true,
+      "jsxQuoteStyle": "double",
+      "lineEnding": "lf",
+      "lineWidth": 80,
+      "quoteStyle": "single",
+      "semicolons": "always",
+      "trailingCommas": "es5"
+    }
+  },
+  "json": {
+    "formatter": {
+      "indentStyle": "space",
+      "indentWidth": 2,
+      "lineEnding": "lf",
+      "lineWidth": 80,
+      "trailingCommas": "none"
+    }
+  }
+}

@@ -2,11 +2,14 @@
 
 ## Setup
 
+From the top level directory:
+
 ```bash
-python/bin/setup
+bin/setup
 ```
 
 ## Run tests
+
 ```bash
 # To run tests.
 uv run --directory python pytest .

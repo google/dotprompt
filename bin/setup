@@ -5,6 +5,10 @@
 # Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 
+# TODO: This script is nowhere close to perfect. At a later date, we can replace
+# this with something like nix to have a reproducible environment. For now this
+# is a convenience script just to get eng started as quickly as possible.
+
 if ((EUID == 0)) && [[ -z ${DANGEROUSLY_RUN_AS_ROOT+x} ]]; then
   echo "Please do not run as root unless DANGEROUSLY_RUN_AS_ROOT is set."
   exit 1
@@ -13,6 +17,10 @@ fi
 [[ ${EUID} != 0 ]] && set -euo pipefail
 
 TOP_DIR=$(git rev-parse --show-toplevel)
+
+PNPM_VERSION="10.2.0"
+NODE_VERSION="22" # See: https://github.com/firebase/genkit/issues/1995
+NVM_VERSION="0.40.1"
 
 AUDIENCE="eng"
 while getopts ":a:" opt; do
@@ -71,6 +79,7 @@ function dotpromptz::preconfigure_environment() {
   git clean -Xfd
   dotpromptz::update_path "$HOME/.cargo/bin"
   dotpromptz::update_path "$HOME/.local/bin"
+  dotpromptz::update_path "$HOME/.local/share/pnpm"
   dotpromptz::update_path "$HOME/go/bin"
   dotpromptz::update_path "$HOME/google-cloud-sdk/bin"
 }
@@ -86,17 +95,24 @@ function dotpromptz::install_prerequisites() {
       fd \
       gh \
       go \
-      node \
       python3 \
       ripgrep
   elif [[ -x "$(command -v apt)" ]]; then
+    # Check if the OS is Ubuntu 22.04 (or a derivative) since some of our eng
+    # use it.
+    if lsb_release -a | grep -q "Description:.*Ubuntu 22.04"; then
+      sudo add-apt-repository -y ppa:longsleep/golang-backports
+      sudo apt update
+      sudo apt install -y golang-go
+    else
+      sudo apt install -y golang
+    fi
+
     # Debian-based systems.
     sudo apt install -y \
       curl \
       fd-find \
       gh \
-      golang \
-      nodejs \
       python3 \
       ripgrep
   elif [[ -x "$(command -v dnf)" ]]; then
@@ -106,32 +122,60 @@ function dotpromptz::install_prerequisites() {
       fd-find \
       gh \
       go \
-      node \
       python3 \
       ripgrep
   else
     echo "Unsupported OS. Please install tools manually."
   fi
 
+  dotpromptz::install_rust
+  dotpromptz::install_uv
+  dotpromptz::install_and_configure_nvm
+  dotpromptz::install_pnpm
+}
+
+function dotpromptz::install_rust() {
   # Install rust.
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
   rustup update
+}
 
-  # Install uv for Python versioning, packaging, and workspace management.
+# Install uv for Python versioning, packaging, and workspace management.
+function dotpromptz::install_uv() {
   curl -LsSf https://astral.sh/uv/install.sh | sh
 }
 
+# Install pnpm for JavaScript package management.
+# See: https://github.com/pnpm/pnpm/issues/6217
+function dotpromptz::install_pnpm() {
+  curl -fsSL https://get.pnpm.io/install.sh |
+    env ENV="$HOME/.bashrc" \
+      SHELL="$(which bash)" \
+      PNPM_VERSION="${PNPM_VERSION}" \
+      bash -
+}
+
+# Install node version manager.
+function dotpromptz::install_and_configure_nvm() {
+  export NVM_DIR="$HOME/.config/nvm"
+  mkdir -p "$NVM_DIR"
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh | bash
+  [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"                   # This loads nvm
+  [ -s "$NVM_DIR/bash_completion" ] && source "$NVM_DIR/bash_completion" # This loads nvm bash_completion
+  nvm install "${NODE_VERSION}"
+  nvm use "${NODE_VERSION}"
+  nvm alias default "${NODE_VERSION}"
+}
 # Install the Google Cloud SDK.
 function dotpromptz::install_google_cloud_sdk() {
   # This depends on Python 3.11 and installs it for the user on some systems.
   if command -v gcloud &>/dev/null; then
     gcloud config set disable_usage_reporting true
-    gcloud components update
-    return 0
+    yes | gcloud components update
+  else
+    curl https://sdk.cloud.google.com | bash -s -- --disable-prompts
+    gcloud config set disable_usage_reporting true
   fi
-
-  curl https://sdk.cloud.google.com | bash -s -- --disable-prompts
-  gcloud config set disable_usage_reporting true
 }
 
 # Install all the required tools that have been written in Go.
@@ -157,6 +201,7 @@ function dotpromptz::install_go_cli_tools_eng() {
 function dotpromptz::install_cargo_cli_tools_eng() {
   cargo install --locked \
     convco \
+    pylyzer \
     rust-parallel \
     taplo-cli
 }
@@ -186,9 +231,17 @@ function dotpromptz::install_docs_cli_tools() {
     --with mkdocstrings[python]
 }
 
+# Configure the commit message template.
+function dotpromptz::configure_commit_template() {
+  echo "Setting up commit message template..."
+  ln -sf "${TOP_DIR}/COMMIT_MESSAGE_TEMPLATE" "${TOP_DIR}/.git/COMMIT_MESSAGE_TEMPLATE"
+  git config commit.template "${TOP_DIR}/.git/COMMIT_MESSAGE_TEMPLATE"
+}
+
 # Install pre-commit hooks.
 function dotpromptz::install_pre_commit_hooks() {
-  captainhook install -f -c "${TOP_DIR}/python/captainhook.json"
+  dotpromptz::configure_commit_template
+  captainhook install -f -c "${TOP_DIR}/captainhook.json"
 }
 
 # Install all the common packages.
@@ -209,8 +262,8 @@ function dotpromptz::install_eng_packages() {
   dotpromptz::install_common_packages
   dotpromptz::install_go_cli_tools_eng
   dotpromptz::install_cargo_cli_tools_eng
-  dotpromptz::install_google_cloud_sdk
   dotpromptz::install_pre_commit_hooks
+  dotpromptz::install_google_cloud_sdk
 }
 
 # Entry point for the setup script.

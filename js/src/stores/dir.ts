@@ -14,10 +14,15 @@
  * limitations under the License.
  */
 
-import { promises as fs } from "fs";
-import path from "path";
-import { createHash } from "crypto";
-import { PromptData, PromptRef, PromptStoreWritable, PartialRef } from "../types";
+import { createHash } from 'crypto';
+import { promises as fs } from 'fs';
+import path from 'path';
+import type {
+  PartialRef,
+  PromptData,
+  PromptRef,
+  PromptStoreWritable,
+} from '../types';
 
 interface DirStoreOptions {
   /** Base directory to read prompts from */
@@ -32,14 +37,17 @@ export class DirStore implements PromptStoreWritable {
   }
 
   private async readPromptFile(filePath: string): Promise<string> {
-    return fs.readFile(filePath, "utf-8");
+    return fs.readFile(filePath, 'utf-8');
   }
 
   private calculateVersion(content: string): string {
-    return createHash("sha1").update(content).digest("hex").substring(0, 8);
+    return createHash('sha1').update(content).digest('hex').substring(0, 8);
   }
 
-  private parsePromptFilename(filename: string): { name: string; variant?: string } {
+  private parsePromptFilename(filename: string): {
+    name: string;
+    variant?: string;
+  } {
     const match = filename.match(/^([^.]+)(?:\.([^.]+))?\.prompt$/);
     if (!match) throw new Error(`Invalid prompt filename: ${filename}`);
 
@@ -48,10 +56,13 @@ export class DirStore implements PromptStoreWritable {
   }
 
   private isPartial(filename: string): boolean {
-    return filename.startsWith("_");
+    return filename.startsWith('_');
   }
 
-  private async scanDirectory(dir: string = "", results: string[] = []): Promise<string[]> {
+  private async scanDirectory(
+    dir = '',
+    results: string[] = []
+  ): Promise<string[]> {
     const fullPath = path.join(this.directory, dir);
     const entries = await fs.readdir(fullPath, { withFileTypes: true });
 
@@ -60,7 +71,7 @@ export class DirStore implements PromptStoreWritable {
 
       if (entry.isDirectory()) {
         await this.scanDirectory(relativePath, results);
-      } else if (entry.isFile() && entry.name.endsWith(".prompt")) {
+      } else if (entry.isFile() && entry.name.endsWith('.prompt')) {
         results.push(relativePath);
       }
     }
@@ -79,8 +90,11 @@ export class DirStore implements PromptStoreWritable {
       if (!this.isPartial(path.basename(file))) {
         const { name, variant } = this.parsePromptFilename(path.basename(file));
         const dirPath = path.dirname(file);
-        const fullName = dirPath !== "." ? `${dirPath.replace(/\\/g, "/")}/${name}` : name;
-        const content = await this.readPromptFile(path.join(this.directory, file));
+        const fullName =
+          dirPath !== '.' ? `${dirPath.replace(/\\/g, '/')}/${name}` : name;
+        const content = await this.readPromptFile(
+          path.join(this.directory, file)
+        );
         const version = this.calculateVersion(content);
 
         prompts.push({
@@ -103,10 +117,15 @@ export class DirStore implements PromptStoreWritable {
 
     for (const file of files) {
       if (this.isPartial(path.basename(file))) {
-        const { name, variant } = this.parsePromptFilename(path.basename(file).slice(1));
+        const { name, variant } = this.parsePromptFilename(
+          path.basename(file).slice(1)
+        );
         const dirPath = path.dirname(file);
-        const fullName = dirPath !== "." ? `${dirPath.replace(/\\/g, "/")}/${name}` : name;
-        const content = await this.readPromptFile(path.join(this.directory, file));
+        const fullName =
+          dirPath !== '.' ? `${dirPath.replace(/\\/g, '/')}/${name}` : name;
+        const content = await this.readPromptFile(
+          path.join(this.directory, file)
+        );
         const version = this.calculateVersion(content);
 
         partials.push({
@@ -120,11 +139,16 @@ export class DirStore implements PromptStoreWritable {
     return { partials };
   }
 
-  async load(name: string, options?: { variant?: string; version?: string }): Promise<PromptData> {
+  async load(
+    name: string,
+    options?: { variant?: string; version?: string }
+  ): Promise<PromptData> {
     const variant = options?.variant;
     const dirName = path.dirname(name);
     const baseName = path.basename(name);
-    const fileName = variant ? `${baseName}.${variant}.prompt` : `${baseName}.prompt`;
+    const fileName = variant
+      ? `${baseName}.${variant}.prompt`
+      : `${baseName}.prompt`;
     const filePath = path.join(this.directory, dirName, fileName);
 
     try {
@@ -157,7 +181,9 @@ export class DirStore implements PromptStoreWritable {
     const variant = options?.variant;
     const dirName = path.dirname(name);
     const baseName = path.basename(name);
-    const fileName = variant ? `_${baseName}.${variant}.prompt` : `_${baseName}.prompt`;
+    const fileName = variant
+      ? `_${baseName}.${variant}.prompt`
+      : `_${baseName}.prompt`;
     const filePath = path.join(this.directory, dirName, fileName);
 
     try {
@@ -166,7 +192,9 @@ export class DirStore implements PromptStoreWritable {
 
       // If a specific version was requested, verify it matches
       if (options?.version && options.version !== version) {
-        throw new Error(`Version mismatch: requested ${options.version} but found ${version}`);
+        throw new Error(
+          `Version mismatch: requested ${options.version} but found ${version}`
+        );
       }
 
       return {
@@ -182,16 +210,18 @@ export class DirStore implements PromptStoreWritable {
   }
 
   async save(prompt: PromptData): Promise<void> {
-    if (!prompt.name) throw new Error("Prompt name is required");
+    if (!prompt.name) throw new Error('Prompt name is required');
 
     const dirName = path.dirname(prompt.name);
     const baseName = path.basename(prompt.name);
-    const fileName = prompt.variant ? `${baseName}.${prompt.variant}.prompt` : `${baseName}.prompt`;
+    const fileName = prompt.variant
+      ? `${baseName}.${prompt.variant}.prompt`
+      : `${baseName}.prompt`;
     const filePath = path.join(this.directory, dirName, fileName);
 
     try {
       await fs.mkdir(path.dirname(filePath), { recursive: true });
-      await fs.writeFile(filePath, prompt.source, "utf-8");
+      await fs.writeFile(filePath, prompt.source, 'utf-8');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to save prompt ${prompt.name}: ${message}`);
@@ -202,7 +232,9 @@ export class DirStore implements PromptStoreWritable {
     const variant = options?.variant;
     const dirName = path.dirname(name);
     const baseName = path.basename(name);
-    const fileName = variant ? `${baseName}.${variant}.prompt` : `${baseName}.prompt`;
+    const fileName = variant
+      ? `${baseName}.${variant}.prompt`
+      : `${baseName}.prompt`;
     const filePath = path.join(this.directory, dirName, fileName);
 
     try {

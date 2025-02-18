@@ -15,7 +15,7 @@
  */
 
 export function removeUndefinedFields(obj: any): any {
-  if (obj === null || typeof obj !== "object") {
+  if (obj === null || typeof obj !== 'object') {
     return obj;
   }
 

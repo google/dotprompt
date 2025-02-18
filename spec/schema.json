@@ -20,7 +20,7 @@
       "resolverSchemas": {
         "type": "object",
         "description": "Registry of schemas that are provided by a schema resolver.",
-        "additionalProperties": {"type": "object"}
+        "additionalProperties": { "type": "object" }
       },
       "partials": {
         "type": "object",
@@ -32,7 +32,7 @@
       "resolverPartials": {
         "type": "object",
         "description": "Registry of partials that are provided by a schema resolver.",
-        "additionalProperties": {"type": "string"}
+        "additionalProperties": { "type": "string" }
       },
       "tests": {
         "type": "array",

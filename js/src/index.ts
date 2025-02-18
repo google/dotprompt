@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-import { Dotprompt, DotpromptOptions } from "./dotprompt.js";
-export { picoschema, PicoschemaOptions, PicoschemaParser } from "./picoschema.js";
-export type * from "./types.js";
+import { Dotprompt, DotpromptOptions } from './dotprompt.js';
+export {
+  picoschema,
+  PicoschemaOptions,
+  PicoschemaParser,
+} from './picoschema.js';
+export type * from './types.js';
 export { Dotprompt, DotpromptOptions };
