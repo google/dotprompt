@@ -14,10 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-
 from typing import Any, Dict, List, Union
 
-def remove_undefined_fields(obj: Union[Dict[str, Any], List[Any], None]) -> Union[Dict[str, Any], List[Any], None]:
+
+def remove_undefined_fields(
+    obj: Union[Dict[str, Any], List[Any], None],
+) -> Union[Dict[str, Any], List[Any], None]:
     """
     Recursively removes None values from dictionaries, lists, and nested structures.
     """
@@ -25,7 +27,11 @@ def remove_undefined_fields(obj: Union[Dict[str, Any], List[Any], None]) -> Unio
         return obj
 
     if isinstance(obj, dict):
-        return {k: remove_undefined_fields(v) for k, v in obj.items() if v is not None}
+        return {
+            k: remove_undefined_fields(v)
+            for k, v in obj.items()
+            if v is not None
+        }
 
     if isinstance(obj, list):
         return [remove_undefined_fields(v) for v in obj if v is not None]
