@@ -1,0 +1,75 @@
+# Copyright 2025 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
+# Tests for the {{section}} helper which allows organizing content into
+# named sections with metadata for structural organization.
+
+# Tests that sections are properly rendered in sequence with
+# appropriate metadata markers.
+- name: basic_section
+  template: |
+    {{section "intro"}}
+    Hello world
+    {{section "main"}}
+    Main content
+    {{section "conclusion"}}
+    Goodbye
+  tests:
+    - desc: renders sequential sections with proper metadata and content boundaries
+      expect:
+        messages:
+          - role: user
+            content:
+              # Intro section start marker
+              - metadata:
+                  pending: true
+                  purpose: "intro"
+              # Intro section content
+              - text: "\nHello world\n"
+              # Main section start marker
+              - metadata:
+                  pending: true
+                  purpose: "main"
+              # Main section content
+              - text: "\nMain content\n"
+              # Conclusion section start marker
+              - metadata:
+                  pending: true
+                  purpose: "conclusion"
+              # Conclusion section content
+              - text: "\nGoodbye\n"
+
+# Tests that sections can be nested and reopened, maintaining proper
+# structure and metadata throughout.
+- name: nested_sections
+  template: |
+    {{section "outer"}}
+    Outer content
+    {{section "inner"}}
+    Inner content
+    {{section "outer"}}
+    More outer content
+  tests:
+    - desc: handles nested and reopened sections with proper metadata boundaries
+      expect:
+        messages:
+          - role: user
+            content:
+              # First outer section start
+              - metadata:
+                  pending: true
+                  purpose: "outer"
+              # First outer section content
+              - text: "\nOuter content\n"
+              # Inner section start
+              - metadata:
+                  pending: true
+                  purpose: "inner"
+              # Inner section content
+              - text: "\nInner content\n"
+              # Second outer section start
+              - metadata:
+                  pending: true
+                  purpose: "outer"
+              # Second outer section content
+              - text: "\nMore outer content\n"

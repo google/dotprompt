@@ -1,6 +1,11 @@
 # Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 
+# Tests for the {{media}} helper which formats media URLs with content type
+# information in message content.
+
+# Tests that media URLs are properly formatted with content type in the
+# message content array.
 - name: basic
   template: "{{media contentType=contentType url=url}}"
   tests:

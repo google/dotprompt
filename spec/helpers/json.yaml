@@ -1,6 +1,11 @@
 # Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 
+# Tests for the {{json}} helper which serializes JavaScript objects into
+# JSON strings with optional indentation.
+
+# Tests basic JSON serialization without indentation, ensuring objects
+# are properly stringified in a compact format.
 - name: basic
   template: "{{json this}}"
   tests:
@@ -10,6 +15,9 @@
         messages:
           - role: user
             content: [{ text: '{"test":true}' }]
+
+# Tests JSON serialization with custom indentation, ensuring proper
+# formatting for improved readability.
 - name: indented
   template: "{{json this indent=2}}"
   tests:

@@ -1,0 +1,55 @@
+# Copyright 2025 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
+# Tests for the {{#ifEquals}} helper which performs strict equality comparison
+# between two values and conditionally renders content based on the result.
+#
+# Note: This helper uses strict equality (===) rather than loose equality (==)
+# to ensure consistent behavior across different language runtimes (JavaScript,
+# Go, Python). This means that values of different types are always considered
+# unequal, even if they could be coerced to the same value (e.g., 5 !== "5").
+
+# Tests basic equality comparison with same-type values, verifying that
+# the appropriate branch is rendered based on strict equality.
+- name: basic
+  template: |
+    {{#ifEquals value1 value2}}
+    Values are equal
+    {{else}}
+    Values are not equal
+    {{/ifEquals}}
+  tests:
+    - desc: renders true branch when values are equal
+      data:
+        input: { value1: 5, value2: 5 }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Values are equal\n" }]
+
+    - desc: renders false branch when values are not equal
+      data:
+        input: { value1: 5, value2: 6 }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Values are not equal\n" }]
+
+# Tests that values of different types are considered unequal, even if they
+# could be coerced to the same value in some languages. This ensures consistent
+# behavior across different runtime environments.
+- name: type_safety
+  template: |
+    {{#ifEquals value1 value2}}
+    Values are equal
+    {{else}}
+    Values are not equal
+    {{/ifEquals}}
+  tests:
+    - desc: treats different types as not equal
+      data:
+        input: { value1: 5, value2: "5" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Values are not equal\n" }]

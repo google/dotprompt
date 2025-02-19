@@ -1,6 +1,11 @@
 # Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 
+# Tests for the {{role}} helper which manages message roles in conversations,
+# supporting system, user, and model roles with proper message segmentation.
+
+# Tests role switching between system and user roles while preserving
+# variable substitution within each role's content.
 - name: system_role
   template: |
     {{role "system"}}{{systemGreeting}} from system
@@ -15,6 +20,9 @@
             { content: [{ text: "hi from system\n" }], role: "system" },
             { content: [{ text: "howdy from user\n" }], role: "user" },
           ]
+
+# Tests support for all available role types (system, user, model) and proper
+# message segmentation when switching roles.
 - name: all_roles
   template: |
     {{role "system"}}this is system
@@ -31,6 +39,9 @@
             { content: [{ text: "this is model\n" }], role: "model" },
             { content: [{ text: "this is user2\n" }], role: "user" },
           ]
+
+# Tests system prompt handling with existing message history, ensuring
+# proper ordering of system prompt and history.
 - name: system_only_prompt
   template: |
     {{role "system"}}This is the system prompt

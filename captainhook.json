@@ -31,6 +31,9 @@
           }
         },
         {
+          "run": "pnpm -C js install --frozen-lockfile"
+        },
+        {
           "run": "bin/fmt"
         },
         {
@@ -44,6 +47,9 @@
         },
         {
           "run": "bin/run_python_tests"
+        },
+        {
+          "run": "pnpm -C js run test"
         },
         {
           "run": "uv run mkdocs build"
@@ -68,6 +74,9 @@
           }
         },
         {
+          "run": "pnpm -C js install --frozen-lockfile"
+        },
+        {
           "run": "bin/fmt"
         },
         {
@@ -87,6 +96,9 @@
         },
         {
           "run": "bin/build_dists"
+        },
+        {
+          "run": "pnpm -C js run test"
         },
         {
           "run": ".hooks/commit-message-format-pre-push"

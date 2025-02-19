@@ -1,6 +1,11 @@
 # Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 
+# Tests for metadata handling in templates, including state access,
+# raw frontmatter, and extension field parsing.
+
+# Tests accessing state object values from metadata, including missing
+# values and nested objects.
 - name: metadata_state
   template: |
     Current count is {{@state.count}}
@@ -39,6 +44,9 @@
         messages:
           - role: user
             content: [{ text: "Current count is 100\nStatus is pending\n" }]
+
+# Tests that raw frontmatter is preserved alongside parsed frontmatter,
+# allowing access to both structured and unstructured metadata.
 - name: raw
   template: |
     ---
@@ -59,6 +67,9 @@
           config:
             temperature: 3
           custom: prop
+
+# Tests that extension fields are properly parsed and organized into
+# the ext object, maintaining their hierarchical structure.
 - name: ext
   template: |
     ---

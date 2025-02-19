@@ -1,6 +1,10 @@
 # Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 
+# Tests for partial templates, including basic inclusion, context passing,
+# and resolver-provided partials.
+
+# Tests basic partial inclusion without context.
 - name: basic_partial
   template: |
     {{> greeting}} This is the main template.
@@ -16,6 +20,7 @@
             content:
               [{ text: "Hello from a partial! This is the main template.\n" }]
 
+# Tests partial rendering with context variables passed from the main template.
 - name: partial_with_context
   template: |
     {{> userGreeting name=username}}
@@ -30,6 +35,7 @@
           - role: user
             content: [{ text: "Welcome back, Alice!" }]
 
+# Tests that partials can be provided by a resolver function.
 - name: resolved_partial
   template: |
     {{> resolved}}
@@ -42,6 +48,7 @@
           - role: user
             content: [{ text: "Hello from a resolved partial!" }]
 
+# Tests that resolver-provided partials can be nested within each other.
 - name: nested_resolved_partial
   template: |
     {{> resolvedOuter}}

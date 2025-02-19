@@ -51,7 +51,7 @@ export function ifEquals(
   arg2: any,
   options: Handlebars.HelperOptions
 ) {
-  return arg1 == arg2 ? options.fn(this) : options.inverse(this);
+  return arg1 === arg2 ? options.fn(this) : options.inverse(this);
 }
 
 export function unlessEquals(
@@ -60,5 +60,5 @@ export function unlessEquals(
   arg2: any,
   options: Handlebars.HelperOptions
 ) {
-  return arg1 != arg2 ? options.fn(this) : options.inverse(this);
+  return arg1 !== arg2 ? options.fn(this) : options.inverse(this);
 }

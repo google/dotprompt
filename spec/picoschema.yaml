@@ -1,6 +1,13 @@
 # Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 
+# Tests for the picoschema parser which converts simplified schema definitions
+# into full JSON Schema objects. The picoschema format provides a concise way
+# to define input and output schemas in templates.
+
+# Tests basic scalar type definition without a description.
+# This verifies that simple type names are correctly converted to
+# JSON Schema type definitions.
 - name: simple_scalar_no_description
   template: |
     ---
@@ -13,6 +20,9 @@
         messages: []
         output:
           schema: { type: string }
+
+# Tests that both input and output schemas can be defined in the same template.
+# This is common in templates that process data and return results.
 - name: input_and_output
   template: |
     ---
@@ -29,6 +39,10 @@
           schema: { type: string }
         input:
           schema: { type: string }
+
+# Tests scalar type definition with a description after a comma.
+# This verifies that descriptions are properly extracted and added
+# to the JSON Schema object.
 - name: simple_scalar_description
   template: |
     ---
@@ -41,6 +55,10 @@
         messages: []
         output:
           schema: { type: number, description: "the description" }
+
+# Tests that descriptions are correctly parsed even without whitespace
+# after the comma. This ensures the parser is resilient to different
+# formatting styles.
 - name: simple_scalar_description_no_whitespace
   template: |
     ---
@@ -53,6 +71,9 @@
         messages: []
         output:
           schema: { type: number, description: "the description" }
+
+# Tests that descriptions can contain commas, ensuring that only the first
+# comma is used to separate the type from the description.
 - name: simple_scalar_description_with_commas
   template: |
     ---
@@ -69,6 +90,9 @@
               type: number,
               description: "the description, which has, multiple commas",
             }
+
+# Tests that extra whitespace around the description is properly trimmed,
+# ensuring consistent output regardless of input formatting.
 - name: simple_scalar_description_extra_whitespace
   template: |
     ---
@@ -81,6 +105,9 @@
         messages: []
         output:
           schema: { type: number, description: "the description" }
+
+# Tests object type definition with multiple fields. This verifies that
+# nested field definitions are correctly converted to JSON Schema properties.
 - name: simple_object
   template: |
     ---
@@ -101,6 +128,9 @@
               field1: { type: boolean }
               field2: { type: string }
             required: ["field1", "field2"]
+
+# Tests that required fields are correctly marked in the JSON Schema.
+# Fields marked with an asterisk (*) are added to the required array.
 - name: required_field
   template: |
     ---
@@ -121,6 +151,9 @@
               req: { type: string, description: "required field" }
               nonreq: { type: [boolean, "null"], description: "optional field" }
             required: ["req"]
+
+# Tests array type definitions, ensuring that array items are properly
+# typed according to the specified schema.
 - name: array_of_scalars
   template: |
     ---
@@ -146,6 +179,9 @@
                 type: array
                 items: { type: number }
             required: ["tags", "vector"]
+
+# Tests complex nested structures with arrays and objects, verifying
+# that the full structure is correctly converted to JSON Schema.
 - name: nested_object_in_array_and_out
   template: |
     ---
@@ -181,6 +217,8 @@
                     nest2: { type: [boolean, "null"] }
             required: ["arr"]
 
+# Tests that JSON Schema type keywords are recognized and preserved,
+# allowing direct use of JSON Schema syntax when needed.
 - name: simple_json_schema_type
   template: |
     ---
@@ -196,6 +234,8 @@
           schema:
             type: string
 
+# Tests that properties can be inferred from the schema structure,
+# automatically generating the appropriate JSON Schema type definitions.
 - name: inferred_json_schema_from_properties
   template: |
     ---
@@ -214,6 +254,8 @@
             properties:
               foo: { type: string }
 
+# Tests enum field definitions, ensuring that enum values are correctly
+# captured in the JSON Schema.
 - name: enum_field
   template: |
     ---
@@ -234,6 +276,8 @@
                 enum: ["RED", "BLUE", "GREEN", null]
             additionalProperties: false
 
+# Tests the 'any' type definition, which allows any value to be used.
+# This should translate to removing type restrictions in the JSON Schema.
 - name: any_field
   template: |
     ---
@@ -255,6 +299,8 @@
             additionalProperties: false
             required: ["first"]
 
+# Tests that wildcard fields can be combined with specific fields,
+# allowing for flexible object structures with some defined properties.
 - name: wildcard_fields_with_other_fields
   template: |
     ---
@@ -275,6 +321,8 @@
             required: ["otherField"]
             type: object
 
+# Tests objects that only have wildcard fields, representing completely
+# flexible object structures.
 - name: wildcard_fields_without_other_fields
   template: |
     ---
@@ -291,6 +339,9 @@
             additionalProperties: { type: number, description: "lucky number" }
             properties: {}
             type: object
+
+# Tests that schema descriptions can override any existing descriptions,
+# allowing for more detailed documentation of schema elements.
 - name: named_schema_override_description
   template: |
     ---
@@ -309,6 +360,9 @@
           schema:
             type: number
             description: an overridden foo
+
+# Tests nested named schemas, ensuring that complex schema structures
+# can be built up from named components.
 - name: nested_named_schema
   template: |
     ---
