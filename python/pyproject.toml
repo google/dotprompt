@@ -111,4 +111,5 @@ skip-magic-trailing-comma = false
 [tool.mypy]
 disallow_incomplete_defs = true
 disallow_untyped_defs    = true
+strict                   = true
 warn_unused_configs      = true

@@ -31,10 +31,13 @@
           }
         },
         {
-          "run": "bin/fmt"
+          "run": "pnpm -C js install --frozen-lockfile"
         },
         {
-          "run": "bin/check_license"
+          "run": "scripts/fmt"
+        },
+        {
+          "run": "scripts/check_license"
         },
         {
           "run": "uv run --directory python ruff check --select I --fix ."
@@ -43,13 +46,19 @@
           "run": "uv run --directory python mypy ."
         },
         {
-          "run": "bin/run_python_tests"
+          "run": "scripts/run_python_tests"
+        },
+        {
+          "run": "scripts/run_go_tests"
+        },
+        {
+          "run": "pnpm -C js run test"
         },
         {
           "run": "uv run mkdocs build"
         },
         {
-          "run": "bin/build_dists"
+          "run": "scripts/build_dists"
         }
       ]
     },
@@ -68,10 +77,13 @@
           }
         },
         {
-          "run": "bin/fmt"
+          "run": "pnpm -C js install --frozen-lockfile"
         },
         {
-          "run": "bin/check_license"
+          "run": "scripts/fmt"
+        },
+        {
+          "run": "scripts/check_license"
         },
         {
           "run": "uv run --directory python ruff check --select I --fix ."
@@ -80,13 +92,19 @@
           "run": "uv run --directory python mypy ."
         },
         {
-          "run": "bin/run_python_tests"
+          "run": "scripts/run_python_tests"
+        },
+        {
+          "run": "scripts/run_go_tests"
         },
         {
           "run": "uv run mkdocs build"
         },
         {
-          "run": "bin/build_dists"
+          "run": "scripts/build_dists"
+        },
+        {
+          "run": "pnpm -C js run test"
         },
         {
           "run": ".hooks/commit-message-format-pre-push"

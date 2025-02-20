@@ -15,6 +15,12 @@ def test_package_names() -> None:
     assert dotpromptz_package_name() == 'dotpromptz'
 
 
+# TODO: Failing test on purpose to be removed after we complete
+# this runtime and stop skipping all failures.
+def test_skip_failures() -> None:
+    assert dotpromptz_package_name() == 'skip.failures'
+
+
 def test_square() -> None:
     assert square(2) == 4
     assert square(3) == 9

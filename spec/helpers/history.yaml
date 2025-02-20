@@ -1,0 +1,51 @@
+# Copyright 2025 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
+# Tests for the {{history}} helper which inserts previous conversation messages
+# at the current position in the template.
+
+# Tests that the history helper correctly inserts previous messages while
+# preserving their roles, content, and adding appropriate metadata.
+- name: basic_history
+  template: |
+    {{role "system"}}System prompt
+    {{history}}
+    {{role "user"}}Additional message
+  data:
+    messages:
+      - role: user
+        content: [{ text: "Hello" }]
+      - role: model
+        content: [{ text: "Hi there!" }]
+  tests:
+    - desc: inserts conversation history with proper metadata and roles
+      expect:
+        messages:
+          - role: system
+            content: [{ text: "System prompt\n" }]
+          - role: user
+            content: [{ text: "Hello" }]
+            metadata:
+              purpose: "history"
+          - role: model
+            content: [{ text: "Hi there!" }]
+            metadata:
+              purpose: "history"
+          - role: user
+            content: [{ text: "Additional message\n" }]
+
+# Tests that the history helper gracefully handles cases where there
+# are no previous messages to insert.
+- name: empty_history
+  template: |
+    {{role "system"}}System prompt
+    {{history}}
+    {{role "user"}}User message
+  tests:
+    - desc: handles empty history by only rendering the template content
+      expect:
+        messages:
+          - role: system
+            content: [{ text: "System prompt\n" }]
+          - role: user
+            content: [{ text: "User message\n" }]
