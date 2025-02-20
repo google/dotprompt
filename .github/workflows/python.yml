@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Pre-requisites
-        run: bin/setup -a ci
+        run: scripts/setup -a ci
 
       - name: Install uv and setup Python version
         uses: astral-sh/setup-uv@v5
@@ -37,13 +37,13 @@ jobs:
         run: uv run --directory python mypy .
 
       - name: Check licenses
-        run: ./bin/check_license
+        run: ./scripts/check_license
 
       - name: Run tests
-        run: ./bin/run_python_tests
+        run: ./scripts/run_python_tests
 
       - name: Build documentation
         run: uv run mkdocs build --strict
 
       - name: Build distributions
-        run: ./bin/build_dists
+        run: ./scripts/build_dists

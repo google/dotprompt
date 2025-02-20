@@ -16,10 +16,10 @@ fi
 TOP_DIR=$(git rev-parse --show-toplevel)
 
 # Add license header to all files that don't already have it.
-"${TOP_DIR}/bin/add_license"
+"${TOP_DIR}/scripts/add_license"
 
 # Format all TOML files.
-"${TOP_DIR}/bin/format_toml_files"
+"${TOP_DIR}/scripts/format_toml_files"
 if [[ $? -ne 0 ]]; then
   exit 1
 fi
@@ -32,12 +32,12 @@ if [[ $? -ne 0 ]]; then
 fi
 
 # Format all Go code.
-#pushd ${TOP_DIR}
-#go fmt go/...
-#if [[ $? -ne 0 ]]; then
-#  exit 1
-#fi
-#popd
+pushd ${TOP_DIR}
+go fmt go/...
+if [[ $? -ne 0 ]]; then
+  exit 1
+fi
+popd
 
 # Format all TypeScript code.
 pushd ${TOP_DIR}

@@ -167,7 +167,7 @@ Run the following command from the `code/github.com/google/dotprompt` repository
 working tree and it should install the required tools for you.
 
 ```bash
-bin/setup
+scripts/setup
 ```
 
 ### CI/CD
@@ -175,7 +175,7 @@ bin/setup
 The following is the equivalent used for CI/CD systems.
 
 ```bash
-bin/setup -a ci
+scripts/setup -a ci
 ```
 
 ## Serving documentation locally
