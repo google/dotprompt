@@ -52,7 +52,7 @@
           "run": "scripts/run_go_tests"
         },
         {
-          "run": "pnpm -C js run test"
+          "run": "scripts/run_js_tests"
         },
         {
           "run": "uv run mkdocs build"
@@ -98,13 +98,13 @@
           "run": "scripts/run_go_tests"
         },
         {
+          "run": "scripts/run_js_tests"
+        },
+        {
           "run": "uv run mkdocs build"
         },
         {
           "run": "scripts/build_dists"
-        },
-        {
-          "run": "pnpm -C js run test"
         },
         {
           "run": ".hooks/commit-message-format-pre-push"
