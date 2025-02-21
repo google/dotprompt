@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+# Copyright 2025 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
+"""Tests for the parse module."""
+
+import unittest
+
+from dotpromptz.interfaces import (
+    DataArgument,
+    MediaPart,
+    Message,
+    ParsedPrompt,
+    PendingPart,
+    TextPart,
+)
+from dotpromptz.parse import parse_document, to_messages
+
+
+class ParseDocumentTest(unittest.TestCase):
+    def test_parse_official_example_test(self) -> None:
+        source = """---
+model: googleai/gemini-1.5-pro
+input:
+    schema:
+    text: string
+output:
+    format: json
+    schema:
+        name?: string, the full name of the person
+        age?: number, the age of the person
+        occupation?: string, the person's occupation
+---
+
+Extract the requested information from the given text. If a piece of information
+is not present, omit that field from the output.
+
+Text: {{text}}
+"""
+        result = parse_document(source)
+        self.assertEqual(result.model, 'googleai/gemini-1.5-pro')
+        self.assertEqual(result.input.schema, 'string')
+        self.assertEqual(result.output.format, 'json')
+        self.assertEqual(result.output.schema, '')
+
+    def test_parse_document_without_frontmatter(self) -> None:
+        source = 'Empty template'
+        result = parse_document(source)
+        self.assertEqual(result.template, source)
+        self.assertEqual(result.ext, {})
+        self.assertEqual(result.config, {})
+
+    def test_parse_document_with_invalid_frontmatter(self) -> None:
+        source = """---
+invalid: yaml:
+---
+Template"""
+        result = parse_document(source)
+        self.assertEqual(result.template, source.strip())
+        self.assertEqual(result.ext, {})
+        self.assertEqual(result.config, {})
+
+
+class ToMessagesTest(unittest.TestCase):
+    def test_to_messages_basic(self) -> None:
+        rendered = 'Hello world'
+        messages = to_messages(rendered)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0].role, 'user')
+        self.assertEqual(len(messages[0].content), 1)
+        self.assertIsInstance(messages[0].content[0], TextPart)
+        self.assertEqual(messages[0].content[0].text, 'Hello world')
+
+    def test_to_messages_with_roles(self) -> None:
+        rendered = """Hello
+<<<dotprompt:role:model>>>
+World
+<<<dotprompt:role:user>>>
+Again"""
+        messages = to_messages(rendered)
+        self.assertEqual(len(messages), 3)
+        self.assertEqual(messages[0].role, 'user')
+        self.assertEqual(messages[0].content[0].text, 'Hello')
+        self.assertEqual(messages[1].role, 'model')
+        self.assertEqual(messages[1].content[0].text, 'World')
+        self.assertEqual(messages[2].role, 'user')
+        self.assertEqual(messages[2].content[0].text, 'Again')
+
+    def test_to_messages_with_history(self) -> None:
+        rendered = """Start
+<<<dotprompt:history>>>
+End"""
+        history = [
+            Message(role='user', content=[TextPart(text='History 1')]),
+            Message(role='model', content=[TextPart(text='History 2')]),
+        ]
+        data = DataArgument(messages=history)
+        messages = to_messages(rendered, data)
+
+        self.assertEqual(len(messages), 4)
+        self.assertEqual(messages[0].role, 'user')
+        self.assertEqual(messages[0].content[0].text, 'Start')
+        self.assertEqual(messages[1].role, 'user')
+        self.assertEqual(messages[1].content[0].text, 'History 1')
+        self.assertEqual(messages[2].role, 'model')
+        self.assertEqual(messages[2].content[0].text, 'History 2')
+        self.assertEqual(messages[3].role, 'model')
+        self.assertEqual(messages[3].content[0].text, 'End')
+
+    def test_to_messages_with_media(self) -> None:
+        rendered = """Start
+<<<dotprompt:media:url http://example.com/image.jpg image/jpeg>>>
+End"""
+        messages = to_messages(rendered)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(len(messages[0].content), 3)
+        self.assertIsInstance(messages[0].content[0], TextPart)
+        self.assertEqual(messages[0].content[0].text, 'Start')
+        self.assertIsInstance(messages[0].content[1], MediaPart)
+        self.assertEqual(
+            messages[0].content[1].media['url'], 'http://example.com/image.jpg'
+        )
+        self.assertEqual(
+            messages[0].content[1].media['content_type'], 'image/jpeg'
+        )
+        self.assertIsInstance(messages[0].content[2], TextPart)
+        self.assertEqual(messages[0].content[2].text, 'End')
+
+    def test_to_messages_with_section(self) -> None:
+        rendered = """Start
+<<<dotprompt:section code>>>
+End"""
+        messages = to_messages(rendered)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(len(messages[0].content), 3)
+        self.assertIsInstance(messages[0].content[0], TextPart)
+        self.assertEqual(messages[0].content[0].text, 'Start')
+        self.assertIsInstance(messages[0].content[1], PendingPart)
+        self.assertEqual(messages[0].content[1].metadata['purpose'], 'code')
+        self.assertTrue(messages[0].content[1].metadata['pending'])
+        self.assertIsInstance(messages[0].content[2], TextPart)
+        self.assertEqual(messages[0].content[2].text, 'End')
+
+
+if __name__ == '__main__':
+    unittest.main()

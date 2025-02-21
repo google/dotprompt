@@ -1,0 +1,219 @@
+# Copyright 2025 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
+"""Parse dotprompt documents and convert them to messages."""
+
+import re
+from typing import Any, TypeVar
+
+import yaml
+
+from dotpromptz.interfaces import (
+    DataArgument,
+    MediaPart,
+    Message,
+    ParsedPrompt,
+    Part,
+    PendingPart,
+    PromptMetadata,
+    TextPart,
+)
+
+T = TypeVar('T')
+
+# The .prompt file format has a YAML frontmatter section at the beginning and
+# ends with a raw section at the end. The frontmatter section contains metadata
+# about the prompt, while the raw section contains the prompt template.
+FRONTMATTER_REGEX = re.compile(r'^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$')
+ROLE_REGEX = re.compile(r'(<<<dotprompt:(?:role:[a-z]+|history))>>>')
+PART_REGEX = re.compile(r'(<<<dotprompt:(?:media:url|section).*?)>>>')
+
+RESERVED_METADATA_KEYWORDS = [
+    'name',
+    'variant',
+    'version',
+    'description',
+    'model',
+    'tools',
+    'tool_defs',
+    'config',
+    'input',
+    'output',
+    'raw',
+    'ext',
+]
+
+BASE_METADATA: PromptMetadata[Any] = PromptMetadata(
+    ext={},
+    metadata={},
+    config={},
+)
+
+
+def parse_document(source: str) -> ParsedPrompt[Any]:
+    """Parse a dotprompt document.
+
+    Args:
+        source: The source code to parse.
+
+    Returns:
+        A parsed prompt with metadata and template.
+    """
+    match = FRONTMATTER_REGEX.match(source)
+    if match:
+        frontmatter, content = match.groups()
+        try:
+            parsed_metadata = yaml.safe_load(frontmatter)
+            raw = dict(parsed_metadata)
+            pruned: dict[str, Any] = {}
+            ext: dict[str, dict[str, Any]] = {}
+
+            for key, value in raw.items():
+                if key in RESERVED_METADATA_KEYWORDS:
+                    # Ensure version is always a string
+                    if key == 'version' and value is not None:
+                        value = str(value)
+                    pruned[key] = value
+                elif '.' in key:
+                    namespace, field_name = key.rsplit('.', 1)
+                    ext.setdefault(namespace, {})
+                    ext[namespace][field_name] = value
+
+            # Add base metadata fields that weren't in YAML
+            pruned.setdefault('ext', {})
+            pruned.setdefault('metadata', {})
+            pruned.setdefault('config', {})
+
+            # Now update with the parsed values
+            pruned['ext'].update(ext)
+            pruned['raw'] = raw
+
+            return ParsedPrompt(**pruned, template=content.strip())
+        except Exception as error:
+            print('Dotprompt: Error parsing YAML frontmatter:', error)
+            return ParsedPrompt(
+                **BASE_METADATA.__dict__, template=source.strip()
+            )
+
+    return ParsedPrompt(**BASE_METADATA.__dict__, template=source)
+
+
+def to_messages(
+    rendered_string: str,
+    data: DataArgument[Any] | None = None,
+) -> list[Message]:
+    """Convert a rendered string to a list of messages.
+
+    Args:
+        rendered_string: The rendered string to convert.
+        data: Optional data argument containing message history.
+
+    Returns:
+        A list of messages.
+    """
+    current_message = {'role': 'user', 'source': ''}
+    message_sources: list[dict[str, Any]] = [current_message]
+
+    for piece in filter(
+        lambda s: s.strip(),
+        ROLE_REGEX.split(rendered_string),
+    ):
+        if piece.startswith('<<<dotprompt:role:'):
+            role = piece[18:]
+            if current_message['source'].strip():
+                current_message = {'role': role, 'source': ''}
+                message_sources.append(current_message)
+            else:
+                current_message['role'] = role
+        elif piece.startswith('<<<dotprompt:history'):
+            if data and data.messages:
+                message_sources.extend(
+                    {
+                        **m.__dict__,
+                        'metadata': {
+                            **(m.metadata or {}),
+                            'purpose': 'history',
+                        },
+                    }
+                    for m in data.messages
+                )
+            current_message = {'role': 'model', 'source': ''}
+            message_sources.append(current_message)
+        else:
+            current_message['source'] += piece.strip()
+
+    messages = [
+        Message(
+            role=m['role'],
+            content=m.get('content') or to_parts(m['source']),
+            metadata=m.get('metadata'),
+        )
+        for m in message_sources
+        if m.get('content') or m.get('source')
+    ]
+
+    return insert_history(messages, data.messages if data else None)
+
+
+def insert_history(
+    messages: list[Message],
+    history: list[Message] | None = None,
+) -> list[Message]:
+    """Insert message history at the appropriate position.
+
+    Args:
+        messages: The list of messages to insert history into.
+        history: Optional message history to insert.
+
+    Returns:
+        A list of messages with history inserted.
+    """
+    if not history or any(
+        m.metadata and m.metadata.get('purpose') == 'history' for m in messages
+    ):
+        return messages
+
+    if messages and messages[-1].role == 'user':
+        return [*messages[:-1], *history, messages[-1]]
+
+    return [*messages, *history]
+
+
+def to_parts(source: str) -> list[Part]:
+    """Convert a source string to a list of parts.
+
+    Args:
+        source: The source string to convert.
+
+    Returns:
+        A list of parts.
+    """
+    parts: list[Part] = []
+    pieces = [s.strip() for s in PART_REGEX.split(source) if s.strip()]
+
+    for piece in pieces:
+        if piece.startswith('<<<dotprompt:media:'):
+            try:
+                _, url, content_type = piece.split(' ')
+                part: MediaPart = MediaPart(media={'url': url})
+                if content_type:
+                    part.media['content_type'] = content_type
+                parts.append(part)
+            except ValueError:
+                # In case of malformed media part, treat as text
+                parts.append(TextPart(text=piece))
+        elif piece.startswith('<<<dotprompt:section'):
+            try:
+                _, section_type = piece.split(' ')
+                parts.append(
+                    PendingPart(
+                        metadata={'purpose': section_type, 'pending': True}
+                    )
+                )
+            except ValueError:
+                # In case of malformed section part, treat as text
+                parts.append(TextPart(text=piece))
+        else:
+            parts.append(TextPart(text=piece))
+
+    return parts
