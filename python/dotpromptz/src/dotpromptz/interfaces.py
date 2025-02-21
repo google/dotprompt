@@ -50,29 +50,29 @@ class PromptData(PromptRef):
 
 @dataclass
 class PromptMetadata(HasMetadata, Generic[T]):
-    """Promt metdata.
+    """Prompt metadata.
 
     Attributes:
-      name: The name of the prompt.
-      variant: The variant name for the prompt.
-      version: The version of the prompt.
-      description: A description of the prompt.
-      model: The name of the model to use for this prompt, e.g.
-        `vertexai/gemini-1.0-pro`.
-      tools: Names of tools (registered separately) to allow use of in this
-        prompt.
-      tool_defs: Definitions of tools to allow use of in this prompt.
-      config: Model configuration. Not all models support all options.
-      input: Configuration for input variables.
-      output: Defines the expected model output format.
-      raw: This field will contain the raw frontmatter as parsed with no
-        additional processing or substitutions. If your implementation requires
-        custom fields they will be available here.
-      ext: Fields that contain a period will be considered "extension fields" in
-        the frontmatter and will be gathered by namespace. For example,
-        `myext.foo: 123` would be available at `parsedPrompt.ext.myext.foo`.
-        Nested namespaces will be flattened, so `myext.foo.bar: 123` would be
-        available at `parsedPrompt.ext["myext.foo"].bar`.
+        name: The name of the prompt.
+        variant: The variant name for the prompt.
+        version: The version of the prompt.
+        description: A description of the prompt.
+        model: The name of the model to use for this prompt, e.g.
+            `vertexai/gemini-1.0-pro`.
+        tools: Names of tools (registered separately) to allow use of in this
+            prompt.
+        tool_defs: Definitions of tools to allow use of in this prompt.
+        config: Model configuration. Not all models support all options.
+        input: Configuration for input variables.
+        output: Defines the expected model output format.
+        raw: This field will contain the raw frontmatter as parsed with no
+            additional processing or substitutions. If your implementation
+            requires custom fields they will be available here.
+        ext: Fields that contain a period will be considered "extension fields"
+            in the frontmatter and will be gathered by namespace. For example,
+            `myext.foo: 123` would be available at `parsedPrompt.ext.myext.foo`.
+            Nested namespaces will be flattened, so `myext.foo.bar: 123` would
+            be available at `parsedPrompt.ext["myext.foo"].bar`.
     """
 
     name: str | None = None
@@ -169,7 +169,7 @@ class DataArgument(Generic[T]):
     context: dict[str, Any] | None = None
 
 
-type JsonSchema = Any
+type JSONSchema = Any
 
 
 class SchemaResolver(Protocol):
@@ -178,7 +178,7 @@ class SchemaResolver(Protocol):
     Utilized for shorthand to a schema library provided by an external tool.
     """
 
-    def __call__(self, schema_name: str) -> JsonSchema | None: ...
+    def __call__(self, schema_name: str) -> JSONSchema | None: ...
 
 
 class ToolResolver(Protocol):
