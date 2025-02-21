@@ -17,6 +17,6 @@ class TestDependencies(unittest.TestCase):
         context = js2py.EvalJs()
         # Execute the JavaScript code
         context.execute(js_code)
-        # Call the JavaScript function and check the output
+        # Call the JavaScript  function and check the output
         result = context.add(3, 4)
         assert result == 7, 'Expected result is 7'
