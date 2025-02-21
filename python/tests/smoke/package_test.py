@@ -3,19 +3,19 @@
 
 """Smoke tests for package structure."""
 
-# TODO: Replace this with proper imports once we have a proper implementation.
-from dotpromptz import package_name as dotpromptz_package_name
+import unittest
+
+import js2py
 
 
-def square(n: int | float) -> int | float:
-    return n * n
-
-
-def test_package_names() -> None:
-    assert dotpromptz_package_name() == 'dotpromptz'
-
-
-def test_square() -> None:
-    assert square(2) == 4
-    assert square(3) == 9
-    assert square(4) == 16
+class TestDependencies(unittest.TestCase):
+    def test_js2py_basic_functionality(self):
+        # Simple JavaScript code to be executed
+        js_code = 'function add(a, b) { return a + b; }'
+        # Create a JavaScript context
+        context = js2py.EvalJs()
+        # Execute the JavaScript code
+        context.execute(js_code)
+        # Call the JavaScript function and check the output
+        result = context.add(3, 4)
+        assert result == 7, 'Expected result is 7'
