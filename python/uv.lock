@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -673,6 +674,20 @@ wheels = [
 ]
 
 [[package]]
+name = "js2py"
+version = "0.74"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyjsparser" },
+    { name = "six" },
+    { name = "tzlocal" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/cb/a5/3d8b3e4511cc21479f78f359b1b21f1fb7c640988765ffd09e55c6605e3b/Js2Py-0.74.tar.gz", hash = "sha256:39f3a6aa8469180efba3c8677271df27c31332fd1b471df1af2af58b87b8972f", size = 2504984 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/88/58/2feb430d47c9f18f331494b429697342722b51f28dad8ad92a511c0f6fc8/Js2Py-0.74-py3-none-any.whl", hash = "sha256:40a508a79e2f8d624e3f2e604f90a1e6f46ac75b416d7f4745939ff4a2e95e09", size = 1033007 },
+]
+
+[[package]]
 name = "js2py-wheel"
 version = "0.74"
 source = { registry = "https://pypi.org/simple" }
@@ -1266,6 +1281,12 @@ wheels = [
 ]
 
 [[package]]
+name = "pyjsparser"
+version = "2.7.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/48/ef/c72abcfa2c6accd03e7c89c400790fc3d908c5804d50a7c4e9ceabd74d23/pyjsparser-2.7.1.tar.gz", hash = "sha256:be60da6b778cc5a5296a69d8e7d614f1f870faf94e1b1b6ac591f2ad5d729579", size = 24196 }
+
+[[package]]
 name = "pyjsparser-wheel"
 version = "2.7.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1604,10 +1625,16 @@ version = "0.1.0"
 source = { virtual = "tests/smoke" }
 dependencies = [
     { name = "dotpromptz" },
+    { name = "handlebars" },
+    { name = "js2py" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "dotpromptz", editable = "dotpromptz" }]
+requires-dist = [
+    { name = "dotpromptz", editable = "dotpromptz" },
+    { name = "handlebars" },
+    { name = "js2py" },
+]
 
 [[package]]
 name = "sniffio"
