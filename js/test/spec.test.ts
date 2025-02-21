@@ -1,25 +1,14 @@
 /**
  * Copyright 2024 Google LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
-import { describe, it, expect, suite } from 'vitest';
-import { readdirSync, readFileSync } from 'node:fs';
-import { parse } from 'yaml';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { describe, expect, it, suite } from 'vitest';
+import { parse } from 'yaml';
 import { Dotprompt } from '../src/dotprompt';
-import { DataArgument, JSONSchema, ToolDefinition } from '../src/types';
+import type { DataArgument, JSONSchema, ToolDefinition } from '../src/types';
 
 const specDir = join('..', 'spec');
 const files = readdirSync(specDir, { recursive: true, withFileTypes: true });
@@ -37,8 +26,8 @@ interface SpecSuite {
 
 // Process each YAML file
 files
-  .filter(file => !file.isDirectory() && file.name.endsWith('.yaml'))
-  .forEach(file => {
+  .filter((file) => !file.isDirectory() && file.name.endsWith('.yaml'))
+  .forEach((file) => {
     const suiteName = join(
       relative(specDir, file.path),
       file.name.replace(/\.yaml$/, '')
@@ -50,10 +39,10 @@ files
     // Create a describe block for each YAML file
     suite(suiteName, () => {
       // Create a describe block for each suite in the file
-      suites.forEach(s => {
+      suites.forEach((s) => {
         describe(s.name, () => {
           // Create a test for each test case in the suite
-          s.tests.forEach(tc => {
+          s.tests.forEach((tc) => {
             it(tc.desc || 'should match expected output', async () => {
               const env = new Dotprompt({
                 schemas: s.schemas,

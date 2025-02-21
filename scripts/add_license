@@ -3,7 +3,7 @@
 # Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 #
-# Checks that all files have a license header.
+# Adds a license header to all files that don't already have it.
 
 # set -x # Uncomment to enable tracing.
 set -euo pipefail
@@ -19,12 +19,9 @@ if ! command -v addlicense &>/dev/null; then
   go install github.com/google/addlicense@latest
 fi
 
-export PATH=$(go env GOPATH):$PATH
-
 # NOTE: If you edit the ignore patterns, make sure to update the ignore patterns
-# in the corresponding add_license script.
+# in the corresponding check_license script.
 $HOME/go/bin/addlicense \
-  -check \
   -c "Google LLC" \
   -s=only \
   -l apache \
@@ -47,4 +44,5 @@ $HOME/go/bin/addlicense \
   -ignore '**/pnpm-lock.yaml' \
   -ignore '.nx/**/*' \
   -ignore '.trunk/**/*' \
+  -ignore '**/site/**/*' \
   "$TOP_DIR"

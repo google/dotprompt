@@ -1,25 +1,14 @@
 /**
  * Copyright 2024 Google LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { createHash } from 'crypto';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { createHash } from 'crypto';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DirStore } from '../../src/stores/dir';
-import { PromptData } from '../../src/types';
+import type { PromptData } from '../../src/types';
 
 describe('DirStore', () => {
   const tempDir = path.join(process.cwd(), 'test-prompts');
@@ -38,10 +27,7 @@ describe('DirStore', () => {
     return createHash('sha1').update(content).digest('hex').substring(0, 8);
   }
 
-  async function createPromptFile(
-    name: string,
-    content: string = 'test source'
-  ) {
+  async function createPromptFile(name: string, content = 'test source') {
     const filePath = path.join(tempDir, name);
     await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, content);

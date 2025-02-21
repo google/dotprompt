@@ -15,7 +15,7 @@
  */
 
 import { parse } from 'yaml';
-import {
+import type {
   DataArgument,
   MediaPart,
   Message,
@@ -98,7 +98,7 @@ export function toMessages<ModelConfig = Record<string, any>>(
 
   for (const piece of renderedString
     .split(ROLE_REGEX)
-    .filter(s => s.trim() !== '')) {
+    .filter((s) => s.trim() !== '')) {
     if (piece.startsWith('<<<dotprompt:role:')) {
       const role = piece.substring(18);
       if (currentMessage.source.trim()) {
@@ -109,7 +109,7 @@ export function toMessages<ModelConfig = Record<string, any>>(
       }
     } else if (piece.startsWith('<<<dotprompt:history')) {
       messageSources.push(
-        ...(data?.messages?.map(m => {
+        ...(data?.messages?.map((m) => {
           return {
             ...m,
             metadata: { ...(m.metadata || {}), purpose: 'history' },
@@ -124,8 +124,8 @@ export function toMessages<ModelConfig = Record<string, any>>(
   }
 
   const messages: Message[] = messageSources
-    .filter(ms => ms.content || ms.source)
-    .map(m => {
+    .filter((ms) => ms.content || ms.source)
+    .map((m) => {
       const out: Message = {
         role: m.role as Message['role'],
         content: m.content || toParts(m.source!),
@@ -141,7 +141,7 @@ function insertHistory(
   messages: Message[],
   history: Message[] = []
 ): Message[] {
-  if (!history || messages.find(m => m.metadata?.purpose === 'history'))
+  if (!history || messages.find((m) => m.metadata?.purpose === 'history'))
     return messages;
   if (messages.at(-1)?.role === 'user') {
     return [...messages.slice(0, -1)!, ...history!, messages.at(-1)!];
@@ -153,7 +153,7 @@ const PART_REGEX = /(<<<dotprompt:(?:media:url|section).*?)>>>/g;
 
 function toParts(source: string): Part[] {
   const parts: Part[] = [];
-  const pieces = source.split(PART_REGEX).filter(s => s.trim() !== '');
+  const pieces = source.split(PART_REGEX).filter((s) => s.trim() !== '');
   for (let i = 0; i < pieces.length; i++) {
     const piece = pieces[i];
     if (piece.startsWith('<<<dotprompt:media:')) {

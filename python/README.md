@@ -5,7 +5,7 @@
 From the top level directory:
 
 ```bash
-bin/setup
+scripts/setup
 ```
 
 ## Run tests

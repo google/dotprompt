@@ -1,20 +1,9 @@
 /**
  * Copyright 2024 Google LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { RenderedPrompt, Part, Message } from '../types.js';
+import type { Message, Part, RenderedPrompt } from '../types.js';
 
 export interface OpenAIMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
@@ -116,7 +105,7 @@ function convertTools(
 ): OpenAIToolDefintiion[] | undefined {
   if (!prompt.toolDefs?.length) return undefined;
 
-  return prompt.toolDefs.map(tool => ({
+  return prompt.toolDefs.map((tool) => ({
     type: 'function',
     function: {
       name: tool.name,
@@ -127,7 +116,7 @@ function convertTools(
 }
 
 export function toOpenAIRequest(source: RenderedPrompt): OpenAIRequest {
-  const messages: OpenAIMessage[] = source.messages.map(msg => {
+  const messages: OpenAIMessage[] = source.messages.map((msg) => {
     const base: OpenAIMessage = {
       role: convertRole(msg.role),
       content: convertContent(msg.content),

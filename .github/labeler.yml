@@ -49,6 +49,12 @@ config:
           - "**/tsconfig.json"
           - "**/typedoc.json"
 
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+          - "docs/**"
+
 dotpromptz:
   - changed-files:
       - any-glob-to-any-file:

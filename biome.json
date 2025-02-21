@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.8.3/schema.json",
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
   "organizeImports": {
     "enabled": true
   },
@@ -12,6 +12,7 @@
   "files": {
     "ignoreUnknown": true,
     "ignore": [
+      "**/.cache/**",
       "**/.dist/**",
       "**/.eggs/**",
       "**/.idea/**",
@@ -31,15 +32,14 @@
       ".nx/**",
       ".trunk/**",
       "bazel-*/**",
+      "go/**",
       "node_modules/**",
+      "python/**",
       "third_party/**"
     ]
   },
   "formatter": {
-    "indentStyle": "space",
-    "indentWidth": 2,
-    "lineEnding": "lf",
-    "lineWidth": 80
+    "useEditorconfig": true
   },
   "vcs": {
     "clientKind": "git",
@@ -49,7 +49,7 @@
   },
   "javascript": {
     "formatter": {
-      "arrowParentheses": "asNeeded",
+      "arrowParentheses": "always",
       "attributePosition": "auto",
       "bracketSpacing": true,
       "jsxQuoteStyle": "double",
