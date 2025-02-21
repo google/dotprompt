@@ -9,7 +9,8 @@ import js2py
 
 
 class TestDependencies(unittest.TestCase):
-    def test_js2py_basic_functionality(self):
+    def test_js2py_basic_functionality(self) -> None:
+        """Test basic functionality of js2py."""
         # Simple JavaScript code to be executed
         js_code = 'function add(a, b) { return a + b; }'
         # Create a JavaScript context
