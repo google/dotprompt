@@ -9,6 +9,8 @@ from dotpromptz.util import remove_undefined_fields
 
 
 class TestRemoveUndefinedFields(unittest.TestCase):
+    """Tests for remove_undefined_fields function."""
+
     def test_remove_undefined_fields_none(self) -> None:
         """Test removing undefined fields from None."""
         assert remove_undefined_fields(None) is None

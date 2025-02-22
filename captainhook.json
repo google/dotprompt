@@ -40,9 +40,6 @@
           "run": "scripts/check_license"
         },
         {
-          "run": "uv run --directory python ruff check --select I --fix ."
-        },
-        {
           "run": "uv run --directory python mypy ."
         },
         {
@@ -84,9 +81,6 @@
         },
         {
           "run": "scripts/check_license"
-        },
-        {
-          "run": "uv run --directory python ruff check --select I --fix ."
         },
         {
           "run": "uv run --directory python mypy ."

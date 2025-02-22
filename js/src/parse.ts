@@ -116,12 +116,12 @@ export function splitByMediaAndSectionMarkers(source: string): string[] {
  * @param key The dotted namespace key (e.g., 'foo.bar')
  * @param value The value to assign
  * @param obj The object to add the namespaced value to
- * @returns The updated target object
+ * @return The updated target object
  */
 export function convertNamespacedEntryToNestedObject(
   key: string,
   value: unknown,
-  obj: Record<string, Record<string, unknown>> = {}
+  obj: Record<string, Record<string, unknown>> = {},
 ): Record<string, Record<string, unknown>> {
   const lastDotIndex = key.lastIndexOf('.');
   const ns = key.substring(0, lastDotIndex);
@@ -135,7 +135,10 @@ export function convertNamespacedEntryToNestedObject(
  * Extracts the YAML frontmatter and body from a document.
  *
  * @param source The source document containing frontmatter and template
- * @returns An object containing the frontmatter and body
+ * @return An object containing the frontmatter and body.  Caveat: If the match
+ *   fails and the frontmatter is not found, the function returns an object that
+ *   contains an empty body. This should not be misunderstood to mean that the
+ *   frontmatter cannot be optional for it is.
  */
 export function extractFrontmatterAndBody(source: string) {
   const match = source.match(FRONTMATTER_AND_BODY_REGEX);
@@ -155,7 +158,7 @@ export function extractFrontmatterAndBody(source: string) {
  * @return Parsed prompt with metadata and template content
  */
 export function parseDocument<ModelConfig = Record<string, any>>(
-  source: string
+  source: string,
 ): ParsedPrompt<ModelConfig> {
   const { frontmatter, body } = extractFrontmatterAndBody(source);
   if (frontmatter) {
@@ -194,7 +197,7 @@ export function parseDocument<ModelConfig = Record<string, any>>(
  */
 export function toMessages<ModelConfig = Record<string, any>>(
   renderedString: string,
-  data?: DataArgument
+  data?: DataArgument,
 ): Message[] {
   let currentMessage: { role: string; source: string } = {
     role: 'user',
@@ -218,7 +221,7 @@ export function toMessages<ModelConfig = Record<string, any>>(
       }
     } else if (piece.startsWith('<<<dotprompt:history')) {
       messageSources.push(
-        ...(data?.messages ? transformMessagesToHistory(data.messages) : [])
+        ...(data?.messages ? transformMessagesToHistory(data.messages) : []),
       );
       currentMessage = { role: 'model', source: '' };
       messageSources.push(currentMessage);
@@ -245,10 +248,10 @@ export function toMessages<ModelConfig = Record<string, any>>(
  * Transforms an array of messages by adding history metadata to each message.
  *
  * @param messages Array of messages to transform
- * @returns Array of messages with history metadata added
+ * @return Array of messages with history metadata added
  */
 export function transformMessagesToHistory(
-  messages: Array<{ metadata?: Record<string, unknown> }>
+  messages: Array<{ metadata?: Record<string, unknown> }>,
 ): Array<{ metadata: Record<string, unknown> }> {
   return messages.map((m) => ({
     ...m,
@@ -266,7 +269,7 @@ export function transformMessagesToHistory(
  */
 export function insertHistory(
   messages: Message[],
-  history: Message[] = []
+  history: Message[] = [],
 ): Message[] {
   if (!history || messages.find((m) => m.metadata?.purpose === 'history'))
     return messages;

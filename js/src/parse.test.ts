@@ -164,7 +164,7 @@ describe('convertNamespacedEntryToNestedObject', () => {
     const result = convertNamespacedEntryToNestedObject(
       'foo.baz',
       'world',
-      existing
+      existing,
     );
     expect(result).toEqual({
       foo: {
@@ -179,7 +179,7 @@ describe('convertNamespacedEntryToNestedObject', () => {
     const finalResult = convertNamespacedEntryToNestedObject(
       'baz.qux',
       'world',
-      result
+      result,
     );
     expect(finalResult).toEqual({
       foo: {
@@ -233,10 +233,10 @@ describe('extractFrontmatterAndBody', () => {
   });
 
   it('should not extract frontmatter when there is no frontmatter', () => {
-    // The frontmatter is not optional.
     const source = 'No frontmatter here.';
     const { frontmatter, body } = extractFrontmatterAndBody(source);
     expect(frontmatter).toBe('');
+    // The frontmatter is optional but the matcher returns an empty body.
     expect(body).toBe('');
   });
 });

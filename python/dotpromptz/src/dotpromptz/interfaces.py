@@ -14,6 +14,15 @@ type Schema = dict[str, Any]
 
 @dataclass
 class ToolDefinition:
+    """Definition of a tool that can be used in a prompt.
+
+    Attributes:
+        name: The name of the tool.
+        description: A description of the tool.
+        input_schema: The input schema of the tool.
+        output_schema: The output schema of the tool.
+    """
+
     name: str
     description: str | None
     input_schema: Schema = field(default_factory=dict)
@@ -25,8 +34,7 @@ type ToolArgument = str | ToolDefinition
 
 @dataclass
 class HasMetadata:
-    """
-    Whether contains metadata.
+    """Whether contains metadata.
 
     Attributes:
         metadata: Arbitrary metadata to be used by tooling or for informational
@@ -38,6 +46,14 @@ class HasMetadata:
 
 @dataclass(kw_only=True)
 class PromptRef:
+    """Reference to a prompt with optional variant.
+
+    Attributes:
+        name: The name of the prompt.
+        variant: The variant name for the prompt.
+        version: The version of the prompt.
+    """
+
     name: str
     variant: str | None = None
     version: str | None = None
@@ -45,6 +61,12 @@ class PromptRef:
 
 @dataclass(kw_only=True)
 class PromptData(PromptRef):
+    """Prompt data containing source and metadata.
+
+    Attributes:
+        source: The source of the prompt.
+    """
+
     source: str
 
 
@@ -91,41 +113,83 @@ class PromptMetadata(HasMetadata, Generic[T]):
 
 @dataclass(kw_only=True)
 class ParsedPrompt(PromptMetadata[T]):
+    """Parsed prompt containing template and metadata.
+
+    Attributes:
+        template: The template of the prompt.
+    """
+
     template: str
 
 
 @dataclass
 class EmptyPart(HasMetadata):
-    pass
+    """Base class for all parts with metadata."""
 
 
 @dataclass(kw_only=True)
 class TextPart(EmptyPart):
+    """Part containing text content.
+
+    Attributes:
+        text: The text content of the part.
+    """
+
     text: str
 
 
 @dataclass(kw_only=True)
 class DataPart(EmptyPart):
+    """Part containing arbitrary data.
+
+    Attributes:
+        data: The data of the part.
+    """
+
     data: dict[str, Any]
 
 
 @dataclass(kw_only=True)
 class MediaPart(EmptyPart):
+    """Part containing media references.
+
+    Attributes:
+        media: The media references of the part.
+    """
+
     media: dict[str, str | None]
 
 
 @dataclass(kw_only=True)
 class ToolRequestPart(EmptyPart, Generic[T]):
+    """Part containing a tool request.
+
+    Attributes:
+        tool_request: The tool request of the part.
+    """
+
     tool_request: dict[str, T | None]
 
 
 @dataclass(kw_only=True)
 class ToolResponsePart(EmptyPart, Generic[T]):
+    """Part containing a tool response.
+
+    Attributes:
+        tool_response: The tool response of the part.
+    """
+
     tool_response: dict[str, T | None]
 
 
 @dataclass(kw_only=True)
 class PendingPart(EmptyPart):
+    """Part representing pending content.
+
+    Attributes:
+        metadata: The metadata of the part.
+    """
+
     metadata: dict[str, Any] = field(default_factory=lambda: {'pending': True})
 
 
@@ -141,53 +205,122 @@ type Part = (
 
 @dataclass(kw_only=True)
 class Message(HasMetadata):
+    """Message with role and content parts.
+
+    Attributes:
+        role: The role of the message.
+        content: The content of the message.
+    """
+
     role: Literal['user', 'model', 'tool', 'system']
     content: list[Part]
 
 
 @dataclass(kw_only=True)
 class Document(HasMetadata):
+    """Document containing content parts.
+
+    Attributes:
+        content: The content of the document.
+    """
+
     content: list[Part]
 
 
 @dataclass
 class DataArgument(Generic[T]):
-    """
-    Rrovides all of the information necessary to render a template at runtime.
+    """Provides information needed to render a template at runtime.
 
     Attributes:
-        input: Input variables for the prompt template.
-        docs: Relevant documents.
-        messages: Previous messages in the history of a multi-turn conversation.
-        context: Items in the context argument are exposed as `@` variables,
-            e.g. `context: {state: {...}}` is exposed as `@state`.
+        data: The data to use for rendering.
+        history: Optional message history.
+        tools: Optional tool definitions.
+        schemas: Optional JSON schemas.
     """
 
-    input: T | None = None
-    docs: list[Document] | None = None
-    messages: list[Message] | None = None
-    context: dict[str, Any] | None = None
+    data: dict[str, T]
+    history: list[Message] | None = None
+    tools: dict[str, ToolDefinition] | None = None
+    schemas: dict[str, Any] | None = None
 
 
 type JSONSchema = Any
 
 
-class SchemaResolver(Protocol):
-    """Resolves a provided schema name to an underlying JSON schema.
+class SchemaLookup(Protocol):
+    """Protocol for looking up JSON schemas."""
 
-    Utilized for shorthand to a schema library provided by an external tool.
-    """
+    def __call__(self, schema_name: str) -> JSONSchema | None:
+        """Look up a JSON schema by name.
 
-    def __call__(self, schema_name: str) -> JSONSchema | None: ...
+        Args:
+            schema_name: Name of the schema to look up.
+
+        Returns:
+            The JSON schema or None if not found.
+        """
+        ...
 
 
-class ToolResolver(Protocol):
-    """Resolves a provided tool name to an underlying ToolDefinition.
+class ToolLookup(Protocol):
+    """Protocol for looking up tool definitions."""
 
-    Utilized for shorthand to a tool registry provided by an external library.
-    """
+    def __call__(self, tool_name: str) -> ToolDefinition | None:
+        """Look up a tool definition by name.
 
-    def __call__(self, tool_name: str) -> ToolDefinition | None: ...
+        Args:
+            tool_name: Name of the tool to look up.
+
+        Returns:
+            The tool definition or None if not found.
+        """
+        ...
+
+
+class PromptRenderer(Protocol[T]):
+    """Protocol for rendering prompts."""
+
+    prompt: ParsedPrompt[T]
+
+    def __call__(
+        self,
+        data: DataArgument[Any],
+        schema_lookup: SchemaLookup | None = None,
+        tool_lookup: ToolLookup | None = None,
+    ) -> Document:
+        """Render a prompt with the given data and lookups.
+
+        Args:
+            data: Data to use for rendering.
+            schema_lookup: Optional schema lookup function.
+            tool_lookup: Optional tool lookup function.
+
+        Returns:
+            The rendered document.
+        """
+        ...
+
+
+class PartialRenderer(Protocol[T]):
+    """Protocol for rendering partial templates."""
+
+    def __call__(
+        self,
+        data: DataArgument[Any],
+        schema_lookup: SchemaLookup | None = None,
+        tool_lookup: ToolLookup | None = None,
+    ) -> Document:
+        """Render a partial template with the given data and lookups.
+
+        Args:
+            data: Data to use for rendering.
+            schema_lookup: Optional schema lookup function.
+            tool_lookup: Optional tool lookup function.
+
+        Returns:
+            The rendered document.
+        """
+        ...
 
 
 @dataclass(kw_only=True)
@@ -205,7 +338,15 @@ class RenderedPrompt(PromptMetadata[T]):
 
 
 class PromptFunction(Protocol, Generic[T]):
-    """Takes runtime data/context and returns a rendered prompt result."""
+    """Takes runtime data/context and returns a rendered prompt result.
+
+    Args:
+        data: Data to use for rendering.
+        options: Optional prompt metadata.
+
+    Returns:
+        The rendered prompt.
+    """
 
     prompt: ParsedPrompt[T]
 
@@ -213,7 +354,17 @@ class PromptFunction(Protocol, Generic[T]):
         self,
         data: DataArgument[Any],
         options: PromptMetadata[T] | None = None,
-    ) -> RenderedPrompt[T]: ...
+    ) -> RenderedPrompt[T]:
+        """Render a prompt with the given data and options.
+
+        Args:
+            data: Data to use for rendering.
+            options: Optional prompt metadata.
+
+        Returns:
+            The rendered prompt.
+        """
+        ...
 
 
 class PromptRefFunction(Protocol, Generic[T]):
@@ -221,24 +372,55 @@ class PromptRefFunction(Protocol, Generic[T]):
 
     The difference in comparison to PromptFunction is that a promp is loaded via
     reference.
+
+    Args:
+        data: Data to use for rendering.
+        options: Optional prompt metadata.
+
+    Returns:
+        The rendered prompt.
     """
 
     def __call__(
         self,
         data: DataArgument[Any],
         options: PromptMetadata[T] | None = None,
-    ) -> RenderedPrompt[T]: ...
+    ) -> RenderedPrompt[T]:
+        """Render a prompt with the given data and options.
+
+        Args:
+            data: Data to use for rendering.
+            options: Optional prompt metadata.
+
+        Returns:
+            The rendered prompt.
+        """
+        ...
 
     prompt_ref: PromptRef
 
 
 @dataclass
 class PaginatedResponse:
+    """Response containing pagination cursor.
+
+    Attributes:
+        cursor: The pagination cursor.
+    """
+
     cursor: str | None = None
 
 
 @dataclass(kw_only=True)
 class PartialRef:
+    """Reference to a partial template.
+
+    Attributes:
+        name: The name of the partial template.
+        variant: The variant name for the partial template.
+        version: The version of the partial template.
+    """
+
     name: str
     variant: str | None = None
     version: str | None = None
@@ -246,11 +428,24 @@ class PartialRef:
 
 @dataclass(kw_only=True)
 class PartialData(PartialRef):
+    """Partial template data containing source.
+
+    Attributes:
+        source: The source of the partial template.
+    """
+
     source: str
 
 
 class PromptStore(Protocol):
-    """PromptStore is a common interface that provides for."""
+    """PromptStore is a common interface that provides for.
+
+    Args:
+        options: Optional options for the operation.
+
+    Returns:
+        The result of the operation.
+    """
 
     def list(self, options: dict[str, Any] | None = None) -> dict[str, Any]:
         """Return a list of all prompts in the store (optionally paginated).
@@ -275,7 +470,16 @@ class PromptStore(Protocol):
 
 
 class PromptStoreWritable(PromptStore, Protocol):
-    """PromptStore that also has built-in methods for writing prompts."""
+    """PromptStore that also has built-in methods for writing prompts.
+
+    Args:
+        prompt: The prompt to save.
+        name: The name of the prompt to delete.
+        options: Optional options for the operation.
+
+    Returns:
+        None
+    """
 
     def save(self, prompt: PromptData) -> None:
         """Save a prompt in the store.
@@ -289,5 +493,12 @@ class PromptStoreWritable(PromptStore, Protocol):
 
 @dataclass
 class PromptBundle:
+    """Bundle containing prompts and partial templates.
+
+    Attributes:
+        partials: The partial templates in the bundle.
+        prompts: The prompts in the bundle.
+    """
+
     partials: list[PartialData]
     prompts: list[PromptData]

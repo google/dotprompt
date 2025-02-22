@@ -79,18 +79,13 @@ exclude = [
 ]
 indent-width = 4
 line-length = 80
+preview = true
 target-version = "py312"
+unsafe-fixes = true
+
 
 [tool.ruff.lint]
 fixable = ["ALL"]
-per-file-ignores = { "schemas.py" = [
-  "N815",
-  "E501",
-], "sanitize_schemas.py" = [
-  "N802",
-  "N815",
-  "E501",
-] }
 select = [
   "E",  # pycodestyle (errors)
   "W",  # pycodestyle (warnings)
@@ -99,13 +94,19 @@ select = [
   "UP", # pyupgrade (Python version upgrades)
   "B",  # flake8-bugbear (common bugs)
   "N",  # pep8-naming (naming conventions)
+  "D",  # pydocstyle
 ]
 
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
 [tool.ruff.format]
-indent-style              = "space"
-line-ending               = "lf"
-quote-style               = "single"
-skip-magic-trailing-comma = false
+docstring-code-format      = true
+docstring-code-line-length = 80
+indent-style               = "space"
+line-ending                = "lf"
+quote-style                = "single"
+skip-magic-trailing-comma  = false
 
 # Static type checking.
 [tool.mypy]

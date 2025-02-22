@@ -1,8 +1,7 @@
 # Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 
-"""Handlebars template engine stub while we don't have a working implementation
-of handlebars."""
+"""Handlebars template engine stub implementation."""
 
 from collections.abc import Callable
 from typing import Any
