@@ -1,7 +1,7 @@
 # Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 
-"""Data models and interfaces definition."""
+"""Data models and interfaces type definitions."""
 
 from dataclasses import dataclass, field
 from typing import Any, Generic, Literal, Protocol, TypeVar
