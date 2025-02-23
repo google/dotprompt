@@ -5,7 +5,7 @@
 
 import unittest
 
-import js2py  # type: ignore
+import js2py
 
 
 class TestDependencies(unittest.TestCase):

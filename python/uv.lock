@@ -397,7 +397,9 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "bpython" },
+    { name = "handlebars" },
     { name = "ipython" },
+    { name = "js2py" },
     { name = "jupyter" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -415,7 +417,9 @@ requires-dist = [{ name = "dotpromptz", editable = "dotpromptz" }]
 [package.metadata.requires-dev]
 dev = [
     { name = "bpython", specifier = ">=0.25" },
+    { name = "handlebars", specifier = ">=4.7.8" },
     { name = "ipython", specifier = ">=8.31.0" },
+    { name = "js2py", specifier = ">=0.74.0" },
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "pytest", specifier = ">=8.3.4" },
     { name = "pytest-asyncio", specifier = ">=0.25.2" },
@@ -676,15 +680,11 @@ wheels = [
 [[package]]
 name = "js2py"
 version = "0.74"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/a-j-albert/Js2Py---supports-python-3.13.git#cc64a715727f110b79310b8031e0ade9c501d5d3" }
 dependencies = [
     { name = "pyjsparser" },
     { name = "six" },
     { name = "tzlocal" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/cb/a5/3d8b3e4511cc21479f78f359b1b21f1fb7c640988765ffd09e55c6605e3b/Js2Py-0.74.tar.gz", hash = "sha256:39f3a6aa8469180efba3c8677271df27c31332fd1b471df1af2af58b87b8972f", size = 2504984 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/88/58/2feb430d47c9f18f331494b429697342722b51f28dad8ad92a511c0f6fc8/Js2Py-0.74-py3-none-any.whl", hash = "sha256:40a508a79e2f8d624e3f2e604f90a1e6f46ac75b416d7f4745939ff4a2e95e09", size = 1033007 },
 ]
 
 [[package]]
@@ -1633,7 +1633,7 @@ dependencies = [
 requires-dist = [
     { name = "dotpromptz", editable = "dotpromptz" },
     { name = "handlebars" },
-    { name = "js2py" },
+    { name = "js2py", git = "https://github.com/a-j-albert/Js2Py---supports-python-3.13.git" },
 ]
 
 [[package]]
