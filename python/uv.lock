@@ -680,7 +680,7 @@ wheels = [
 [[package]]
 name = "js2py"
 version = "0.74"
-source = { git = "https://github.com/a-j-albert/Js2Py---supports-python-3.13.git#cc64a715727f110b79310b8031e0ade9c501d5d3" }
+source = { git = "https://github.com/Manurajbharath/support_dotprompt.git#b186a13e390d69fd296a302cfc190c69f5ca7c0e" }
 dependencies = [
     { name = "pyjsparser" },
     { name = "six" },
@@ -1633,7 +1633,7 @@ dependencies = [
 requires-dist = [
     { name = "dotpromptz", editable = "dotpromptz" },
     { name = "handlebars" },
-    { name = "js2py", git = "https://github.com/a-j-albert/Js2Py---supports-python-3.13.git" },
+    { name = "js2py", git = "https://github.com/Manurajbharath/support_dotprompt.git" },
 ]
 
 [[package]]
