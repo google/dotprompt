@@ -18,5 +18,7 @@ for VERSION in "${PYTHON_VERSIONS[@]}"; do
   uv run \
     --python "python${VERSION}" \
     --directory "${TOP_DIR}/python" \
-    pytest . || true # TODO: Skip failures temporarily.
+    pytest -vv --log-level=DEBUG .
 done
+
+exit $?

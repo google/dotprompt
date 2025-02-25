@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+#
+# Copyright 2025 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+# Run all tests for the project.
+
+set -euo pipefail
+
+TOP_DIR=$(git rev-parse --show-toplevel)
+
+"${TOP_DIR}/scripts/run_go_tests"
+if [ $? -ne 0 ]; then
+  echo "Go tests failed."
+  exit 1
+fi
+
+"${TOP_DIR}/scripts/run_python_tests"
+if [ $? -ne 0 ]; then
+  echo "Python tests failed."
+  exit 1
+fi
+
+"${TOP_DIR}/scripts/run_js_tests"
+if [ $? -ne 0 ]; then
+  echo "JavaScript tests failed."
+  exit 1
+fi
+
+exit $?

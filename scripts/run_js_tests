@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+#
+# Run tests for all supported Node.js versions
+#
+# Copyright 2025 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
+set -euo pipefail
+
+TOP_DIR=$(git rev-parse --show-toplevel)
+NODE_VERSIONS=(
+  "20"
+  "21"
+  "22"
+  "23"
+)
+
+if [[ -z ${NVM_DIR-} ]]; then
+  echo "NVM_DIR is not set. Please ensure nvm is installed and properly configured."
+  exit 1
+fi
+
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+for VERSION in "${NODE_VERSIONS[@]}"; do
+  echo "Running tests with Node.js ${VERSION}..."
+
+  nvm install "${VERSION}" || true
+  nvm use "${VERSION}"
+  cd "${TOP_DIR}/js" && pnpm install && pnpm run test
+  if [ $? -ne 0 ]; then
+    echo "JavaScript tests failed."
+    exit 1
+  fi
+done
+
+nvm use default
