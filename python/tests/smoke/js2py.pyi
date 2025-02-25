@@ -1,5 +1,5 @@
 # js2py.pyi
-
+from collections.abc import Callable
 from typing import Any
 
 class EvalJs:
@@ -10,3 +10,8 @@ class EvalJs:
     def __getattr__(self, name: str) -> Any:
         """Dynamically access JavaScript functions/variables."""
         pass
+
+def eval_js(js_code: str) -> Callable[..., Any]: ...
+
+class Function:
+    def __call__(self, *args: Any) -> Any: ...
