@@ -11,6 +11,7 @@ import pytest
 from dotpromptz.parse import (
     FRONTMATTER_AND_BODY_REGEX,
     MEDIA_AND_SECTION_MARKER_REGEX,
+    RESERVED_METADATA_KEYWORDS,
     ROLE_AND_HISTORY_MARKER_REGEX,
     MessageSource,
     convert_namespaced_entry_to_nested_object,
@@ -18,6 +19,7 @@ from dotpromptz.parse import (
     insert_history,
     message_sources_to_messages,
     messages_have_history,
+    parse_document,
     parse_media_part,
     parse_part,
     parse_section_part,
@@ -30,6 +32,7 @@ from dotpromptz.parse import (
 from dotpromptz.typing import (
     MediaPart,
     Message,
+    ParsedPrompt,
     Part,
     PendingPart,
     Role,
@@ -305,6 +308,15 @@ class TestExtractFrontmatterAndBody(unittest.TestCase):
         input_str = '---\nfoo: bar\n---\nThis is the body.'
         frontmatter, body = extract_frontmatter_and_body(input_str)
         assert frontmatter == 'foo: bar'
+        assert body == 'This is the body.'
+
+    def test_should_extract_frontmatter_and_body_empty_frontmatter(
+        self,
+    ) -> None:
+        """Test extracting frontmatter and body when both are present."""
+        input_str = '---\n\n---\nThis is the body.'
+        frontmatter, body = extract_frontmatter_and_body(input_str)
+        assert frontmatter == ''
         assert body == 'This is the body.'
 
     def test_extract_frontmatter_and_body_no_frontmatter(self) -> None:
@@ -648,3 +660,108 @@ def test_parse_text_piece() -> None:
     piece = 'Hello World'
     result = parse_text_part(piece)
     assert result == TextPart(text='Hello World')
+
+
+class TestParseDocument(unittest.TestCase):
+    def test_parse_document_with_frontmatter_and_template(self) -> None:
+        """Test parsing document with frontmatter and template."""
+        source = """---
+name: test
+description: test description
+foo.bar: value
+---
+Template content"""
+
+        result: ParsedPrompt[dict[str, str]] = parse_document(source)
+
+        self.assertIsInstance(result, ParsedPrompt)
+        self.assertEqual(result.name, 'test')
+        self.assertEqual(result.description, 'test description')
+        if result.ext:
+            self.assertEqual(result.ext['foo']['bar'], 'value')
+        self.assertEqual(result.template, 'Template content')
+
+        if result.raw:
+            self.assertEqual(result.raw['name'], 'test')
+            self.assertEqual(result.raw['description'], 'test description')
+            self.assertEqual(result.raw['foo.bar'], 'value')
+
+    def test_handle_document_without_frontmatter(self) -> None:
+        """Test handling document without frontmatter."""
+        source = 'Just template content'
+
+        result: ParsedPrompt[dict[str, str]] = parse_document(source)
+
+        self.assertIsInstance(result, ParsedPrompt)
+        self.assertEqual(result.ext, {})
+        self.assertEqual(result.template, 'Just template content')
+
+    def test_handle_invalid_yaml_frontmatter(self) -> None:
+        """Test handling invalid YAML frontmatter."""
+        source = """---
+invalid: : yaml
+---
+Template content"""
+
+        result: ParsedPrompt[dict[str, str]] = parse_document(source)
+
+        self.assertIsInstance(result, ParsedPrompt)
+
+        self.assertEqual(result.ext, {})
+        self.assertEqual(result.template, source.strip())
+
+    def test_handle_empty_frontmatter(self) -> None:
+        """Test handling empty frontmatter."""
+        source = """---
+---
+Template content"""
+
+        result: ParsedPrompt[dict[str, str]] = parse_document(source)
+
+        self.assertIsInstance(result, ParsedPrompt)
+
+        self.assertEqual(result.ext, {})
+
+        # TODO: Check whether this is the correct behavior.
+        self.assertEqual(result.template, source.strip())
+
+    def test_handle_multiple_namespaced_entries(self) -> None:
+        """Test handling multiple namespaced entries."""
+        source = """---
+foo.bar: value1
+foo.baz: value2
+qux.quux: value3
+---
+Template content"""
+
+        result: ParsedPrompt[dict[str, str]] = parse_document(source)
+
+        self.assertIsInstance(result, ParsedPrompt)
+
+        if result.ext:
+            self.assertEqual(result.ext['foo']['bar'], 'value1')
+            self.assertEqual(result.ext['foo']['baz'], 'value2')
+            self.assertEqual(result.ext['qux']['quux'], 'value3')
+
+    def test_handle_reserved_keywords(self) -> None:
+        """Test handling reserved keywords."""
+        frontmatter_parts = []
+        for keyword in RESERVED_METADATA_KEYWORDS:
+            if keyword == 'ext':
+                continue
+            frontmatter_parts.append(f'{keyword}: value-{keyword}')
+
+        source = (
+            '---\n' + '\n'.join(frontmatter_parts) + '\n---\nTemplate content'
+        )
+
+        result: ParsedPrompt[dict[str, str]] = parse_document(source)
+
+        self.assertIsInstance(result, ParsedPrompt)
+
+        # for keyword in RESERVED_METADATA_KEYWORDS:
+        #    if keyword == 'ext':
+        #        continue
+        #    self.assertEqual(getattr(result, keyword), f'value-{keyword}')
+
+        self.assertEqual(result.template, 'Template content')

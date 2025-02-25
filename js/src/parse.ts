@@ -84,7 +84,7 @@ export const MEDIA_AND_SECTION_MARKER_REGEX =
  * List of reserved keywords that are handled specially in the metadata.
  * These keys are processed differently from extension metadata.
  */
-const RESERVED_METADATA_KEYWORDS: (keyof PromptMetadata)[] = [
+export const RESERVED_METADATA_KEYWORDS: (keyof PromptMetadata)[] = [
   // NOTE: KEEP SORTED
   'config',
   'description',
@@ -215,6 +215,7 @@ export function parseDocument<ModelConfig = Record<string, any>>(
     }
   }
 
+  // No frontmatter, return a basic ParsedPrompt with just the template
   return { ...BASE_METADATA, template: source };
 }
 

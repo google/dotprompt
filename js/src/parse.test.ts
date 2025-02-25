@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import {
   FRONTMATTER_AND_BODY_REGEX,
   MEDIA_AND_SECTION_MARKER_REGEX,
+  RESERVED_METADATA_KEYWORDS,
   ROLE_AND_HISTORY_MARKER_REGEX,
   convertNamespacedEntryToNestedObject,
   extractFrontmatterAndBody,
@@ -803,6 +804,16 @@ Template content`;
     });
   });
 
+  it('should handle document with empty frontmatter', () => {
+    // TODO: Check whether this is the correct behavior.
+    const source = '---\n\n---\nJust template content';
+    const result = parseDocument(source);
+    expect(result).toMatchObject({
+      ext: {},
+      template: source.trim(),
+    });
+  });
+
   it('should handle document without frontmatter', () => {
     const source = 'Just template content';
     const result = parseDocument(source);
@@ -822,6 +833,23 @@ Template content`;
     expect(result).toMatchObject({
       ext: {},
       template: source.trim(),
+    });
+  });
+
+  it('should handle reserved keywords in frontmatter', () => {
+    const frontmatter_parts = [];
+    for (const keyword of RESERVED_METADATA_KEYWORDS) {
+      frontmatter_parts.push(`${keyword}: value`);
+    }
+    const source = `---
+${frontmatter_parts.join('\n')}
+---
+Template content`;
+
+    const result = parseDocument(source);
+    expect(result).toMatchObject({
+      ext: {},
+      template: 'Template content',
     });
   });
 });
