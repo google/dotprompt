@@ -44,13 +44,13 @@ input:
   );
 
   const openaiResponse = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`,
+    'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
     {
       method: 'POST',
       body: JSON.stringify(openaiFormat),
       headers: {
         'content-type': 'application/json',
-        authorization: 'Bearer ' + process.env.GOOGLE_GENAI_API_KEY,
+        authorization: `Bearer ${process.env.GOOGLE_GENAI_API_KEY}`,
       },
     }
   );

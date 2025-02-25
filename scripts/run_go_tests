@@ -23,6 +23,8 @@ cd "${TOP_DIR}/go"
 for VERSION in "${GO_VERSIONS[@]}"; do
   echo "Running tests with Go ${VERSION}..."
   pushd "${TOP_DIR}/go" &>/dev/null
-  "${TOP_DIR}/scripts/golang" "${VERSION}" test ./... || true # TODO: Skip failures temporarily.
+  "${TOP_DIR}/scripts/golang" "${VERSION}" test ./...
   popd &>/dev/null
 done
+
+exit $?

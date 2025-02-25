@@ -40,19 +40,10 @@
           "run": "scripts/check_license"
         },
         {
-          "run": "uv run --directory python ruff check --select I --fix ."
-        },
-        {
           "run": "uv run --directory python mypy ."
         },
         {
-          "run": "scripts/run_python_tests"
-        },
-        {
-          "run": "scripts/run_go_tests"
-        },
-        {
-          "run": "scripts/run_js_tests"
+          "run": "scripts/run_tests"
         },
         {
           "run": "uv run mkdocs build"
@@ -86,19 +77,10 @@
           "run": "scripts/check_license"
         },
         {
-          "run": "uv run --directory python ruff check --select I --fix ."
-        },
-        {
           "run": "uv run --directory python mypy ."
         },
         {
-          "run": "scripts/run_python_tests"
-        },
-        {
-          "run": "scripts/run_go_tests"
-        },
-        {
-          "run": "scripts/run_js_tests"
+          "run": "scripts/run_tests"
         },
         {
           "run": "uv run mkdocs build"

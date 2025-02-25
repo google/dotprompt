@@ -3,17 +3,30 @@
 
 """Data models and interfaces type definitions."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Any, Generic, Literal, Protocol, TypeVar
+from enum import StrEnum
+from typing import Any, Generic, Protocol, TypeVar
 
 T = TypeVar('T')
-
 
 type Schema = dict[str, Any]
 
 
+class Role(StrEnum):
+    """The role of a message in a conversation."""
+
+    USER = 'user'
+    MODEL = 'model'
+    TOOL = 'tool'
+    SYSTEM = 'system'
+
+
 @dataclass
 class ToolDefinition:
+    """A tool definition."""
+
     name: str
     description: str | None
     input_schema: Schema = field(default_factory=dict)
@@ -38,6 +51,8 @@ class HasMetadata:
 
 @dataclass(kw_only=True)
 class PromptRef:
+    """A reference to a prompt in a store."""
+
     name: str
     variant: str | None = None
     version: str | None = None
@@ -45,6 +60,8 @@ class PromptRef:
 
 @dataclass(kw_only=True)
 class PromptData(PromptRef):
+    """A prompt in a store."""
+
     source: str
 
 
@@ -91,41 +108,57 @@ class PromptMetadata(HasMetadata, Generic[T]):
 
 @dataclass(kw_only=True)
 class ParsedPrompt(PromptMetadata[T]):
+    """A parsed prompt."""
+
     template: str
 
 
 @dataclass
 class EmptyPart(HasMetadata):
+    """An empty part in a conversation."""
+
     pass
 
 
 @dataclass(kw_only=True)
 class TextPart(EmptyPart):
+    """A text part in a conversation."""
+
     text: str
 
 
 @dataclass(kw_only=True)
 class DataPart(EmptyPart):
+    """A data part in a conversation."""
+
     data: dict[str, Any]
 
 
 @dataclass(kw_only=True)
 class MediaPart(EmptyPart):
+    """A media part in a conversation."""
+
     media: dict[str, str | None]
 
 
 @dataclass(kw_only=True)
 class ToolRequestPart(EmptyPart, Generic[T]):
+    """A tool request part in a conversation."""
+
     tool_request: dict[str, T | None]
 
 
 @dataclass(kw_only=True)
 class ToolResponsePart(EmptyPart, Generic[T]):
+    """A tool response part in a conversation."""
+
     tool_response: dict[str, T | None]
 
 
 @dataclass(kw_only=True)
 class PendingPart(EmptyPart):
+    """A pending part in a conversation."""
+
     metadata: dict[str, Any] = field(default_factory=lambda: {'pending': True})
 
 
@@ -141,12 +174,16 @@ type Part = (
 
 @dataclass(kw_only=True)
 class Message(HasMetadata):
-    role: Literal['user', 'model', 'tool', 'system']
+    """A message in a conversation."""
+
+    role: Role
     content: list[Part]
 
 
 @dataclass(kw_only=True)
 class Document(HasMetadata):
+    """A document in a conversation."""
+
     content: list[Part]
 
 
@@ -219,26 +256,32 @@ class PromptFunction(Protocol, Generic[T]):
 class PromptRefFunction(Protocol, Generic[T]):
     """Takes runtime data / context and returns a rendered prompt result.
 
-    The difference in comparison to PromptFunction is that a promp is loaded via
-    reference.
+    The difference in comparison to PromptFunction is that a prompt is loaded
+    via reference.
     """
 
     def __call__(
         self,
         data: DataArgument[Any],
         options: PromptMetadata[T] | None = None,
-    ) -> RenderedPrompt[T]: ...
+    ) -> RenderedPrompt[T]:
+        """Takes runtime data / context and returns a rendered prompt result."""
+        ...
 
     prompt_ref: PromptRef
 
 
 @dataclass
 class PaginatedResponse:
+    """A paginated response."""
+
     cursor: str | None = None
 
 
 @dataclass(kw_only=True)
 class PartialRef:
+    """A partial reference."""
+
     name: str
     variant: str | None = None
     version: str | None = None
@@ -246,6 +289,8 @@ class PartialRef:
 
 @dataclass(kw_only=True)
 class PartialData(PartialRef):
+    """A partial in a store."""
+
     source: str
 
 
@@ -257,21 +302,25 @@ class PromptStore(Protocol):
 
         Be aware that some store providers may return limited metadata.
         """
+        ...
 
     def list_partials(
         self, options: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         """Return a list of partial names available in this store."""
+        ...
 
     def load(
         self, name: str, options: dict[str, Any] | None = None
     ) -> PromptData:
         """Retrieve a prompt from the store."""
+        ...
 
     def load_partial(
         self, name: str, options: dict[str, Any] | None = None
     ) -> PromptData:
         """Retrieve a partial from the store."""
+        ...
 
 
 class PromptStoreWritable(PromptStore, Protocol):
@@ -282,12 +331,16 @@ class PromptStoreWritable(PromptStore, Protocol):
 
         May be destructive for prompt stores without versioning.
         """
+        ...
 
     def delete(self, name: str, options: dict[str, Any] | None = None) -> None:
         """Delete a prompt from the store."""
+        ...
 
 
 @dataclass
 class PromptBundle:
+    """A bundle of prompts and partials."""
+
     partials: list[PartialData]
     prompts: list[PromptData]

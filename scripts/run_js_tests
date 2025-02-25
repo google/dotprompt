@@ -15,7 +15,7 @@ NODE_VERSIONS=(
   "23"
 )
 
-if [[ -z "${NVM_DIR:-}" ]]; then
+if [[ -z ${NVM_DIR-} ]]; then
   echo "NVM_DIR is not set. Please ensure nvm is installed and properly configured."
   exit 1
 fi
@@ -28,6 +28,10 @@ for VERSION in "${NODE_VERSIONS[@]}"; do
   nvm install "${VERSION}" || true
   nvm use "${VERSION}"
   cd "${TOP_DIR}/js" && pnpm install && pnpm run test
+  if [ $? -ne 0 ]; then
+    echo "JavaScript tests failed."
+    exit 1
+  fi
 done
 
 nvm use default
