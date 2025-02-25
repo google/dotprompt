@@ -113,8 +113,10 @@ export type Part =
   | ToolResponsePart
   | PendingPart;
 
+export type Role = 'user' | 'model' | 'tool' | 'system';
+
 export interface Message extends HasMetadata {
-  role: 'user' | 'model' | 'tool' | 'system';
+  role: Role;
   content: Part[];
 }
 

@@ -1,7 +1,7 @@
 # Copyright 2024 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 
-name: "JS: Run Tests"
+name: "JS: Run Tests and Build"
 
 on:
   push:
@@ -38,3 +38,6 @@ jobs:
 
       - name: Run tests
         run: cd js && pnpm test
+
+      - name: Build
+        run: cd js && pnpm build

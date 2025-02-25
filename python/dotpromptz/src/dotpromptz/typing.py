@@ -1,54 +1,85 @@
 # Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 
-"""Data models and interfaces definition."""
+"""Data models and interfaces type definitions using Pydantic v2."""
 
-from dataclasses import dataclass, field
-from typing import Any, Generic, Literal, Protocol, TypeVar
+from __future__ import annotations
+
+from enum import StrEnum
+from typing import Any, Generic, Protocol, TypeVar
+
+from pydantic import BaseModel, ConfigDict, Field
 
 T = TypeVar('T')
 
+# Type alias
+Schema = dict[str, Any]
 
-type Schema = dict[str, Any]
+
+class Role(StrEnum):
+    """The role of a message in a conversation."""
+
+    USER = 'user'
+    MODEL = 'model'
+    TOOL = 'tool'
+    SYSTEM = 'system'
 
 
-@dataclass
-class ToolDefinition:
+class ToolDefinition(BaseModel):
+    """A tool definition."""
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra='forbid',
+    )
+
     name: str
-    description: str | None
-    input_schema: Schema = field(default_factory=dict)
-    output_schema: Schema | None = None
+    description: str | None = None
+    input_schema: dict[str, Any] = Field(
+        default_factory=dict, alias='inputSchema'
+    )
+    output_schema: dict[str, Any] | None = Field(None, alias='outputSchema')
 
 
-type ToolArgument = str | ToolDefinition
+# Type alias
+ToolArgument = str | ToolDefinition
 
 
-@dataclass
-class HasMetadata:
+class HasMetadata(BaseModel):
     """
     Whether contains metadata.
 
     Attributes:
-        metadata: Arbitrary metadata to be used by tooling or for informational
-            purposes.
+        metadata: Arbitrary metadata to be used by tooling or for informational purposes.
     """
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra='forbid',
+    )
 
     metadata: dict[str, Any] | None = None
 
 
-@dataclass(kw_only=True)
-class PromptRef:
+class PromptRef(BaseModel):
+    """A reference to a prompt in a store."""
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra='forbid',
+    )
+
     name: str
     variant: str | None = None
     version: str | None = None
 
 
-@dataclass(kw_only=True)
 class PromptData(PromptRef):
+    """A prompt in a store."""
+
     source: str
 
 
-@dataclass
 class PromptMetadata(HasMetadata, Generic[T]):
     """Prompt metadata.
 
@@ -75,13 +106,18 @@ class PromptMetadata(HasMetadata, Generic[T]):
             be available at `parsedPrompt.ext["myext.foo"].bar`.
     """
 
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra='forbid',
+    )
+
     name: str | None = None
     variant: str | None = None
     version: str | None = None
     description: str | None = None
     model: str | None = None
     tools: list[str] | None = None
-    tool_defs: list[ToolDefinition] | None = None
+    tool_defs: list[ToolDefinition] | None = Field(None, alias='toolDefs')
     config: T | None = None
     input: dict[str, Any] | None = None
     output: dict[str, Any] | None = None
@@ -89,47 +125,56 @@ class PromptMetadata(HasMetadata, Generic[T]):
     ext: dict[str, dict[str, Any]] | None = None
 
 
-@dataclass(kw_only=True)
-class ParsedPrompt(PromptMetadata[T]):
+class ParsedPrompt(PromptMetadata[T], Generic[T]):
+    """A parsed prompt."""
+
     template: str
 
 
-@dataclass
 class EmptyPart(HasMetadata):
+    """An empty part in a conversation."""
+
     pass
 
 
-@dataclass(kw_only=True)
 class TextPart(EmptyPart):
+    """A text part in a conversation."""
+
     text: str
 
 
-@dataclass(kw_only=True)
 class DataPart(EmptyPart):
+    """A data part in a conversation."""
+
     data: dict[str, Any]
 
 
-@dataclass(kw_only=True)
 class MediaPart(EmptyPart):
+    """A media part in a conversation."""
+
     media: dict[str, str | None]
 
 
-@dataclass(kw_only=True)
 class ToolRequestPart(EmptyPart, Generic[T]):
-    tool_request: dict[str, T | None]
+    """A tool request part in a conversation."""
+
+    tool_request: dict[str, T | None] = Field(alias='toolRequest')
 
 
-@dataclass(kw_only=True)
 class ToolResponsePart(EmptyPart, Generic[T]):
-    tool_response: dict[str, T | None]
+    """A tool response part in a conversation."""
+
+    tool_response: dict[str, T | None] = Field(alias='toolResponse')
 
 
-@dataclass(kw_only=True)
 class PendingPart(EmptyPart):
-    metadata: dict[str, Any] = field(default_factory=lambda: {'pending': True})
+    """A pending part in a conversation."""
+
+    metadata: dict[str, Any] = Field(default_factory=lambda: {'pending': True})
 
 
-type Part = (
+# Union type for Part
+Part = (
     TextPart
     | DataPart
     | MediaPart
@@ -139,21 +184,22 @@ type Part = (
 )
 
 
-@dataclass(kw_only=True)
 class Message(HasMetadata):
-    role: Literal['user', 'model', 'tool', 'system']
+    """A message in a conversation."""
+
+    role: Role
     content: list[Part]
 
 
-@dataclass(kw_only=True)
 class Document(HasMetadata):
+    """A document in a conversation."""
+
     content: list[Part]
 
 
-@dataclass
-class DataArgument(Generic[T]):
+class DataArgument(BaseModel, Generic[T]):
     """
-    Rrovides all of the information necessary to render a template at runtime.
+    Provides all of the information necessary to render a template at runtime.
 
     Attributes:
         input: Input variables for the prompt template.
@@ -163,13 +209,19 @@ class DataArgument(Generic[T]):
             e.g. `context: {state: {...}}` is exposed as `@state`.
     """
 
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra='forbid',
+    )
+
     input: T | None = None
     docs: list[Document] | None = None
     messages: list[Message] | None = None
     context: dict[str, Any] | None = None
 
 
-type JSONSchema = Any
+# Type alias
+JSONSchema = Any
 
 
 class SchemaResolver(Protocol):
@@ -190,12 +242,11 @@ class ToolResolver(Protocol):
     def __call__(self, tool_name: str) -> ToolDefinition | None: ...
 
 
-@dataclass(kw_only=True)
-class RenderedPrompt(PromptMetadata[T]):
+class RenderedPrompt(PromptMetadata[T], Generic[T]):
     """The final result of rendering a Dotprompt template.
 
     It includes all of the prompt metadata as well as a set of `messages` to be
-    sent to the  model.
+    sent to the model.
 
     Attributes:
         messages: The rendered messages of the prompt.
@@ -219,36 +270,64 @@ class PromptFunction(Protocol, Generic[T]):
 class PromptRefFunction(Protocol, Generic[T]):
     """Takes runtime data / context and returns a rendered prompt result.
 
-    The difference in comparison to PromptFunction is that a promp is loaded via
-    reference.
+    The difference in comparison to PromptFunction is that a prompt is loaded
+    via reference.
     """
 
     def __call__(
         self,
         data: DataArgument[Any],
         options: PromptMetadata[T] | None = None,
-    ) -> RenderedPrompt[T]: ...
+    ) -> RenderedPrompt[T]:
+        """Takes runtime data / context and returns a rendered prompt result."""
+        ...
 
     prompt_ref: PromptRef
 
 
-@dataclass
-class PaginatedResponse:
+class PaginatedResponse(BaseModel):
+    """A paginated response."""
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra='forbid',
+    )
+
     cursor: str | None = None
 
 
-@dataclass(kw_only=True)
-class PartialRef:
+class PartialRef(BaseModel):
+    """A partial reference."""
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra='forbid',
+    )
+
     name: str
     variant: str | None = None
     version: str | None = None
 
 
-@dataclass(kw_only=True)
 class PartialData(PartialRef):
+    """A partial in a store."""
+
     source: str
 
 
+class PromptBundle(BaseModel):
+    """A bundle of prompts and partials."""
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra='forbid',
+    )
+
+    partials: list[PartialData]
+    prompts: list[PromptData]
+
+
+# Protocol classes remain the same since Pydantic doesn't handle them directly
 class PromptStore(Protocol):
     """PromptStore is a common interface that provides for."""
 
@@ -257,21 +336,25 @@ class PromptStore(Protocol):
 
         Be aware that some store providers may return limited metadata.
         """
+        ...
 
     def list_partials(
         self, options: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         """Return a list of partial names available in this store."""
+        ...
 
     def load(
         self, name: str, options: dict[str, Any] | None = None
     ) -> PromptData:
         """Retrieve a prompt from the store."""
+        ...
 
     def load_partial(
         self, name: str, options: dict[str, Any] | None = None
     ) -> PromptData:
         """Retrieve a partial from the store."""
+        ...
 
 
 class PromptStoreWritable(PromptStore, Protocol):
@@ -282,12 +365,8 @@ class PromptStoreWritable(PromptStore, Protocol):
 
         May be destructive for prompt stores without versioning.
         """
+        ...
 
     def delete(self, name: str, options: dict[str, Any] | None = None) -> None:
         """Delete a prompt from the store."""
-
-
-@dataclass
-class PromptBundle:
-    partials: list[PartialData]
-    prompts: list[PromptData]
+        ...

@@ -10,9 +10,31 @@ import { parse } from 'yaml';
 import { Dotprompt } from '../src/dotprompt';
 import type { DataArgument, JSONSchema, ToolDefinition } from '../src/types';
 
-const specDir = join('..', 'spec');
-const files = readdirSync(specDir, { recursive: true, withFileTypes: true });
+/**
+ * The directory containing the spec files.
+ */
+const SPEC_DIR = join('..', 'spec');
 
+/**
+ * A test case for a YAML spec.
+ */
+interface SpecTest {
+  desc?: string;
+  data: DataArgument;
+  expect: {
+    config: boolean;
+    ext: boolean;
+    input: boolean;
+    messages: boolean;
+    metadata: boolean;
+    raw: boolean;
+  };
+  options: object;
+}
+
+/**
+ * A suite of test cases for a YAML spec.
+ */
 interface SpecSuite {
   name: string;
   template: string;
@@ -21,90 +43,139 @@ interface SpecSuite {
   tools?: Record<string, ToolDefinition>;
   partials?: Record<string, string>;
   resolverPartials?: Record<string, string>;
-  tests: { desc?: string; data: DataArgument; expect: any; options: object }[];
+  tests: SpecTest[];
 }
 
-// Process each YAML file
-files
-  .filter((file) => !file.isDirectory() && file.name.endsWith('.yaml'))
-  .forEach((file) => {
-    const suiteName = join(
-      relative(specDir, file.path),
-      file.name.replace(/\.yaml$/, '')
+/**
+ * Creates test cases for a YAML spec.
+ *
+ * @param s The suite
+ * @param tc The test case
+ * @param dotpromptFactory The dotprompt factory
+ */
+async function createTestCases(
+  s: SpecSuite,
+  tc: SpecTest,
+  dotpromptFactory: (suite: SpecSuite) => Dotprompt
+) {
+  it(tc.desc || 'should match expected output', async () => {
+    const env = dotpromptFactory(s);
+
+    // Define partials if they exist.
+    if (s.partials) {
+      for (const [name, template] of Object.entries(s.partials)) {
+        env.definePartial(name, template);
+      }
+    }
+
+    // Render the template.
+    const result = await env.render(
+      s.template,
+      { ...s.data, ...tc.data },
+      tc.options
     );
-    const suites: SpecSuite[] = parse(
-      readFileSync(join(file.path, file.name), 'utf-8')
-    );
 
-    // Create a describe block for each YAML file
-    suite(suiteName, () => {
-      // Create a describe block for each suite in the file
-      suites.forEach((s) => {
-        describe(s.name, () => {
-          // Create a test for each test case in the suite
-          s.tests.forEach((tc) => {
-            it(tc.desc || 'should match expected output', async () => {
-              const env = new Dotprompt({
-                schemas: s.schemas,
-                tools: s.tools,
-                partialResolver: (name: string) =>
-                  s.resolverPartials?.[name] || null,
-              });
+    // Prune the result and compare to the expected output.
+    const { raw, ...prunedResult } = result;
+    const {
+      raw: expectRaw,
+      input: discardInputForRender,
+      ...expected
+    } = tc.expect;
 
-              if (s.partials) {
-                for (const [name, template] of Object.entries(s.partials)) {
-                  env.definePartial(name, template);
-                }
-              }
+    // Compare the pruned result to the expected output.
+    expect(prunedResult, 'render should produce the expected result').toEqual({
+      ...expected,
+      ext: expected.ext || {},
+      config: expected.config || {},
+      metadata: expected.metadata || {},
+    });
 
-              const result = await env.render(
-                s.template,
-                { ...s.data, ...tc.data },
-                tc.options
-              );
-              const { raw, ...prunedResult } = result;
-              const {
-                raw: expectRaw,
-                input: discardInputForRender,
-                ...expected
-              } = tc.expect;
-              expect(
-                prunedResult,
-                'render should produce the expected result'
-              ).toEqual({
-                ...expected,
-                ext: expected.ext || {},
-                config: expected.config || {},
-                metadata: expected.metadata || {},
-              });
-              // only compare raw if the spec demands it
-              if (tc.expect.raw) {
-                expect(raw).toEqual(expectRaw);
-              }
+    // Only compare raw if the spec demands it.
+    if (tc.expect.raw) {
+      expect(raw).toEqual(expectRaw);
+    }
 
-              const metadataResult = await env.renderMetadata(
-                s.template,
-                tc.options
-              );
-              const { raw: metadataResultRaw, ...prunedMetadataResult } =
-                metadataResult;
-              const {
-                messages,
-                raw: metadataExpectRaw,
-                ...expectedMetadata
-              } = tc.expect;
-              expect(
-                prunedMetadataResult,
-                'renderMetadata should produce the expected result'
-              ).toEqual({
-                ...expectedMetadata,
-                ext: expectedMetadata.ext || {},
-                config: expectedMetadata.config || {},
-                metadata: expectedMetadata.metadata || {},
-              });
-            });
-          });
-        });
-      });
+    // Render the metadata.
+    const metadataResult = await env.renderMetadata(s.template, tc.options);
+    const { raw: metadataResultRaw, ...prunedMetadataResult } = metadataResult;
+    const { messages, raw: metadataExpectRaw, ...expectedMetadata } = tc.expect;
+
+    // Compare the pruned metadata result to the expected output.
+    expect(
+      prunedMetadataResult,
+      'renderMetadata should produce the expected result'
+    ).toEqual({
+      ...expectedMetadata,
+      ext: expectedMetadata.ext || {},
+      config: expectedMetadata.config || {},
+      metadata: expectedMetadata.metadata || {},
     });
   });
+}
+
+/**
+ * Creates a test suite for a YAML spec.
+ *
+ * @param suiteName The name of the suite
+ * @param suites The suites to create
+ * @param dotpromptFactory The dotprompt factory
+ */
+function createTestSuite(
+  suiteName: string,
+  suites: SpecSuite[],
+  dotpromptFactory: (suite: SpecSuite) => Dotprompt
+) {
+  suite(suiteName, () => {
+    for (const s of suites) {
+      describe(s.name, () => {
+        for (const tc of s.tests) {
+          createTestCases(s, tc, dotpromptFactory);
+        }
+      });
+    }
+  });
+}
+
+/**
+ * Processes a single spec file.  Takes the file reading function as a dependency.
+ *
+ * @param file The file to process
+ * @param readFileSyncFn The file reading function
+ * @param dotpromptFactory The dotprompt factory
+ */
+function processSpecFile(
+  file: { path: string; name: string },
+  readFileSyncFn: (path: string, encoding: BufferEncoding) => string,
+  dotpromptFactory: (suite: SpecSuite) => Dotprompt
+) {
+  const suiteName = join(
+    relative(SPEC_DIR, file.path),
+    file.name.replace(/\.yaml$/, '')
+  );
+  const suites: SpecSuite[] = parse(
+    readFileSyncFn(join(file.path, file.name), 'utf-8')
+  );
+  createTestSuite(suiteName, suites, dotpromptFactory);
+}
+
+/**
+ * Top level processing, orchestrates the other functions.
+ */
+function processSpecFiles() {
+  const files = readdirSync(SPEC_DIR, { recursive: true, withFileTypes: true });
+  // Process each YAML file
+  for (const file of files.filter(
+    (file) => !file.isDirectory() && file.name.endsWith('.yaml')
+  )) {
+    processSpecFile(file, readFileSync, (s: SpecSuite) => {
+      return new Dotprompt({
+        schemas: s.schemas,
+        tools: s.tools,
+        partialResolver: (name: string) => s.resolverPartials?.[name] || null,
+      });
+    });
+  }
+}
+
+processSpecFiles();

@@ -2,6 +2,7 @@
 .cache
 .firebaserc
 .idea
+/js/coverage
 /js/dist
 /third_party/docsite/src/content/refdocs
 bazel-*
