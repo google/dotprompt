@@ -43,7 +43,16 @@
           "run": "uv run --directory python mypy ."
         },
         {
-          "run": "scripts/run_tests"
+          "run": "scripts/run_python_tests"
+        },
+        {
+          "run": "scripts/run_js_tests"
+        },
+        {
+          "run": "scripts/run_go_tests"
+        },
+        {
+          "run": "pnpm -C js build"
         },
         {
           "run": "uv run mkdocs build"
@@ -80,7 +89,16 @@
           "run": "uv run --directory python mypy ."
         },
         {
-          "run": "scripts/run_tests"
+          "run": "scripts/run_python_tests"
+        },
+        {
+          "run": "scripts/run_js_tests"
+        },
+        {
+          "run": "scripts/run_go_tests"
+        },
+        {
+          "run": "pnpm -C js build"
         },
         {
           "run": "uv run mkdocs build"

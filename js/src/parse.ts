@@ -10,8 +10,42 @@ import type {
   Message,
   ParsedPrompt,
   Part,
+  PendingPart,
   PromptMetadata,
+  Role,
+  TextPart,
 } from './types';
+
+/**
+ * A message source is a message with a source string and optional content and
+ * metadata.
+ */
+export type MessageSource = {
+  role: Role;
+  source?: string;
+  content?: Message['content'];
+  metadata?: Record<string, unknown>;
+};
+
+/**
+ * Prefixes for the role markers in the template.
+ */
+export const ROLE_MARKER_PREFIX = '<<<dotprompt:role:';
+
+/**
+ * Prefixes for the history markers in the template.
+ */
+export const HISTORY_MARKER_PREFIX = '<<<dotprompt:history';
+
+/**
+ * Prefixes for the media markers in the template.
+ */
+export const MEDIA_MARKER_PREFIX = '<<<dotprompt:media:';
+
+/**
+ * Prefixes for the section markers in the template.
+ */
+export const SECTION_MARKER_PREFIX = '<<<dotprompt:section';
 
 /**
  * Regular expression to match YAML frontmatter delineated by `---` markers at
@@ -19,26 +53,6 @@ import type {
  */
 export const FRONTMATTER_AND_BODY_REGEX =
   /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
-
-/**
- * List of reserved keywords that are handled specially in the metadata.
- * These keys are processed differently from extension metadata.
- */
-const RESERVED_METADATA_KEYWORDS: (keyof PromptMetadata)[] = [
-  // NOTE: KEEP SORTED
-  'config',
-  'description',
-  'ext',
-  'input',
-  'model',
-  'name',
-  'output',
-  'raw',
-  'toolDefs',
-  'tools',
-  'variant',
-  'version',
-];
 
 /**
  * Regular expression to match <<<dotprompt:role:xxx>>> and
@@ -65,6 +79,26 @@ export const ROLE_AND_HISTORY_MARKER_REGEX =
  */
 export const MEDIA_AND_SECTION_MARKER_REGEX =
   /(<<<dotprompt:(?:media:url|section).*?)>>>/g;
+
+/**
+ * List of reserved keywords that are handled specially in the metadata.
+ * These keys are processed differently from extension metadata.
+ */
+const RESERVED_METADATA_KEYWORDS: (keyof PromptMetadata)[] = [
+  // NOTE: KEEP SORTED
+  'config',
+  'description',
+  'ext',
+  'input',
+  'model',
+  'name',
+  'output',
+  'raw',
+  'toolDefs',
+  'tools',
+  'variant',
+  'version',
+];
 
 /**
  * Default metadata structure with empty extension and configuration objects.
@@ -135,7 +169,8 @@ export function convertNamespacedEntryToNestedObject(
  * Extracts the YAML frontmatter and body from a document.
  *
  * @param source The source document containing frontmatter and template
- * @returns An object containing the frontmatter and body
+ * @returns An object containing the frontmatter and body If the pattern does
+ *   not match, both the values returned will be empty.
  */
 export function extractFrontmatterAndBody(source: string) {
   const match = source.match(FRONTMATTER_AND_BODY_REGEX);
@@ -184,61 +219,26 @@ export function parseDocument<ModelConfig = Record<string, any>>(
 }
 
 /**
- * Converts a rendered template string into an array of messages.  Processes
- * role markers and history placeholders to structure the conversation.
+ * Processes an array of message sources into an array of messages.
  *
- * @template ModelConfig Type for model-specific configuration
- * @param renderedString The rendered template string to convert
- * @param data Optional data containing message history
- * @return Array of structured messages
+ * @param messageSources Array of message sources
+ * @returns Array of structured messages
  */
-export function toMessages<ModelConfig = Record<string, any>>(
-  renderedString: string,
-  data?: DataArgument
+export function messageSourcesToMessages(
+  messageSources: MessageSource[]
 ): Message[] {
-  let currentMessage: { role: string; source: string } = {
-    role: 'user',
-    source: '',
-  };
-  const messageSources: {
-    role: string;
-    source?: string;
-    content?: Message['content'];
-    metadata?: Record<string, unknown>;
-  }[] = [currentMessage];
-
-  for (const piece of splitByRoleAndHistoryMarkers(renderedString)) {
-    if (piece.startsWith('<<<dotprompt:role:')) {
-      const role = piece.substring(18);
-      if (currentMessage.source.trim()) {
-        currentMessage = { role, source: '' };
-        messageSources.push(currentMessage);
-      } else {
-        currentMessage.role = role;
-      }
-    } else if (piece.startsWith('<<<dotprompt:history')) {
-      messageSources.push(
-        ...(data?.messages ? transformMessagesToHistory(data.messages) : [])
-      );
-      currentMessage = { role: 'model', source: '' };
-      messageSources.push(currentMessage);
-    } else {
-      currentMessage.source += piece;
-    }
-  }
-
-  const messages: Message[] = messageSources
+  return messageSources
     .filter((ms) => ms.content || ms.source)
     .map((m) => {
       const out: Message = {
-        role: m.role as Message['role'],
-        content: m.content || toParts(m.source!),
+        role: m.role as Role,
+        content: m.content || toParts(m.source || ''),
       };
-      if (m.metadata) out.metadata = m.metadata;
+      if (m.metadata) {
+        out.metadata = m.metadata;
+      }
       return out;
     });
-
-  return insertHistory(messages, data?.messages);
 }
 
 /**
@@ -248,8 +248,8 @@ export function toMessages<ModelConfig = Record<string, any>>(
  * @returns Array of messages with history metadata added
  */
 export function transformMessagesToHistory(
-  messages: Array<{ metadata?: Record<string, unknown> }>
-): Array<{ metadata: Record<string, unknown> }> {
+  messages: Array<Message>
+): Array<Message> {
   return messages.map((m) => ({
     ...m,
     metadata: { ...m.metadata, purpose: 'history' },
@@ -257,8 +257,73 @@ export function transformMessagesToHistory(
 }
 
 /**
- * Inserts historical messages into the conversation at the appropriate
- * position.
+ * Converts a rendered template string into an array of messages.  Processes
+ * role markers and history placeholders to structure the conversation.
+ *
+ * @template ModelConfig Type for model-specific configuration
+ * @param renderedString The rendered template string to convert
+ * @param data Optional data containing message history
+ * @return Array of structured messages
+ */
+export function toMessages<ModelConfig = Record<string, unknown>>(
+  renderedString: string,
+  data?: DataArgument
+): Message[] {
+  let currentMessage: MessageSource = { role: 'user', source: '' };
+  const messageSources: MessageSource[] = [currentMessage];
+
+  for (const piece of splitByRoleAndHistoryMarkers(renderedString)) {
+    if (piece.startsWith(ROLE_MARKER_PREFIX)) {
+      const role = piece.substring(ROLE_MARKER_PREFIX.length) as Role;
+
+      if (currentMessage.source?.trim()) {
+        // If the current message has a source, reset it.
+        currentMessage = { role, source: '' };
+        messageSources.push(currentMessage);
+      } else {
+        // Otherwise, update the role of the current message.
+        currentMessage.role = role;
+      }
+    } else if (piece.startsWith(HISTORY_MARKER_PREFIX)) {
+      // Add the history messages to the message sources.
+      const historyMessages = transformMessagesToHistory(data?.messages ?? []);
+      if (historyMessages) {
+        messageSources.push(...historyMessages);
+      }
+
+      // Add a new message source for the model.
+      currentMessage = { role: 'model', source: '' };
+      messageSources.push(currentMessage);
+    } else {
+      // Otherwise, add the piece to the current message source.
+      currentMessage.source += piece;
+    }
+  }
+
+  const messages: Message[] = messageSourcesToMessages(messageSources);
+  return insertHistory(messages, data?.messages);
+}
+
+/**
+ * Checks if the messages have history metadata.
+ *
+ * @param messages The messages to check
+ * @return True if the messages have history metadata, false otherwise
+ */
+export function messagesHaveHistory(messages: Message[]): boolean {
+  return messages.some((m) => m.metadata?.purpose === 'history');
+}
+
+/**
+ * Inserts historical messages into the conversation at appropriate positions.
+ *
+ * The history is inserted at:
+ * - Before the last user message if there is a user message.
+ * - The end of the conversation if there is no history or no user message.
+ *
+ * The history is not inserted:
+ * - If it already exists in the messages.
+ * - If there is no user message.
  *
  * @param messages Current array of messages
  * @param history Historical messages to insert
@@ -268,11 +333,19 @@ export function insertHistory(
   messages: Message[],
   history: Message[] = []
 ): Message[] {
-  if (!history || messages.find((m) => m.metadata?.purpose === 'history'))
+  // If we have no history or find an existing instance of history, return the
+  // original messages unmodified.
+  if (!history || messagesHaveHistory(messages)) {
     return messages;
-  if (messages.at(-1)?.role === 'user') {
-    return [...messages.slice(0, -1)!, ...history!, messages.at(-1)!];
   }
+
+  // If the last message is a user message, insert the history before it.
+  const lastMessage = messages.at(-1);
+  if (lastMessage?.role === 'user') {
+    const messagesWithoutLast = messages.slice(0, -1);
+    return [...messagesWithoutLast, ...history, lastMessage];
+  }
+  // Otherwise, append the history to the end of the messages.
   return [...messages, ...history];
 }
 
@@ -284,26 +357,62 @@ export function insertHistory(
  * @return Array of structured parts (text, media, or metadata)
  */
 export function toParts(source: string): Part[] {
-  const parts: Part[] = [];
-  const pieces = splitByMediaAndSectionMarkers(source);
-  for (let i = 0; i < pieces.length; i++) {
-    const piece = pieces[i];
-    if (piece.startsWith('<<<dotprompt:media:')) {
-      // Extract URL and content type if present.
-      const [_, url, contentType] = piece.split(' ');
-      const part: MediaPart = { media: { url } };
-      if (contentType) {
-        part.media.contentType = contentType;
-      }
-      parts.push(part);
-    } else if (piece.startsWith('<<<dotprompt:section')) {
-      // Extract section type if present.
-      const [_, sectionType] = piece.split(' ');
-      parts.push({ metadata: { purpose: sectionType, pending: true } });
-    } else {
-      parts.push({ text: piece });
-    }
-  }
+  return splitByMediaAndSectionMarkers(source).map(parsePart);
+}
 
-  return parts;
+/**
+ * Parses a part from a string.
+ *
+ * @param piece The piece to parse
+ * @return Parsed part
+ */
+export function parsePart(piece: string): Part {
+  if (piece.startsWith(MEDIA_MARKER_PREFIX)) {
+    return parseMediaPart(piece);
+  } else if (piece.startsWith(SECTION_MARKER_PREFIX)) {
+    return parseSectionPart(piece);
+  }
+  return parseTextPart(piece);
+}
+
+/**
+ * Parses a media part from a string.
+ *
+ * @param piece The piece to parse
+ * @return Parsed media part
+ */
+export function parseMediaPart(piece: string): MediaPart {
+  if (!piece.startsWith(MEDIA_MARKER_PREFIX)) {
+    throw new Error('Invalid media piece');
+  }
+  const [_, url, contentType] = piece.split(' ');
+  const part: MediaPart = { media: { url } };
+  if (contentType) {
+    part.media.contentType = contentType;
+  }
+  return part;
+}
+
+/**
+ * Parses a section part from a string.
+ *
+ * @param piece The piece to parse
+ * @return Parsed section part
+ */
+export function parseSectionPart(piece: string): PendingPart {
+  if (!piece.startsWith(SECTION_MARKER_PREFIX)) {
+    throw new Error('Invalid section piece');
+  }
+  const [_, sectionType] = piece.split(' ');
+  return { metadata: { purpose: sectionType, pending: true } };
+}
+
+/**
+ * Parses a text part from a string.
+ *
+ * @param piece The piece to parse
+ * @return Parsed text part
+ */
+export function parseTextPart(piece: string): TextPart {
+  return { text: piece };
 }

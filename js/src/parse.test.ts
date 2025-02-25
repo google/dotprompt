@@ -11,20 +11,27 @@ import {
   convertNamespacedEntryToNestedObject,
   extractFrontmatterAndBody,
   insertHistory,
+  messageSourcesToMessages,
+  messagesHaveHistory,
   parseDocument,
+  parseMediaPart,
+  parsePart,
+  parseSectionPart,
+  parseTextPart,
   splitByMediaAndSectionMarkers,
   splitByRegex,
   splitByRoleAndHistoryMarkers,
-  toParts,
+  toMessages,
   transformMessagesToHistory,
 } from './parse';
-import type { Message } from './types';
+import type { MessageSource } from './parse';
+import type { DataArgument, Message } from './types';
 
 describe('ROLE_AND_HISTORY_MARKER_REGEX', () => {
   describe('valid patterns', () => {
     const validPatterns = [
       '<<<dotprompt:role:user>>>',
-      '<<<dotprompt:role:assistant>>>',
+      '<<<dotprompt:role:model>>>',
       '<<<dotprompt:role:system>>>',
       '<<<dotprompt:history>>>',
       '<<<dotprompt:role:bot>>>',
@@ -42,7 +49,7 @@ describe('ROLE_AND_HISTORY_MARKER_REGEX', () => {
   describe('invalid patterns', () => {
     const invalidPatterns = [
       '<<<dotprompt:role:USER>>>', // uppercase not allowed
-      '<<<dotprompt:role:assistant1>>>', // numbers not allowed
+      '<<<dotprompt:role:model1>>>', // numbers not allowed
       '<<<dotprompt:role:>>>', // needs at least one letter
       '<<<dotprompt:role>>>', // missing role value
       '<<<dotprompt:history123>>>', // history should be exact
@@ -62,7 +69,7 @@ describe('ROLE_AND_HISTORY_MARKER_REGEX', () => {
   it('should match multiple occurrences in a string', () => {
     const text = `
       <<<dotprompt:role:user>>> Hello
-      <<<dotprompt:role:assistant>>> Hi there
+      <<<dotprompt:role:model>>> Hi there
       <<<dotprompt:history>>>
       <<<dotprompt:role:user>>> How are you?
     `;
@@ -107,9 +114,9 @@ describe('splitByRoleAndHistoryMarkers', () => {
   });
 
   it('splits a string with a single marker correctly', () => {
-    const input = 'Hello <<<dotprompt:role:assistant>>> world';
+    const input = 'Hello <<<dotprompt:role:model>>> world';
     const output = splitByRoleAndHistoryMarkers(input);
-    expect(output).toEqual(['Hello ', '<<<dotprompt:role:assistant', ' world']);
+    expect(output).toEqual(['Hello ', '<<<dotprompt:role:model', ' world']);
   });
 
   it('filters out empty and whitespace-only pieces', () => {
@@ -232,8 +239,9 @@ describe('extractFrontmatterAndBody', () => {
     expect(body).toBe('This is the body.');
   });
 
-  it('should not extract frontmatter when there is no frontmatter', () => {
-    // The frontmatter is not optional.
+  it('should match as empty frontmatter and body when there is no frontmatter', () => {
+    // Both the frontmatter and the body match as empty when there is no
+    // frontmatter.
     const source = 'No frontmatter here.';
     const { frontmatter, body } = extractFrontmatterAndBody(source);
     expect(frontmatter).toBe('');
@@ -241,7 +249,7 @@ describe('extractFrontmatterAndBody', () => {
   });
 });
 
-describe('splitIntoParts', () => {
+describe('splitByMediaAndSectionMarkers', () => {
   it('should return entire string in an array if there are no markers', () => {
     const source = 'This is a test string.';
     const parts = splitByMediaAndSectionMarkers(source);
@@ -259,36 +267,6 @@ describe('splitIntoParts', () => {
       '<<<dotprompt:section',
       '!',
     ]);
-  });
-
-  it('should remove parts that are only whitespace', () => {
-    const source = '  <<<dotprompt:media:url>>>   ';
-    const result = toParts(source);
-    expect(result).toEqual([{ media: { url: undefined } }]);
-  });
-});
-
-describe('transformMessagesToHistory', () => {
-  it('should add history purpose to messages without metadata', () => {
-    const messages: Message[] = [{ content: 'Hello' }, { content: 'World' }];
-    const result = transformMessagesToHistory(messages);
-    expect(result).toEqual([
-      { content: 'Hello', metadata: { purpose: 'history' } },
-      { content: 'World', metadata: { purpose: 'history' } },
-    ]);
-  });
-
-  it('should preserve existing metadata while adding history purpose', () => {
-    const messages = [{ content: 'Test', metadata: { foo: 'bar' } }];
-    const result = transformMessagesToHistory(messages);
-    expect(result).toEqual([
-      { content: 'Test', metadata: { foo: 'bar', purpose: 'history' } },
-    ]);
-  });
-
-  it('should handle empty array', () => {
-    const result = transformMessagesToHistory([]);
-    expect(result).toEqual([]);
   });
 });
 
@@ -311,99 +289,495 @@ describe('splitByRegex', () => {
   });
 });
 
-describe('insertHistory', () => {
-  it('should insert history messages at the correct position', () => {
+describe('transformMessagesToHistory', () => {
+  it('should add history metadata to messages', () => {
     const messages: Message[] = [
-      { role: 'user', content: 'first' },
-      { role: 'model', content: 'second', metadata: { purpose: 'history' } },
-      { role: 'user', content: 'third' },
+      { role: 'user', content: [{ text: 'Hello' }] },
+      { role: 'model', content: [{ text: 'Hi there' }] },
+    ];
+
+    const result = transformMessagesToHistory(messages);
+
+    expect(result).toHaveLength(2);
+    expect(result).toEqual([
+      {
+        role: 'user',
+        content: [{ text: 'Hello' }],
+        metadata: { purpose: 'history' },
+      },
+      {
+        role: 'model',
+        content: [{ text: 'Hi there' }],
+        metadata: { purpose: 'history' },
+      },
+    ]);
+  });
+
+  it('should preserve existing metadata while adding history purpose', () => {
+    const messages: Message[] = [
+      { role: 'user', content: [{ text: 'Hello' }], metadata: { foo: 'bar' } },
+    ];
+
+    const result = transformMessagesToHistory(messages);
+
+    expect(result).toHaveLength(1);
+    expect(result).toEqual([
+      {
+        role: 'user',
+        content: [{ text: 'Hello' }],
+        metadata: { foo: 'bar', purpose: 'history' },
+      },
+    ]);
+  });
+
+  it('should handle empty array', () => {
+    const result = transformMessagesToHistory([]);
+    expect(result).toEqual([]);
+  });
+});
+
+describe('messagesHaveHistory', () => {
+  it('should return true if messages have history metadata', () => {
+    const messages: Message[] = [
+      {
+        role: 'user',
+        content: [{ text: 'Hello' }],
+        metadata: { purpose: 'history' },
+      },
+    ];
+
+    const result = messagesHaveHistory(messages);
+
+    expect(result).toBe(true);
+  });
+
+  it('should return false if messages do not have history metadata', () => {
+    const messages: Message[] = [
+      { role: 'user', content: [{ text: 'Hello' }] },
+    ];
+
+    const result = messagesHaveHistory(messages);
+
+    expect(result).toBe(false);
+  });
+});
+
+describe('messageSourcesToMessages', () => {
+  it('should handle empty array', () => {
+    const messageSources: MessageSource[] = [];
+    const expected: Message[] = [];
+    expect(messageSourcesToMessages(messageSources)).toEqual(expected);
+  });
+
+  it('should convert a single message source', () => {
+    const messageSources: MessageSource[] = [{ role: 'user', source: 'Hello' }];
+    const expected: Message[] = [
+      { role: 'user', content: [{ text: 'Hello' }] },
+    ];
+    expect(messageSourcesToMessages(messageSources)).toEqual(expected);
+  });
+
+  it('should handle message source with content', () => {
+    const messageSources: MessageSource[] = [
+      { role: 'user', content: [{ text: 'Existing content' }] },
+    ];
+    const expected: Message[] = [
+      { role: 'user', content: [{ text: 'Existing content' }] },
+    ];
+    expect(messageSourcesToMessages(messageSources)).toEqual(expected);
+  });
+
+  it('should handle message source with metadata', () => {
+    const messageSources: MessageSource[] = [
+      { role: 'user', source: 'Hello', metadata: { foo: 'bar' } },
+    ];
+    const expected: Message[] = [
+      {
+        role: 'user',
+        content: [{ text: 'Hello' }],
+        metadata: { foo: 'bar' },
+      },
+    ];
+    expect(messageSourcesToMessages(messageSources)).toEqual(expected);
+  });
+
+  it('should filter out message sources with empty source and content', () => {
+    const messageSources: MessageSource[] = [
+      { role: 'user', source: '' },
+      { role: 'model', source: '  ' },
+      { role: 'user', source: 'Hello' },
+    ];
+    const expected: Message[] = [
+      { role: 'model', content: [] },
+      { role: 'user', content: [{ text: 'Hello' }] },
+    ];
+    expect(messageSourcesToMessages(messageSources)).toEqual(expected);
+  });
+
+  it('should handle multiple message sources', () => {
+    const messageSources: MessageSource[] = [
+      { role: 'user', source: 'Hello' },
+      { role: 'model', source: 'Hi there!' },
+      { role: 'user', source: 'How are you?' },
+    ];
+    const expected: Message[] = [
+      { role: 'user', content: [{ text: 'Hello' }] },
+      { role: 'model', content: [{ text: 'Hi there!' }] },
+      { role: 'user', content: [{ text: 'How are you?' }] },
+    ];
+    expect(messageSourcesToMessages(messageSources)).toEqual(expected);
+  });
+});
+
+describe('toMessages', () => {
+  it('should handle a simple string with no markers', () => {
+    const renderedString = 'Hello world';
+    const result = toMessages(renderedString);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].role).toBe('user');
+    expect(result[0].content).toEqual([{ text: 'Hello world' }]);
+  });
+
+  it('should handle a string with a single role marker', () => {
+    const renderedString = '<<<dotprompt:role:model>>>Hello world';
+    const result = toMessages(renderedString);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].role).toBe('model');
+    expect(result[0].content).toEqual([{ text: 'Hello world' }]);
+  });
+
+  it('should handle a string with multiple role markers', () => {
+    const renderedString =
+      '<<<dotprompt:role:system>>>System instructions\n' +
+      '<<<dotprompt:role:user>>>User query\n' +
+      '<<<dotprompt:role:model>>>Model response';
+    const result = toMessages(renderedString);
+
+    expect(result).toHaveLength(3);
+
+    expect(result[0].role).toBe('system');
+    expect(result[0].content).toEqual([{ text: 'System instructions\n' }]);
+
+    expect(result[1].role).toBe('user');
+    expect(result[1].content).toEqual([{ text: 'User query\n' }]);
+
+    expect(result[2].role).toBe('model');
+    expect(result[2].content).toEqual([{ text: 'Model response' }]);
+  });
+
+  it('should update the role of an empty message instead of creating a new one', () => {
+    const renderedString =
+      '<<<dotprompt:role:user>>><<<dotprompt:role:model>>>Response';
+    const result = toMessages(renderedString);
+
+    // Should only have one message since the first role marker doesn't have content
+    expect(result).toHaveLength(1);
+    expect(result[0].role).toBe('model');
+    expect(result[0].content).toEqual([{ text: 'Response' }]);
+  });
+
+  it('should handle history markers and add metadata', () => {
+    const renderedString =
+      '<<<dotprompt:role:user>>>Query<<<dotprompt:history>>>Follow-up';
+    const historyMessages: Message[] = [
+      { role: 'user', content: [{ text: 'Previous question' }] },
+      { role: 'model', content: [{ text: 'Previous answer' }] },
+    ];
+
+    const data: DataArgument = { messages: historyMessages };
+    const result = toMessages(renderedString, data);
+
+    expect(result).toHaveLength(4);
+
+    // First message is the user query
+    expect(result[0].role).toBe('user');
+    expect(result[0].content).toEqual([{ text: 'Query' }]);
+
+    // Next two messages should be history messages with appropriate metadata
+    expect(result[1].role).toBe('user');
+    expect(result[1].content).toEqual([{ text: 'Previous question' }]);
+    expect(result[1].metadata).toEqual({ purpose: 'history' });
+
+    expect(result[2].role).toBe('model');
+    expect(result[2].content).toEqual([{ text: 'Previous answer' }]);
+    expect(result[2].metadata).toEqual({ purpose: 'history' });
+
+    // Last message is the follow-up
+    expect(result[3].role).toBe('model');
+    expect(result[3].content).toEqual([{ text: 'Follow-up' }]);
+  });
+
+  it('should handle empty history gracefully', () => {
+    const renderedString =
+      '<<<dotprompt:role:user>>>Query<<<dotprompt:history>>>Follow-up';
+    const result = toMessages(renderedString, { messages: [] });
+
+    expect(result).toHaveLength(2);
+    expect(result[0].role).toBe('user');
+    expect(result[0].content).toEqual([{ text: 'Query' }]);
+    expect(result[1].role).toBe('model');
+    expect(result[1].content).toEqual([{ text: 'Follow-up' }]);
+  });
+
+  it('should handle undefined data gracefully', () => {
+    const renderedString =
+      '<<<dotprompt:role:user>>>Query<<<dotprompt:history>>>Follow-up';
+    const result = toMessages(renderedString, undefined);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].role).toBe('user');
+    expect(result[0].content).toEqual([{ text: 'Query' }]);
+    expect(result[1].role).toBe('model');
+    expect(result[1].content).toEqual([{ text: 'Follow-up' }]);
+  });
+
+  it('should filter out empty messages', () => {
+    const renderedString =
+      '<<<dotprompt:role:user>>> ' +
+      '<<<dotprompt:role:system>>> ' +
+      '<<<dotprompt:role:model>>>Response';
+    const result = toMessages(renderedString);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].role).toBe('model');
+    expect(result[0].content).toEqual([{ text: 'Response' }]);
+  });
+
+  it('should handle multiple history markers by treating each as a separate insertion point', () => {
+    const renderedString =
+      '<<<dotprompt:history>>>First<<<dotprompt:history>>>Second';
+    const historyMessages: Message[] = [
+      { role: 'user', content: [{ text: 'Previous' }] },
+    ];
+
+    const data: DataArgument = { messages: historyMessages };
+    const result = toMessages(renderedString, data);
+
+    expect(result).toHaveLength(4);
+
+    expect(result[0].metadata).toEqual({ purpose: 'history' });
+    expect(result[1].content).toEqual([{ text: 'First' }]);
+    expect(result[2].metadata).toEqual({ purpose: 'history' });
+    expect(result[3].content).toEqual([{ text: 'Second' }]);
+  });
+
+  it('should support complex interleaving of role and history markers', () => {
+    const renderedString =
+      '<<<dotprompt:role:system>>>Instructions\n' +
+      '<<<dotprompt:role:user>>>Initial Query\n' +
+      '<<<dotprompt:history>>>\n' +
+      '<<<dotprompt:role:user>>>Follow-up Question\n' +
+      '<<<dotprompt:role:model>>>Final Response';
+
+    const historyMessages: Message[] = [
+      { role: 'user', content: [{ text: 'Previous question' }] },
+      { role: 'model', content: [{ text: 'Previous answer' }] },
+    ];
+
+    const data: DataArgument = { messages: historyMessages };
+    const result = toMessages(renderedString, data);
+
+    expect(result).toHaveLength(6);
+
+    expect(result[0].role).toBe('system');
+    expect(result[0].content).toEqual([{ text: 'Instructions\n' }]);
+
+    expect(result[1].role).toBe('user');
+    expect(result[1].content).toEqual([{ text: 'Initial Query\n' }]);
+
+    expect(result[2].role).toBe('user');
+    expect(result[2].metadata).toEqual({ purpose: 'history' });
+
+    expect(result[3].role).toBe('model');
+    expect(result[3].metadata).toEqual({ purpose: 'history' });
+
+    expect(result[4].role).toBe('user');
+    expect(result[4].content).toEqual([{ text: 'Follow-up Question\n' }]);
+
+    expect(result[5].role).toBe('model');
+    expect(result[5].content).toEqual([{ text: 'Final Response' }]);
+  });
+
+  it('should handle an empty input string', () => {
+    const result = toMessages('');
+    expect(result).toHaveLength(0);
+  });
+
+  it('should properly call insertHistory with data.messages', () => {
+    const renderedString = '<<<dotprompt:role:user>>>Question';
+    const historyMessages: Message[] = [
+      { role: 'user', content: [{ text: 'Previous' }] },
+    ];
+
+    const data: DataArgument = { messages: historyMessages };
+    const result = toMessages(renderedString, data);
+
+    // The resulting messages should have the history message inserted
+    // before the user message by the insertHistory function
+    expect(result).toHaveLength(2);
+    expect(result[0].role).toBe('user');
+    expect(result[0].content).toEqual([{ text: 'Previous' }]);
+    expect(result[0].metadata).toBeUndefined(); // insertHistory shouldn't add history metadata
+
+    expect(result[1].role).toBe('user');
+    expect(result[1].content).toEqual([{ text: 'Question' }]);
+  });
+});
+
+describe('insertHistory', () => {
+  it('should return original messages if history is undefined', () => {
+    const messages: Message[] = [
+      { role: 'user', content: [{ text: 'Hello' }] },
+    ];
+
+    const result = insertHistory(messages, []);
+
+    expect(result).toEqual(messages);
+  });
+
+  it('should return original messages if history purpose already exists', () => {
+    const messages: Message[] = [
+      {
+        role: 'user',
+        content: [{ text: 'Hello' }],
+        metadata: { purpose: 'history' },
+      },
+    ];
+
+    const history: Message[] = [
+      {
+        role: 'model',
+        content: [{ text: 'Previous' }],
+        metadata: { purpose: 'history' },
+      },
+    ];
+
+    const result = insertHistory(messages, history);
+
+    expect(result).toEqual(messages);
+  });
+
+  it('should insert history before the last user message', () => {
+    const messages: Message[] = [
+      { role: 'system', content: [{ text: 'System prompt' }] },
+      { role: 'user', content: [{ text: 'Current question' }] },
+    ];
+
+    const history: Message[] = [
+      {
+        role: 'model',
+        content: [{ text: 'Previous' }],
+        metadata: { purpose: 'history' },
+      },
+    ];
+
+    const result = insertHistory(messages, history);
+
+    expect(result).toHaveLength(3);
+    expect(result).toEqual([
+      { role: 'system', content: [{ text: 'System prompt' }] },
+      {
+        role: 'model',
+        content: [{ text: 'Previous' }],
+        metadata: { purpose: 'history' },
+      },
+      { role: 'user', content: [{ text: 'Current question' }] },
+    ]);
+  });
+
+  it('should append history at the end if no user message is last', () => {
+    const messages: Message[] = [
+      { role: 'system', content: [{ text: 'System prompt' }] },
+      { role: 'model', content: [{ text: 'Model message' }] },
     ];
     const history: Message[] = [
-      { role: 'user', content: 'past1' },
-      { role: 'assistant', content: 'past2' },
+      {
+        role: 'model',
+        content: [{ text: 'Previous' }],
+        metadata: { purpose: 'history' },
+      },
     ];
-    const result = insertHistory(messages, history);
-    // Since there's already a history marker, the original messages should be
-    // returned unchanged.
-    expect(result).toEqual(messages);
-  });
 
-  it('should handle empty history', () => {
-    const messages = [
-      { role: 'user', content: 'first' },
-      { role: 'user', content: 'second' },
-    ];
-    const result = insertHistory(messages);
-    expect(result).toEqual(messages);
-  });
-
-  it('should append history if no history marker and no trailing user message', () => {
-    const messages = [
-      { role: 'user', content: 'first' },
-      { role: 'assistant', content: 'second' },
-    ];
-    const history = [
-      { role: 'user', content: 'past1' },
-      { role: 'assistant', content: 'past2' },
-    ];
     const result = insertHistory(messages, history);
-    expect(result).toEqual([...messages, ...history]);
-  });
 
-  it('should insert history before last user message if no history marker', () => {
-    const messages = [
-      { role: 'user', content: 'first' },
-      { role: 'assistant', content: 'second' },
-      { role: 'user', content: 'third' },
-    ];
-    const history = [
-      { role: 'user', content: 'past1' },
-      { role: 'assistant', content: 'past2' },
-    ];
-    const result = insertHistory(messages, history);
+    expect(result).toHaveLength(3);
     expect(result).toEqual([
-      { role: 'user', content: 'first' },
-      { role: 'assistant', content: 'second' },
-      ...history,
-      { role: 'user', content: 'third' },
+      { role: 'system', content: [{ text: 'System prompt' }] },
+      { role: 'model', content: [{ text: 'Model message' }] },
+      {
+        role: 'model',
+        content: [{ text: 'Previous' }],
+        metadata: { purpose: 'history' },
+      },
     ]);
   });
 });
 
-describe('toParts', () => {
-  it('should convert text content to parts', () => {
-    const source = 'Hello World';
-    const result = toParts(source);
-    expect(result).toEqual([{ text: 'Hello World' }]);
-  });
-
-  it('should handle media markers', () => {
+describe('parsePart', () => {
+  it('should parse a media part', () => {
     const source = '<<<dotprompt:media:url>>> https://example.com/image.jpg';
-    const result = toParts(source);
-    expect(result).toEqual([
-      { media: { url: undefined } },
-      { text: ' https://example.com/image.jpg' },
-    ]);
+    const result = parsePart(source);
+    expect(result).toEqual({ media: { url: 'https://example.com/image.jpg' } });
   });
 
-  it('should handle section markers', () => {
+  it('should parse a section piece', () => {
     const source = '<<<dotprompt:section>>> code';
-    const result = toParts(source);
-    expect(result).toEqual([
-      { metadata: { purpose: undefined, pending: true } },
-      { text: ' code' },
-    ]);
+    const result = parsePart(source);
+    expect(result).toEqual({ metadata: { purpose: 'code', pending: true } });
   });
 
-  it('should handle mixed content', () => {
+  it('should parse a text piece', () => {
+    const source = 'Hello World';
+    const result = parsePart(source);
+    expect(result).toEqual({ text: 'Hello World' });
+  });
+});
+
+describe('parseMediaPart', () => {
+  it('should parse a media part', () => {
+    const source = '<<<dotprompt:media:url>>> https://example.com/image.jpg';
+    const result = parseMediaPart(source);
+    expect(result).toEqual({ media: { url: 'https://example.com/image.jpg' } });
+  });
+
+  it('should parse a media piece with content type', () => {
     const source =
-      'Text before <<<dotprompt:media:url>>> https://example.com/image.jpg Text after';
-    const result = toParts(source);
-    expect(result).toEqual([
-      { text: 'Text before ' },
-      { media: { url: undefined } },
-      { text: ' https://example.com/image.jpg Text after' },
-    ]);
+      '<<<dotprompt:media:url>>> https://example.com/image.jpg image/jpeg';
+    const result = parseMediaPart(source);
+    expect(result).toEqual({
+      media: {
+        url: 'https://example.com/image.jpg',
+        contentType: 'image/jpeg',
+      },
+    });
+  });
+
+  it('should throw an error if the media piece is invalid', () => {
+    const source = 'https://example.com/image.jpg';
+    expect(() => parseMediaPart(source)).toThrow();
+  });
+});
+
+describe('parseSectionPart', () => {
+  it('should parse a section part', () => {
+    const source = '<<<dotprompt:section>>> code';
+    const result = parseSectionPart(source);
+    expect(result).toEqual({ metadata: { purpose: 'code', pending: true } });
+  });
+
+  it('should throw an error if the section piece is invalid', () => {
+    const source = 'https://example.com/image.jpg';
+    expect(() => parseSectionPart(source)).toThrow();
+  });
+});
+
+describe('parseTextPart', () => {
+  it('should parse a text part', () => {
+    const source = 'Hello World';
+    const result = parseTextPart(source);
+    expect(result).toEqual({ text: 'Hello World' });
   });
 });
 
