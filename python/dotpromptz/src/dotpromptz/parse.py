@@ -7,7 +7,7 @@ from typing import Any
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, TypeVar, cast
+from typing import Any, TypeVar
 
 import yaml
 
@@ -18,7 +18,6 @@ from dotpromptz.typing import (
     ParsedPrompt,
     Part,
     PendingPart,
-    PromptMetadata,
     Role,
     TextPart,
 )
