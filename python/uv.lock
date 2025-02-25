@@ -711,6 +711,16 @@ wheels = [
 ]
 
 [[package]]
+name = "js2py"
+version = "0.74"
+source = { git = "https://github.com/Manurajbharath/support_dotprompt.git#b186a13e390d69fd296a302cfc190c69f5ca7c0e" }
+dependencies = [
+    { name = "pyjsparser" },
+    { name = "six" },
+    { name = "tzlocal" },
+]
+
+[[package]]
 name = "js2py-wheel"
 version = "0.74"
 source = { registry = "https://pypi.org/simple" }
@@ -1362,6 +1372,12 @@ wheels = [
 ]
 
 [[package]]
+name = "pyjsparser"
+version = "2.7.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/48/ef/c72abcfa2c6accd03e7c89c400790fc3d908c5804d50a7c4e9ceabd74d23/pyjsparser-2.7.1.tar.gz", hash = "sha256:be60da6b778cc5a5296a69d8e7d614f1f870faf94e1b1b6ac591f2ad5d729579", size = 24196 }
+
+[[package]]
 name = "pyjsparser-wheel"
 version = "2.7.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1700,10 +1716,16 @@ version = "0.1.0"
 source = { virtual = "tests/smoke" }
 dependencies = [
     { name = "dotpromptz" },
+    { name = "handlebars" },
+    { name = "js2py" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "dotpromptz", editable = "dotpromptz" }]
+requires-dist = [
+    { name = "dotpromptz", editable = "dotpromptz" },
+    { name = "handlebars" },
+    { name = "js2py", git = "https://github.com/Manurajbharath/support_dotprompt.git" },
+]
 
 [[package]]
 name = "sniffio"
