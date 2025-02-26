@@ -1,7 +1,7 @@
 # Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 
-"""Smoke tests for package structure. """
+"""Smoke tests for package structure."""
 
 import unittest
 
