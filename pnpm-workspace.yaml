@@ -15,3 +15,5 @@
 packages:
   - js
   - third_party/docsite
+  - third_party/fiddle
+  - third_party/fiddle/functions

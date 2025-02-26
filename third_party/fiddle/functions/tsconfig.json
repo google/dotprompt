@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "module": "ES2022",
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "outDir": "lib",
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2022"
+  },
+  "compileOnSave": true,
+  "include": ["src"]
+}
