@@ -27,11 +27,6 @@ jobs:
           enable-cache: true
           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: |
-          uv pip uninstall js2py
-          uv pip install "js2py@git+https://github.com/a-j-albert/Js2Py---supports-python-3.13.git"
-
       - name: Format check
         run: uv run --directory python ruff format --check .
 
