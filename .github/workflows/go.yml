@@ -1,7 +1,7 @@
 # Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 
-name: Go tests and checks
+name: Go build, tests and other checks
 
 on: pull_request
 
@@ -23,5 +23,14 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Check build
+        run: go build -C go -v ./...
+
       - name: Run tests
-        run: go test -C go -v ./... || true # TODO: Skip failures temporarily
+        run: go test -C go -v ./...
+
+      - name: Run vulncheck
+        run: govulncheck -C go ./...

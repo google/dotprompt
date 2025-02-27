@@ -1,5 +1,3 @@
-from typing import Any
-
 # Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -7,7 +5,7 @@ from typing import Any
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, TypeVar, cast
+from typing import Any, TypeVar
 
 import yaml
 
@@ -18,7 +16,6 @@ from dotpromptz.typing import (
     ParsedPrompt,
     Part,
     PendingPart,
-    PromptMetadata,
     Role,
     TextPart,
 )
@@ -111,7 +108,11 @@ def split_by_regex(source: str, regex: re.Pattern[str]) -> list[str]:
     Returns:
         An array of non-empty string pieces.
     """
-    return [s for s in regex.split(source) if s.strip()]
+
+    def filter_empty(s: str) -> bool:
+        return bool(s.strip())
+
+    return list(filter(filter_empty, regex.split(source)))
 
 
 def split_by_role_and_history_markers(rendered_string: str) -> list[str]:
