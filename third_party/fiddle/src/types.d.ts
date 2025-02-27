@@ -1,7 +1,8 @@
 export interface Fiddle {
-  id: string;
-  name: string;
+  id?: string;
+  name?: string;
   prompts: Prompt[];
+  owner?: string;
 }
 
 export interface Prompt {
