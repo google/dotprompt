@@ -8,3 +8,4 @@
 bazel-*
 node_modules
 site/
+go/coverage.out

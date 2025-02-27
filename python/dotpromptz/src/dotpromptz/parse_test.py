@@ -40,37 +40,68 @@ from dotpromptz.typing import (
 )
 
 
-class TestSplitByMediaAndSectionMarkers(unittest.TestCase):
-    def test_split_by_media_and_section_markers(self) -> None:
-        """Test splitting by media and section markers."""
-        input_str = '<<<dotprompt:media:url>>> https://example.com/image.jpg'
-        output = split_by_media_and_section_markers(input_str)
-        assert output == [
-            '<<<dotprompt:media:url',
-            ' https://example.com/image.jpg',
-        ]
+@pytest.mark.parametrize(
+    'source,expected_frontmatter,expected_body',
+    [
+        (
+            '---\nfoo: bar\n---\nThis is the body.',
+            'foo: bar',
+            'This is the body.',
+        ),  # Test document with frontmatter and body
+        (
+            '---\n\n---\nBody only.',
+            '',
+            'Body only.',
+        ),  # Test document with empty frontmatter
+        (
+            '---\nfoo: bar\n---\n',
+            'foo: bar',
+            '',
+        ),  # Test document with empty body
+        (
+            '---\nfoo: bar\nbaz: qux\n---\nThis is the body.',
+            'foo: bar\nbaz: qux',
+            'This is the body.',
+        ),  # Test document with multiline frontmatter
+        (
+            'Just a body.',
+            None,
+            None,
+        ),  # Test document with no frontmatter markers
+        (
+            '---\nfoo: bar\nThis is the body.',
+            None,
+            None,
+        ),  # Test document with incomplete frontmatter markers
+        (
+            '---\nfoo: bar\n---\nThis is the body.\n---\nExtra section.',
+            'foo: bar',
+            'This is the body.\n---\nExtra section.',
+        ),  # Test document with extra frontmatter markers
+    ],
+)
+def test_frontmatter_and_body_regex(
+    source: str,
+    expected_frontmatter: str | None,
+    expected_body: str | None,
+) -> None:
+    """Test frontmatter and body regex."""
+    match = FRONTMATTER_AND_BODY_REGEX.match(source)
 
-    def test_split_by_media_and_section_markers_multiple_markers(self) -> None:
-        """Test multiple markers in a string."""
-        input_str = '<<<dotprompt:media:url>>> https://example.com/image.jpg'
-        output = split_by_media_and_section_markers(input_str)
-        assert output == [
-            '<<<dotprompt:media:url',
-            ' https://example.com/image.jpg',
-        ]
-
-    def test_split_by_media_and_section_markers_no_markers(self) -> None:
-        """Test no markers in a string."""
-        input_str = 'Hello World'
-        output = split_by_media_and_section_markers(input_str)
-        assert output == ['Hello World']
+    if expected_frontmatter is None:
+        assert match is None
+    else:
+        assert match is not None
+        frontmatter, body = match.groups()
+        assert frontmatter == expected_frontmatter
+        assert body == expected_body
 
 
 def test_role_and_history_marker_regex_valid_patterns() -> None:
     """Test valid patterns for role and history markers."""
     valid_patterns = [
         '<<<dotprompt:role:user>>>',
-        '<<<dotprompt:role:assistant>>>',
+        '<<<dotprompt:role:model>>>',
         '<<<dotprompt:role:system>>>',
         '<<<dotprompt:history>>>',
         '<<<dotprompt:role:bot>>>',
@@ -86,7 +117,7 @@ def test_role_and_history_marker_regex_invalid_patterns() -> None:
     """Test invalid patterns for role and history markers."""
     invalid_patterns = [
         '<<<dotprompt:role:USER>>>',  # uppercase not allowed
-        '<<<dotprompt:role:assistant1>>>',  # numbers not allowed
+        '<<<dotprompt:role:model1>>>',  # numbers not allowed
         '<<<dotprompt:role:>>>',  # needs at least one letter
         '<<<dotprompt:role>>>',  # missing role value
         '<<<dotprompt:history123>>>',  # history should be exact
@@ -104,7 +135,7 @@ def test_role_and_history_marker_regex_multiple_matches() -> None:
     """Test multiple matches in a string."""
     text = """
         <<<dotprompt:role:user>>> Hello
-        <<<dotprompt:role:assistant>>> Hi there
+        <<<dotprompt:role:model>>> Hi there
         <<<dotprompt:history>>>
         <<<dotprompt:role:user>>> How are you?
     """
@@ -137,6 +168,39 @@ def test_media_and_section_marker_regex_multiple_matches() -> None:
     assert len(matches) == 4
 
 
+def test_split_by_regex() -> None:
+    """Test splitting by regex and filtering empty/whitespace pieces."""
+    source = '  one  ,  ,  two  ,  three  '
+    result = split_by_regex(source, re.compile(r','))
+    assert result == ['  one  ', '  two  ', '  three  ']
+
+
+class TestSplitByMediaAndSectionMarkers(unittest.TestCase):
+    def test_split_by_media_and_section_markers(self) -> None:
+        """Test splitting by media and section markers."""
+        input_str = '<<<dotprompt:media:url>>> https://example.com/image.jpg'
+        output = split_by_media_and_section_markers(input_str)
+        assert output == [
+            '<<<dotprompt:media:url',
+            ' https://example.com/image.jpg',
+        ]
+
+    def test_split_by_media_and_section_markers_multiple_markers(self) -> None:
+        """Test multiple markers in a string."""
+        input_str = '<<<dotprompt:media:url>>> https://example.com/image.jpg'
+        output = split_by_media_and_section_markers(input_str)
+        assert output == [
+            '<<<dotprompt:media:url',
+            ' https://example.com/image.jpg',
+        ]
+
+    def test_split_by_media_and_section_markers_no_markers(self) -> None:
+        """Test no markers in a string."""
+        input_str = 'Hello World'
+        output = split_by_media_and_section_markers(input_str)
+        assert output == ['Hello World']
+
+
 class TestSplitByRoleAndHistoryMarkers(unittest.TestCase):
     def test_no_markers(self) -> None:
         """Test splitting when no markers are present."""
@@ -146,15 +210,15 @@ class TestSplitByRoleAndHistoryMarkers(unittest.TestCase):
 
     def test_single_marker(self) -> None:
         """Test splitting with a single marker."""
-        input_str = 'Hello <<<dotprompt:role:assistant>>> world'
+        input_str = 'Hello <<<dotprompt:role:model>>> world'
         output = split_by_role_and_history_markers(input_str)
-        assert output == ['Hello ', '<<<dotprompt:role:assistant', ' world']
+        assert output == ['Hello ', '<<<dotprompt:role:model', ' world']
 
     def test_split_by_role_and_history_markers_single_marker(self) -> None:
         """Test splitting with a single marker."""
-        input_str = 'Hello <<<dotprompt:role:assistant>>> world'
+        input_str = 'Hello <<<dotprompt:role:model>>> world'
         output = split_by_role_and_history_markers(input_str)
-        assert output == ['Hello ', '<<<dotprompt:role:assistant', ' world']
+        assert output == ['Hello ', '<<<dotprompt:role:model', ' world']
 
     def test_split_by_role_and_history_markers_filter_empty(self) -> None:
         """Test filtering empty and whitespace-only pieces."""
@@ -243,63 +307,6 @@ class TestConvertNamespacedEntryToNestedObject(unittest.TestCase):
         )
 
 
-@pytest.mark.parametrize(
-    'source,expected_frontmatter,expected_body',
-    [
-        (
-            '---\nfoo: bar\n---\nThis is the body.',
-            'foo: bar',
-            'This is the body.',
-        ),  # Test document with frontmatter and body
-        (
-            '---\n\n---\nBody only.',
-            '',
-            'Body only.',
-        ),  # Test document with empty frontmatter
-        (
-            '---\nfoo: bar\n---\n',
-            'foo: bar',
-            '',
-        ),  # Test document with empty body
-        (
-            '---\nfoo: bar\nbaz: qux\n---\nThis is the body.',
-            'foo: bar\nbaz: qux',
-            'This is the body.',
-        ),  # Test document with multiline frontmatter
-        (
-            'Just a body.',
-            None,
-            None,
-        ),  # Test document with no frontmatter markers
-        (
-            '---\nfoo: bar\nThis is the body.',
-            None,
-            None,
-        ),  # Test document with incomplete frontmatter markers
-        (
-            '---\nfoo: bar\n---\nThis is the body.\n---\nExtra section.',
-            'foo: bar',
-            'This is the body.\n---\nExtra section.',
-        ),  # Test document with extra frontmatter markers
-    ],
-)
-def test_frontmatter_and_body_regex(
-    source: str,
-    expected_frontmatter: str | None,
-    expected_body: str | None,
-) -> None:
-    """Test frontmatter and body regex."""
-    match = FRONTMATTER_AND_BODY_REGEX.match(source)
-
-    if expected_frontmatter is None:
-        assert match is None
-    else:
-        assert match is not None
-        frontmatter, body = match.groups()
-        assert frontmatter == expected_frontmatter
-        assert body == expected_body
-
-
 class TestExtractFrontmatterAndBody(unittest.TestCase):
     """Test extracting frontmatter and body from a string."""
 
@@ -330,13 +337,6 @@ class TestExtractFrontmatterAndBody(unittest.TestCase):
         frontmatter, body = extract_frontmatter_and_body(input_str)
         assert frontmatter == ''
         assert body == ''
-
-
-def test_split_by_regex() -> None:
-    """Test splitting by regex and filtering empty/whitespace pieces."""
-    source = '  one  ,  ,  two  ,  three  '
-    result = split_by_regex(source, re.compile(r','))
-    assert result == ['  one  ', '  two  ', '  three  ']
 
 
 class TestTransformMessagesToHistory(unittest.TestCase):
@@ -597,7 +597,8 @@ class TestInsertHistory(unittest.TestCase):
             ),
         ),
         (
-            '<<<dotprompt:media:url>>> https://example.com/image.jpg image/jpeg',
+            '<<<dotprompt:media:url>>> https://example.com/image.jpg'
+            + ' image/jpeg',
             MediaPart(
                 media={
                     'url': 'https://example.com/image.jpg',
@@ -614,9 +615,15 @@ class TestInsertHistory(unittest.TestCase):
             PendingPart(metadata=dict(purpose='code', pending=True)),
         ),
         (
-            'Text before <<<dotprompt:media:url>>> https://example.com/image.jpg Text after',
+            (
+                'Text before <<<dotprompt:media:url>>>'
+                + ' https://example.com/image.jpg Text after'
+            ),
             TextPart(
-                text='Text before <<<dotprompt:media:url>>> https://example.com/image.jpg Text after'
+                text=(
+                    'Text before <<<dotprompt:media:url>>> '
+                    + 'https://example.com/image.jpg Text after'
+                )
             ),
         ),
     ],

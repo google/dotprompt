@@ -29,6 +29,7 @@ import type { MessageSource } from './parse';
 import type { DataArgument, Message } from './types';
 
 describe('ROLE_AND_HISTORY_MARKER_REGEX', () => {
+  // NOTE: Currently this doesn't validate the role.
   describe('valid patterns', () => {
     const validPatterns = [
       '<<<dotprompt:role:user>>>',

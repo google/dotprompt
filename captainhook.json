@@ -40,7 +40,7 @@
           "run": "scripts/check_license"
         },
         {
-          "run": "uv run --directory python mypy ."
+          "run": "scripts/run_lint"
         },
         {
           "run": "scripts/run_python_tests"
@@ -50,6 +50,9 @@
         },
         {
           "run": "scripts/run_go_tests"
+        },
+        {
+          "run": "govulncheck -C go ./..."
         },
         {
           "run": "pnpm -C js build"
@@ -86,7 +89,7 @@
           "run": "scripts/check_license"
         },
         {
-          "run": "uv run --directory python mypy ."
+          "run": "scripts/run_lint"
         },
         {
           "run": "scripts/run_python_tests"
@@ -96,6 +99,9 @@
         },
         {
           "run": "scripts/run_go_tests"
+        },
+        {
+          "run": "govulncheck -C go ./..."
         },
         {
           "run": "pnpm -C js build"

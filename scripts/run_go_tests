@@ -23,8 +23,26 @@ cd "${TOP_DIR}/go"
 for VERSION in "${GO_VERSIONS[@]}"; do
   echo "Running tests with Go ${VERSION}..."
   pushd "${TOP_DIR}/go" &>/dev/null
-  "${TOP_DIR}/scripts/golang" "${VERSION}" test ./...
+  # Ensure that the build works too.
+  "${TOP_DIR}/scripts/golang" "${VERSION}" build ./...
+  # Run the tests.
+  "${TOP_DIR}/scripts/golang" "${VERSION}" test -coverprofile=coverage.out ./...
+  # Print the coverage report.
+  "${TOP_DIR}/scripts/golang" "${VERSION}" tool cover -func=coverage.out
+
+  # Check the coverage threshold.
+  # TODO: Make this portable.
+  #
+  #COVERAGE=$(go test ./... -cover | grep "coverage:" | awk '{print $5}' | tr -d '%')
+  #THRESHOLD=80
+  #if [[ $(echo "$COVERAGE $THRESHOLD" | awk '{print ($1 >= $2)}') -eq 1 ]]; then
+  #  echo "Coverage is $COVERAGE%, which meets the threshold of $THRESHOLD%."
+  #  exit 0
+  #else
+  #  echo "Coverage is $COVERAGE%, which is below the threshold of $THRESHOLD%."
+  #  exit 1
+  #fi
+
   popd &>/dev/null
 done
-
 exit $?

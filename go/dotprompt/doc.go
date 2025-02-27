@@ -12,7 +12,7 @@
 //
 // The package includes:
 //   - Type definitions for messages, parts, documents, and other dotprompt
-//   concepts
+//     concepts
 //   - Functions for parsing dotprompt templates into structured data
 //   - Utilities for handling message history and multi-modal content
 //   - Support for extracting and processing frontmatter metadata

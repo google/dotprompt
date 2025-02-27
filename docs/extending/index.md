@@ -207,7 +207,7 @@ Go, and Python:
             UpdatedAt  *string `json:"updatedAt,omitempty"`  // ISO timestamp of last update
             ApprovedBy *int    `json:"approvedBy,omitempty"` // id of approver
         } `json:"metadata,omitempty"`
-        Extra       interface{}          `json:"extra,omitempty"`    // arbitrary extra data
+        Extra       any          `json:"extra,omitempty"`    // arbitrary extra data
         ExtraFields map[string]string    `json:"-"`                  // wildcard fields
     }
 

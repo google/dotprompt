@@ -3,48 +3,56 @@
 
 package dotprompt
 
-import (
-	"encoding/json"
-)
-
 // Schema represents a generic schema definition.
-type Schema map[string]interface{}
+type Schema map[string]any
 
 // ToolDefinition defines a tool that can be used in a prompt.
 type ToolDefinition struct {
-	Name         string  `json:"name"`
+	Name         string `json:"name"`
 	Description  string `json:"description,omitempty"`
-	InputSchema  Schema  `json:"inputSchema"`
-	OutputSchema Schema  `json:"outputSchema,omitempty"`
+	InputSchema  Schema `json:"inputSchema"`
+	OutputSchema Schema `json:"outputSchema,omitempty"`
 }
 
 // ToolArgument can be either a string or a ToolDefinition.
-type ToolArgument interface{}
+type ToolArgument any
 
 // IsToolArgument returns true if the argument is a string or a ToolDefinition.
-func IsToolArgument(arg interface{}) bool {
+func IsToolArgument(arg any) bool {
 	_, okString := arg.(string)
 	if okString {
 		return true
 	}
 	_, okDefinition := arg.(ToolDefinition)
-	if okDefinition {
-		return true
-	}
-	return false
+	return okDefinition
 }
 
 // Metadata is a generic map of string keys to any values.
-type Metadata map[string]interface{}
+type Metadata map[string]any
 
-// HasMetadata is an internal interface for types that can have metadata.
-type HasMetadata interface {
+// HasMetadata is a struct that can be embedded in other types to provide
+// metadata.
+type HasMetadata struct {
 	Metadata Metadata `json:"metadata,omitempty"`
+}
+
+// SetMetadata sets the metadata for a struct that embeds HasMetadata.
+func (h *HasMetadata) SetMetadata(key string, value any) {
+	if h.Metadata == nil {
+		h.Metadata = Metadata{}
+	}
+	h.Metadata[key] = value
+}
+
+// GetMetadata returns the metadata for a struct that embeds HasMetadata.
+// This allows HasMetadata to be used with the Part interface.
+func (h *HasMetadata) GetMetadata() Metadata {
+	return h.Metadata
 }
 
 // PromptRef references a prompt in a store.
 type PromptRef struct {
-	Name    string  `json:"name"`
+	Name    string `json:"name"`
 	Variant string `json:"variant,omitempty"`
 	Version string `json:"version,omitempty"`
 }
@@ -59,12 +67,12 @@ type PromptData struct {
 //
 // See: Definition for ModelConfig as PromptMetadata generic type in types.d.ts
 // for more information.
-type ModelConfig map[string]interface{}
+type ModelConfig map[string]any
 
 // Input represents the configuration for input variables.
 type PromptMetadataInput struct {
-	Default map[string]interface{} `json:"default,omitempty"`
-	Schema  Schema                 `json:"schema,omitempty"`
+	Default map[string]any `json:"default,omitempty"`
+	Schema  Schema         `json:"schema,omitempty"`
 }
 
 // Output represents the desired output format for a prompt.
@@ -77,29 +85,29 @@ type PromptMetadataOutput struct {
 type PromptMetadata struct {
 	HasMetadata
 	// The name of the prompt.
-	Name        string                   `json:"name,omitempty"`
+	Name string `json:"name,omitempty"`
 	// The variant name for the prompt.
-	Variant     string                   `json:"variant,omitempty"`
+	Variant string `json:"variant,omitempty"`
 	// The version of the prompt.
-	Version     string                   `json:"version,omitempty"`
+	Version string `json:"version,omitempty"`
 	// A description of the prompt.
-	Description string                   `json:"description,omitempty"`
+	Description string `json:"description,omitempty"`
 	// The name of the model to use for this prompt, e.g. `vertexai/gemini-1.0-pro`
-	Model       string                   `json:"model,omitempty"`
+	Model string `json:"model,omitempty"`
 	// Names of tools (registered separately) to allow use of in this prompt.
-	Tools       []string                  `json:"tools,omitempty"`
+	Tools []string `json:"tools,omitempty"`
 	// Definitions of tools to allow use of in this prompt.
-	ToolDefs    []ToolDefinition          `json:"toolDefs,omitempty"`
+	ToolDefs []ToolDefinition `json:"toolDefs,omitempty"`
 	// Model configuration. Not all models support all options.
-	Config      ModelConfig               `json:"config,omitempty"`
+	Config ModelConfig `json:"config,omitempty"`
 	// Configuration for input variables.
-	Input       PromptMetadataInput       `json:"input,omitempty"`
+	Input PromptMetadataInput `json:"input,omitempty"`
 	// Defines the expected model output format.
-	Output      PromptMetadataOutput      `json:"output,omitempty"`
+	Output PromptMetadataOutput `json:"output,omitempty"`
 	// This field will contain the raw frontmatter as parsed with no additional
 	// processing or substitutions. If your implementation requires custom
 	// fields they will be available here.
-	Raw map[string]interface{} `json:"raw,omitempty"`
+	Raw map[string]any `json:"raw,omitempty"`
 	// Fields that contain a period will be considered "extension fields" in the
 	// frontmatter and will be gathered by namespace. For example, `myext.foo:
 	// 123` would be available at `parsedPrompt.ext.myext.foo`. Nested
@@ -117,24 +125,25 @@ type ParsedPrompt struct {
 
 // Part represents a part of a message content.
 type Part interface {
-	HasMetadata
+	// Each Part must embed HasMetadata
+	GetMetadata() Metadata
 }
 
 // TextPart represents a text part of a message.
 type TextPart struct {
-	Part
+	HasMetadata
 	Text string `json:"text"`
 }
 
 // DataPart represents a data part of a message.
 type DataPart struct {
-	Part
-	Data map[string]interface{} `json:"data"`
+	HasMetadata
+	Data map[string]any `json:"data"`
 }
 
 // MediaPart represents a media part of a message.
 type MediaPart struct {
-	Part
+	HasMetadata
 	Media struct {
 		URL         string `json:"url"`
 		ContentType string `json:"contentType,omitempty"`
@@ -143,37 +152,50 @@ type MediaPart struct {
 
 // ToolRequestPart represents a tool request part of a message.
 type ToolRequestPart struct {
-	Part
-	ToolRequest map[string]interface{} `json:"toolRequest"`
+	HasMetadata
+	ToolRequest map[string]any `json:"toolRequest"`
 }
 
 // ToolResponsePart represents a tool response part of a message.
 type ToolResponsePart struct {
-	Part
-	ToolResponse map[string]interface{} `json:"toolResponse"`
+	HasMetadata
+	ToolResponse map[string]any `json:"toolResponse"`
 }
 
 // PendingPart represents a pending part of a message.
 type PendingPart struct {
-	Part
+	HasMetadata
 }
 
 // NewPendingPart creates a new PendingPart with the pending flag set to true.
 func NewPendingPart() *PendingPart {
 	return &PendingPart{
-		Metadata: map[string]interface{}{
-			"pending": true,
+		HasMetadata: HasMetadata{
+			Metadata: map[string]any{
+				"pending": true,
+			},
 		},
 	}
 }
 
 // IsPending returns true if the pending flag is set to true.
 func (p *PendingPart) IsPending() bool {
-	return p.Metadata["pending"].(bool)
+	pendingValue, ok := p.Metadata["pending"]
+	if !ok {
+		return false
+	}
+	pending, ok := pendingValue.(bool)
+	if !ok {
+		return false
+	}
+	return pending
 }
 
 // SetPending sets the pending flag to the given value.
 func (p *PendingPart) SetPending(enabled bool) {
+	if p.Metadata == nil {
+		p.Metadata = Metadata{}
+	}
 	p.Metadata["pending"] = enabled
 }
 
@@ -191,8 +213,8 @@ const (
 // Message represents a message in a conversation.
 type Message struct {
 	HasMetadata
-	Role    Role    `json:"role"`
-	Content []Part  `json:"content"`
+	Role    Role   `json:"role"`
+	Content []Part `json:"content"`
 }
 
 // Document represents a document with content parts.
@@ -205,18 +227,18 @@ type Document struct {
 // at runtime.
 type DataArgument struct {
 	// Input variables for the prompt template.
-	Input map[string]interface{} `json:"input,omitempty"`
+	Input map[string]any `json:"input,omitempty"`
 	// Relevant documents.
 	Docs []Document `json:"docs,omitempty"`
 	// Previous messages in the history of a multi-turn conversation.
 	Messages []Message `json:"messages,omitempty"`
 	// Items in the context argument are exposed as `@` variables, e.g.
 	// `context: {state: {...}}` is exposed as `@state`.
-	Context map[string]interface{} `json:"context,omitempty"`
+	Context map[string]any `json:"context,omitempty"`
 }
 
 // JSONSchema is a JSON schema.
-type JSONSchema interface{}
+type JSONSchema map[string]any
 
 // SchemaResolver is a function that resolves a schema name to a JSON schema.
 type SchemaResolver func(schemaName string) (JSONSchema, error)
@@ -245,7 +267,7 @@ type PaginatedResponse struct {
 
 // PartialRef references a partial in a store.
 type PartialRef struct {
-	Name    string  `json:"name"`
+	Name    string `json:"name"`
 	Variant string `json:"variant,omitempty"`
 	Version string `json:"version,omitempty"`
 }
