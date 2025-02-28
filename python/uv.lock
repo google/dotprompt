@@ -546,14 +546,10 @@ wheels = [
 
 [[package]]
 name = "handlebars"
-version = "4.7.8.post20241027"
-source = { registry = "https://pypi.org/simple" }
+version = "0.1.dev12+g5b6ecb1"
+source = { git = "https://github.com/Manurajbharath/handlebars-py.git#5b6ecb1f6dd0ace62d5caf3f70b3ebae33fb53cf" }
 dependencies = [
-    { name = "js2py-wheel" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ce/5c/c096425ab6782dabbf9a7171db0a75565bdd5249d30cbc7e9972aebc7043/handlebars-4.7.8.post20241027.tar.gz", hash = "sha256:2e6e341b95d429b589fe9df881dedd34ac558c91b5c3412433968f85a289baff", size = 69704 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/05/05/bf995eda7d8a0d2f3b6ea249ffdd653ce8ce21e86914d9eeab691ab51e39/handlebars-4.7.8.post20241027-py3-none-any.whl", hash = "sha256:5cfa16cb0d6b3eefea7ed4909c603cfb06d69955141e523053b180821e925d91", size = 65981 },
+    { name = "js2py" },
 ]
 
 [[package]]
@@ -711,17 +707,13 @@ wheels = [
 ]
 
 [[package]]
-name = "js2py-wheel"
+name = "js2py"
 version = "0.74"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/a-j-albert/Js2Py---supports-python-3.13.git#cc64a715727f110b79310b8031e0ade9c501d5d3" }
 dependencies = [
-    { name = "pyjsparser-wheel" },
+    { name = "pyjsparser" },
     { name = "six" },
     { name = "tzlocal" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/30/59/e080d8eb641f2ceea89677ab0c56d7a2a0858a0c4bb95813bad712b8d3e3/js2py_wheel-0.74.tar.gz", hash = "sha256:8670d73abf22b211173cfe70cf92f94aa36be61f43d44c65131f1d20bb26be04", size = 567467 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/7f/58/9485878e03c64247fa37da9380acc6019be7f63059052d1f19b3699a5a6e/Js2Py_wheel-0.74-py3-none-any.whl", hash = "sha256:c5b4af26ce0a16c26190031ddafb495a998b35c46bf5959c7feb72f581d23ca7", size = 608306 },
 ]
 
 [[package]]
@@ -1362,13 +1354,10 @@ wheels = [
 ]
 
 [[package]]
-name = "pyjsparser-wheel"
+name = "pyjsparser"
 version = "2.7.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/55/a5/1ddb97c0e5c416d41f2391cfca773edc26e7632a286e6d49e14af0922c6d/pyjsparser_wheel-2.7.1.tar.gz", hash = "sha256:79e011ee4a2fc2e607e3a584e73a4f9c7091d23817513d19aa39b1c4e55e9e58", size = 25623 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a0/0b/bc29d3c773e3317384c7fe9362fd35d45628d7d62efce28974e49608e70f/pyjsparser_wheel-2.7.1-py3-none-any.whl", hash = "sha256:c249f326979de310b76fb0cf565ab572daa2eb3fb0544a52fbcc482cd4ef2d6c", size = 27071 },
-]
+sdist = { url = "https://files.pythonhosted.org/packages/48/ef/c72abcfa2c6accd03e7c89c400790fc3d908c5804d50a7c4e9ceabd74d23/pyjsparser-2.7.1.tar.gz", hash = "sha256:be60da6b778cc5a5296a69d8e7d614f1f870faf94e1b1b6ac591f2ad5d729579", size = 24196 }
 
 [[package]]
 name = "pytest"
@@ -1700,10 +1689,16 @@ version = "0.1.0"
 source = { virtual = "tests/smoke" }
 dependencies = [
     { name = "dotpromptz" },
+    { name = "handlebars" },
+    { name = "js2py" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "dotpromptz", editable = "dotpromptz" }]
+requires-dist = [
+    { name = "dotpromptz", editable = "dotpromptz" },
+    { name = "handlebars", git = "https://github.com/Manurajbharath/handlebars-py.git" },
+    { name = "js2py", git = "https://github.com/a-j-albert/Js2Py---supports-python-3.13.git" },
+]
 
 [[package]]
 name = "sniffio"
