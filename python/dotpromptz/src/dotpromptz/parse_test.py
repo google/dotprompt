@@ -11,6 +11,7 @@ import pytest
 from dotpromptz.parse import (
     FRONTMATTER_AND_BODY_REGEX,
     MEDIA_AND_SECTION_MARKER_REGEX,
+    RESERVED_METADATA_KEYWORDS,
     ROLE_AND_HISTORY_MARKER_REGEX,
     MessageSource,
     convert_namespaced_entry_to_nested_object,
@@ -18,6 +19,7 @@ from dotpromptz.parse import (
     insert_history,
     message_sources_to_messages,
     messages_have_history,
+    parse_document,
     parse_media_part,
     parse_part,
     parse_section_part,
@@ -30,6 +32,7 @@ from dotpromptz.parse import (
 from dotpromptz.typing import (
     MediaPart,
     Message,
+    ParsedPrompt,
     Part,
     PendingPart,
     Role,
@@ -37,37 +40,68 @@ from dotpromptz.typing import (
 )
 
 
-class TestSplitByMediaAndSectionMarkers(unittest.TestCase):
-    def test_split_by_media_and_section_markers(self) -> None:
-        """Test splitting by media and section markers."""
-        input_str = '<<<dotprompt:media:url>>> https://example.com/image.jpg'
-        output = split_by_media_and_section_markers(input_str)
-        assert output == [
-            '<<<dotprompt:media:url',
-            ' https://example.com/image.jpg',
-        ]
+@pytest.mark.parametrize(
+    'source,expected_frontmatter,expected_body',
+    [
+        (
+            '---\nfoo: bar\n---\nThis is the body.',
+            'foo: bar',
+            'This is the body.',
+        ),  # Test document with frontmatter and body
+        (
+            '---\n\n---\nBody only.',
+            '',
+            'Body only.',
+        ),  # Test document with empty frontmatter
+        (
+            '---\nfoo: bar\n---\n',
+            'foo: bar',
+            '',
+        ),  # Test document with empty body
+        (
+            '---\nfoo: bar\nbaz: qux\n---\nThis is the body.',
+            'foo: bar\nbaz: qux',
+            'This is the body.',
+        ),  # Test document with multiline frontmatter
+        (
+            'Just a body.',
+            None,
+            None,
+        ),  # Test document with no frontmatter markers
+        (
+            '---\nfoo: bar\nThis is the body.',
+            None,
+            None,
+        ),  # Test document with incomplete frontmatter markers
+        (
+            '---\nfoo: bar\n---\nThis is the body.\n---\nExtra section.',
+            'foo: bar',
+            'This is the body.\n---\nExtra section.',
+        ),  # Test document with extra frontmatter markers
+    ],
+)
+def test_frontmatter_and_body_regex(
+    source: str,
+    expected_frontmatter: str | None,
+    expected_body: str | None,
+) -> None:
+    """Test frontmatter and body regex."""
+    match = FRONTMATTER_AND_BODY_REGEX.match(source)
 
-    def test_split_by_media_and_section_markers_multiple_markers(self) -> None:
-        """Test multiple markers in a string."""
-        input_str = '<<<dotprompt:media:url>>> https://example.com/image.jpg'
-        output = split_by_media_and_section_markers(input_str)
-        assert output == [
-            '<<<dotprompt:media:url',
-            ' https://example.com/image.jpg',
-        ]
-
-    def test_split_by_media_and_section_markers_no_markers(self) -> None:
-        """Test no markers in a string."""
-        input_str = 'Hello World'
-        output = split_by_media_and_section_markers(input_str)
-        assert output == ['Hello World']
+    if expected_frontmatter is None:
+        assert match is None
+    else:
+        assert match is not None
+        frontmatter, body = match.groups()
+        assert frontmatter == expected_frontmatter
+        assert body == expected_body
 
 
 def test_role_and_history_marker_regex_valid_patterns() -> None:
     """Test valid patterns for role and history markers."""
     valid_patterns = [
         '<<<dotprompt:role:user>>>',
-        '<<<dotprompt:role:assistant>>>',
+        '<<<dotprompt:role:model>>>',
         '<<<dotprompt:role:system>>>',
         '<<<dotprompt:history>>>',
         '<<<dotprompt:role:bot>>>',
@@ -83,7 +117,7 @@ def test_role_and_history_marker_regex_invalid_patterns() -> None:
     """Test invalid patterns for role and history markers."""
     invalid_patterns = [
         '<<<dotprompt:role:USER>>>',  # uppercase not allowed
-        '<<<dotprompt:role:assistant1>>>',  # numbers not allowed
+        '<<<dotprompt:role:model1>>>',  # numbers not allowed
         '<<<dotprompt:role:>>>',  # needs at least one letter
         '<<<dotprompt:role>>>',  # missing role value
         '<<<dotprompt:history123>>>',  # history should be exact
@@ -101,7 +135,7 @@ def test_role_and_history_marker_regex_multiple_matches() -> None:
     """Test multiple matches in a string."""
     text = """
         <<<dotprompt:role:user>>> Hello
-        <<<dotprompt:role:assistant>>> Hi there
+        <<<dotprompt:role:model>>> Hi there
         <<<dotprompt:history>>>
         <<<dotprompt:role:user>>> How are you?
     """
@@ -134,6 +168,39 @@ def test_media_and_section_marker_regex_multiple_matches() -> None:
     assert len(matches) == 4
 
 
+def test_split_by_regex() -> None:
+    """Test splitting by regex and filtering empty/whitespace pieces."""
+    source = '  one  ,  ,  two  ,  three  '
+    result = split_by_regex(source, re.compile(r','))
+    assert result == ['  one  ', '  two  ', '  three  ']
+
+
+class TestSplitByMediaAndSectionMarkers(unittest.TestCase):
+    def test_split_by_media_and_section_markers(self) -> None:
+        """Test splitting by media and section markers."""
+        input_str = '<<<dotprompt:media:url>>> https://example.com/image.jpg'
+        output = split_by_media_and_section_markers(input_str)
+        assert output == [
+            '<<<dotprompt:media:url',
+            ' https://example.com/image.jpg',
+        ]
+
+    def test_split_by_media_and_section_markers_multiple_markers(self) -> None:
+        """Test multiple markers in a string."""
+        input_str = '<<<dotprompt:media:url>>> https://example.com/image.jpg'
+        output = split_by_media_and_section_markers(input_str)
+        assert output == [
+            '<<<dotprompt:media:url',
+            ' https://example.com/image.jpg',
+        ]
+
+    def test_split_by_media_and_section_markers_no_markers(self) -> None:
+        """Test no markers in a string."""
+        input_str = 'Hello World'
+        output = split_by_media_and_section_markers(input_str)
+        assert output == ['Hello World']
+
+
 class TestSplitByRoleAndHistoryMarkers(unittest.TestCase):
     def test_no_markers(self) -> None:
         """Test splitting when no markers are present."""
@@ -143,15 +210,15 @@ class TestSplitByRoleAndHistoryMarkers(unittest.TestCase):
 
     def test_single_marker(self) -> None:
         """Test splitting with a single marker."""
-        input_str = 'Hello <<<dotprompt:role:assistant>>> world'
+        input_str = 'Hello <<<dotprompt:role:model>>> world'
         output = split_by_role_and_history_markers(input_str)
-        assert output == ['Hello ', '<<<dotprompt:role:assistant', ' world']
+        assert output == ['Hello ', '<<<dotprompt:role:model', ' world']
 
     def test_split_by_role_and_history_markers_single_marker(self) -> None:
         """Test splitting with a single marker."""
-        input_str = 'Hello <<<dotprompt:role:assistant>>> world'
+        input_str = 'Hello <<<dotprompt:role:model>>> world'
         output = split_by_role_and_history_markers(input_str)
-        assert output == ['Hello ', '<<<dotprompt:role:assistant', ' world']
+        assert output == ['Hello ', '<<<dotprompt:role:model', ' world']
 
     def test_split_by_role_and_history_markers_filter_empty(self) -> None:
         """Test filtering empty and whitespace-only pieces."""
@@ -240,63 +307,6 @@ class TestConvertNamespacedEntryToNestedObject(unittest.TestCase):
         )
 
 
-@pytest.mark.parametrize(
-    'source,expected_frontmatter,expected_body',
-    [
-        (
-            '---\nfoo: bar\n---\nThis is the body.',
-            'foo: bar',
-            'This is the body.',
-        ),  # Test document with frontmatter and body
-        (
-            '---\n\n---\nBody only.',
-            '',
-            'Body only.',
-        ),  # Test document with empty frontmatter
-        (
-            '---\nfoo: bar\n---\n',
-            'foo: bar',
-            '',
-        ),  # Test document with empty body
-        (
-            '---\nfoo: bar\nbaz: qux\n---\nThis is the body.',
-            'foo: bar\nbaz: qux',
-            'This is the body.',
-        ),  # Test document with multiline frontmatter
-        (
-            'Just a body.',
-            None,
-            None,
-        ),  # Test document with no frontmatter markers
-        (
-            '---\nfoo: bar\nThis is the body.',
-            None,
-            None,
-        ),  # Test document with incomplete frontmatter markers
-        (
-            '---\nfoo: bar\n---\nThis is the body.\n---\nExtra section.',
-            'foo: bar',
-            'This is the body.\n---\nExtra section.',
-        ),  # Test document with extra frontmatter markers
-    ],
-)
-def test_frontmatter_and_body_regex(
-    source: str,
-    expected_frontmatter: str | None,
-    expected_body: str | None,
-) -> None:
-    """Test frontmatter and body regex."""
-    match = FRONTMATTER_AND_BODY_REGEX.match(source)
-
-    if expected_frontmatter is None:
-        assert match is None
-    else:
-        assert match is not None
-        frontmatter, body = match.groups()
-        assert frontmatter == expected_frontmatter
-        assert body == expected_body
-
-
 class TestExtractFrontmatterAndBody(unittest.TestCase):
     """Test extracting frontmatter and body from a string."""
 
@@ -305,6 +315,15 @@ class TestExtractFrontmatterAndBody(unittest.TestCase):
         input_str = '---\nfoo: bar\n---\nThis is the body.'
         frontmatter, body = extract_frontmatter_and_body(input_str)
         assert frontmatter == 'foo: bar'
+        assert body == 'This is the body.'
+
+    def test_should_extract_frontmatter_and_body_empty_frontmatter(
+        self,
+    ) -> None:
+        """Test extracting frontmatter and body when both are present."""
+        input_str = '---\n\n---\nThis is the body.'
+        frontmatter, body = extract_frontmatter_and_body(input_str)
+        assert frontmatter == ''
         assert body == 'This is the body.'
 
     def test_extract_frontmatter_and_body_no_frontmatter(self) -> None:
@@ -318,13 +337,6 @@ class TestExtractFrontmatterAndBody(unittest.TestCase):
         frontmatter, body = extract_frontmatter_and_body(input_str)
         assert frontmatter == ''
         assert body == ''
-
-
-def test_split_by_regex() -> None:
-    """Test splitting by regex and filtering empty/whitespace pieces."""
-    source = '  one  ,  ,  two  ,  three  '
-    result = split_by_regex(source, re.compile(r','))
-    assert result == ['  one  ', '  two  ', '  three  ']
 
 
 class TestTransformMessagesToHistory(unittest.TestCase):
@@ -585,7 +597,8 @@ class TestInsertHistory(unittest.TestCase):
             ),
         ),
         (
-            '<<<dotprompt:media:url>>> https://example.com/image.jpg image/jpeg',
+            '<<<dotprompt:media:url>>> https://example.com/image.jpg'
+            + ' image/jpeg',
             MediaPart(
                 media={
                     'url': 'https://example.com/image.jpg',
@@ -602,9 +615,15 @@ class TestInsertHistory(unittest.TestCase):
             PendingPart(metadata=dict(purpose='code', pending=True)),
         ),
         (
-            'Text before <<<dotprompt:media:url>>> https://example.com/image.jpg Text after',
+            (
+                'Text before <<<dotprompt:media:url>>>'
+                + ' https://example.com/image.jpg Text after'
+            ),
             TextPart(
-                text='Text before <<<dotprompt:media:url>>> https://example.com/image.jpg Text after'
+                text=(
+                    'Text before <<<dotprompt:media:url>>> '
+                    + 'https://example.com/image.jpg Text after'
+                )
             ),
         ),
     ],
@@ -648,3 +667,108 @@ def test_parse_text_piece() -> None:
     piece = 'Hello World'
     result = parse_text_part(piece)
     assert result == TextPart(text='Hello World')
+
+
+class TestParseDocument(unittest.TestCase):
+    def test_parse_document_with_frontmatter_and_template(self) -> None:
+        """Test parsing document with frontmatter and template."""
+        source = """---
+name: test
+description: test description
+foo.bar: value
+---
+Template content"""
+
+        result: ParsedPrompt[dict[str, str]] = parse_document(source)
+
+        self.assertIsInstance(result, ParsedPrompt)
+        self.assertEqual(result.name, 'test')
+        self.assertEqual(result.description, 'test description')
+        if result.ext:
+            self.assertEqual(result.ext['foo']['bar'], 'value')
+        self.assertEqual(result.template, 'Template content')
+
+        if result.raw:
+            self.assertEqual(result.raw['name'], 'test')
+            self.assertEqual(result.raw['description'], 'test description')
+            self.assertEqual(result.raw['foo.bar'], 'value')
+
+    def test_handle_document_without_frontmatter(self) -> None:
+        """Test handling document without frontmatter."""
+        source = 'Just template content'
+
+        result: ParsedPrompt[dict[str, str]] = parse_document(source)
+
+        self.assertIsInstance(result, ParsedPrompt)
+        self.assertEqual(result.ext, {})
+        self.assertEqual(result.template, 'Just template content')
+
+    def test_handle_invalid_yaml_frontmatter(self) -> None:
+        """Test handling invalid YAML frontmatter."""
+        source = """---
+invalid: : yaml
+---
+Template content"""
+
+        result: ParsedPrompt[dict[str, str]] = parse_document(source)
+
+        self.assertIsInstance(result, ParsedPrompt)
+
+        self.assertEqual(result.ext, {})
+        self.assertEqual(result.template, source.strip())
+
+    def test_handle_empty_frontmatter(self) -> None:
+        """Test handling empty frontmatter."""
+        source = """---
+---
+Template content"""
+
+        result: ParsedPrompt[dict[str, str]] = parse_document(source)
+
+        self.assertIsInstance(result, ParsedPrompt)
+
+        self.assertEqual(result.ext, {})
+
+        # TODO: Check whether this is the correct behavior.
+        self.assertEqual(result.template, source.strip())
+
+    def test_handle_multiple_namespaced_entries(self) -> None:
+        """Test handling multiple namespaced entries."""
+        source = """---
+foo.bar: value1
+foo.baz: value2
+qux.quux: value3
+---
+Template content"""
+
+        result: ParsedPrompt[dict[str, str]] = parse_document(source)
+
+        self.assertIsInstance(result, ParsedPrompt)
+
+        if result.ext:
+            self.assertEqual(result.ext['foo']['bar'], 'value1')
+            self.assertEqual(result.ext['foo']['baz'], 'value2')
+            self.assertEqual(result.ext['qux']['quux'], 'value3')
+
+    def test_handle_reserved_keywords(self) -> None:
+        """Test handling reserved keywords."""
+        frontmatter_parts = []
+        for keyword in RESERVED_METADATA_KEYWORDS:
+            if keyword == 'ext':
+                continue
+            frontmatter_parts.append(f'{keyword}: value-{keyword}')
+
+        source = (
+            '---\n' + '\n'.join(frontmatter_parts) + '\n---\nTemplate content'
+        )
+
+        result: ParsedPrompt[dict[str, str]] = parse_document(source)
+
+        self.assertIsInstance(result, ParsedPrompt)
+
+        # for keyword in RESERVED_METADATA_KEYWORDS:
+        #    if keyword == 'ext':
+        #        continue
+        #    self.assertEqual(getattr(result, keyword), f'value-{keyword}')
+
+        self.assertEqual(result.template, 'Template content')

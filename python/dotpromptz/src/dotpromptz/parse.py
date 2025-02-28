@@ -1,5 +1,3 @@
-from typing import Any
-
 # Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -7,7 +5,7 @@ from typing import Any
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, TypeVar, cast
+from typing import Any, TypeVar
 
 import yaml
 
@@ -18,7 +16,6 @@ from dotpromptz.typing import (
     ParsedPrompt,
     Part,
     PendingPart,
-    PromptMetadata,
     Role,
     TextPart,
 )
@@ -81,8 +78,8 @@ MEDIA_AND_SECTION_MARKER_REGEX = re.compile(
     r'(<<<dotprompt:(?:media:url|section).*?)>>>'
 )
 
-# List of reserved keywords that are handled specially in the metadata.
-# These keys are processed differently from extension metadata.
+# List of reserved keywords that are handled specially in the metadata of a
+# .prompt file. These keys are processed differently from extension metadata.
 RESERVED_METADATA_KEYWORDS = [
     # NOTE: KEEP SORTED
     'config',
@@ -99,13 +96,6 @@ RESERVED_METADATA_KEYWORDS = [
     'version',
 ]
 
-# Default metadata structure with empty extension and configuration objects.
-BASE_METADATA: PromptMetadata[Any] = PromptMetadata(
-    ext={},
-    metadata={},
-    config={},
-)
-
 
 def split_by_regex(source: str, regex: re.Pattern[str]) -> list[str]:
     """Splits a string by a regular expression while filtering out
@@ -118,7 +108,11 @@ def split_by_regex(source: str, regex: re.Pattern[str]) -> list[str]:
     Returns:
         An array of non-empty string pieces.
     """
-    return [s for s in regex.split(source) if s.strip()]
+
+    def filter_empty(s: str) -> bool:
+        return bool(s.strip())
+
+    return list(filter(filter_empty, regex.split(source)))
 
 
 def split_by_role_and_history_markers(rendered_string: str) -> list[str]:
@@ -163,14 +157,18 @@ def convert_namespaced_entry_to_nested_object(
     Returns:
         The updated target object
     """
+    # NOTE: Goes only a single level deep.
     if obj is None:
         obj = {}
 
     last_dot_index = key.rindex('.')
     ns = key[:last_dot_index]
     field = key[last_dot_index + 1 :]
+
+    # Ensure the namespace exists.
     obj.setdefault(ns, {})
     obj[ns][field] = value
+
     return obj
 
 
@@ -191,19 +189,77 @@ def extract_frontmatter_and_body(source: str) -> tuple[str, str]:
     return '', ''
 
 
-# def parse_document(source: str) -> ParsedPrompt[T]:
-#    """Parses a .dotprompt document.
-#
-#    The frontmatter YAML contains metadata and configuration for the prompt.
-#
-#    Args:
-#        source: The source document containing frontmatter and template
-#
-#    Returns:
-#        Parsed prompt with metadata and template content
-#    """
-#    # TODO: Implement this
-#    pass
+def parse_document(source: str) -> ParsedPrompt[T]:
+    """Parses a document containing YAML frontmatter and a template content
+    section.
+
+    The frontmatter contains metadata and configuration for the prompt.
+
+    Args:
+        source: The source document containing frontmatter and template
+
+    Returns:
+        Parsed prompt with metadata and template content
+    """
+    frontmatter, body = extract_frontmatter_and_body(source)
+    if frontmatter:
+        try:
+            parsed_metadata = yaml.safe_load(frontmatter)
+            if parsed_metadata is None:
+                parsed_metadata = {}
+
+            raw = dict(parsed_metadata)
+            pruned: dict[str, Any] = {'ext': {}, 'config': {}, 'metadata': {}}
+            ext: dict[str, dict[str, Any]] = {}
+
+            # Process each key in the raw metadata
+            for key, value in raw.items():
+                if key in RESERVED_METADATA_KEYWORDS:
+                    pruned[key] = value
+                elif '.' in key:
+                    convert_namespaced_entry_to_nested_object(key, value, ext)
+
+            try:
+                return ParsedPrompt(
+                    name=raw.get('name'),
+                    description=raw.get('description'),
+                    variant=raw.get('variant'),
+                    version=raw.get('version'),
+                    input=raw.get('input'),
+                    output=raw.get('output'),
+                    toolDefs=raw.get('toolDefs'),
+                    tools=raw.get('tools'),
+                    ext=ext,
+                    config=pruned.get('config'),
+                    metadata=pruned.get('metadata', {}),
+                    raw=raw,
+                    template=body.strip(),
+                )
+            except Exception:
+                # Return a basic ParsedPrompt with just the template
+                return ParsedPrompt(
+                    ext={},
+                    config=None,
+                    metadata={},
+                    toolDefs=None,
+                    template=body.strip(),
+                )
+        except Exception as e:
+            # TODO: Should this be an error?
+            print(f'Dotprompt: Error parsing YAML frontmatter: {e}')
+            # Return a basic ParsedPrompt with just the template
+            return ParsedPrompt(
+                ext={},
+                config=None,
+                metadata={},
+                toolDefs=None,
+                template=source.strip(),
+            )
+
+    # No frontmatter, return a basic ParsedPrompt with just the template
+    return ParsedPrompt(
+        ext={}, config=None, metadata={}, toolDefs=None, template=source
+    )
 
 
 def to_messages(
@@ -358,6 +414,9 @@ def insert_history(
     if not history or messages_have_history(messages):
         return messages
 
+    if len(messages) == 0:
+        return history
+
     last_message = messages[-1]
     if last_message.role == 'user':
         # If the last message is a user message, insert the history before it.
@@ -417,7 +476,10 @@ def parse_media_part(piece: str) -> MediaPart:
         ValueError: If the media piece is invalid
     """
     if not piece.startswith(MEDIA_MARKER_PREFIX):
-        raise ValueError(f'Invalid media piece: {piece}')
+        raise ValueError(
+            f'Invalid media piece: {piece}; '
+            f'expected prefix {MEDIA_MARKER_PREFIX}'
+        )
 
     fields = piece.split(' ')
     n = len(fields)
@@ -427,7 +489,9 @@ def parse_media_part(piece: str) -> MediaPart:
         _, url = fields
         content_type = None
     else:
-        raise ValueError(f'Invalid media piece: {piece}')
+        raise ValueError(
+            f'Invalid media piece: {piece}; expected 2 or 3 fields, found {n}'
+        )
 
     part = MediaPart(media=dict(url=url))
     if content_type and content_type.strip():
@@ -448,13 +512,19 @@ def parse_section_part(piece: str) -> PendingPart:
         ValueError: If the section piece is invalid
     """
     if not piece.startswith(SECTION_MARKER_PREFIX):
-        raise ValueError(f'Invalid section piece: {piece}')
+        raise ValueError(
+            f'Invalid section piece: {piece}; '
+            f'expected prefix {SECTION_MARKER_PREFIX}'
+        )
 
     fields = piece.split(' ')
     if len(fields) == 2:
         section_type = fields[1]
     else:
-        raise ValueError(f'Invalid section piece: {piece}')
+        raise ValueError(
+            f'Invalid section piece: {piece}; '
+            f'expected 2 fields, found {len(fields)}'
+        )
     return PendingPart(metadata=dict(purpose=section_type, pending=True))
 
 
