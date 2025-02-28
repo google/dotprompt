@@ -1,3 +1,6 @@
+// Copyright 2025 Google LLC
+// SPDX-License-Identifier: Apache-2.0
+
 package dotprompt
 
 import (
@@ -13,10 +16,10 @@ type hash struct {
 
 var templateHelpers = map[string]any{
 	"json":         JSON,
-	"role":         Role,
+	"role":         RoleFn,
 	"history":      History,
 	"section":      Section,
-	"media":        Media,
+	"media":        MediaFn,
 	"ifEquals":     IfEquals,
 	"unlessEquals": UnlessEquals,
 }
@@ -35,7 +38,7 @@ func JSON(serializable interface{}, options struct {
 }
 
 // Role returns a formatted role string.
-func Role(role string) raymond.SafeString {
+func RoleFn(role string) raymond.SafeString {
 	return raymond.SafeString(fmt.Sprintf("<<<dotprompt:role:%s>>>", role))
 }
 
@@ -50,7 +53,7 @@ func Section(name string) raymond.SafeString {
 }
 
 // Media returns a formatted media string.
-func Media(options *raymond.Options) raymond.SafeString {
+func MediaFn(options *raymond.Options) raymond.SafeString {
 	url := options.HashStr("url")
 	contentType := options.HashStr("contentType")
 	if contentType != "" {

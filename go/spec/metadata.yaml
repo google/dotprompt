@@ -1,0 +1,101 @@
+# Copyright 2025 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
+# Tests for metadata handling in templates, including state access,
+# raw frontmatter, and extension field parsing.
+
+# Tests accessing state object values from metadata, including missing
+# values and nested objects.
+- name: metadata_state
+  template: |
+    Current count is {{@state.count}}
+    Status is {{@state.status}}
+  tests:
+    - desc: accesses state object from metadata
+      data:
+        context:
+          state:
+            count: 42
+            status: "active"
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Current count is 42\nStatus is active\n" }]
+
+    - desc: handles missing state values
+      data:
+        context:
+          state:
+            count: 0
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Current count is 0\nStatus is \n" }]
+
+    - desc: handles nested state objects
+      data:
+        context:
+          state:
+            count: 100
+            status: "pending"
+            details:
+              nested: "value"
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Current count is 100\nStatus is pending\n" }]
+
+# Tests that raw frontmatter is preserved alongside parsed frontmatter,
+# allowing access to both structured and unstructured metadata.
+- name: raw
+  template: |
+    ---
+    config:
+      temperature: 3
+    custom: prop
+    ---
+    Hello, world.
+  tests:
+    - desc: raw frontmatter is provided on top of parsed frontmatter
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, world.\n" }]
+        config:
+          temperature: 3
+        raw:
+          config:
+            temperature: 3
+          custom: prop
+
+# # Tests that extension fields are properly parsed and organized into
+# # the ext object, maintaining their hierarchical structure.
+# - name: ext
+#   template: |
+#     ---
+#     model: cool-model
+#     config:
+#       temperature: 3
+#     ext1.foo: bar
+#     ext1.foo1: bar1
+#     ext1.sub1.foo: baz
+#     ext1.sub2.bar: qux
+#     ext2.foo: bar2
+#     ---
+#   tests:
+#     - desc: extension fields are parsed and added to 'ext'
+#       expect:
+#         messages: []
+#         model: cool-model
+#         config:
+#           temperature: 3
+#         ext:
+#           ext1:
+#             foo: bar
+#             foo1: bar1
+#           ext1.sub1:
+#             foo: baz
+#           ext1.sub2:
+#             bar: qux
+#           ext2:
+#             foo: bar2

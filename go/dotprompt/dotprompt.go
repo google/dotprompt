@@ -1,11 +1,12 @@
+// Copyright 2025 Google LLC
+// SPDX-License-Identifier: Apache-2.0
+
 package dotprompt
 
 import (
 	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
-	"strings"
 
 	"github.com/aymerick/raymond"
 )
@@ -85,20 +86,19 @@ func (dp *Dotprompt) RegisterHelpers(options *DotpromptOptions, tpl *raymond.Tem
 	}
 }
 
-func (dp *Dotprompt) RegisterPartials(options *DotpromptOptions, tpl *raymond.Template, template string) error {
-	if options.Partials != nil {
-		for key, partial := range options.Partials {
-			dp.definePartial(key, partial, tpl)
-		}
-	}
-	err := dp.resolvePartials(template, tpl)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+// func (dp *Dotprompt) RegisterPartials(options *DotpromptOptions, tpl *raymond.Template, template string) error {
+// 	if options.Partials != nil {
+// 		for key, partial := range options.Partials {
+// 			dp.definePartial(key, partial, tpl)
+// 		}
+// 	}
+// 	err := dp.resolvePartials(template, tpl)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
-// TODO: Verify if this function is required or not
 // DefineTool registers a tool definition.
 func (dp *Dotprompt) DefineTool(def ToolDefinition) *Dotprompt {
 	dp.tools[def.Name] = def
@@ -106,12 +106,12 @@ func (dp *Dotprompt) DefineTool(def ToolDefinition) *Dotprompt {
 }
 
 // Parse parses the source string into a ParsedPrompt.
-func (dp *Dotprompt) Parse(source string) ParsedPrompt {
+func (dp *Dotprompt) Parse(source string) (ParsedPrompt, error) {
 	return ParseDocument(source)
 }
 
 // Render renders the source string with the given data and options.
-func (dp *Dotprompt) Render(source string, data DataArgument, options *PromptMetadata, dotpromptOptions *DotpromptOptions) (RenderedPrompt, error) {
+func (dp *Dotprompt) Render(source string, data *DataArgument, options *PromptMetadata, dotpromptOptions *DotpromptOptions) (RenderedPrompt, error) {
 	renderer, err := dp.Compile(source, options, dotpromptOptions)
 	if err != nil {
 		return RenderedPrompt{}, err
@@ -121,7 +121,10 @@ func (dp *Dotprompt) Render(source string, data DataArgument, options *PromptMet
 
 // Compile compiles the source string into a PromptFunction.
 func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata, dotpromptOptions *DotpromptOptions) (PromptFunction, error) {
-	parsedPrompt := dp.Parse(source)
+	parsedPrompt, err := dp.Parse(source)
+	if err != nil {
+		return nil, err
+	}
 	if additionalMetadata != nil {
 		parsedPrompt = mergeMetadata(parsedPrompt, additionalMetadata)
 	}
@@ -133,12 +136,12 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata, 
 
 	// RegisterHelpers()
 	dp.RegisterHelpers(dotpromptOptions, renderTpl)
-	err = dp.RegisterPartials(dotpromptOptions, renderTpl, parsedPrompt.Template)
+	// err = dp.RegisterPartials(dotpromptOptions, renderTpl, parsedPrompt.Template)
 	if err != nil {
 		return nil, err
 	}
 
-	renderFunc := func(data DataArgument, options *PromptMetadata) (RenderedPrompt, error) {
+	renderFunc := func(data *DataArgument, options *PromptMetadata) (RenderedPrompt, error) {
 		mergedMetadata, err := dp.RenderMetadata(parsedPrompt, options)
 		if err != nil {
 			return RenderedPrompt{}, err
@@ -151,9 +154,13 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata, 
 			return RenderedPrompt{}, err
 		}
 
+		messages, err := ToMessages(renderedString, data)
+		if err != nil {
+			return RenderedPrompt{}, err
+		}
 		return RenderedPrompt{
 			PromptMetadata: mergedMetadata,
-			Messages:       ToMessages(renderedString, data),
+			Messages:       messages,
 		}, nil
 	}
 
@@ -161,62 +168,62 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata, 
 }
 
 // IdentifyPartials identifies partials in the template.
-func (d *Dotprompt) identifyPartials(template string) []string {
-	// Simplified partial identification logic
-	var partials []string
-	lines := strings.Split(template, "\n")
-	for _, line := range lines {
-		// if strings.Contains(line, "{{>") {
-		// 	str1 := strings.TrimSuffix(line, "}}")
-		// 	str2 := strings.TrimPrefix(str1, "{{>")
-		// 	partialName := strings.TrimSpace(str2)
-		// 	partials = append(partials, partialName)
-		// }
-		re := regexp.MustCompile(`{{>\s*([^}]+)\s*}}`)
-		// Find all matches in the template
-		matches := re.FindAllStringSubmatch(line, -1)
+// func (d *Dotprompt) identifyPartials(template string) []string {
+// 	// Simplified partial identification logic
+// 	var partials []string
+// 	lines := strings.Split(template, "\n")
+// 	for _, line := range lines {
+// 		// if strings.Contains(line, "{{>") {
+// 		// 	str1 := strings.TrimSuffix(line, "}}")
+// 		// 	str2 := strings.TrimPrefix(str1, "{{>")
+// 		// 	partialName := strings.TrimSpace(str2)
+// 		// 	partials = append(partials, partialName)
+// 		// }
+// 		re := regexp.MustCompile(`{{>\s*([^}]+)\s*}}`)
+// 		// Find all matches in the template
+// 		matches := re.FindAllStringSubmatch(line, -1)
 
-		for _, match := range matches {
-			if len(match) > 1 {
-				partialName := strings.TrimSpace(match[1])
-				partials = append(partials, partialName)
-			}
-		}
-	}
-	return partials
-}
+// 		for _, match := range matches {
+// 			if len(match) > 1 {
+// 				partialName := strings.TrimSpace(match[1])
+// 				partials = append(partials, partialName)
+// 			}
+// 		}
+// 	}
+// 	return partials
+// }
 
 // TODO: Add functionality to resolve partials
 // resolvePartials resolves and registers partials in the template.
-func (dp *Dotprompt) resolvePartials(template string, tpl *raymond.Template) error {
-	if dp.partialResolver == nil {
-		return nil
-	}
+// func (dp *Dotprompt) resolvePartials(template string, tpl *raymond.Template) error {
+// 	if dp.partialResolver == nil {
+// 		return nil
+// 	}
 
-	// partials := dp.identifyPartials(template)
-	// for _, partial := range partials {
+// 	// partials := dp.identifyPartials(template)
+// 	// for _, partial := range partials {
 
-	// 	_, err := dp.partialResolver(partial)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	tpl.RegisterPartialTemplate()
-	// 	// if _, exists := raymond.Partials[partial]; !exists {
-	// 	// 	content, err := dp.partialResolver(partial)
-	// 	// 	if err != nil {
-	// 	// 		return err
-	// 	// 	}
-	// 	// 	if content != "" {
-	// 	// 		dp.definePartial(partial, content)
-	// 	// 		err = dp.resolvePartials(content)
-	// 	// 		if err != nil {
-	// 	// 			return err
-	// 	// 		}
-	// 	// 	}
-	// 	// }
-	// }
-	return nil
-}
+// 	// 	_, err := dp.partialResolver(partial)
+// 	// 	if err != nil {
+// 	// 		return err
+// 	// 	}
+// 	// 	tpl.RegisterPartialTemplate()
+// 	// 	// if _, exists := raymond.Partials[partial]; !exists {
+// 	// 	// 	content, err := dp.partialResolver(partial)
+// 	// 	// 	if err != nil {
+// 	// 	// 		return err
+// 	// 	// 	}
+// 	// 	// 	if content != "" {
+// 	// 	// 		dp.definePartial(partial, content)
+// 	// 	// 		err = dp.resolvePartials(content)
+// 	// 	// 		if err != nil {
+// 	// 	// 			return err
+// 	// 	// 		}
+// 	// 	// 	}
+// 	// 	// }
+// 	// }
+// 	return nil
+// }
 
 // mergeMetadata merges additional metadata into the parsed prompt.
 func mergeMetadata(parsedPrompt ParsedPrompt, additionalMetadata *PromptMetadata) ParsedPrompt {
@@ -234,9 +241,13 @@ func mergeMetadata(parsedPrompt ParsedPrompt, additionalMetadata *PromptMetadata
 // RenderMetadata renders the metadata for the prompt.
 func (dp *Dotprompt) RenderMetadata(source interface{}, additionalMetadata *PromptMetadata) (PromptMetadata, error) {
 	var parsedSource ParsedPrompt
+	var err error
 	switch v := source.(type) {
 	case string:
-		parsedSource = dp.Parse(v)
+		parsedSource, err = dp.Parse(v)
+		if err != nil {
+			return PromptMetadata{}, err
+		}
 	case ParsedPrompt:
 		parsedSource = v
 	default:
