@@ -141,13 +141,16 @@ type DataPart struct {
 	Data map[string]any `json:"data"`
 }
 
+// Media represents a media part of a message.
+type Media struct {
+	URL         string `json:"url"`
+	ContentType string `json:"contentType,omitempty"`
+}
+
 // MediaPart represents a media part of a message.
 type MediaPart struct {
 	HasMetadata
-	Media struct {
-		URL         string `json:"url"`
-		ContentType string `json:"contentType,omitempty"`
-	} `json:"media"`
+	Media Media `json:"media"`
 }
 
 // ToolRequestPart represents a tool request part of a message.

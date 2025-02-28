@@ -157,12 +157,18 @@ export function convertNamespacedEntryToNestedObject(
   value: unknown,
   obj: Record<string, Record<string, unknown>> = {}
 ): Record<string, Record<string, unknown>> {
+  // NOTE: Goes only a single level deep.
+  const result = obj || {};
+
   const lastDotIndex = key.lastIndexOf('.');
   const ns = key.substring(0, lastDotIndex);
   const field = key.substring(lastDotIndex + 1);
-  obj[ns] = obj[ns] || {};
-  obj[ns][field] = value;
-  return obj;
+
+  // Ensure the namespace exists.
+  result[ns] = result[ns] || {};
+  result[ns][field] = value;
+
+  return result;
 }
 
 /**
@@ -340,12 +346,18 @@ export function insertHistory(
     return messages;
   }
 
-  // If the last message is a user message, insert the history before it.
+  // If there are no messages, return the history.
+  if (messages.length === 0) {
+    return history;
+  }
+
   const lastMessage = messages.at(-1);
   if (lastMessage?.role === 'user') {
+    // If the last message is a user message, insert the history before it.
     const messagesWithoutLast = messages.slice(0, -1);
     return [...messagesWithoutLast, ...history, lastMessage];
   }
+
   // Otherwise, append the history to the end of the messages.
   return [...messages, ...history];
 }

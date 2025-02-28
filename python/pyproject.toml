@@ -36,7 +36,7 @@ python_files                       = ["**/*_test.py"]
 addopts = "--cov"
 
 [tool.coverage.report]
-fail_under = 70
+fail_under = 85
 
 # uv based package management.
 [tool.uv]
