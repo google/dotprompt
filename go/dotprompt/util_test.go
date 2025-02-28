@@ -61,120 +61,58 @@ func TestCopyMapping(t *testing.T) {
 
 	assert.Equal(t, original, copy)
 }
-
-func TestContains(t *testing.T) {
-	testCases := []struct {
-		name     string
-		keyword  string
-		expected bool
-	}{
-		{
-			name:     "name",
-			keyword:  "name",
-			expected: true,
-		},
-		{
-			name:     "description",
-			keyword:  "description",
-			expected: true,
-		},
-		{
-			name:     "variant",
-			keyword:  "variant",
-			expected: true,
-		},
-		{
-			name:     "version",
-			keyword:  "version",
-			expected: true,
-		},
-		{
-			name:     "ext",
-			keyword:  "ext",
-			expected: true,
-		},
-		{
-			name:     "foo",
-			keyword:  "foo",
-			expected: false,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expected, contains(ReservedMetadataKeywords, tc.keyword))
-		})
-	}
-}
-
 func TestMergeMaps(t *testing.T) {
 	t.Run("both maps are nil", func(t *testing.T) {
 		result := MergeMaps(nil, nil)
-		assert.Equal(t, map[string]interface{}{}, result)
+		assert.Equal(t, map[string]any{}, result)
 	})
 
 	t.Run("first map is nil", func(t *testing.T) {
-		map2 := map[string]interface{}{"key1": "value1"}
+		map2 := map[string]any{"key1": "value1"}
 		result := MergeMaps(nil, map2)
 		assert.Equal(t, map2, result)
 	})
 
 	t.Run("second map is nil", func(t *testing.T) {
-		map1 := map[string]interface{}{"key1": "value1"}
+		map1 := map[string]any{"key1": "value1"}
 		result := MergeMaps(map1, nil)
 		assert.Equal(t, map1, result)
 	})
 
 	t.Run("both maps are non-nil", func(t *testing.T) {
-		map1 := map[string]interface{}{"key1": "value1"}
-		map2 := map[string]interface{}{"key2": "value2"}
-		expected := map[string]interface{}{"key1": "value1", "key2": "value2"}
+		map1 := map[string]any{"key1": "value1"}
+		map2 := map[string]any{"key2": "value2"}
+		expected := map[string]any{"key1": "value1", "key2": "value2"}
 		result := MergeMaps(map1, map2)
 		assert.Equal(t, expected, result)
 	})
 
 	t.Run("overlapping keys", func(t *testing.T) {
-		map1 := map[string]interface{}{"key1": "value1"}
-		map2 := map[string]interface{}{"key1": "newValue1", "key2": "value2"}
-		expected := map[string]interface{}{"key1": "newValue1", "key2": "value2"}
+		map1 := map[string]any{"key1": "value1"}
+		map2 := map[string]any{"key1": "newValue1", "key2": "value2"}
+		expected := map[string]any{"key1": "newValue1", "key2": "value2"}
 		result := MergeMaps(map1, map2)
 		assert.Equal(t, expected, result)
 	})
 }
 
-func TestTrimSpaces(t *testing.T) {
-	t.Run("no leading or trailing spaces", func(t *testing.T) {
-		input := "Hello, world!"
-		expected := "Hello, world!"
-		result := trimSpaces(input)
-		assert.Equal(t, expected, result)
-	})
+func TestTrimUnicodeSpacesExceptNewlines(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"Hello, world!", "Hello, world!"},
+		{"  Hello, world!  ", "Hello, world!"},
+		{"\tHello,\tworld!\t", "Hello,world!"},
+		{"\nHello,\nworld!\n", "\nHello,\nworld!\n"},
+		{"\rHello,\rworld!\r", "\rHello,\rworld!\r"},
+		{"\n\t Hello, \t\n world! \t\n", "\n Hello, \n world! \n"},
+		{"\u2003Hello,\u2003world!\u2003", "Hello,world!"},
+		{"\u2003\nHello,\n\u2003world!\n\u2003", "\nHello,\nworld!\n"},
+	}
 
-	t.Run("leading spaces", func(t *testing.T) {
-		input := "   Hello, world!"
-		expected := "Hello, world!"
-		result := trimSpaces(input)
-		assert.Equal(t, expected, result)
-	})
-
-	t.Run("trailing spaces", func(t *testing.T) {
-		input := "Hello, world!   "
-		expected := "Hello, world!"
-		result := trimSpaces(input)
-		assert.Equal(t, expected, result)
-	})
-
-	t.Run("leading and trailing spaces", func(t *testing.T) {
-		input := "   Hello, world!   "
-		expected := "Hello, world!"
-		result := trimSpaces(input)
-		assert.Equal(t, expected, result)
-	})
-
-	t.Run("spaces and newlines", func(t *testing.T) {
-		input := "   Hello, \nworld!   "
-		expected := "Hello, \nworld!"
-		result := trimSpaces(input)
-		assert.Equal(t, expected, result)
-	})
+	for _, test := range tests {
+		result := trimUnicodeSpacesExceptNewlines(test.input)
+		assert.Equal(t, test.expected, result)
+	}
 }

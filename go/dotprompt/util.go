@@ -3,7 +3,10 @@
 
 package dotprompt
 
-import "strings"
+import (
+	"strings"
+	"unicode"
+)
 
 // stringOrEmpty returns the string value of an any or an empty string if it's not a string.
 func stringOrEmpty(value any) string {
@@ -38,11 +41,11 @@ func copyMapping[K comparable, V any](mapping map[K]V) map[K]V {
 	return newMapping
 }
 
-// MergeMaps merges two map[string]interface{} objects and handles nil maps.
-func MergeMaps(map1, map2 map[string]interface{}) map[string]interface{} {
+// MergeMaps merges two map[string]any objects and handles nil maps.
+func MergeMaps(map1, map2 map[string]any) map[string]any {
 	// If map1 is nil, initialize it as an empty map
 	if map1 == nil {
-		map1 = make(map[string]interface{})
+		map1 = make(map[string]any)
 	}
 
 	// If map2 is nil, return map1 as is
@@ -58,17 +61,18 @@ func MergeMaps(map1, map2 map[string]interface{}) map[string]interface{} {
 	return map1
 }
 
-// trimSpaces trims only the leading and trailing spaces but preserves newline characters.
-func trimSpaces(s string) string {
-	return strings.Trim(s, " \t")
-}
-
-// contains checks if a slice contains a string.
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
+// trimUnicodeSpacesExceptNewlines trims all Unicode space characters except newlines.
+func trimUnicodeSpacesExceptNewlines(s string) string {
+	var result strings.Builder
+	for _, r := range s {
+		if unicode.IsSpace(r) && r != '\n' && r != '\r' && r != ' ' {
+			continue // Skip other Unicode spaces
 		}
+		result.WriteRune(r)
 	}
-	return false
+
+	//Trim leading and trailing spaces after the loop to handle edge cases
+	return strings.TrimFunc(result.String(), func(r rune) bool {
+		return unicode.IsSpace(r) && r != '\n' && r != '\r'
+	})
 }

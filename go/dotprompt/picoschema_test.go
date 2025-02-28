@@ -25,13 +25,13 @@ func TestPicoschema(t *testing.T) {
 	t.Run("named schema", func(t *testing.T) {
 		schemaResolver := func(name string) (JSONSchema, error) {
 			if name == "MySchema" {
-				return JSONSchema{"type": "object", "properties": map[string]interface{}{"name": JSONSchema{"type": "string"}}}, nil
+				return JSONSchema{"type": "object", "properties": map[string]any{"name": JSONSchema{"type": "string"}}}, nil
 			}
 			return nil, nil
 		}
 		result, err := Picoschema("MySchema", &PicoschemaOptions{SchemaResolver: schemaResolver})
 		assert.NoError(t, err)
-		assert.Equal(t, JSONSchema{"type": "object", "properties": map[string]interface{}{"name": JSONSchema{"type": "string"}}}, result)
+		assert.Equal(t, JSONSchema{"type": "object", "properties": map[string]any{"name": JSONSchema{"type": "string"}}}, result)
 	})
 
 	t.Run("invalid schema type", func(t *testing.T) {
@@ -56,13 +56,13 @@ func TestPicoschemaParser_Parse(t *testing.T) {
 	})
 
 	t.Run("object schema", func(t *testing.T) {
-		schema := map[string]interface{}{
+		schema := map[string]any{
 			"type":       "object",
-			"properties": map[string]interface{}{"name": JSONSchema{"type": "string"}},
+			"properties": map[string]any{"name": JSONSchema{"type": "string"}},
 		}
 		expectedSchema := JSONSchema{
 			"type":       "object",
-			"properties": map[string]interface{}{"name": JSONSchema{"type": "string"}},
+			"properties": map[string]any{"name": JSONSchema{"type": "string"}},
 		}
 		result, err := parser.Parse(schema)
 		assert.NoError(t, err)
@@ -85,12 +85,12 @@ func TestPicoschemaParser_parsePico(t *testing.T) {
 	})
 
 	t.Run("object type", func(t *testing.T) {
-		schema := map[string]interface{}{
+		schema := map[string]any{
 			"name": "string",
 		}
 		expected := JSONSchema{
 			"type":                 "object",
-			"properties":           map[string]interface{}{"name": JSONSchema{"type": "string"}},
+			"properties":           map[string]any{"name": JSONSchema{"type": "string"}},
 			"required":             []string{"name"},
 			"additionalProperties": false,
 		}
@@ -100,14 +100,14 @@ func TestPicoschemaParser_parsePico(t *testing.T) {
 	})
 
 	t.Run("array type", func(t *testing.T) {
-		schema := map[string]interface{}{
+		schema := map[string]any{
 			"names(array)": "string",
 		}
 		expected := JSONSchema{
 			"type": "object",
-			"properties": map[string]interface{}{
+			"properties": map[string]any{
 				"names": JSONSchema{
-					"type":  []interface{}{"array"},
+					"type":  []any{"array"},
 					"items": JSONSchema{"type": "string"},
 				},
 			},
@@ -120,14 +120,14 @@ func TestPicoschemaParser_parsePico(t *testing.T) {
 	})
 
 	t.Run("enum type", func(t *testing.T) {
-		schema := map[string]interface{}{
-			"status(enum)": []interface{}{"active", "inactive"},
+		schema := map[string]any{
+			"status(enum)": []any{"active", "inactive"},
 		}
 		expected := JSONSchema{
 			"type": "object",
-			"properties": map[string]interface{}{
+			"properties": map[string]any{
 				"status": JSONSchema{
-					"enum": []interface{}{"active", "inactive"},
+					"enum": []any{"active", "inactive"},
 				},
 			},
 			"required":             []string{"status"},
@@ -157,14 +157,14 @@ func TestExtractDescription(t *testing.T) {
 
 func TestContainsInterface(t *testing.T) {
 	t.Run("contains item", func(t *testing.T) {
-		slice := []interface{}{"a", "b", "c"}
+		slice := []any{"a", "b", "c"}
 		item := "b"
 		result := containsInterface(slice, item)
 		assert.True(t, result)
 	})
 
 	t.Run("does not contain item", func(t *testing.T) {
-		slice := []interface{}{"a", "b", "c"}
+		slice := []any{"a", "b", "c"}
 		item := "d"
 		result := containsInterface(slice, item)
 		assert.False(t, result)

@@ -11,32 +11,32 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/go-viper/mapstructure/v2"
 	. "github.com/google/dotprompt/go/dotprompt"
-	"github.com/mitchellh/mapstructure"
 	"gopkg.in/yaml.v3"
 )
 
 const SpecDir = "../../spec"
 
 type Expect struct {
-	Config   map[string]interface{}   `yaml:"config"`
-	Ext      map[string]interface{}   `yaml:"ext"`
-	Input    map[string]interface{}   `yaml:"input"`
-	Output   map[string]interface{}   `yaml:"output"`
-	Messages []map[string]interface{} `yaml:"messages"`
-	Metadata map[string]interface{}   `yaml:"metadata"`
-	Raw      map[string]interface{}   `yaml:"raw"`
+	Config   map[string]any   `yaml:"config"`
+	Ext      map[string]any   `yaml:"ext"`
+	Input    map[string]any   `yaml:"input"`
+	Output   map[string]any   `yaml:"output"`
+	Messages []map[string]any `yaml:"messages"`
+	Metadata map[string]any   `yaml:"metadata"`
+	Raw      map[string]any   `yaml:"raw"`
 }
 
 type SpecTest struct {
-	Desc    string                 `yaml:"desc"`
-	Data    DataArgument           `yaml:"data"`
-	Expect  Expect                 `yaml:"expect"`
-	Options map[string]interface{} `yaml:"options"`
+	Desc    string         `yaml:"desc"`
+	Data    DataArgument   `yaml:"data"`
+	Expect  Expect         `yaml:"expect"`
+	Options map[string]any `yaml:"options"`
 }
 
-// compareMaps performs a deep comparison of two maps of type map[string]interface{}.
-func compareMaps(map1, map2 map[string]interface{}) bool {
+// compareMaps performs a deep comparison of two maps of type map[string]any.
+func compareMaps(map1, map2 map[string]any) bool {
 	if len(map1) != len(map2) {
 		return false
 	}
@@ -53,19 +53,19 @@ func compareMaps(map1, map2 map[string]interface{}) bool {
 }
 
 // deepEqual performs a deep comparison of two values.
-func deepEqual(v1, v2 interface{}) bool {
+func deepEqual(v1, v2 any) bool {
 	if reflect.TypeOf(v1) != reflect.TypeOf(v2) {
 		return false
 	}
 	switch v1 := v1.(type) {
-	case map[string]interface{}:
-		v2, ok := v2.(map[string]interface{})
+	case map[string]any:
+		v2, ok := v2.(map[string]any)
 		if !ok {
 			return false
 		}
 		return compareMaps(v1, v2)
-	case []interface{}:
-		v2, ok := v2.([]interface{})
+	case []any:
+		v2, ok := v2.([]any)
 		if !ok {
 			return false
 		}
@@ -94,16 +94,13 @@ type SpecSuite struct {
 	Tests            []SpecTest                `yaml:"tests"`
 }
 
+// TODO: Add spec test for helper functions
+// TODO: Add spec test for variables
+// TODO: Add spec test for picoschema
+
 func createTestCases(t *testing.T, s SpecSuite, tc SpecTest, dotpromptFactory func(suite SpecSuite) (*Dotprompt, *DotpromptOptions)) {
 	t.Run(tc.Desc, func(t *testing.T) {
 		env, dotpromptOptions := dotpromptFactory(s)
-
-		// Define partials if they exist.
-		// if s.Partials != nil {
-		// 	for name, template := range s.Partials {
-		// 		env.DefinePartial(name, template)
-		// 	}
-		// }
 
 		// Render the template.
 		options := &PromptMetadata{}
@@ -196,7 +193,7 @@ func mergeData(data1, data2 DataArgument) DataArgument {
 	merged := data1
 	if data2.Input != nil {
 		if merged.Input == nil {
-			merged.Input = make(map[string]interface{})
+			merged.Input = make(map[string]any)
 		}
 		for k, v := range data2.Input {
 			merged.Input[k] = v
@@ -210,7 +207,7 @@ func mergeData(data1, data2 DataArgument) DataArgument {
 	}
 	if data2.Context != nil {
 		if merged.Context == nil {
-			merged.Context = make(map[string]interface{})
+			merged.Context = make(map[string]any)
 		}
 		for k, v := range data2.Context {
 			merged.Context[k] = v
@@ -219,8 +216,8 @@ func mergeData(data1, data2 DataArgument) DataArgument {
 	return merged
 }
 
-func pruneResult(result PromptMetadata) map[string]interface{} {
-	pruned := make(map[string]interface{})
+func pruneResult(result PromptMetadata) map[string]any {
+	pruned := make(map[string]any)
 	if len(result.Config) > 0 {
 		pruned["config"] = result.Config
 	}
@@ -242,8 +239,8 @@ func pruneResult(result PromptMetadata) map[string]interface{} {
 	return pruned
 }
 
-func pruneExpected(expect Expect) map[string]interface{} {
-	pruned := make(map[string]interface{})
+func pruneExpected(expect Expect) map[string]any {
+	pruned := make(map[string]any)
 	if len(expect.Config) > 0 {
 		pruned["config"] = expect.Config
 	}
@@ -265,10 +262,10 @@ func pruneExpected(expect Expect) map[string]interface{} {
 	return pruned
 }
 
-func pruneMessages(messages []Message) []map[string]interface{} {
-	pruned := make([]map[string]interface{}, 0)
+func pruneMessages(messages []Message) []map[string]any {
+	pruned := make([]map[string]any, 0)
 	for _, message := range messages {
-		prunedMessage := make(map[string]interface{})
+		prunedMessage := make(map[string]any)
 		if len(message.Content) > 0 {
 			prunedMessage["content"] = pruneContent(message.Content)
 		}
@@ -283,10 +280,10 @@ func pruneMessages(messages []Message) []map[string]interface{} {
 	return pruned
 }
 
-func pruneContent(content []Part) []map[string]interface{} {
-	pruned := make([]map[string]interface{}, 0)
+func pruneContent(content []Part) []map[string]any {
+	pruned := make([]map[string]any, 0)
 	for _, part := range content {
-		prunedPart := make(map[string]interface{})
+		prunedPart := make(map[string]any)
 		switch p := part.(type) {
 		case *TextPart:
 			if p.Text != "" {
@@ -321,7 +318,7 @@ func pruneContent(content []Part) []map[string]interface{} {
 	return pruned
 }
 
-func compareResults(result, expected map[string]interface{}) bool {
+func compareResults(result, expected map[string]any) bool {
 	resultJSON, _ := json.Marshal(result)
 	expectedJSON, _ := json.Marshal(expected)
 	return string(resultJSON) == string(expectedJSON)

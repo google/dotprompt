@@ -26,7 +26,7 @@ var templateHelpers = map[string]any{
 
 // TODO: Add pending: true for section helper
 // JSON serializes the given data to a JSON string with optional indentation.
-func JSON(serializable interface{}, options struct {
+func JSON(serializable any, options struct {
 	Hash hash
 }) raymond.SafeString {
 
@@ -63,7 +63,7 @@ func MediaFn(options *raymond.Options) raymond.SafeString {
 }
 
 // IfEquals compares two values and returns the appropriate template content.
-func IfEquals(arg1, arg2 interface{}, options *raymond.Options) string {
+func IfEquals(arg1, arg2 any, options *raymond.Options) string {
 	if arg1 == arg2 {
 		return options.Fn()
 	}
@@ -71,7 +71,7 @@ func IfEquals(arg1, arg2 interface{}, options *raymond.Options) string {
 }
 
 // UnlessEquals compares two values and returns the appropriate template content.
-func UnlessEquals(arg1, arg2 interface{}, options *raymond.Options) string {
+func UnlessEquals(arg1, arg2 any, options *raymond.Options) string {
 	if arg1 != arg2 {
 		return options.Fn()
 	}

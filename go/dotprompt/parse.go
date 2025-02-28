@@ -6,6 +6,7 @@ package dotprompt
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -110,7 +111,7 @@ func splitByRegex(source string, regex *regexp.Regexp) []string {
 		// Filter out empty or whitespace-only pieces.
 		var result []string
 		for _, s := range pieces {
-			if trimSpaces(s) != "" {
+			if trimUnicodeSpacesExceptNewlines(s) != "" {
 				result = append(result, s)
 			}
 		}
@@ -120,7 +121,7 @@ func splitByRegex(source string, regex *regexp.Regexp) []string {
 	// For marker regexes with capturing groups, include the matched portions.
 	matches := regex.FindAllStringSubmatchIndex(source, -1)
 	if len(matches) == 0 {
-		if trimSpaces(source) != "" {
+		if trimUnicodeSpacesExceptNewlines(source) != "" {
 			return []string{source}
 		}
 		return []string{}
@@ -137,7 +138,7 @@ func splitByRegex(source string, regex *regexp.Regexp) []string {
 		// If there's text before the match that isn't empty...
 		if start > lastEnd {
 			textBefore := source[lastEnd:start]
-			if trimSpaces(textBefore) != "" {
+			if trimUnicodeSpacesExceptNewlines(textBefore) != "" {
 				result = append(result, textBefore)
 			}
 		}
@@ -148,7 +149,7 @@ func splitByRegex(source string, regex *regexp.Regexp) []string {
 
 		if groupStart >= 0 && groupEnd >= 0 {
 			matchText := source[groupStart:groupEnd]
-			if trimSpaces(matchText) != "" {
+			if trimUnicodeSpacesExceptNewlines(matchText) != "" {
 				result = append(result, matchText)
 			}
 		}
@@ -159,7 +160,7 @@ func splitByRegex(source string, regex *regexp.Regexp) []string {
 	// If there's text after the last match that isn't empty...
 	if lastEnd < len(source) {
 		textAfter := source[lastEnd:]
-		if trimSpaces(textAfter) != "" {
+		if trimUnicodeSpacesExceptNewlines(textAfter) != "" {
 			result = append(result, textAfter)
 		}
 	}
@@ -236,7 +237,7 @@ func ParseDocument(source string) (ParsedPrompt, error) {
 			// Return a basic ParsedPrompt with just the template
 			return ParsedPrompt{
 				PromptMetadata: promptMetadata,
-				Template:       trimSpaces(source),
+				Template:       trimUnicodeSpacesExceptNewlines(source),
 			}, nil
 		}
 
@@ -247,7 +248,7 @@ func ParseDocument(source string) (ParsedPrompt, error) {
 		ext := make(map[string]map[string]any)
 
 		for key, value := range raw {
-			if contains(ReservedMetadataKeywords, key) {
+			if slices.Contains(ReservedMetadataKeywords, key) {
 				// Add to pruned metadata.
 				switch key {
 				case "name":
@@ -306,7 +307,7 @@ func ParseDocument(source string) (ParsedPrompt, error) {
 
 		return ParsedPrompt{
 			PromptMetadata: pruned,
-			Template:       trimSpaces(body),
+			Template:       trimUnicodeSpacesExceptNewlines(body),
 		}, nil
 	}
 
@@ -314,7 +315,7 @@ func ParseDocument(source string) (ParsedPrompt, error) {
 	if body != "" {
 		return ParsedPrompt{
 			PromptMetadata: promptMetadata,
-			Template:       trimSpaces(body),
+			Template:       trimUnicodeSpacesExceptNewlines(body),
 		}, nil
 	}
 
@@ -340,7 +341,7 @@ func ToMessages(renderedString string, data *DataArgument) ([]Message, error) {
 			role := Role(roleStr)
 
 			if messageSources[len(messageSources)-1].Source != "" &&
-				trimSpaces(messageSources[len(messageSources)-1].Source) != "" {
+				trimUnicodeSpacesExceptNewlines(messageSources[len(messageSources)-1].Source) != "" {
 				// If the current message has content, create a new message.
 				newMs := &MessageSource{
 					Role:   role,
@@ -403,7 +404,7 @@ func messageSourcesToMessages(
 
 	for _, m := range messageSources {
 		// Only skip messages that have both empty Content and empty Source.
-		if m.Content == nil && trimSpaces(m.Source) == "" {
+		if m.Content == nil && trimUnicodeSpacesExceptNewlines(m.Source) == "" {
 			continue
 		}
 
@@ -563,7 +564,7 @@ func parseMediaPart(piece string) (*MediaPart, error) {
 		HasMetadata: HasMetadata{},
 	}
 
-	if contentType != "" && trimSpaces(contentType) != "" {
+	if contentType != "" && trimUnicodeSpacesExceptNewlines(contentType) != "" {
 		mediaPart.Media.ContentType = contentType
 	}
 
@@ -585,7 +586,7 @@ func parseSectionPart(piece string) (*PendingPart, error) {
 			"invalid section piece: %s; expected 2 fields, found %d", piece, n)
 	}
 
-	sectionType := trimSpaces(fields[1])
+	sectionType := trimUnicodeSpacesExceptNewlines(fields[1])
 	pendingPart := NewPendingPart()
 	pendingPart.SetMetadata("purpose", sectionType)
 

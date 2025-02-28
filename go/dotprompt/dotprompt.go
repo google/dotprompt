@@ -19,8 +19,8 @@ type PartialResolver func(partialName string) (string, error)
 // DotpromptOptions defines the options for the Dotprompt instance.
 type DotpromptOptions struct {
 	DefaultModel    string
-	ModelConfigs    map[string]interface{}
-	Helpers         map[string]interface{}
+	ModelConfigs    map[string]any
+	Helpers         map[string]any
 	Partials        map[string]string
 	Tools           map[string]ToolDefinition
 	ToolResolver    ToolResolver
@@ -33,7 +33,7 @@ type DotpromptOptions struct {
 type Dotprompt struct {
 	knownHelpers    map[string]bool
 	defaultModel    string
-	modelConfigs    map[string]interface{}
+	modelConfigs    map[string]any
 	tools           map[string]ToolDefinition
 	toolResolver    ToolResolver
 	schemas         map[string]JSONSchema
@@ -65,7 +65,7 @@ func NewDotprompt(options *DotpromptOptions) *Dotprompt {
 }
 
 // DefineHelper registers a helper function.
-func (dp *Dotprompt) defineHelper(name string, helper interface{}, tpl *raymond.Template) {
+func (dp *Dotprompt) defineHelper(name string, helper any, tpl *raymond.Template) {
 	if dp.knownHelpers[name] {
 		return
 	}
@@ -234,7 +234,7 @@ func mergeMetadata(parsedPrompt ParsedPrompt, additionalMetadata *PromptMetadata
 }
 
 // RenderMetadata renders the metadata for the prompt.
-func (dp *Dotprompt) RenderMetadata(source interface{}, additionalMetadata *PromptMetadata) (PromptMetadata, error) {
+func (dp *Dotprompt) RenderMetadata(source any, additionalMetadata *PromptMetadata) (PromptMetadata, error) {
 	var parsedSource ParsedPrompt
 	var err error
 	switch v := source.(type) {
@@ -260,9 +260,9 @@ func (dp *Dotprompt) RenderMetadata(source interface{}, additionalMetadata *Prom
 		selectedModel = dp.defaultModel
 	}
 
-	modelConfig, ok := dp.modelConfigs[selectedModel].(map[string]interface{})
+	modelConfig, ok := dp.modelConfigs[selectedModel].(map[string]any)
 	if !ok {
-		modelConfig = make(map[string]interface{})
+		modelConfig = make(map[string]any)
 	}
 	metadata := []*PromptMetadata{}
 	metadata = append(metadata, &parsedSource.PromptMetadata)
