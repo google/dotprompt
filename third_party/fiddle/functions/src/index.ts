@@ -18,8 +18,9 @@ import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { defineSecret } from 'firebase-functions/params';
 import { ai, z } from './genkit.js';
-import { GenkitError, UserFacingError } from 'genkit';
+import { GenerateResponseChunk, GenkitError, UserFacingError } from 'genkit';
 import { Dotprompt } from 'dotprompt';
+import { CodeMessage, CodeMessageSchema } from './code-format.js';
 
 const admin = initializeApp();
 const db = getFirestore(admin);
@@ -168,6 +169,31 @@ export const runDraftPromptFlow = ai.defineFlow(
   },
 );
 
+const GeneratePromptInputSchema = z.object({
+  query: z.string(),
+  existingPrompt: z.string().optional(),
+});
+const generatePromptPrompt = ai.prompt<
+  typeof GeneratePromptInputSchema,
+  typeof CodeMessageSchema
+>('generate_prompt');
+
+export const generatePromptFlow = ai.defineFlow(
+  {
+    name: 'generatePrompt',
+    inputSchema: GeneratePromptInputSchema,
+    outputSchema: z.string(),
+    streamSchema: z.string(),
+  },
+  async (input, { sendChunk }) => {
+    const { output } = await generatePromptPrompt(input, {
+      onChunk: (chunk: GenerateResponseChunk<any>) =>
+        sendChunk(chunk.output.content),
+    });
+    return (output as CodeMessage).content;
+  },
+);
+
 export const runFiddlePrompt = onCallGenkit(
   {
     secrets: [geminiApiKey],
@@ -182,4 +208,12 @@ export const runDraftPrompt = onCallGenkit(
     cors: true,
   },
   runDraftPromptFlow,
+);
+
+export const generatePrompt = onCallGenkit(
+  {
+    secrets: [geminiApiKey],
+    cors: true,
+  },
+  generatePromptFlow,
 );

@@ -54,21 +54,7 @@ interface UseFiddleResult {
 
 const DEFAULT_FIDDLE_PROMPT = {
   name: 'main',
-  source: `---
-input:
-  schema:
-    storeType: string, the type of store
-output:
-  schema:
-    products(array):
-      name: string, the name of the product
-      description: string, a 3-sentence description
-      price: number, the price of the product in US dollars (e.g. 9.99)
-      color: string, the color of the product
----
-
-Generate 5 products for a {{storeType}} store.
-`,
+  source: `{{! your prompt goes here }}`,
 };
 
 export function useFiddle(id?: string | null): UseFiddleResult {
@@ -79,11 +65,8 @@ export function useFiddle(id?: string | null): UseFiddleResult {
   const effectiveId = id || '';
 
   // Load published data - always call hooks in the same order
-  const {
-    data: published,
-    isLoading: publishedLoading,
-    update: updatePublishedRaw,
-  } = useDoc<Fiddle | null>(effectiveId ? `fiddles/${effectiveId}` : '');
+  const { data: published, isLoading: publishedLoading } =
+    useDoc<Fiddle | null>(effectiveId ? `fiddles/${effectiveId}` : '');
 
   // Load draft if owner - always call hooks in the same order
   const {
@@ -173,7 +156,7 @@ export function useFiddle(id?: string | null): UseFiddleResult {
     };
   }, [published, draft, savedDraft]);
 
-  const saveDraft = useDebouncedCallback(updateDraftRaw, 2000);
+  const saveDraft = useDebouncedCallback(updateDraftRaw, 700);
 
   const updateDraft = useCallback(
     async (fiddle: Fiddle) => {

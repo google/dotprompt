@@ -44,7 +44,7 @@ export function useFlow<Input = any, Output = any, Chunk = any>(
   const stream = async (input: Input) => {
     if (isLoading)
       throw new Error(`Cannot stream flow while it's already running.`);
-    setCurrent({ chunks: [], isLoading: false, output: undefined });
+    setCurrent({ chunks: [], isLoading: true, output: undefined });
     const { stream, output } = streamFlow<Output, Chunk>({
       url,
       input,
@@ -58,7 +58,11 @@ export function useFlow<Input = any, Output = any, Chunk = any>(
     }
 
     const finalOutput = await output;
-    setCurrent((current) => ({ ...current, output: finalOutput }));
+    setCurrent((current) => ({
+      ...current,
+      output: finalOutput,
+      isLoading: false,
+    }));
     return finalOutput;
   };
 

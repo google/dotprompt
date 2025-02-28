@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import MonacoEditor, { useMonaco } from '@monaco-editor/react';
 import { Button } from './components/ui/button.tsx';
 import { ScrollArea } from './components/ui/scroll-area.tsx';
@@ -8,6 +8,7 @@ import {
   usePromptRunner,
   useDraftPromptRunner,
 } from './lib/use-prompt-runner.ts';
+import { useGeneratePrompt } from './lib/use-generate-prompt.ts';
 import nightOwl from '@/themes/night-owl.json' with { type: 'json' };
 import {
   ResizableHandle,
@@ -24,9 +25,23 @@ import {
   Play,
   Check,
   Upload,
-  Circle,
   CircleEllipsis,
+  Loader2,
+  Sparkles,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './components/ui/dialog.tsx';
+import { Input } from './components/ui/input.tsx';
+import { registerDotpromptLanguage } from './lib/monaco-dotprompt.ts';
+import { Fiddle } from './types';
+import { Textarea } from './components/ui/textarea.tsx';
 
 interface Prompt {
   name: string;
@@ -77,6 +92,12 @@ function App() {
   "context": {}
 }`);
 
+  // Prompt generation state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [promptIdea, setPromptIdea] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const promptGenerator = useGeneratePrompt();
+
   // Use the fiddle hook for data management
   // Always call hooks in the same order - pass fiddleId directly, even if null
   const {
@@ -86,9 +107,15 @@ function App() {
     isOwner,
     draftSaved,
     hasChanges,
-    updateDraft,
+    updateDraft: updateDraftRaw,
     publish,
   } = useFiddle(fiddleId);
+
+  const updateDraft = (newDraft: Fiddle) => {
+    console.log('updateDraft called');
+    updateDraftRaw(newDraft);
+  };
+
   useEffect(() => {
     console.log('draft:', draft?.id, draft?.name, draft?.prompts[0]);
   }, [draft]);
@@ -153,7 +180,7 @@ function App() {
   useEffect(() => {
     monaco?.editor.defineTheme('night-owl', nightOwl as any);
     if (isDarkMode) monaco?.editor.setTheme('night-owl');
-    monaco?.languages.register({ id: 'dotprompt' });
+    if (monaco) registerDotpromptLanguage(monaco);
   }, [monaco, isDarkMode]);
 
   // Render prompt when it changes
@@ -227,6 +254,98 @@ function App() {
     return runnerData.latestChunk;
   }, [fiddleId, promptRunner.data, draftPromptRunner.data]);
 
+  // Check if a prompt is currently running
+  const isRunning = useMemo(() => {
+    return (
+      promptRunner.isLoading ||
+      draftPromptRunner.isLoading ||
+      promptGenerator.isLoading
+    );
+  }, [
+    promptRunner.isLoading,
+    draftPromptRunner.isLoading,
+    promptGenerator.isLoading,
+  ]);
+  useEffect(() => console.log('isRunning', isRunning), [isRunning]);
+
+  // Track the last generated content to avoid duplicate updates
+  const lastGeneratedContentRef = useRef<string | null>(null);
+
+  // Update prompt content when generator produces new data
+  useEffect(() => {
+    // Only update during generation or when generation just completed
+    if (
+      promptGenerator.isLoading &&
+      promptGenerator.data &&
+      typeof promptGenerator.data === 'string' &&
+      selectedPrompt &&
+      fiddle &&
+      (!published || isOwner)
+    ) {
+      // Store the current data for comparison
+      lastGeneratedContentRef.current = promptGenerator.data;
+
+      // Create a copy of the fiddle with the updated prompt
+      const updatedPrompts = fiddle.prompts.map((p) => {
+        if (p.name === selectedPrompt) {
+          // Create a new prompt object with the updated source
+          return {
+            ...p,
+            source: promptGenerator.data as string,
+          };
+        }
+        return p;
+      });
+
+      // Create the updated fiddle with the correct type
+      const updatedFiddle = {
+        ...fiddle,
+        prompts: updatedPrompts,
+      };
+
+      updateDraft(updatedFiddle);
+    }
+    // When generation completes, make one final update with the latest content
+    else if (
+      !promptGenerator.isLoading &&
+      promptGenerator.data &&
+      typeof promptGenerator.data === 'string' &&
+      lastGeneratedContentRef.current !== promptGenerator.data &&
+      selectedPrompt &&
+      fiddle &&
+      (!published || isOwner)
+    ) {
+      // Update the last generated content
+      lastGeneratedContentRef.current = promptGenerator.data;
+
+      // Create a copy of the fiddle with the final prompt
+      const updatedPrompts = fiddle.prompts.map((p) => {
+        if (p.name === selectedPrompt) {
+          return {
+            ...p,
+            source: promptGenerator.data as string,
+          };
+        }
+        return p;
+      });
+
+      // Create the updated fiddle with the correct type
+      const updatedFiddle = {
+        ...fiddle,
+        prompts: updatedPrompts,
+      };
+
+      updateDraft(updatedFiddle);
+    }
+  }, [
+    promptGenerator.data,
+    promptGenerator.isLoading,
+    selectedPrompt,
+    fiddle,
+    published,
+    isOwner,
+    updateDraft,
+  ]);
   // Get token usage information - handle both prompt runners
   const tokenUsage = useMemo(() => {
     // Check which runner has data
@@ -274,6 +393,26 @@ function App() {
     }
   };
 
+  // Handle prompt generation
+  const handleGeneratePrompt = async () => {
+    if (!promptIdea || !currentPrompt || !fiddle) return;
+
+    // Close dialog immediately
+    setDialogOpen(false);
+
+    try {
+      // Start generating the prompt
+      await promptGenerator.generate({
+        query: promptIdea,
+        existingPrompt: currentPrompt.source,
+      });
+    } catch (e) {
+      console.error((e as Error).message);
+    } finally {
+      setPromptIdea('');
+    }
+  };
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -298,7 +437,7 @@ function App() {
               <h2 className="flex items-center text-sm">
                 {fiddle.name} <ChevronRight className="w-4 h-4 mx-2" />{' '}
                 <strong>{selectedPrompt}.prompt</strong>
-                {hasChanges && (
+                {fiddleId && hasChanges && (
                   <>
                     <span className="ml-2 text-xs text-gray-500">(Draft)</span>
                     {draftSaved ? (
@@ -308,6 +447,21 @@ function App() {
                     )}
                   </>
                 )}
+                {/* Sparkle button for prompt generation */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="ml-2 h-6 w-6 border-dashed border-purple-400"
+                  onClick={() => setDialogOpen(true)}
+                  disabled={isRunning}
+                  title="Generate prompt"
+                >
+                  {promptGenerator.isLoading ? (
+                    <Loader2 className="h-3 w-3 text-purple-500 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3 w-3 text-purple-500" />
+                  )}
+                </Button>
               </h2>
             )}
           </div>
@@ -332,9 +486,19 @@ function App() {
             variant="outline"
             className="text-s px-3 py-2"
             onClick={handleRunPrompt}
+            disabled={isRunning}
           >
-            <Play className="w-4 h-4 text-green-400" />
-            Run
+            {isRunning ? (
+              <>
+                <Loader2 className="w-4 h-4 text-blue-400 animate-spin mr-1" />
+                Running...
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 text-green-400" />
+                Run
+              </>
+            )}
           </Button>
         </div>
         <ResizablePanelGroup direction="horizontal">
@@ -343,12 +507,13 @@ function App() {
               <ResizablePanel defaultSize={67}>
                 <MonacoEditor
                   className="absolute top-0 left-0 right-0 bottom-0"
-                  language="handlebars"
+                  language="dotprompt"
                   value={currentPrompt?.source || ''}
                   theme={isDarkMode ? 'night-owl' : 'light'}
                   options={{
                     automaticLayout: true,
-                    readOnly: !!published && !isOwner, // Read-only if it's a published fiddle and user is not the owner
+                    readOnly:
+                      (!!published && !isOwner) || promptGenerator.isLoading, // Read-only if it's a published fiddle and user is not the owner, or during prompt generation
                   }}
                   onChange={handlePromptChange}
                 />
@@ -432,6 +597,41 @@ function App() {
           </ResizablePanel>
         </ResizablePanelGroup>
       </main>
+
+      {/* Prompt Generation Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Prompt Generator</DialogTitle>
+            <DialogDescription className="text-xs">
+              I heard you like prompts, so I made a prompt generator that will
+              generate a prompt based on the prompt that you type. Give it a
+              try!
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center space-x-2 py-4">
+            <div className="grid flex-1 gap-2">
+              <Textarea
+                placeholder="Describe your prompt idea..."
+                value={promptIdea}
+                onChange={(e) => setPromptIdea(e.target.value)}
+                disabled={promptGenerator.isLoading}
+              />
+            </div>
+          </div>
+          <DialogFooter className="sm:justify-start">
+            <Button
+              type="submit"
+              onClick={handleGeneratePrompt}
+              disabled={!promptIdea || promptGenerator.isLoading}
+              className="flex items-center min-w-full"
+            >
+              <Sparkles className="h-4 w-4 text-purple-400" />
+              Generate Prompt
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   );
 }

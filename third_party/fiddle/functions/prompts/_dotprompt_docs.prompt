@@ -1,0 +1,819 @@
+=== Dotprompt Template Format Documentation ===
+
+The following is a complete reference to authoring files using the Dotprompt executable template format. This reference contains only information about the Dotprompt text format, not surrounding language or framework implementations.
+
+# Reference Docs (/reference)
+
+A Dotprompt template is made up of four parts:
+
+```handlebars
+---
+# (1) the YAML Prompt Frontmatter goes here
+output:
+  schema:
+    # (2) the Picoschema definition goes here
+---
+
+\{{! (3) the Handlebars Template Content goes here }}
+```
+
+When executed, a Dotprompt template renders into (4) Common Model Interface. 
+
+## Reference Docs
+
+1. **[Prompt Frontmatter](/reference/frontmatter):** Included at the start of a Dotprompt template, frontmatter includes model configuration, input/output formatList, and tooling MediaMetadata.
+2. **[Picoschema](/reference/picoschema):** The compact, YAML-optimized schema representation used for describing structured data in a Dotprompt template.
+3. **[Template Content](/reference/template):** The core template of the prompt, based on Handlebars and extended with GenAI-specific capabilities.
+4. **[Common Model Interface](/reference/model):** The "output" of a rendered Dotprompt template, a JSON object containing the rendered messages represented by the template as well as all associated metadata and configuration.
+# Prompt Frontmatter (/reference/frontmatter)
+
+
+The frontmatter in Dotprompt files contains metadata and configuration for the prompt. It is defined using YAML syntax at the beginning of the file, enclosed between triple dashes (`---`).
+
+## Structure
+
+```handlebars
+---
+# Frontmatter content goes here
+---
+
+Prompt template goes here.
+```
+
+All frontmatter fields are considered optional in a given `.prompt` file, as Dotprompt implementations may provide default values for any or all of them. If no frontmatter fields need to be specified in a given file, the frontmatter may be omitted entirely and only a prompt template provided.
+
+## Full Example
+
+Here's an example of a Dotprompt frontmatter:
+
+```handlebars
+---
+name: greetingPrompt
+variant: formal
+model: googleai/gemini-1.5-flash
+tools: 
+  - timeOfDay
+config:
+  version: gemini-1.5-flash-latest
+  temperature: 0.7
+  topK: 20
+  topP 0.8
+  stopSequences:
+    - STOPSTOPSTOP
+input:
+  default:
+    name: Guest
+  schema:
+    name: string
+    language?: string
+output:
+  format: json
+  schema:
+    greeting: string, the greeting to provide to the guest
+    formalityLevel: number, the level of formality of your response
+metadata:
+  customKey:
+    customValue: 123
+---
+```
+
+## Available Fields
+
+### `name`
+- **Type:** `string`
+- **Description:** The name of the prompt. If unspecified, inferred by the filename of the loaded prompt (e.g. `myPrompt.prompt` has an inferred name of `myPrompt`).
+
+### `variant`
+- **Type:** `string`
+- **Description:** The variant name for the prompt. If unspecified, inferred by the filename of the loaded prompt (e.g. `myPrompt.variant1.prompt` has inferred name of `myPrompt` and inferred variant of `variant1`).
+
+### `model`
+- **Type:** `string` or `ModelArgument<Options>`
+- **Description:** The name of the model to use for this prompt, e.g., `googleai/gemini-1.5-flash-latest`. The Dotprompt implementation is responsible for resolving a string model name to an executable model.
+
+### `tools`
+- **Type:** `string[]`
+- **Description:** Names of tools (registered in the Dotprompt implementation) to allow use of in this prompt.
+
+### `config`
+- **Type:** `object`
+- **Description:** Configuration to be passed to the model implementation as a `Map<string,any>`. The specific configuration options vary depending on the model implementation.
+- **Common Config:** Model implementations should respect the following config properties where applicable:
+  - `version`:
+    - **Type:** `string`
+    - **Description:** While `model` specifies a model "family" (e.g. Gemini 1.5 Flash, Claude 3.5 Sonnet), `version` specifies a particular version/checkpoint of the model to use. This allows for version pinning and reproducibility of results.
+    - **Example:**  `"gemini-1.5-pro-0801"` or `"v2"`
+
+  - `temperature`:
+    - **Type:** `number`
+    - **Description:** Controls the randomness of the model's output. Higher values (e.g., `0.8`) make the output more random, while lower values (e.g., `0.2`) make it more deterministic.
+    - **Range:** Typically between 0 and 1, depends on model implementation.
+    - **Example:**  `0.7`
+
+  - `maxOutputTokens`:
+    - **Type:** `number`
+    - **Description:** Limits the maximum number of tokens in the model's response. This can help control the length of the generated text.
+    - **Example:**  `150`
+
+  - `topK`:
+    - **Type:** `number`
+    - **Description:** Limits the number of highest probability vocabulary tokens to consider at each step. This can help focus the model's output on more likely tokens.
+    - **Example:**  `40`
+
+  - `topP`:
+    - **Type:** `number`
+    - **Description:** Sets a probability threshold for token selection. The model will only consider tokens whose cumulative probability exceeds this threshold.
+    - **Range:** Typically between 0 and 1
+    - **Example:**  `0.95`
+
+  - `stopSequences`:
+    - **Type:** `string[]`
+    - **Description:** An array of strings that, if encountered, will cause the model to stop generating further output. This is useful for controlling where the model's response should end.
+    - **Example:**  `["END", "\n\n", "User:"]`
+
+### `input`
+- **Type:** `object`
+- **Description:** Defines the input variables the prompt. If `input` is not specified, the implementation should accept any `Map<string,any>` values as input and pass them to the prompt template.
+- **Properties:**
+  - `default`:
+    - **Type:** `any`
+    - **Description:** Defines the default input variable values to use if none are provided. Input values passed from the implementation should be merged into these values with a shallow merge strategy.
+  - `schema`:
+    - **Type:** [Schema](schema)
+    - **Description:** Schema representing the input values for the prompt. Must correspond to a JSON Schema `object` type.
+
+### `output`
+- **Type:** `object`
+- **Description:** Defines the expected model output format.
+- **Properties:**
+  - `format`:
+    - **Type:** `string`
+    - **Common Values:** `json`, `text`
+    - **Description:** Desired output format for this prompt. Output formats are implementation-specific, but 
+  - `schema`:
+    - **Type:** [Schema](schema)
+    - **Description:** Schema representing the expected output from the prompt. Must correspond to a JSON Schema `object` type.
+
+### `metadata`
+- **Type:** `Map<string, any>`
+- **Description:** Arbitrary metadata to be used by code, tools, and libraries.
+
+## Frontmatter Extensions
+
+In the frontmatter, Dotprompt implementations will automatically collect namespaced fields (i.e. fields with a `.` in them) into a special `ext` property on the resulting metadata. For example, the following frontmatter:
+
+```handlebars
+---
+config:
+  temperature: 3
+mycorp.auth:
+  type: FIREBASE
+  role: admin # only admins can use this
+mycorp.ownerId: 12345
+mycorp.subunit.level: 5
+---
+```
+
+Would be parsed into this equivalent metadata:
+
+```js
+{
+  config: {temperature: 3},
+  ext: {
+    mycorp: {
+      auth: {
+        type: 'FIREBASE',
+        role: 'admin',
+      },
+      ownerId: 12345,
+    },
+    'mycorp.subunit': {
+      level: 5,
+    },
+  }
+}
+```
+
+Note that nested namespaces are flattened into dotted keys to avoid conflicts between nested properties and nested namespaces.# Picoschema (/reference/picoschema)
+
+
+Picoschema is a compact, YAML-optimized schema definition format specifically designed to aid in describing structured data for better understanding by GenAI models. Whenever a schema is accepted by Dotprompt in its Frontmatter, the Picoschema format is accepted.
+
+Picoschema compiles to JSON Schema and is a subset of JSON Schema capabilities.
+
+## Full Example
+
+```yaml
+product:
+  id: string, Unique identifier for the product
+  description?: string, Optional detailed description of the product
+  price: number, Current price of the product
+  inStock: integer, Number of items in stock
+  isActive: boolean, Whether the product is currently available
+  category(enum, Main category of the product): [ELECTRONICS, CLOTHING, BOOKS, HOME]
+  tags(array, List of tags associated with the product): string
+  primaryImage:
+    url: string, URL of the primary product image
+    altText: string, Alternative text for the image
+  attributes(object, Custom attributes of the product):
+    (*): any, Allow any attribute name with any value
+  variants?(array, List of product variant objects):
+    id: string, Unique identifier for the variant
+    name: string, Name of the variant
+    price: number, Price of the variant
+```
+
+## Picoschema Reference
+
+### Basic Types
+
+Picoschema supports the following scalar types:
+
+#### **string**
+- **Syntax:** `fieldName: string[, optional description]`
+- **Description:** Represents a string value.
+- **Example:** `title: string`
+
+#### **number**
+- **Syntax:** `fieldName: number[, optional description]`
+- **Description:** Represents a numeric value (integer or float).
+- **Example:** `price: number`
+
+#### **integer**
+- **Syntax:** `fieldName: integer[, optional description]`
+- **Description:** Represents an integer value.
+- **Example:** `age: integer`
+
+#### **boolean**
+- **Syntax:** `fieldName: boolean[, optional description]`
+- **Description:** Represents a boolean value.
+- **Example:** `isActive: boolean`
+
+#### **null**
+- **Syntax:** `fieldName: null[, optional description]`
+- **Description:** Represents a null value.
+- **Example:** `emptyField: null`
+
+#### **any**
+- **Syntax:** `fieldName: any[, optional description]`
+- **Description:** Represents a value of any type.
+- **Example:** `data: any`
+
+### Optional Fields
+
+- **Syntax:** Add `?` after the field name.
+- **Description:** Marks a field as optional. Optional fields are also automatically nullable.
+- **Example:** `subtitle?: string`
+
+### Field Descriptions
+
+- **Syntax:** Add a comma followed by the description after the type.
+- **Description:** Provides additional information about the field.
+- **Example:** `date: string, the date of publication e.g. '2024-04-09'`
+
+### Arrays
+
+- **Syntax:** `fieldName(array[, optional description]): elementType`
+- **Description:** Defines an array of a specific type.
+- **Example:** `tags(array, string list of tags): string`
+
+### Objects
+
+- **Syntax:** `fieldName(object[, optional description]):`
+- **Description:** Defines a nested object structure.
+- **Example:**
+  ```yaml
+  address(object, the address of the recipient):
+    address1: string, street address
+    address2?: string, optional apartment/unit number etc.
+    city: string
+    state: string
+  ```
+
+### Enums
+
+- **Syntax:** `fieldName(enum[, optional description]): [VALUE1, VALUE2, ...]`
+- **Description:** Defines a field with a fixed set of possible values.
+- **Example:** `status(enum): [PENDING, APPROVED, REJECTED]`
+
+### Wildcard Fields
+
+- **Syntax:** `(*): type[, optional description]`
+- **Description:** Allows additional properties of a specified type in an object.
+- **Example:** `(*): string`
+
+### Additional Notes
+
+1. By default, all fields are required unless marked as optional with `?`.
+2. Objects defined using Picoschema do not allow additional properties unless a wildcard `(*)` is added.
+3. Optional fields are automatically made nullable in the resulting JSON Schema.
+4. The `any` type results in an empty schema `{}` in JSON Schema, allowing any value.
+
+## Eject to JSON Schema
+
+Picoschema automatically detects if a schema is already in JSON Schema format. If the top-level schema contains a `type` property with values like "object", "array", or any of the scalar types, it's treated as JSON Schema.
+
+You can also explicitly use JSON Schema by defining `{"type": "object"}` at the top level. For example:
+
+```handlebars
+---
+output:
+  schema:
+    type: object # this is now JSON Schema
+    properties:
+      field1: {type: string, description: A sample field}
+---
+```
+
+## Error Handling
+
+Picoschema will throw errors in the following cases:
+1. If an unsupported scalar type is used.
+2. If the schema contains values that are neither objects nor strings.
+3. If parenthetical types other than 'object' or 'array' are used (except for 'enum').
+
+These error checks ensure that the Picoschema is well-formed and can be correctly translated to JSON Schema.# Template Content (/reference/template)
+
+
+Dotprompt uses a template syntax based on [Handlebars](https://handlebarsjs.com/guide/), the popular templating language with existing implementations in several programming languages. This syntax allows for dynamic content insertion and basic logic within prompts.
+
+## Language Basics
+
+All Dotprompt implementations **MUST** implement the Handlebars features specified in these docs, but **MAY** also implement additional capabilities as documented in the [Handlebars language specification](https://handlebarsjs.com/guide/expressions.html).
+
+### Expressions
+
+Handlebars expressions are contained within `\{{}}` tags.
+
+#### Variable Interpolation
+
+- **Syntax:** `\{{variableName}}` or `\{{object.propertyName}}`
+- **Description:** Inserts the value of the specified variable.
+- **Example:** `Hello, \{{name}} from \{{address.city}}!`
+
+#### Escaped Expressions
+
+- **Syntax:** `\\{{variableName}}` (escaped expression), `\{{{variableName}}}`
+- **Description:** Renders the literal text `\{{variableName}}` without interpolation.
+- **Example:** `This is how you show a variable: \\{{variableName}}`
+
+## Built-in Helpers
+
+Dotprompt provides several built-in helpers to enhance template functionality.
+
+### Conditional Blocks
+
+#### `#if`
+
+- **Syntax:** `\{{#if condition}}...\{{/if}}`
+- **Description:** Renders the block if the condition is truthy.
+- **Example:**
+  ```handlebars
+  \{{#if isLoggedIn}}
+    Welcome back!
+  \{{/if}}
+  ```
+
+#### `else`
+
+- **Syntax:** `\{{#if condition}}...\{{else}}...\{{/if}}`
+- **Description:** Provides an alternative block to render if the condition is falsy.
+- **Example:**
+  ```handlebars
+  \{{#if isLoggedIn}}
+    Welcome back!
+  \{{else}}
+    Please log in.
+  \{{/if}}
+  ```
+
+#### `#unless`
+
+- **Syntax:** `\{{#unless condition}}...\{{/unless}}`
+- **Description:** Renders the block if the condition is falsy.
+- **Example:**
+  ```handlebars
+  \{{#unless isLoggedIn}}
+    Please log in to continue.
+  \{{/unless}}
+  ```
+
+### Iteration
+
+#### `#each`
+
+- **Syntax:** `\{{#each array}}...\{{/each}}`
+- **Description:** Iterates over an array or object properties, assigning `this` to the currently enumerated item and `@index` to the index or key within the array or object.
+- **Example:**
+  ```handlebars
+  \{{#each items}}
+    - \{{this}} is item \{{@index}}
+  \{{/each}}
+  ```
+
+## Dotprompt Helpers
+
+The following helpers **MUST** be included in all implementations of Dotprompt and provide the tools to manage multi-message and multi-modal prompting.
+
+#### `json`
+
+- **Syntax:** `\{{json varName}}`
+- **Description:** Serializes the provided variable into JSON and inserts it at the expression point.
+- **Example:**
+  ```handlebars
+  Here is information about the current user:
+
+  \{{ json currentUser }}
+  ```
+
+#### `role`
+
+- **Syntax:** `\{{role "roleName"}}`
+- **Description:** Begins a new message with the specified role for multi-message prompts.
+- **Example:**
+  ```handlebars
+  \{{role "system"}}
+  You are a helpful AI assistant.
+  \{{role "user"}}
+  What's the weather like today?
+  ```
+
+#### `history`
+
+- **Syntax:** `\{{history}}`
+- **Description:** Inserts the conversation history (passed as `messages` when rendering the template) for multi-turn prompts.
+- **Example:**
+  ```handlebars
+  \{{role "system"}}
+  You are a helpful AI assistant.
+  \{{history}}
+  \{{role "user"}}
+  What was my last question about?
+  ```
+
+#### `media`
+
+- **Syntax:** `\{{media url=urlVariable}}`
+- **Description:** Inserts media content (e.g., images) into the prompt.
+- **Example:**
+  ```handlebars
+  Describe this image:
+  \{{media url=imageUrl}}
+  ```
+
+#### `section`
+
+- **Syntax:** `\{{section "sectionName"}}`
+- **Description:** Manually positions specific sections within the prompt.
+- **Example:**
+  ```handlebars
+  This is the main content.
+
+  \{{section "output"}}
+
+  This comes after the output instructions.
+  ```
+
+## Partials
+
+Partials are reusable template snippets that can be included in other templates.
+
+- **Syntax:** `\{{>partialName}}`
+- **Description:** Includes the content of the specified partial.
+- **Example:**
+  ```handlebars
+  \{{>header}}
+  Main content goes here.
+  \{{>footer}}
+  ```
+
+### Partial with Arguments
+
+- **Syntax:** `\{{>partialName arg1=value1 arg2=value2}}`
+- **Description:** Includes a partial with specific arguments.
+- **Example:**
+  ```handlebars
+  \{{>greeting name=userName style=greetingStyle}}
+  ```
+
+### Partial with Context
+
+- **Syntax:** `\{{>partialName this}}`
+- **Description:** Passes the current context to the partial.
+- **Example:**
+  ```handlebars
+  \{{#each items}}
+    \{{>listItem this}}
+  \{{/each}}
+  ```
+
+## Custom Helpers
+
+All Dotprompt implementations **MUST** allow for the definition of custom helpers to extend Dotprompt syntax. The specific mechanism of custom helper registration is up to the specific implementation. Custom helpers are used in the following manner:
+
+- **Basic Custom Helper:** `\{{customHelperName arg1 "arg2"}}`
+- **Named Arguments:** `\{{customHelperName arg1=var1 arg2="var2"}}`
+
+## Context Variables
+
+When rendering a template, additional contextual information is provided as variables with a special `@` prefix. Some of these are built-in:
+
+- `@root`: references the root variable context regardless of current `this`
+- `@first`: `true` when iterating the first item of an `#each` block.
+- `@last`: `true` when iterating the last item of an `#each` block.
+- `@key`: key name for the current iteration of an `#each` block.
+- `@metadata`: provides access to metadata of the currently running prompt and passed in data arguments.
+  - `@metadata.prompt`: access to the frontmatter configuration of the current prompt.
+  - `@metadata.docs`: access to the passed in document context of the current execution.
+  - `@metadata.messages`: access to the message history of the current execution.
+
+In addition to the above context variables, you can provide a `context` argument when rendering a template to add additional contextual information. for example, a context argument of `{state: {name: 'Evelyn'}, isAdmin: true}` would create `@state` and `@isAdmin` variables accessible from inside the prompt.# Common Model Interface (/reference/model)
+
+
+Dotprompt implementations are not required to conform to any specific structured interface for interacting with GenAI models. However, the Dotprompt reference implementation in [Firebase Genkit](https://github.com/firebase/genkit) leverages a common model interface that may be useful for other implementors to follow.
+
+In the future, a Dotprompt "spec test" will be made available that exercises the various parts of Dotprompt and compares the results to this common model request format.
+
+## GenerateRequest
+
+### Full Example
+
+```json
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": [
+        {"text": "You are a helpful AI assistant."}
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {"text": "Hello, can you help me with a task?"}
+      ]
+    },
+    {
+      "role": "model",
+      "content": [
+        {"text": "Of course! I'd be happy to help you with a task. What kind of task do you need assistance with? Please provide me with more details, and I'll do my best to help you."}
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {"text": "Can you analyze this image and tell me what you see?"},
+        {
+          "media": {
+            "contentType": "image/jpeg",
+            "url": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAg..."
+          }
+        }
+      ]
+    }
+  ],
+  "config": {
+    "temperature": 0.7,
+    "maxOutputTokens": 1000,
+    "topK": 40,
+    "topP": 0.95,
+    "stopSequences": ["User:", "Human:"]
+  },
+  "tools": [
+    {
+      "name": "weather",
+      "description": "Get the current weather for a location",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "The location to get weather for"
+          }
+        },
+        "required": ["location"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "temperature": {
+            "type": "number",
+            "description": "The current temperature in Celsius"
+          },
+          "condition": {
+            "type": "string",
+            "description": "The current weather condition"
+          }
+        },
+        "required": ["temperature", "condition"]
+      }
+    }
+  ],
+  "output": {
+    "format": "json",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "analysis": {
+          "type": "string",
+          "description": "A detailed analysis of the image"
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A list of objects identified in the image"
+        }
+      },
+      "required": ["analysis", "objects"]
+    }
+  },
+  "context": [
+    {
+      "id": "doc1",
+      "content": [{"text": "This is some context information that might be relevant to the task."}],
+      "metadata": {
+        "source": "user-provided"
+      }
+    }
+  ]
+}
+```
+### Properties
+
+#### `messages`
+- **Type:** `array` of [Message](#message) objects.
+- **Description:** The conversation history and current prompt.
+
+#### `config`
+- **Type:** [ModelConfig](#modelconfig)
+- **Description:** Configuration options for the model.
+
+#### `tools`
+- **Type:** `array` of [ToolDefinition](#tooldefinition)
+- **Description:** Definitions of tools available to the model.
+
+#### `output`
+- **Type:** [Output](#output)
+- **Description:** Specification for the desired output format.
+
+#### `context`
+- **Type:** `array` of [Document](#document)
+- **Description:** Grounding context documents for the model.
+
+## Message
+
+A message represents a single "turn" in a multi-turn conversation. Each message must have a role and specified content.
+
+### Properties
+
+#### `role`
+- **Type:** `string`
+- **Description:** The role of the message sender. Can be "system", "user", "model", or "tool".
+
+#### `content`
+- **Type:** `array` of [Part](#part)
+- **Description:** The content of the message, which can include text, media, tool requests, and tool responses.
+
+#### `metadata`
+- **Type:** `object`
+- **Description:** Optional. Additional metadata for the message.
+
+## Part
+
+A `Part` object can be one of the following types:
+
+### TextPart
+
+#### `text`
+- **Type:** `string`
+- **Description:** The text content of the message.
+
+### MediaPart
+
+#### `media`
+- **Type:** `object`
+- **Description:** Contains media information.
+
+#### `media.contentType`
+- **Type:** `string`
+- **Description:** Optional. The media content type. Inferred from data URI if not provided.
+
+#### `media.url`
+- **Type:** `string`
+- **Description:** A `data:` or `https:` URI containing the media content.
+
+### ToolRequestPart
+
+#### `toolRequest`
+- **Type:** `object`
+- **Description:** A request for a tool to be executed.
+
+#### `toolRequest.ref`
+- **Type:** `string`
+- **Description:** Optional. The call ID or reference for a specific request.
+
+#### `toolRequest.name`
+- **Type:** `string`
+- **Description:** The name of the tool to call.
+
+#### `toolRequest.input`
+- **Type:** `any`
+- **Description:** Optional. The input parameters for the tool, usually a JSON object.
+
+### ToolResponsePart
+
+#### `toolResponse`
+- **Type:** `object`
+- **Description:** A provided response to a tool call.
+
+#### `toolResponse.ref`
+- **Type:** `string`
+- **Description:** Optional. The call ID or reference for a specific request.
+
+#### `toolResponse.name`
+- **Type:** `string`
+- **Description:** The name of the tool.
+
+#### `toolResponse.output`
+- **Type:** `any`
+- **Description:** Optional. The output data returned from the tool, usually a JSON object.
+
+## ModelConfig
+
+`ModelConfig` is an arbitrary `Map<string,any>` that depends on the specific implementation of the underlying model. However, the following common configuration options should be respected in implementation whenever applicable:
+
+### Common Config Properties
+#### `temperature`
+- **Type:** `number`
+- **Description:** Optional. Controls the randomness of the model's output.
+
+#### `maxOutputTokens`
+- **Type:** `number`
+- **Description:** Optional. Limits the maximum number of tokens in the model's response.
+
+#### `topK`
+- **Type:** `number`
+- **Description:** Optional. Limits the number of highest probability vocabulary tokens to consider at each step.
+
+#### `topP`
+- **Type:** `number`
+- **Description:** Optional. Sets a probability threshold for token selection.
+
+#### `stopSequences`
+- **Type:** `array` of `string`
+- **Description:** Optional. Sequences that, if encountered, will cause the model to stop generating further output.
+
+## Tool Object
+
+### `name`
+- **Type:** `string`
+- **Description:** The name of the tool.
+
+### `description`
+- **Type:** `string`
+- **Description:** A description of what the tool does.
+
+### `inputSchema`
+- **Type:** `object`
+- **Description:** A JSON Schema object describing the expected input for the tool.
+
+### `outputSchema`
+- **Type:** `object`
+- **Description:** Optional. A JSON Schema object describing the expected output from the tool.
+
+## Output Object
+
+### `format`
+- **Type:** `string`
+- **Description:** Optional. The desired output format. All implementations should support `json` and `text` at a minimum.
+
+### `schema`
+- **Type:** `object`
+- **Description:** Optional. A JSON Schema object describing the expected structure of the output.
+
+## Document Object
+
+### `id`
+- **Type:** `string`
+- **Description:** A unique identifier for the document.
+
+### `content`
+- **Type:** `string`
+- **Description:** The text content of the document.
+
+### `metadata`
+- **Type:** `object`
+- **Description:** Optional. Additional metadata for the document.
+
+## Notes
+
+- The `messages` array represents the conversation history and current prompt. Each message can contain multiple parts, allowing for rich, multimodal interactions.
+- The `config` object allows fine-tuning of the model's behavior. Not all models support all configuration options.
+- The `tools` array defines functions that the model can call during its execution. This enables the model to interact with external systems or perform specific tasks.
+- The `output` object specifies the desired format and structure of the model's response. This is particularly useful for ensuring consistent, parseable outputs.
+- The `context` array provides additional information that may be relevant to the task but isn't part of the direct conversation history.
+- The `candidates` field determines how many alternative responses the model should generate.
+
+This interface provides a flexible and powerful way to interact with GenAI models, supporting various types of inputs, outputs, and model configurations.
