@@ -22,6 +22,7 @@ type Expect struct {
 	Config   map[string]interface{}   `yaml:"config"`
 	Ext      map[string]interface{}   `yaml:"ext"`
 	Input    map[string]interface{}   `yaml:"input"`
+	Output   map[string]interface{}   `yaml:"output"`
 	Messages []map[string]interface{} `yaml:"messages"`
 	Metadata map[string]interface{}   `yaml:"metadata"`
 	Raw      map[string]interface{}   `yaml:"raw"`
@@ -171,8 +172,9 @@ func processSpecFiles(t *testing.T) {
 		if !file.IsDir() && filepath.Ext(file.Name()) == ".yaml" {
 			processSpecFile(t, filepath.Join(SpecDir, file.Name()), func(s SpecSuite) (*Dotprompt, *DotpromptOptions) {
 				options := &DotpromptOptions{
-					Schemas: s.Schemas,
-					Tools:   s.Tools,
+					Schemas:  s.Schemas,
+					Tools:    s.Tools,
+					Partials: s.Partials,
 					PartialResolver: func(name string) (string, error) {
 						if partial, ok := s.ResolverPartials[name]; ok {
 							return partial, nil
@@ -225,8 +227,14 @@ func pruneResult(result PromptMetadata) map[string]interface{} {
 	if len(result.Ext) > 0 {
 		pruned["ext"] = result.Ext
 	}
-	if len(result.Input.Default) > 0 || len(result.Input.Schema) > 0 {
+	if len(result.Input.Default) > 0 {
 		pruned["input"] = result.Input
+	}
+	if result.Input.Default != nil || result.Input.Schema != nil {
+		pruned["input"] = result.Input
+	}
+	if result.Output.Format != "" || result.Output.Schema != nil {
+		pruned["output"] = result.Output
 	}
 	if len(result.HasMetadata.Metadata) > 0 {
 		pruned["metadata"] = result.HasMetadata.Metadata
@@ -244,6 +252,9 @@ func pruneExpected(expect Expect) map[string]interface{} {
 	}
 	if len(expect.Input) > 0 {
 		pruned["input"] = expect.Input
+	}
+	if len(expect.Output) > 0 {
+		pruned["output"] = expect.Output
 	}
 	if len(expect.Messages) > 0 {
 		pruned["messages"] = expect.Messages

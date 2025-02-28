@@ -68,34 +68,34 @@
             temperature: 3
           custom: prop
 
-# # Tests that extension fields are properly parsed and organized into
-# # the ext object, maintaining their hierarchical structure.
-# - name: ext
-#   template: |
-#     ---
-#     model: cool-model
-#     config:
-#       temperature: 3
-#     ext1.foo: bar
-#     ext1.foo1: bar1
-#     ext1.sub1.foo: baz
-#     ext1.sub2.bar: qux
-#     ext2.foo: bar2
-#     ---
-#   tests:
-#     - desc: extension fields are parsed and added to 'ext'
-#       expect:
-#         messages: []
-#         model: cool-model
-#         config:
-#           temperature: 3
-#         ext:
-#           ext1:
-#             foo: bar
-#             foo1: bar1
-#           ext1.sub1:
-#             foo: baz
-#           ext1.sub2:
-#             bar: qux
-#           ext2:
-#             foo: bar2
+# Tests that extension fields are properly parsed and organized into
+# the ext object, maintaining their hierarchical structure.
+- name: ext
+  template: |
+    ---
+    model: cool-model
+    config:
+      temperature: 3
+    ext1.foo: bar
+    ext1.foo1: bar1
+    ext1.sub1.foo: baz
+    ext1.sub2.bar: qux
+    ext2.foo: bar2
+    ---
+  tests:
+    - desc: extension fields are parsed and added to 'ext'
+      expect:
+        messages: []
+        model: cool-model
+        config:
+          temperature: 3
+        ext:
+          ext1:
+            foo: bar
+            foo1: bar1
+          ext1.sub1:
+            foo: baz
+          ext1.sub2:
+            bar: qux
+          ext2:
+            foo: bar2
