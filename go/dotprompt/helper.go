@@ -77,13 +77,3 @@ func UnlessEquals(arg1, arg2 interface{}, options *raymond.Options) string {
 	}
 	return options.Inverse()
 }
-
-// func init() {
-// 	raymond.RegisterHelper("json", JSON)
-// 	raymond.RegisterHelper("role", Role)
-// 	raymond.RegisterHelper("history", History)
-// 	raymond.RegisterHelper("section", Section)
-// 	raymond.RegisterHelper("media", Media)
-// 	raymond.RegisterHelper("ifEquals", IfEquals)
-// 	raymond.RegisterHelper("unlessEquals", UnlessEquals)
-// }
