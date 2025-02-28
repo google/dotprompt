@@ -6,7 +6,7 @@ package dotprompt
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -150,7 +150,7 @@ func createTestSuite(t *testing.T, suiteName string, suites []SpecSuite, dotprom
 
 func processSpecFile(t *testing.T, file string, dotpromptFactory func(suite SpecSuite) (*Dotprompt, *DotpromptOptions)) {
 	suiteName := filepath.Base(file)
-	content, err := ioutil.ReadFile(file)
+	content, err := os.ReadFile(file)
 	if err != nil {
 		t.Fatalf("Failed to read file: %v", err)
 	}
@@ -163,7 +163,7 @@ func processSpecFile(t *testing.T, file string, dotpromptFactory func(suite Spec
 }
 
 func processSpecFiles(t *testing.T) {
-	files, err := ioutil.ReadDir(SpecDir)
+	files, err := os.ReadDir(SpecDir)
 	if err != nil {
 		t.Fatalf("Failed to read spec directory: %v", err)
 	}

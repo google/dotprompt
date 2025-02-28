@@ -70,9 +70,9 @@ func (dp *Dotprompt) defineHelper(name string, helper interface{}, tpl *raymond.
 }
 
 // DefinePartial registers a partial template.
-func (dp *Dotprompt) definePartial(name string, source string, tpl *raymond.Template) {
-	tpl.RegisterPartial(name, source)
-}
+// func (dp *Dotprompt) definePartial(name string, source string, tpl *raymond.Template) {
+// 	tpl.RegisterPartial(name, source)
+// }
 
 // TODO: Add register helpers
 func (dp *Dotprompt) RegisterHelpers(options *DotpromptOptions, tpl *raymond.Template) {
@@ -300,10 +300,10 @@ func (dp *Dotprompt) ResolveMetadata(base PromptMetadata, merges []*PromptMetada
 		if merge == nil {
 			continue
 		}
-		config := out.Config
-		if config == nil {
-			config = make(map[string]interface{})
-		}
+		// config := out.Config
+		// if config == nil {
+		// 	config = make(map[string]any)
+		// }
 		out = mergeStructs(out, *merge)
 
 		for key, value := range merge.Config {

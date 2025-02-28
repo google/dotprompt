@@ -171,9 +171,8 @@ func (p *PicoschemaParser) parsePico(obj interface{}, path ...string) (JSONSchem
 			schematype := []interface{}{"array"}
 			if isOptional {
 				schematype = []interface{}{"array", "null"}
-			} else {
-				schematype = []interface{}{"array"}
 			}
+
 			schema["properties"].(map[string]interface{})[propertyName] = JSONSchema{
 				"type":  schematype,
 				"items": items,
