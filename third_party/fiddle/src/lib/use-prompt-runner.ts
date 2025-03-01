@@ -25,8 +25,8 @@ export function usePromptRunner() {
     { usage: { inputTokens: number; outputTokens: number }; output: any },
     any
   >(
-    // 'http://127.0.0.1:5001/promptfiddle/us-central1/runFiddlePrompt',
     'https://runfiddleprompt-niuqzqldsa-uc.a.run.app',
+    // 'http://127.0.0.1:5001/promptfiddle/us-central1/runFiddlePrompt',
   );
 }
 
@@ -37,7 +37,7 @@ export function useDraftPromptRunner() {
     { usage: { inputTokens: number; outputTokens: number }; output: any },
     any
   >(
-    // 'https://rundraftprompt-niuqzqldsa-uc.a.run.app',
-    'http://127.0.0.1:5001/promptfiddle/us-central1/runDraftPrompt',
+    'https://rundraftprompt-niuqzqldsa-uc.a.run.app',
+    // 'http://127.0.0.1:5001/promptfiddle/us-central1/runDraftPrompt',
   );
 }
