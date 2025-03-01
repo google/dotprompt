@@ -8,18 +8,31 @@ export function useDoc<T = any>(
 ) {
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!path && isLoading) setIsLoading(false);
+  }, [path, isLoading]);
   useEffect(() => {
     if (!path) return;
-    const unsub = onSnapshot(doc(db, path), (snap) => {
-      if (!snap.exists()) {
+    const unsub = onSnapshot(
+      doc(db, path),
+      (snap) => {
+        if (!snap.exists()) {
+          setData(null);
+        } else {
+          const data: any = snap.data();
+          data.id = idFunc ? idFunc(snap) : snap.id;
+          setData(data as T | null);
+        }
+        setIsLoading(false);
+      },
+      (error) => {
+        setIsLoading(false);
         setData(null);
-      } else {
-        const data: any = snap.data();
-        data.id = idFunc ? idFunc(snap) : snap.id;
-        setData(data as T | null);
-      }
-      setIsLoading(false);
-    });
+        setError(error.message);
+      },
+    );
     return unsub;
   }, [path]);
 
@@ -28,5 +41,5 @@ export function useDoc<T = any>(
     return setDoc(doc(db, path), newValue, { merge: true });
   };
 
-  return { data, isLoading, update };
+  return { data, isLoading, update, error };
 }

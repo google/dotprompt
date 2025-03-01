@@ -36,6 +36,9 @@ export default function AppSidebar({
   const [addingPrompt, setAddingPrompt] = useState(false);
   const [newPromptName, setNewPromptName] = useState('');
   const newPromptInputRef = useRef<HTMLInputElement>(null);
+  const [addingPartial, setAddingPartial] = useState(false);
+  const [newPartialName, setNewPartialName] = useState('');
+  const newPartialInputRef = useRef<HTMLInputElement>(null);
   const [editingPrompt, setEditingPrompt] = useState<string | null>(null);
   const [renamedPromptName, setRenamedPromptName] = useState('');
   const renamedPromptInputRef = useRef<HTMLInputElement>(null);
@@ -48,6 +51,12 @@ export default function AppSidebar({
       newPromptInputRef.current.focus();
     }
   }, [addingPrompt]);
+
+  useEffect(() => {
+    if (addingPartial && newPartialInputRef.current) {
+      newPartialInputRef.current.focus();
+    }
+  }, [addingPartial]);
 
   useEffect(() => {
     if (editingPrompt && renamedPromptInputRef.current) {
@@ -66,6 +75,10 @@ export default function AppSidebar({
     setAddingPrompt(true);
   };
 
+  const handleAddPartial = () => {
+    setAddingPartial(true);
+  };
+
   const handleAddPromptConfirm = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPromptName.trim()) {
@@ -81,6 +94,25 @@ export default function AppSidebar({
       setSelectedPrompt(newPrompt.name);
       setNewPromptName('');
       setAddingPrompt(false);
+    }
+  };
+
+  const handleAddPartialConfirm = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPartialName.trim()) {
+      const newPartial: Prompt = {
+        name: newPartialName.trim(),
+        source: '{{! your partial here }}',
+        partial: true,
+      };
+      const updatedFiddle = {
+        ...fiddle,
+        prompts: [...(fiddle?.prompts || []), newPartial],
+      };
+      setFiddle(updatedFiddle);
+      setSelectedPrompt(newPartial.name);
+      setNewPartialName('');
+      setAddingPartial(false);
     }
   };
 
@@ -155,7 +187,7 @@ export default function AppSidebar({
         <div className="border rounded-lg p-3 flex items-center">
           <img src="/icon.png" className="size-6 mr-2" />
           <div className="flex-1">
-            <h1 className="font-bold text-sm">Prompt Fiddle</h1>
+            <h1 className="font-bold text-sm">Dotprompt Fiddle</h1>
           </div>
           <ChevronsUpDown className="size-4" />
         </div>
@@ -208,57 +240,139 @@ export default function AppSidebar({
               </form>
             )}
             <SidebarMenu>
-              {fiddle?.prompts?.map((prompt) => (
-                <SidebarMenuItem
-                  key={prompt.name}
-                  className="flex items-center justify-between"
-                >
-                  {editingPrompt === prompt.name ? (
-                    <form
-                      onSubmit={(e) =>
-                        handleRenamePromptConfirm(e, prompt.name)
-                      }
-                    >
-                      <Input
-                        ref={renamedPromptInputRef}
-                        type="text"
-                        value={renamedPromptName}
-                        onChange={(e) => setRenamedPromptName(e.target.value)}
-                        onBlur={() => setEditingPrompt(null)}
-                        className="text-xs"
-                      />
-                    </form>
-                  ) : (
-                    <SidebarMenuButton
-                      onClick={() => setSelectedPrompt(prompt.name)}
-                      isActive={selectedPrompt === prompt.name}
-                      onDoubleClick={() => handleRenamePrompt(prompt)}
-                    >
-                      {prompt.name}
-                    </SidebarMenuButton>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 opacity-0 group-hover:opacity-100 absolute right-0 top-1/2 -translate-y-1/2"
-                    onClick={() => handleDeletePrompt(prompt)}
+              {fiddle?.prompts
+                ?.filter((prompt) => !prompt.partial)
+                .map((prompt) => (
+                  <SidebarMenuItem
+                    key={prompt.name}
+                    className="flex items-center justify-between"
                   >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </SidebarMenuItem>
-              ))}
+                    {editingPrompt === prompt.name ? (
+                      <form
+                        onSubmit={(e) =>
+                          handleRenamePromptConfirm(e, prompt.name)
+                        }
+                      >
+                        <Input
+                          ref={renamedPromptInputRef}
+                          type="text"
+                          value={renamedPromptName}
+                          onChange={(e) => setRenamedPromptName(e.target.value)}
+                          onBlur={() => setEditingPrompt(null)}
+                          className="text-xs"
+                        />
+                      </form>
+                    ) : (
+                      <SidebarMenuButton
+                        onClick={() => {
+                          setSelectedPrompt(prompt.name);
+                          // Update URL with prompt name using replaceState
+                          if (fiddle?.id) {
+                            window.history.replaceState(
+                              {},
+                              '',
+                              `/${fiddle.id}/${encodeURIComponent(prompt.name)}`,
+                            );
+                          }
+                        }}
+                        isActive={selectedPrompt === prompt.name}
+                        onDoubleClick={() => handleRenamePrompt(prompt)}
+                      >
+                        {prompt.name}
+                      </SidebarMenuButton>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 absolute right-0 top-1/2 -translate-y-1/2"
+                      onClick={() => handleDeletePrompt(prompt)}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </SidebarMenuItem>
+                ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup className="flex-1">
           <SidebarGroupLabel>
             Partials
-            <Button variant="ghost" size="icon" className="ml-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="ml-1"
+              onClick={handleAddPartial}
+            >
               <Plus className="h-4 w-4" />
             </Button>
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>{/* TODO: Add partials here */}</SidebarMenu>
+            {addingPartial && (
+              <form onSubmit={handleAddPartialConfirm}>
+                <Input
+                  ref={newPartialInputRef}
+                  type="text"
+                  value={newPartialName}
+                  onChange={(e) => setNewPartialName(e.target.value)}
+                  onBlur={() => setAddingPartial(false)}
+                  placeholder="New partial name"
+                  className="mb-2 text-xs"
+                />
+              </form>
+            )}
+            <SidebarMenu>
+              {fiddle?.prompts
+                ?.filter((prompt) => prompt.partial)
+                .map((partial) => (
+                  <SidebarMenuItem
+                    key={partial.name}
+                    className="flex items-center justify-between"
+                  >
+                    {editingPrompt === partial.name ? (
+                      <form
+                        onSubmit={(e) =>
+                          handleRenamePromptConfirm(e, partial.name)
+                        }
+                      >
+                        <Input
+                          ref={renamedPromptInputRef}
+                          type="text"
+                          value={renamedPromptName}
+                          onChange={(e) => setRenamedPromptName(e.target.value)}
+                          onBlur={() => setEditingPrompt(null)}
+                          className="text-xs"
+                        />
+                      </form>
+                    ) : (
+                      <SidebarMenuButton
+                        onClick={() => {
+                          setSelectedPrompt(partial.name);
+                          // Update URL with partial name using replaceState
+                          if (fiddle?.id) {
+                            window.history.replaceState(
+                              {},
+                              '',
+                              `/${fiddle.id}/${encodeURIComponent(partial.name)}`,
+                            );
+                          }
+                        }}
+                        isActive={selectedPrompt === partial.name}
+                        onDoubleClick={() => handleRenamePrompt(partial)}
+                      >
+                        {partial.name}
+                      </SidebarMenuButton>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 absolute right-0 top-1/2 -translate-y-1/2"
+                      onClick={() => handleDeletePrompt(partial)}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </SidebarMenuItem>
+                ))}
+            </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarFooter>

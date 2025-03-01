@@ -39,7 +39,7 @@ export default function MessageCard({ message }: { message: Message }) {
       {text && (
         <Markdown
           className={
-            'prose text-inherit prose-strong:text-inherit prose-sm prose-pre:bg-black prose-pre:text-white prose-li:ps-0 prose-li:m-0 prose-p:mb-1 prose-ul:mt-2'
+            'prose dark:prose-invert text-inherit prose-strong:text-inherit prose-sm prose-pre:bg-black prose-pre:text-white prose-li:ps-0 prose-li:m-0 prose-p:mb-1 prose-ul:mt-2 max-w-full'
           }
         >
           {text}

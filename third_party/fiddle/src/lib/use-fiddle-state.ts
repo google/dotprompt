@@ -57,7 +57,10 @@ const DEFAULT_FIDDLE_PROMPT = {
   source: `{{! your prompt goes here }}`,
 };
 
-export function useFiddle(id?: string | null): UseFiddleResult {
+export function useFiddle(
+  id?: string | null,
+  promptName?: string | null,
+): UseFiddleResult {
   // Get current user
   const { data: currentUser } = useUser();
 
@@ -109,21 +112,20 @@ export function useFiddle(id?: string | null): UseFiddleResult {
     }
   }, [savedDraft, id]);
 
+  const isLoading = useMemo(() => {
+    return publishedLoading || draftLoading;
+  }, [publishedLoading, draftLoading]);
   // Determine ownership - for published fiddles, owner must match
   // For drafts, anyone with the ID can edit
   const isOwner = useMemo(() => {
+    if (isLoading) return false;
     // For published fiddles, require authentication and ownership
     if (published) {
       return currentUser?.uid === published.owner;
     }
-
     // For drafts, anyone can edit if they have the ID
     return true;
-  }, [currentUser, published]);
-
-  const isLoading = useMemo(() => {
-    return publishedLoading || draftLoading;
-  }, [publishedLoading, draftLoading]);
+  }, [currentUser, published, isLoading]);
 
   // Compare draft with published version to check for unpublished changes
   const { hasChanges, draftSaved } = useMemo(() => {
@@ -220,13 +222,24 @@ export function useFiddle(id?: string | null): UseFiddleResult {
 
     // If this is a new fiddle (no ID), update the URL
     if (!id) {
-      window.history.pushState({}, '', `/${effectiveId}`);
+      // If there are prompts, include the first one in the URL
+      if (draft.prompts && draft.prompts.length > 0) {
+        const firstPromptName = draft.prompts[0].name;
+        window.history.pushState(
+          {},
+          '',
+          `/${effectiveId}/${encodeURIComponent(firstPromptName)}`,
+        );
+      } else {
+        window.history.pushState({}, '', `/${effectiveId}`);
+      }
     }
 
     // Return the ID so the app component can update its state
     return effectiveId;
   }, [id, currentUser, draft]);
 
+  // Effect to initialize draft when no data is available
   useEffect(() => {
     if (id && !isLoading && !published && !savedDraft && !draft) {
       setLocalDraft({
@@ -237,13 +250,32 @@ export function useFiddle(id?: string | null): UseFiddleResult {
     }
   }, [id, published, savedDraft, draft, isLoading]);
 
+  // Effect to handle prompt selection from URL
+  useEffect(() => {
+    // Skip if no fiddle data is available yet
+    if (!draft || isLoading) return;
+
+    // If promptName is provided in the URL, select it
+    if (promptName) {
+      // Find the prompt with the matching name
+      const promptExists = draft.prompts.some((p) => p.name === promptName);
+      if (promptExists) {
+        // The App component will handle setting the selected prompt
+        return;
+      }
+    }
+
+    // If no promptName is provided or it doesn't exist, we don't need to do anything
+    // The App component will default to the first prompt
+  }, [draft, promptName, isLoading]);
+
   return {
     published,
     isOwner,
-    draft,
+    draft: isOwner ? draft : null,
     isLoading,
-    hasChanges,
-    draftSaved,
+    hasChanges: isOwner ? hasChanges : false,
+    draftSaved: isOwner ? draftSaved : true,
     updateDraft,
     publish,
   };

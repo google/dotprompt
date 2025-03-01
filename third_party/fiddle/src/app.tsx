@@ -36,7 +36,10 @@ import {
   Sparkles,
   Save,
   ChevronDown,
+  Share2,
 } from 'lucide-react';
+import { Toaster } from './components/ui/sonner.tsx';
+import { toast } from 'sonner';
 import SaveExampleDialog from './components/save-example-dialog.tsx';
 import PromptGeneratorDialog from './components/prompt-generator-dialog.tsx';
 import { registerDotpromptLanguage } from './lib/monaco-dotprompt.ts';
@@ -56,17 +59,10 @@ interface Prompt {
 }
 
 function App() {
-  const prompter = useMemo(
-    () =>
-      new Dotprompt({
-        defaultModel: 'googleai/gemini-2.0-flash',
-      }),
-    [],
-  );
-
   // Handle routing
   const idInitializedRef = useRef(false);
   const [fiddleId, setFiddleId] = useState<string | null>(null);
+  const [urlPromptName, setUrlPromptName] = useState<string | null>(null);
 
   // Effect to handle routing - only run once
   useEffect(() => {
@@ -77,13 +73,21 @@ function App() {
 
     idInitializedRef.current = true;
 
-    // Extract ID from URL if it exists
+    // Extract ID and prompt name from URL if they exist
     const path = window.location.pathname;
-    const extractedId = path.substring(1); // Remove leading slash
+    if (path.length <= 1) return; // No ID in URL
 
-    // Only set ID if it exists in the URL
-    if (extractedId) {
-      setFiddleId(extractedId);
+    // Split the path by slashes and remove empty segments
+    const segments = path.split('/').filter(Boolean);
+
+    if (segments.length >= 1) {
+      // First segment is the fiddle ID
+      setFiddleId(segments[0]);
+
+      // Second segment (if exists) is the prompt name
+      if (segments.length >= 2) {
+        setUrlPromptName(decodeURIComponent(segments[1]));
+      }
     }
     // Otherwise, leave fiddleId as null for in-memory mode
   }, []);
@@ -111,7 +115,7 @@ function App() {
   >(null);
 
   // Use the fiddle hook for data management
-  // Always call hooks in the same order - pass fiddleId directly, even if null
+  // Always call hooks in the same order - pass fiddleId and promptName directly, even if null
   const {
     draft,
     published,
@@ -121,7 +125,24 @@ function App() {
     hasChanges,
     updateDraft: updateDraftRaw,
     publish,
-  } = useFiddle(fiddleId);
+  } = useFiddle(fiddleId, urlPromptName);
+
+  const prompter = useMemo(() => {
+    const fiddle = draft || published;
+    const partials = fiddle?.prompts
+      .filter((p) => p.partial)
+      .reduce(
+        (acc, p) => {
+          acc[p.name] = p.source;
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+    return new Dotprompt({
+      defaultModel: 'googleai/gemini-2.0-flash',
+      partials,
+    });
+  }, [draft, published]);
 
   const updateDraft = (newDraft: Fiddle) => {
     updateDraftRaw(newDraft);
@@ -137,18 +158,28 @@ function App() {
 
   // Update selected prompt when fiddle changes or on initial load
   useEffect(() => {
-    // If we have a fiddle with prompts, select the first one if none is selected
-    if (fiddle && fiddle.prompts && fiddle.prompts.length > 0) {
-      const firstPrompt = fiddle.prompts[0].name;
-      // If no prompt is selected or the selected one doesn't exist in this fiddle
-      if (
-        !selectedPrompt ||
-        !fiddle.prompts.find((p) => p.name === selectedPrompt)
-      ) {
-        setSelectedPrompt(firstPrompt);
+    // Skip if no fiddle or no prompts
+    if (!fiddle || !fiddle.prompts || fiddle.prompts.length === 0) return;
+
+    // If URL contains a prompt name, try to select it
+    if (urlPromptName) {
+      const promptExists = fiddle.prompts.some((p) => p.name === urlPromptName);
+      if (promptExists) {
+        setSelectedPrompt(urlPromptName);
+        return;
       }
     }
-  }, [fiddle, selectedPrompt]);
+
+    // If no prompt is selected or the selected one doesn't exist in this fiddle
+    if (
+      !selectedPrompt ||
+      !fiddle.prompts.find((p) => p.name === selectedPrompt)
+    ) {
+      // Default to the first prompt
+      const firstPrompt = fiddle.prompts[0].name;
+      setSelectedPrompt(firstPrompt);
+    }
+  }, [fiddle, selectedPrompt, urlPromptName]);
 
   // Get the current prompt
   const currentPrompt = useMemo<Prompt | null>(() => {
@@ -328,6 +359,33 @@ function App() {
 
   // Track the last generated content to avoid duplicate updates
   const lastGeneratedContentRef = useRef<string | null>(null);
+
+  // Add keyboard shortcut for Cmd+S (Ctrl+S) to trigger publish
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Cmd+S (macOS) or Ctrl+S (Windows/Linux)
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault(); // Prevent the browser's save dialog
+
+        // Only publish if user is owner and there are changes
+        if (isOwner && hasChanges) {
+          publish().then((newId) => {
+            if (newId && !fiddleId) {
+              setFiddleId(newId);
+            }
+          });
+        }
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Clean up
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOwner, hasChanges, publish, fiddleId, setFiddleId]);
 
   // Update prompt content when generator produces new data
   useEffect(() => {
@@ -519,6 +577,7 @@ function App() {
 
   return (
     <SidebarProvider>
+      <Toaster />
       <AppSidebar
         fiddle={fiddle}
         setFiddle={(updatedFiddle) => {
@@ -576,6 +635,21 @@ function App() {
             )}
           </div>
           <ModeToggle isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
+          {published && (
+            <Button
+              variant="outline"
+              className="text-s px-3 py-2 mr-2"
+              onClick={() => {
+                // Copy the current URL to clipboard
+                navigator.clipboard.writeText(window.location.href);
+                // Show toast notification
+                toast('URL copied to clipboard');
+              }}
+            >
+              <Share2 className="w-4 h-4 text-teal-500" />
+              Share
+            </Button>
+          )}
           {isOwner && hasChanges && (
             <Button
               variant="outline"
