@@ -14,17 +14,14 @@ import {
   HttpsError,
   onCallGenkit,
 } from 'firebase-functions/https';
-import { initializeApp } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
 import { defineSecret } from 'firebase-functions/params';
 import { ai, z } from './genkit.js';
 import { GenerateResponseChunk, GenkitError, UserFacingError } from 'genkit';
 import { Dotprompt } from 'dotprompt';
 import { CodeMessage, CodeMessageSchema } from './code-format.js';
 import { extractJson } from '@genkit-ai/ai/extract';
-
-const admin = initializeApp();
-const db = getFirestore(admin);
+import { db } from './firebase-admin.js';
+import { consumeQuota } from './consume-quota.js';
 
 export interface Fiddle {
   id: string;
@@ -133,6 +130,7 @@ const runFiddleFlow = ai.defineFlow(
     },
     { sendChunk, context },
   ) => {
+    await consumeQuota('run', context?.auth as any);
     const snap = await db
       .doc(`fiddles/${fiddleId}${version ? `/versions/${version}` : ''}`)
       .get();
@@ -164,6 +162,7 @@ export const runDraftPromptFlow = ai.defineFlow(
     }),
   },
   async (input, { context, sendChunk }) => {
+    await consumeQuota('run', context?.auth as any);
     return executePrompt({
       fiddle: input.fiddle,
       prompt: input.prompt,
@@ -203,7 +202,8 @@ export const generatePromptFlow = ai.defineFlow(
     outputSchema: GeneratePromptOutputSchema,
     streamSchema: GeneratePromptOutputSchema,
   },
-  async (input, { sendChunk }) => {
+  async (input, { sendChunk, context }) => {
+    await consumeQuota('generate', context?.auth as any);
     const { output } = await generatePromptPrompt(input, {
       onChunk: (chunk: GenerateResponseChunk<any>) =>
         sendChunk(toGeneratePromptOutput(chunk.output)),

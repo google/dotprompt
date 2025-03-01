@@ -36,5 +36,8 @@ export function useDraftPromptRunner() {
     RunDraftPromptOptions,
     { usage: { inputTokens: number; outputTokens: number }; output: any },
     any
-  >('https://rundraftprompt-niuqzqldsa-uc.a.run.app');
+  >(
+    // 'https://rundraftprompt-niuqzqldsa-uc.a.run.app',
+    'http://127.0.0.1:5001/promptfiddle/us-central1/runDraftPrompt',
+  );
 }

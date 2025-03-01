@@ -1,5 +1,6 @@
 import { runFlow, streamFlow } from 'genkit/beta/client';
 import { useState } from 'react';
+import { useUser } from './use-user.ts';
 
 export interface FlowState<Input = any, Output = any, Chunk = any> {
   run: (input: Input) => Promise<Output>;
@@ -40,6 +41,7 @@ export function useFlow<Input = any, Output = any, Chunk = any>(
     output: undefined,
     error: undefined,
   });
+  const { data: currentUser } = useUser();
 
   const run = async (input: Input) => {
     if (isLoading)
@@ -51,8 +53,15 @@ export function useFlow<Input = any, Output = any, Chunk = any>(
       output: undefined,
       error: undefined,
     });
+    const headers: Record<string, string> = {};
+    if (currentUser)
+      headers['authorization'] = `Bearer ${await currentUser.getIdToken()}`;
     try {
-      const newOutput = await runFlow({ url, input });
+      const newOutput = await runFlow({
+        url,
+        input,
+        headers,
+      });
       setCurrent({
         isLoading: false,
         chunks: [],
@@ -86,11 +95,15 @@ export function useFlow<Input = any, Output = any, Chunk = any>(
       output: undefined,
       error: undefined,
     });
+    const headers: Record<string, string> = {};
+    if (currentUser)
+      headers['authorization'] = `Bearer ${await currentUser.getIdToken()}`;
 
     try {
       const { stream, output } = streamFlow<Output, Chunk>({
         url,
         input,
+        headers,
       });
 
       for await (const chunk of stream) {

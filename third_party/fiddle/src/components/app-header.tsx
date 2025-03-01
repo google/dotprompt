@@ -87,7 +87,7 @@ export function AppHeader({
         )}
       </div>
       <ModeToggle isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
-      {fiddle && (
+      {fiddle?.id && (
         <Button
           variant="outline"
           className="text-s px-3 py-2 mr-2"

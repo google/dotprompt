@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import type { Message } from 'dotprompt';
+import type { Message, Part } from 'dotprompt';
 import Markdown from 'react-markdown';
 
 const SHARED_CLASSES = ['rounded-xl', 'my-4', 'p-4'];
@@ -24,9 +24,22 @@ function roleClasses(role: Message['role']) {
   return [];
 }
 
+function normalizeTextAndMedia(parts: Part[]) {
+  return parts
+    .filter((p) => p.text || p.media)
+    .reduce((outParts, part) => {
+      if (part.text && outParts.at(-1)?.text) {
+        outParts.at(-1)!.text += part.text;
+      } else {
+        outParts.push(part);
+      }
+      return outParts;
+    }, [] as Part[]);
+}
+
 export default function MessageCard({ message }: { message: Message }) {
   message = { role: message.role || 'user', content: message.content || [] };
-  const text = message.content.map((p) => p.text || '').join('');
+  const textAndMedia = normalizeTextAndMedia(message.content);
   const toolRequests = message.content.filter((p) => !!p.toolRequest);
   const toolResponses = message.content.filter((p) => !!p.toolResponse);
   // const media = // TODO
@@ -36,14 +49,21 @@ export default function MessageCard({ message }: { message: Message }) {
       <h4 className="uppercase text-xs text-primary-foreground opacity-70 mb-1">
         {message.role}
       </h4>
-      {text && (
-        <Markdown
-          className={
-            'prose dark:prose-invert text-inherit prose-strong:text-inherit prose-sm prose-pre:bg-black prose-pre:text-white prose-li:ps-0 prose-li:m-0 prose-p:mb-1 prose-ul:mt-2 max-w-full'
-          }
-        >
-          {text}
-        </Markdown>
+      {textAndMedia.map((p) =>
+        p.text ? (
+          <Markdown
+            className={
+              'prose dark:prose-invert text-inherit prose-strong:text-inherit prose-sm prose-pre:bg-black prose-pre:text-white prose-li:ps-0 prose-li:m-0 prose-p:mb-1 prose-ul:mt-2 max-w-full'
+            }
+          >
+            {p.text}
+          </Markdown>
+        ) : (
+          <img
+            className="max-w-96 max-h-96 object-contain rounded-lg my-4"
+            src={p.media!.url}
+          />
+        ),
       )}
       {toolRequests.length > 0 &&
         toolRequests.map((t) => (

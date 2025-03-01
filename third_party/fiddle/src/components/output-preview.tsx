@@ -41,39 +41,48 @@ export function OutputPreview({
 
           {/* Display streaming output */}
           {streamingOutput && (
-            <div className="mt-4 p-4 border rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-sm font-bold">Output:</h3>
-                {tokenUsage && (
-                  <div className="text-xs text-gray-500">
-                    Tokens: {tokenUsage.input} in / {tokenUsage.output} out /{' '}
-                    {tokenUsage.total} total
+            <>
+              <div className="text-center my-4 text-xs uppercase text-foreground/50 flex items-center">
+                <div className="border border-foreground/50 h-0 flex-1"></div>
+                <div className="mx-4">
+                  Prompt executed with Gemini 2.0 Flash
+                </div>
+                <div className="border border-foreground/50 h-0 flex-1"></div>
+              </div>
+              <div className="mt-4 p-4 border rounded-lg">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-sm font-bold">Output:</h3>
+                  {tokenUsage && null && (
+                    <div className="text-xs text-gray-500">
+                      Tokens: {tokenUsage.input} in / {tokenUsage.output} out /{' '}
+                      {tokenUsage.total} total
+                    </div>
+                  )}
+                </div>
+                {typeof streamingOutput === 'string' ? (
+                  <div className="prose prose-sm dark:prose-invert">
+                    <ReactMarkdown>{streamingOutput}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <div className="h-[400px] relative">
+                    <MonacoEditor
+                      className="absolute top-0 left-0 right-0 bottom-0"
+                      language="json"
+                      value={JSON.stringify(streamingOutput, null, 2)}
+                      theme={isDarkMode ? 'night-owl' : 'light'}
+                      options={{
+                        readOnly: true,
+                        minimap: { enabled: false },
+                        lineNumbers: 'off',
+                        folding: false,
+                        automaticLayout: true,
+                        wordWrap: 'on',
+                      }}
+                    />
                   </div>
                 )}
               </div>
-              {typeof streamingOutput === 'string' ? (
-                <div className="prose prose-sm dark:prose-invert">
-                  <ReactMarkdown>{streamingOutput}</ReactMarkdown>
-                </div>
-              ) : (
-                <div className="h-[400px] relative">
-                  <MonacoEditor
-                    className="absolute top-0 left-0 right-0 bottom-0"
-                    language="json"
-                    value={JSON.stringify(streamingOutput, null, 2)}
-                    theme={isDarkMode ? 'night-owl' : 'light'}
-                    options={{
-                      readOnly: true,
-                      minimap: { enabled: false },
-                      lineNumbers: 'off',
-                      folding: false,
-                      automaticLayout: true,
-                      wordWrap: 'on',
-                    }}
-                  />
-                </div>
-              )}
-            </div>
+            </>
           )}
 
           {/* Display errors */}
