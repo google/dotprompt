@@ -1,14 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import MonacoEditor, { useMonaco } from '@monaco-editor/react';
-import { Button } from './components/ui/button.tsx';
-import { ScrollArea } from './components/ui/scroll-area.tsx';
-import ModeToggle from '@/components/mode-toggle.tsx';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu.tsx';
+import { useMonaco } from '@monaco-editor/react';
 import { useFiddle } from './lib/use-fiddle-state.ts';
 import {
   usePromptRunner,
@@ -16,92 +7,34 @@ import {
 } from './lib/use-prompt-runner.ts';
 import { useGeneratePrompt } from './lib/use-generate-prompt.ts';
 import nightOwl from '@/themes/night-owl.json' with { type: 'json' };
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@/components/ui/resizable.tsx';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar.tsx';
+import { SidebarProvider } from '@/components/ui/sidebar.tsx';
 import AppSidebar from './app-sidebar.tsx';
-import { Dotprompt, RenderedPrompt, DataArgument } from 'dotprompt';
-import MessageCard from './components/message.tsx';
-import ReactMarkdown from 'react-markdown';
-import {
-  ChevronRight,
-  Play,
-  Check,
-  Upload,
-  CircleEllipsis,
-  Loader2,
-  Sparkles,
-  Save,
-  ChevronDown,
-  Share2,
-} from 'lucide-react';
+import { Dotprompt, RenderedPrompt } from 'dotprompt';
 import { Toaster } from './components/ui/sonner.tsx';
-import { toast } from 'sonner';
 import SaveExampleDialog from './components/save-example-dialog.tsx';
 import PromptGeneratorDialog from './components/prompt-generator-dialog.tsx';
 import { registerDotpromptLanguage } from './lib/monaco-dotprompt.ts';
 import { Fiddle } from './types';
 
-interface Prompt {
-  name: string;
-  source: string;
-  partial?: boolean;
-  examples?: {
-    name: string;
-    data: {
-      input: any;
-      context?: any;
-    };
-  }[];
-}
+import { AppHeader } from './components/app-header.tsx';
+import { PromptEditor } from './components/prompt-editor.tsx';
+import { DataInputEditor } from './components/data-input-editor.tsx';
+import { OutputPreview } from './components/output-preview.tsx';
+import { AppLayout } from './components/app-layout.tsx';
+
+import { useFiddleRouting } from './hooks/use-fiddle-routing.ts';
+import { usePromptSelection } from './hooks/use-prompt-selection.ts';
+import { useExampleManagement } from './hooks/use-example-management.ts';
 
 function App() {
-  // Handle routing
-  const idInitializedRef = useRef(false);
-  const [fiddleId, setFiddleId] = useState<string | null>(null);
-  const [urlPromptName, setUrlPromptName] = useState<string | null>(null);
-
-  // Effect to handle routing - only run once
-  useEffect(() => {
-    // Skip if we've already initialized the ID
-    if (idInitializedRef.current) {
-      return;
-    }
-
-    idInitializedRef.current = true;
-
-    // Extract ID and prompt name from URL if they exist
-    const path = window.location.pathname;
-    if (path.length <= 1) return; // No ID in URL
-
-    // Split the path by slashes and remove empty segments
-    const segments = path.split('/').filter(Boolean);
-
-    if (segments.length >= 1) {
-      // First segment is the fiddle ID
-      setFiddleId(segments[0]);
-
-      // Second segment (if exists) is the prompt name
-      if (segments.length >= 2) {
-        setUrlPromptName(decodeURIComponent(segments[1]));
-      }
-    }
-    // Otherwise, leave fiddleId as null for in-memory mode
-  }, []);
+  // Use our custom routing hook
+  const { fiddleId, setFiddleId, urlPromptName } = useFiddleRouting();
 
   // UI state
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [selectedPrompt, setSelectedPrompt] = useState<string | null>(null);
   const [renderedPrompt, setRenderedPrompt] = useState<
     RenderedPrompt | string | null
   >(null);
-  const [dataArgSource, setDataArgSource] = useState<string>(`{
-  "input": {},
-  "context": {}
-}`);
 
   // Prompt generation state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -110,12 +43,8 @@ function App() {
   // Example management state
   const [saveExampleDialogOpen, setSaveExampleDialogOpen] = useState(false);
   const [exampleName, setExampleName] = useState('');
-  const [selectedExampleIndex, setSelectedExampleIndex] = useState<
-    number | null
-  >(null);
 
   // Use the fiddle hook for data management
-  // Always call hooks in the same order - pass fiddleId and promptName directly, even if null
   const {
     draft,
     published,
@@ -156,46 +85,18 @@ function App() {
     return published;
   }, [draft, published, fiddleId, isLoading]);
 
-  // Update selected prompt when fiddle changes or on initial load
-  useEffect(() => {
-    // Skip if no fiddle or no prompts
-    if (!fiddle || !fiddle.prompts || fiddle.prompts.length === 0) return;
+  // Use our custom hooks
+  const { selectedPrompt, setSelectedPrompt, currentPrompt } =
+    usePromptSelection(fiddle, urlPromptName);
 
-    // If URL contains a prompt name, try to select it
-    if (urlPromptName) {
-      const promptExists = fiddle.prompts.some((p) => p.name === urlPromptName);
-      if (promptExists) {
-        setSelectedPrompt(urlPromptName);
-        return;
-      }
-    }
-
-    // If no prompt is selected or the selected one doesn't exist in this fiddle
-    if (
-      !selectedPrompt ||
-      !fiddle.prompts.find((p) => p.name === selectedPrompt)
-    ) {
-      // Default to the first prompt
-      const firstPrompt = fiddle.prompts[0].name;
-      setSelectedPrompt(firstPrompt);
-    }
-  }, [fiddle, selectedPrompt, urlPromptName]);
-
-  // Get the current prompt
-  const currentPrompt = useMemo<Prompt | null>(() => {
-    const prompt =
-      fiddle?.prompts?.find((p) => p.name === selectedPrompt) || null;
-    return prompt;
-  }, [fiddle, selectedPrompt]);
-
-  // Parse data argument
-  const dataArg: DataArgument = useMemo(() => {
-    try {
-      return JSON.parse(dataArgSource);
-    } catch (e) {
-      return { input: {}, context: {} };
-    }
-  }, [dataArgSource]);
+  const {
+    dataArgSource,
+    setDataArgSource,
+    dataArg,
+    selectedExampleIndex,
+    setSelectedExampleIndex,
+    handleSelectExample,
+  } = useExampleManagement(currentPrompt);
 
   // Monaco editor setup
   const monaco = useMonaco();
@@ -204,15 +105,6 @@ function App() {
     if (isDarkMode) monaco?.editor.setTheme('night-owl');
     if (monaco) registerDotpromptLanguage(monaco);
   }, [monaco, isDarkMode]);
-
-  // Load example when prompt changes
-  useEffect(() => {
-    if (currentPrompt?.examples?.length) {
-      // If there's exactly one example, load it automatically
-      setDataArgSource(JSON.stringify(currentPrompt.examples[0].data, null, 2));
-      setSelectedExampleIndex(0);
-    }
-  }, [currentPrompt]);
 
   // Render prompt when it changes
   useEffect(() => {
@@ -227,7 +119,7 @@ function App() {
         }
       }
     })();
-  }, [currentPrompt, dataArg]); // removed prompter from dependencies since it's stable
+  }, [currentPrompt, dataArg, prompter]);
 
   // Check system dark mode preference
   useEffect(() => {
@@ -310,15 +202,6 @@ function App() {
 
     // Close the dialog
     setSaveExampleDialogOpen(false);
-  };
-
-  // Handle selecting an example from the dropdown
-  const handleSelectExample = (index: number) => {
-    if (!currentPrompt?.examples || !currentPrompt.examples[index]) return;
-
-    const example = currentPrompt.examples[index];
-    setDataArgSource(JSON.stringify(example.data, null, 2));
-    setSelectedExampleIndex(index);
   };
 
   // Initialize the prompt runners
@@ -592,264 +475,68 @@ function App() {
         publishFiddle={publish}
         hasChanges={hasChanges}
       />
-      <main className="w-full h-screen overflow-y-hidden">
-        <div className="flex border-b p-2">
-          <div className="flex-1 flex items-center">
-            <SidebarTrigger />
-            {selectedPrompt && fiddle && (
-              <h2 className="flex items-center text-sm">
-                {fiddle.name} <ChevronRight className="w-4 h-4 mx-2" />{' '}
-                <strong>{selectedPrompt}.prompt</strong>
-                {fiddleId && hasChanges && (
-                  <>
-                    <span className="ml-2 text-xs text-gray-500">(Draft)</span>
-                    {draftSaved ? (
-                      <Check className="w-4 h-4 ml-1 text-slate-500" />
-                    ) : (
-                      <CircleEllipsis className="w-4 h-4 ml-1 text-slate-500" />
-                    )}
-                  </>
-                )}
-                {/* Sparkle button for prompt generation */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="ml-3"
-                  onClick={() => setDialogOpen(true)}
-                  disabled={isRunning}
-                  title="Generate prompt"
-                >
-                  {promptGenerator.isLoading ? (
-                    <>
-                      <Loader2 className="h-3 w-3 text-purple-500 animate-spin" />
-                      Generating&hellip;
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-3 w-3 text-purple-500" />
-                      Generate
-                    </>
-                  )}
-                </Button>
-              </h2>
-            )}
-          </div>
-          <ModeToggle isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
-          {published && (
-            <Button
-              variant="outline"
-              className="text-s px-3 py-2 mr-2"
-              onClick={() => {
-                // Copy the current URL to clipboard
-                navigator.clipboard.writeText(window.location.href);
-                // Show toast notification
-                toast('URL copied to clipboard');
-              }}
-            >
-              <Share2 className="w-4 h-4 text-teal-500" />
-              Share
-            </Button>
-          )}
-          {isOwner && hasChanges && (
-            <Button
-              variant="outline"
-              className="text-s px-3 py-2 mr-2"
-              onClick={async () => {
-                // Call publish and update fiddleId if a new ID is returned
-                const newId = await publish();
-                if (newId && !fiddleId) {
-                  setFiddleId(newId);
-                }
-              }}
-            >
-              <Upload className="w-4 h-4 text-blue-500" />
-              Publish
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            className="text-s px-3 py-2"
-            onClick={handleRunPrompt}
-            disabled={isRunning}
-          >
-            {isRunning ? (
-              <>
-                <Loader2 className="w-4 h-4 text-blue-400 animate-spin mr-1" />
-                Running...
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4 text-green-400" />
-                Run
-              </>
-            )}
-          </Button>
-        </div>
-        <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel defaultSize={60}>
-            <ResizablePanelGroup direction="vertical">
-              <ResizablePanel defaultSize={67}>
-                <MonacoEditor
-                  className="absolute top-0 left-0 right-0 bottom-0"
-                  language="dotprompt"
-                  value={currentPrompt?.source || ''}
-                  theme={isDarkMode ? 'night-owl' : 'light'}
-                  options={{
-                    automaticLayout: true,
-                    readOnly:
-                      (!!published && !isOwner) || promptGenerator.isLoading, // Read-only if it's a published fiddle and user is not the owner, or during prompt generation
-                  }}
-                  onChange={handlePromptChange}
-                />
-              </ResizablePanel>
-              <ResizableHandle />
-              <ResizablePanel>
-                <div className="flex flex-col size-full">
-                  <div className="border-y p-2 text-sm font-bold flex justify-between items-center">
-                    <div className="flex items-center">
-                      Prompt Input
-                      {currentPrompt?.examples &&
-                        currentPrompt.examples.length > 1 && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 ml-2 px-2"
-                              >
-                                <span className="text-xs">
-                                  {selectedExampleIndex !== null
-                                    ? currentPrompt.examples[
-                                        selectedExampleIndex
-                                      ].name
-                                    : 'Select Example'}
-                                </span>
-                                <ChevronDown className="ml-1 h-3 w-3" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start">
-                              {currentPrompt.examples.map((example, index) => (
-                                <DropdownMenuItem
-                                  key={index}
-                                  onClick={() => handleSelectExample(index)}
-                                >
-                                  {example.name}
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                    </div>
-                    {(!published || isOwner) && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 px-2"
-                        onClick={() => setSaveExampleDialogOpen(true)}
-                      >
-                        <Save className="h-3 w-3 mr-1" />
-                        <span className="text-xs">Save Example</span>
-                      </Button>
-                    )}
-                  </div>
-                  <div className="flex-1 relative">
-                    <MonacoEditor
-                      className="absolute top-0 left-0 right-0 bottom-0"
-                      language="json"
-                      value={dataArgSource}
-                      theme={isDarkMode ? 'night-owl' : 'light'}
-                      options={{ automaticLayout: true }}
-                      onChange={handleDataArgChange}
-                    />
-                  </div>
-                </div>
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          </ResizablePanel>
-          <ResizableHandle />
-          <ResizablePanel>
-            {/* Title Bar */}
-            <div className="p-2">
-              <ScrollArea className="h-[calc(100vh-120px)]">
-                {renderedPrompt && typeof renderedPrompt === 'string' && (
-                  <div className="dark:bg-slate-800 bg-gray-100 border-2 border-red-600 dark:text-white text-gray-900 p-4 rounded-lg my-4">
-                    {renderedPrompt}
-                  </div>
-                )}
-                <div className="p-4">
-                  {renderedPrompt &&
-                    typeof renderedPrompt === 'object' &&
-                    renderedPrompt.messages?.map((m, i) => (
-                      <MessageCard key={i} message={m} />
-                    ))}
-
-                  {/* Display streaming output */}
-                  {streamingOutput && (
-                    <div className="mt-4 p-4 border rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-sm font-bold">Output:</h3>
-                        {tokenUsage && null && (
-                          <div className="text-xs text-gray-500">
-                            Tokens: {tokenUsage.input} in / {tokenUsage.output}{' '}
-                            out / {tokenUsage.total} total
-                          </div>
-                        )}
-                      </div>
-                      {typeof streamingOutput === 'string' ? (
-                        <div className="prose prose-sm dark:prose-invert">
-                          <ReactMarkdown>{streamingOutput}</ReactMarkdown>
-                        </div>
-                      ) : (
-                        <div className="h-[400px] relative">
-                          <MonacoEditor
-                            className="absolute top-0 left-0 right-0 bottom-0"
-                            language="json"
-                            value={JSON.stringify(streamingOutput, null, 2)}
-                            theme={isDarkMode ? 'night-owl' : 'light'}
-                            options={{
-                              readOnly: true,
-                              minimap: { enabled: false },
-                              lineNumbers: 'off',
-                              folding: false,
-                              automaticLayout: true,
-                              wordWrap: 'on',
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Display errors from prompt runners */}
-                  {(fiddleId
-                    ? promptRunner.error
-                    : draftPromptRunner.error) && (
-                    <div className="dark:bg-slate-900 bg-gray-100 border-2 border-red-400 dark:text-white text-gray-900 p-4 rounded-lg my-4">
-                      <h3 className="dark:text-red-300 text-red-500 mb-2">
-                        Generation Error
-                      </h3>
-                      <div className="text-sm font-mono">
-                        {
-                          (fiddleId
-                            ? promptRunner.error
-                            : draftPromptRunner.error
-                          )?.message
-                        }
-                      </div>
-                    </div>
-                  )}
-                  {/* Display errors from prompt generator */}
-                  {promptGenerator.error && (
-                    <div className="bg-slate-800 border-2 border-red-600 text-white p-4 rounded-lg my-4">
-                      {promptGenerator.error.message}
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </main>
+      <AppLayout
+        headerContent={
+          <AppHeader
+            fiddle={fiddle}
+            selectedPrompt={selectedPrompt}
+            hasChanges={hasChanges}
+            draftSaved={draftSaved}
+            isOwner={isOwner}
+            isRunning={isRunning}
+            isDarkMode={isDarkMode}
+            fiddleId={fiddleId}
+            setIsDarkMode={setIsDarkMode}
+            onPublish={async () => {
+              // Call publish and update fiddleId if a new ID is returned
+              const newId = await publish();
+              if (newId && !fiddleId) {
+                setFiddleId(newId);
+              }
+              return newId || null;
+            }}
+            onRun={handleRunPrompt}
+            onOpenPromptGenerator={() => setDialogOpen(true)}
+          />
+        }
+        promptEditorContent={
+          <PromptEditor
+            source={currentPrompt?.source || ''}
+            isDarkMode={isDarkMode}
+            isReadOnly={(!!published && !isOwner) || promptGenerator.isLoading}
+            onChange={handlePromptChange}
+          />
+        }
+        dataInputContent={
+          <DataInputEditor
+            dataSource={dataArgSource}
+            examples={currentPrompt?.examples}
+            selectedExampleIndex={selectedExampleIndex}
+            isDarkMode={isDarkMode}
+            isOwner={!published || isOwner}
+            onExampleSelect={handleSelectExample}
+            onSaveExampleClick={() => setSaveExampleDialogOpen(true)}
+            onChange={handleDataArgChange}
+          />
+        }
+        outputContent={
+          <OutputPreview
+            renderedPrompt={renderedPrompt}
+            streamingOutput={streamingOutput}
+            tokenUsage={tokenUsage}
+            error={
+              fiddleId
+                ? promptRunner.error
+                  ? new Error(promptRunner.error.message)
+                  : null
+                : draftPromptRunner.error
+                  ? new Error(draftPromptRunner.error.message)
+                  : null
+            }
+            isDarkMode={isDarkMode}
+          />
+        }
+      />
 
       {/* Save Example Dialog */}
       <SaveExampleDialog
