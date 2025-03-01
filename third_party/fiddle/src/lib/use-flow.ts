@@ -5,6 +5,10 @@ export interface FlowState<Input = any, Output = any, Chunk = any> {
   run: (input: Input) => Promise<Output>;
   stream: (input: Input) => Promise<Output>;
   isLoading: boolean;
+  error?: {
+    status: string;
+    message: string;
+  };
   data: {
     /** The most recent chunk received from the flow. */
     latestChunk?: Chunk;
@@ -19,57 +23,111 @@ interface FlowData<Output, Chunk> {
   chunks: Chunk[];
   isLoading: boolean;
   output?: Output;
+  error?: {
+    status: string;
+    message: string;
+  };
 }
 
 export function useFlow<Input = any, Output = any, Chunk = any>(
   url: string,
 ): FlowState<Input, Output, Chunk> {
-  const [{ isLoading, chunks, output }, setCurrent] = useState<
+  const [{ isLoading, chunks, output, error }, setCurrent] = useState<
     FlowData<Output, Chunk>
   >({
     isLoading: false,
     chunks: [],
     output: undefined,
+    error: undefined,
   });
 
   const run = async (input: Input) => {
     if (isLoading)
       throw new Error(`Cannot run flow while it's already running.`);
-    setCurrent({ chunks: [], isLoading: true, output: undefined });
-    const newOutput = await runFlow({ url, input });
-    setCurrent({ isLoading: false, chunks: [], output: newOutput });
-    return newOutput;
+    // Reset error at the start of each run
+    setCurrent({
+      chunks: [],
+      isLoading: true,
+      output: undefined,
+      error: undefined,
+    });
+    try {
+      const newOutput = await runFlow({ url, input });
+      setCurrent({
+        isLoading: false,
+        chunks: [],
+        output: newOutput,
+        error: undefined,
+      });
+      return newOutput;
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      const errorStatus = (e as any).status || 'unknown';
+      setCurrent({
+        isLoading: false,
+        chunks: [],
+        output: undefined,
+        error: {
+          status: errorStatus,
+          message: errorMessage,
+        },
+      });
+      throw e;
+    }
   };
 
   const stream = async (input: Input) => {
     if (isLoading)
       throw new Error(`Cannot stream flow while it's already running.`);
-    setCurrent({ chunks: [], isLoading: true, output: undefined });
-    const { stream, output } = streamFlow<Output, Chunk>({
-      url,
-      input,
+    // Reset error at the start of each stream
+    setCurrent({
+      chunks: [],
+      isLoading: true,
+      output: undefined,
+      error: undefined,
     });
 
-    for await (const chunk of stream) {
+    try {
+      const { stream, output } = streamFlow<Output, Chunk>({
+        url,
+        input,
+      });
+
+      for await (const chunk of stream) {
+        setCurrent((current) => ({
+          ...current,
+          chunks: [...current.chunks, chunk],
+        }));
+      }
+
+      const finalOutput = await output;
       setCurrent((current) => ({
         ...current,
-        chunks: [...current.chunks, chunk],
+        output: finalOutput,
+        isLoading: false,
+        error: undefined,
       }));
+      return finalOutput;
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      const errorStatus = (e as any).status || 'unknown';
+      setCurrent((current) => ({
+        ...current,
+        isLoading: false,
+        error: {
+          status: errorStatus,
+          message: errorMessage,
+        },
+      }));
+      throw e;
     }
-
-    const finalOutput = await output;
-    setCurrent((current) => ({
-      ...current,
-      output: finalOutput,
-      isLoading: false,
-    }));
-    return finalOutput;
   };
 
   return {
     run,
     stream,
     isLoading,
+    error,
     data: {
       output,
       chunks,

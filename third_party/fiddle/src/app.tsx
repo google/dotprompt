@@ -3,6 +3,12 @@ import MonacoEditor, { useMonaco } from '@monaco-editor/react';
 import { Button } from './components/ui/button.tsx';
 import { ScrollArea } from './components/ui/scroll-area.tsx';
 import ModeToggle from '@/components/mode-toggle.tsx';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu.tsx';
 import { useFiddle } from './lib/use-fiddle-state.ts';
 import {
   usePromptRunner,
@@ -28,24 +34,25 @@ import {
   CircleEllipsis,
   Loader2,
   Sparkles,
+  Save,
+  ChevronDown,
 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from './components/ui/dialog.tsx';
-import { Input } from './components/ui/input.tsx';
+import SaveExampleDialog from './components/save-example-dialog.tsx';
+import PromptGeneratorDialog from './components/prompt-generator-dialog.tsx';
 import { registerDotpromptLanguage } from './lib/monaco-dotprompt.ts';
 import { Fiddle } from './types';
-import { Textarea } from './components/ui/textarea.tsx';
 
 interface Prompt {
   name: string;
   source: string;
+  partial?: boolean;
+  examples?: {
+    name: string;
+    data: {
+      input: any;
+      context?: any;
+    };
+  }[];
 }
 
 function App() {
@@ -94,9 +101,14 @@ function App() {
 
   // Prompt generation state
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [promptIdea, setPromptIdea] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
   const promptGenerator = useGeneratePrompt();
+
+  // Example management state
+  const [saveExampleDialogOpen, setSaveExampleDialogOpen] = useState(false);
+  const [exampleName, setExampleName] = useState('');
+  const [selectedExampleIndex, setSelectedExampleIndex] = useState<
+    number | null
+  >(null);
 
   // Use the fiddle hook for data management
   // Always call hooks in the same order - pass fiddleId directly, even if null
@@ -112,37 +124,19 @@ function App() {
   } = useFiddle(fiddleId);
 
   const updateDraft = (newDraft: Fiddle) => {
-    console.log('updateDraft called');
     updateDraftRaw(newDraft);
   };
 
-  useEffect(() => {
-    console.log('draft:', draft?.id, draft?.name, draft?.prompts[0]);
-  }, [draft]);
-
   // Always show draft if available, otherwise show published
   const fiddle = useMemo(() => {
-    console.log('fiddle memo recalculating', {
-      draft,
-      published,
-      fiddleId,
-      isLoading,
-    });
     if (draft) {
-      console.log('USING DRAFT PROMPT', draft);
       return draft;
     }
-    console.log('USING PUBLISHED PROMPT', published);
     return published;
   }, [draft, published, fiddleId, isLoading]);
 
   // Update selected prompt when fiddle changes or on initial load
   useEffect(() => {
-    console.log('prompt selection effect', {
-      fiddle,
-      isLoading,
-      selectedPrompt,
-    });
     // If we have a fiddle with prompts, select the first one if none is selected
     if (fiddle && fiddle.prompts && fiddle.prompts.length > 0) {
       const firstPrompt = fiddle.prompts[0].name;
@@ -151,7 +145,6 @@ function App() {
         !selectedPrompt ||
         !fiddle.prompts.find((p) => p.name === selectedPrompt)
       ) {
-        console.log('Setting selected prompt to:', firstPrompt);
         setSelectedPrompt(firstPrompt);
       }
     }
@@ -159,10 +152,8 @@ function App() {
 
   // Get the current prompt
   const currentPrompt = useMemo<Prompt | null>(() => {
-    console.log('currentPrompt memo recalculating', { fiddle, selectedPrompt });
     const prompt =
       fiddle?.prompts?.find((p) => p.name === selectedPrompt) || null;
-    console.log('currentPrompt result', prompt);
     return prompt;
   }, [fiddle, selectedPrompt]);
 
@@ -182,6 +173,15 @@ function App() {
     if (isDarkMode) monaco?.editor.setTheme('night-owl');
     if (monaco) registerDotpromptLanguage(monaco);
   }, [monaco, isDarkMode]);
+
+  // Load example when prompt changes
+  useEffect(() => {
+    if (currentPrompt?.examples?.length) {
+      // If there's exactly one example, load it automatically
+      setDataArgSource(JSON.stringify(currentPrompt.examples[0].data, null, 2));
+      setSelectedExampleIndex(0);
+    }
+  }, [currentPrompt]);
 
   // Render prompt when it changes
   useEffect(() => {
@@ -206,12 +206,6 @@ function App() {
   }, []);
 
   const handlePromptChange = (value: string | undefined) => {
-    console.log('handlePromptChange', {
-      value,
-      selectedPrompt,
-      fiddle,
-      currentPrompt,
-    });
     if (!selectedPrompt || !fiddle) return;
     const updatedFiddle = {
       ...fiddle,
@@ -220,7 +214,6 @@ function App() {
       ),
     };
 
-    console.log('updatedFiddle', updatedFiddle);
     // Anyone can update drafts, but only owner can update published fiddles
     if (!published || isOwner) {
       updateDraft(updatedFiddle);
@@ -229,6 +222,72 @@ function App() {
 
   const handleDataArgChange = (value: string | undefined) => {
     setDataArgSource(value || '{}');
+  };
+
+  // Handle saving the current input as an example
+  const handleSaveExample = () => {
+    if (!selectedPrompt || !fiddle || !currentPrompt) return;
+
+    // If a name was provided, save the example
+    if (exampleName) {
+      // Create a copy of the current prompt
+      const updatedPrompt = { ...currentPrompt };
+
+      // Initialize examples array if it doesn't exist
+      if (!updatedPrompt.examples) {
+        updatedPrompt.examples = [];
+      }
+
+      // Create the new example
+      const newExample = {
+        name: exampleName,
+        data: {
+          input: dataArg.input || {},
+          context: dataArg.context || {},
+        },
+      };
+
+      // If we're replacing an existing example
+      if (
+        selectedExampleIndex !== null &&
+        updatedPrompt.examples[selectedExampleIndex]
+      ) {
+        // Replace the existing example
+        updatedPrompt.examples[selectedExampleIndex] = newExample;
+      } else {
+        // Add as a new example
+        updatedPrompt.examples.push(newExample);
+      }
+
+      // Update the fiddle with the new prompt
+      const updatedFiddle = {
+        ...fiddle,
+        prompts: fiddle.prompts.map((p) =>
+          p.name === selectedPrompt ? updatedPrompt : p,
+        ),
+      };
+
+      // Update the draft
+      if (!published || isOwner) {
+        updateDraft(updatedFiddle);
+      }
+
+      // Reset state
+      setExampleName('');
+      setSelectedExampleIndex(null);
+    }
+
+    // Close the dialog
+    setSaveExampleDialogOpen(false);
+  };
+
+  // Handle selecting an example from the dropdown
+  const handleSelectExample = (index: number) => {
+    if (!currentPrompt?.examples || !currentPrompt.examples[index]) return;
+
+    const example = currentPrompt.examples[index];
+    setDataArgSource(JSON.stringify(example.data, null, 2));
+    setSelectedExampleIndex(index);
   };
 
   // Initialize the prompt runners
@@ -266,7 +325,6 @@ function App() {
     draftPromptRunner.isLoading,
     promptGenerator.isLoading,
   ]);
-  useEffect(() => console.log('isRunning', isRunning), [isRunning]);
 
   // Track the last generated content to avoid duplicate updates
   const lastGeneratedContentRef = useRef<string | null>(null);
@@ -276,22 +334,25 @@ function App() {
     // Only update during generation or when generation just completed
     if (
       promptGenerator.isLoading &&
-      promptGenerator.data &&
-      typeof promptGenerator.data === 'string' &&
+      promptGenerator.data?.source &&
       selectedPrompt &&
       fiddle &&
       (!published || isOwner)
     ) {
-      // Store the current data for comparison
-      lastGeneratedContentRef.current = promptGenerator.data;
+      // Get the data in a type-safe way
+      const { source, example } = promptGenerator.data;
 
-      // Create a copy of the fiddle with the updated prompt
+      // Store the current data for comparison
+      lastGeneratedContentRef.current = source;
+
+      // Create a copy of the fiddle with the updated prompt (source only during streaming)
       const updatedPrompts = fiddle.prompts.map((p) => {
         if (p.name === selectedPrompt) {
           // Create a new prompt object with the updated source
           return {
             ...p,
-            source: promptGenerator.data as string,
+            source,
+            examples: example ? [example] : [],
           };
         }
         return p;
@@ -309,22 +370,52 @@ function App() {
     else if (
       !promptGenerator.isLoading &&
       promptGenerator.data &&
-      typeof promptGenerator.data === 'string' &&
-      lastGeneratedContentRef.current !== promptGenerator.data &&
+      typeof promptGenerator.data === 'object' &&
+      'source' in promptGenerator.data &&
+      typeof promptGenerator.data.source === 'string' &&
+      lastGeneratedContentRef.current !== promptGenerator.data.source &&
       selectedPrompt &&
       fiddle &&
       (!published || isOwner)
     ) {
+      // Get the data in a type-safe way - ensure we're properly extracting the example
+      const { source } = promptGenerator.data;
+      const example = promptGenerator.data.example;
+
       // Update the last generated content
-      lastGeneratedContentRef.current = promptGenerator.data;
+      lastGeneratedContentRef.current = source;
 
       // Create a copy of the fiddle with the final prompt
       const updatedPrompts = fiddle.prompts.map((p) => {
         if (p.name === selectedPrompt) {
-          return {
+          // Create a new prompt object with the updated source
+          const updatedPrompt = {
             ...p,
-            source: promptGenerator.data as string,
+            source,
           };
+
+          // Add the example if it exists
+          if (example) {
+            // Initialize examples array if it doesn't exist
+            if (!updatedPrompt.examples) {
+              updatedPrompt.examples = [];
+            }
+
+            // Check if we should replace an existing example or add a new one
+            const existingExampleIndex = updatedPrompt.examples.findIndex(
+              (ex) => ex.name === example.name,
+            );
+
+            if (existingExampleIndex >= 0) {
+              // Replace existing example
+              updatedPrompt.examples[existingExampleIndex] = example;
+            } else {
+              // Add new example
+              updatedPrompt.examples.push(example);
+            }
+          }
+
+          return updatedPrompt;
         }
         return p;
       });
@@ -336,6 +427,24 @@ function App() {
       };
 
       updateDraft(updatedFiddle);
+
+      // If an example was provided, update the input pane with it and select it
+      if (example) {
+        setDataArgSource(JSON.stringify(example.data, null, 2));
+
+        // Find the index of the example in the updated prompt's examples array
+        const updatedPrompt = updatedPrompts.find(
+          (p) => p.name === selectedPrompt,
+        );
+        if (updatedPrompt?.examples) {
+          const exampleIndex = updatedPrompt.examples.findIndex(
+            (ex) => ex.name === example.name,
+          );
+          if (exampleIndex >= 0) {
+            setSelectedExampleIndex(exampleIndex);
+          }
+        }
+      }
     }
   }, [
     promptGenerator.data,
@@ -394,11 +503,8 @@ function App() {
   };
 
   // Handle prompt generation
-  const handleGeneratePrompt = async () => {
+  const handleGeneratePrompt = async (promptIdea: string) => {
     if (!promptIdea || !currentPrompt || !fiddle) return;
-
-    // Close dialog immediately
-    setDialogOpen(false);
 
     try {
       // Start generating the prompt
@@ -408,8 +514,6 @@ function App() {
       });
     } catch (e) {
       console.error((e as Error).message);
-    } finally {
-      setPromptIdea('');
     }
   };
 
@@ -450,16 +554,22 @@ function App() {
                 {/* Sparkle button for prompt generation */}
                 <Button
                   variant="outline"
-                  size="icon"
-                  className="ml-2 h-6 w-6 border-dashed border-purple-400"
+                  size="sm"
+                  className="ml-3"
                   onClick={() => setDialogOpen(true)}
                   disabled={isRunning}
                   title="Generate prompt"
                 >
                   {promptGenerator.isLoading ? (
-                    <Loader2 className="h-3 w-3 text-purple-500 animate-spin" />
+                    <>
+                      <Loader2 className="h-3 w-3 text-purple-500 animate-spin" />
+                      Generating&hellip;
+                    </>
                   ) : (
-                    <Sparkles className="h-3 w-3 text-purple-500" />
+                    <>
+                      <Sparkles className="h-3 w-3 text-purple-500" />
+                      Generate
+                    </>
                   )}
                 </Button>
               </h2>
@@ -521,8 +631,52 @@ function App() {
               <ResizableHandle />
               <ResizablePanel>
                 <div className="flex flex-col size-full">
-                  <div className="border-y p-2 text-sm font-bold">
-                    Prompt Input
+                  <div className="border-y p-2 text-sm font-bold flex justify-between items-center">
+                    <div className="flex items-center">
+                      Prompt Input
+                      {currentPrompt?.examples &&
+                        currentPrompt.examples.length > 1 && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 ml-2 px-2"
+                              >
+                                <span className="text-xs">
+                                  {selectedExampleIndex !== null
+                                    ? currentPrompt.examples[
+                                        selectedExampleIndex
+                                      ].name
+                                    : 'Select Example'}
+                                </span>
+                                <ChevronDown className="ml-1 h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              {currentPrompt.examples.map((example, index) => (
+                                <DropdownMenuItem
+                                  key={index}
+                                  onClick={() => handleSelectExample(index)}
+                                >
+                                  {example.name}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                    </div>
+                    {(!published || isOwner) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2"
+                        onClick={() => setSaveExampleDialogOpen(true)}
+                      >
+                        <Save className="h-3 w-3 mr-1" />
+                        <span className="text-xs">Save Example</span>
+                      </Button>
+                    )}
                   </div>
                   <div className="flex-1 relative">
                     <MonacoEditor
@@ -544,7 +698,7 @@ function App() {
             <div className="p-2">
               <ScrollArea className="h-[calc(100vh-120px)]">
                 {renderedPrompt && typeof renderedPrompt === 'string' && (
-                  <div className="bg-red-600 text-white p-4 rounded-lg my-4">
+                  <div className="dark:bg-slate-800 bg-gray-100 border-2 border-red-600 dark:text-white text-gray-900 p-4 rounded-lg my-4">
                     {renderedPrompt}
                   </div>
                 )}
@@ -591,6 +745,31 @@ function App() {
                       )}
                     </div>
                   )}
+
+                  {/* Display errors from prompt runners */}
+                  {(fiddleId
+                    ? promptRunner.error
+                    : draftPromptRunner.error) && (
+                    <div className="dark:bg-slate-900 bg-gray-100 border-2 border-red-400 dark:text-white text-gray-900 p-4 rounded-lg my-4">
+                      <h3 className="dark:text-red-300 text-red-500 mb-2">
+                        Generation Error
+                      </h3>
+                      <div className="text-sm font-mono">
+                        {
+                          (fiddleId
+                            ? promptRunner.error
+                            : draftPromptRunner.error
+                          )?.message
+                        }
+                      </div>
+                    </div>
+                  )}
+                  {/* Display errors from prompt generator */}
+                  {promptGenerator.error && (
+                    <div className="bg-slate-800 border-2 border-red-600 text-white p-4 rounded-lg my-4">
+                      {promptGenerator.error.message}
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
             </div>
@@ -598,40 +777,21 @@ function App() {
         </ResizablePanelGroup>
       </main>
 
+      {/* Save Example Dialog */}
+      <SaveExampleDialog
+        open={saveExampleDialogOpen}
+        onOpenChange={setSaveExampleDialogOpen}
+        onSave={handleSaveExample}
+        existingExamples={currentPrompt?.examples?.map((ex) => ex.name) || []}
+      />
+
       {/* Prompt Generation Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Prompt Generator</DialogTitle>
-            <DialogDescription className="text-xs">
-              I heard you like prompts, so I made a prompt generator that will
-              generate a prompt based on the prompt that you type. Give it a
-              try!
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex items-center space-x-2 py-4">
-            <div className="grid flex-1 gap-2">
-              <Textarea
-                placeholder="Describe your prompt idea..."
-                value={promptIdea}
-                onChange={(e) => setPromptIdea(e.target.value)}
-                disabled={promptGenerator.isLoading}
-              />
-            </div>
-          </div>
-          <DialogFooter className="sm:justify-start">
-            <Button
-              type="submit"
-              onClick={handleGeneratePrompt}
-              disabled={!promptIdea || promptGenerator.isLoading}
-              className="flex items-center min-w-full"
-            >
-              <Sparkles className="h-4 w-4 text-purple-400" />
-              Generate Prompt
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PromptGeneratorDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onGenerate={handleGeneratePrompt}
+        isGenerating={promptGenerator.isLoading}
+      />
     </SidebarProvider>
   );
 }

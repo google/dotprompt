@@ -96,11 +96,6 @@ export function useFiddle(id?: string | null): UseFiddleResult {
     // Skip this effect for local-only fiddles (no ID)
     if (!id) return;
 
-    console.log('draft effect', {
-      savedDraft,
-      draft,
-      isLocalUpdate: isLocalUpdate.current,
-    });
     // Only update from savedDraft if it exists and it's not a local update
     if (savedDraft && !isLocalUpdate.current) {
       setLocalDraft(savedDraft);
@@ -117,8 +112,6 @@ export function useFiddle(id?: string | null): UseFiddleResult {
   // Determine ownership - for published fiddles, owner must match
   // For drafts, anyone with the ID can edit
   const isOwner = useMemo(() => {
-    console.log('isOwner memo recalculating', { currentUser, published });
-
     // For published fiddles, require authentication and ownership
     if (published) {
       return currentUser?.uid === published.owner;
@@ -168,10 +161,8 @@ export function useFiddle(id?: string | null): UseFiddleResult {
 
       // For local-only fiddles (no ID), just update the local state
       if (!id) {
-        console.log('Updating local-only fiddle');
         // Use functional update to ensure state is updated correctly
         setLocalDraft((prevDraft) => {
-          console.log('setLocalDraft functional update', { prevDraft, fiddle });
           return fiddle;
         });
         return;
@@ -190,7 +181,6 @@ export function useFiddle(id?: string | null): UseFiddleResult {
         delete completeData.owner;
       }
 
-      console.log('Updating fiddle with ID', { completeData });
       setLocalDraft(completeData);
       // Set the flag before saving to Firestore
       isLocalUpdate.current = true;
@@ -201,14 +191,11 @@ export function useFiddle(id?: string | null): UseFiddleResult {
 
   // Publish draft to published version
   const publish = useCallback(async () => {
-    console.log('publish called', { draft });
-
     // Require authentication for publishing
     if (!currentUser || !draft) return;
 
     // Generate ID if needed
     const effectiveId = id || generateUniqueId(10);
-    console.log('publish running, id:', effectiveId);
 
     // Copy draft to published and set owner
     await setDoc(
@@ -242,7 +229,6 @@ export function useFiddle(id?: string | null): UseFiddleResult {
 
   useEffect(() => {
     if (id && !isLoading && !published && !savedDraft && !draft) {
-      console.log('BOOTSTRAPPING PROMPT');
       setLocalDraft({
         id,
         name: 'Prompt ' + id,

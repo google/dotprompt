@@ -21,6 +21,7 @@ import { ai, z } from './genkit.js';
 import { GenerateResponseChunk, GenkitError, UserFacingError } from 'genkit';
 import { Dotprompt } from 'dotprompt';
 import { CodeMessage, CodeMessageSchema } from './code-format.js';
+import { extractJson } from '@genkit-ai/ai/extract';
 
 const admin = initializeApp();
 const db = getFirestore(admin);
@@ -69,7 +70,7 @@ async function executePrompt({
 
   const rendered = await dotprompt.render(prompt.source, data);
 
-  const output = rendered.output
+  const outputConfig = rendered.output
     ? {
         ...rendered.output,
         schema: undefined,
@@ -81,19 +82,22 @@ async function executePrompt({
     const response = ai.generate({
       config: rendered.config,
       messages: rendered.messages,
-      output,
+      output: outputConfig,
       onChunk: (chunk) => {
         sendChunk(chunk.output || chunk.text);
       },
     });
     const result = await response;
-
+    let output: any = result.output;
+    if (output?.toJSON) {
+      output = output.toJSON();
+    }
     return {
       usage: {
         inputTokens: result.usage.inputTokens,
         outputTokens: result.usage.outputTokens,
       },
-      output: result.output || result.text,
+      output: output || result.text,
     };
   } catch (e) {
     if (e instanceof GenkitError) {
@@ -172,25 +176,39 @@ export const runDraftPromptFlow = ai.defineFlow(
 const GeneratePromptInputSchema = z.object({
   query: z.string(),
   existingPrompt: z.string().optional(),
+  partial: z.boolean().optional(),
+});
+const GeneratePromptOutputSchema = z.object({
+  source: z.string(),
+  example: z.any().optional(),
 });
 const generatePromptPrompt = ai.prompt<
   typeof GeneratePromptInputSchema,
   typeof CodeMessageSchema
 >('generate_prompt');
 
+function toGeneratePromptOutput(
+  message: CodeMessage,
+): z.infer<typeof GeneratePromptOutputSchema> {
+  return {
+    source: message.files[0]?.content || '',
+    example: extractJson(message.files[1]?.content || '{}'),
+  };
+}
+
 export const generatePromptFlow = ai.defineFlow(
   {
     name: 'generatePrompt',
     inputSchema: GeneratePromptInputSchema,
-    outputSchema: z.string(),
-    streamSchema: z.string(),
+    outputSchema: GeneratePromptOutputSchema,
+    streamSchema: GeneratePromptOutputSchema,
   },
   async (input, { sendChunk }) => {
     const { output } = await generatePromptPrompt(input, {
       onChunk: (chunk: GenerateResponseChunk<any>) =>
-        sendChunk(chunk.output.content),
+        sendChunk(toGeneratePromptOutput(chunk.output)),
     });
-    return (output as CodeMessage).content;
+    return toGeneratePromptOutput(output as CodeMessage);
   },
 );
 

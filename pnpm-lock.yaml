@@ -259,6 +259,9 @@ importers:
 
   third_party/fiddle/functions:
     dependencies:
+      '@genkit-ai/ai':
+        specifier: ^1.0.5
+        version: 1.0.5
       '@genkit-ai/googleai':
         specifier: ^1.0.5
         version: 1.0.5(genkit@1.0.5)

@@ -15,6 +15,7 @@
   },
   "main": "lib/index.js",
   "dependencies": {
+    "@genkit-ai/ai": "^1.0.5",
     "@genkit-ai/googleai": "^1.0.5",
     "dotprompt": "^1.0.1",
     "firebase-admin": "^13.1.0",
