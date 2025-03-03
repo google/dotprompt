@@ -5,10 +5,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from enum import StrEnum
 from typing import Any, Generic, Protocol, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
+
+RenderCallable = Callable[[str], str]
+HelperCallable = Callable[[str, RenderCallable, int | None], str]
 
 T = TypeVar('T')
 
