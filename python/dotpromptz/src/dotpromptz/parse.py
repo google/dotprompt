@@ -78,8 +78,8 @@ MEDIA_AND_SECTION_MARKER_REGEX = re.compile(
     r'(<<<dotprompt:(?:media:url|section).*?)>>>'
 )
 
-# List of reserved keywords that are handled specially in the metadata.
-# These keys are processed differently from extension metadata.
+# List of reserved keywords that are handled specially in the metadata of a
+# .prompt file. These keys are processed differently from extension metadata.
 RESERVED_METADATA_KEYWORDS = [
     # NOTE: KEEP SORTED
     'config',
@@ -157,14 +157,18 @@ def convert_namespaced_entry_to_nested_object(
     Returns:
         The updated target object
     """
+    # NOTE: Goes only a single level deep.
     if obj is None:
         obj = {}
 
     last_dot_index = key.rindex('.')
     ns = key[:last_dot_index]
     field = key[last_dot_index + 1 :]
+
+    # Ensure the namespace exists.
     obj.setdefault(ns, {})
     obj[ns][field] = value
+
     return obj
 
 
@@ -200,16 +204,11 @@ def parse_document(source: str) -> ParsedPrompt[T]:
     frontmatter, body = extract_frontmatter_and_body(source)
     if frontmatter:
         try:
-            # Parse the frontmatter as YAML.
             parsed_metadata = yaml.safe_load(frontmatter)
             if parsed_metadata is None:
                 parsed_metadata = {}
 
-            # Create a copy of the parsed metadata to avoid mutating the
-            # original.
             raw = dict(parsed_metadata)
-
-            # Create empty objects for the pruned metadata and extensions
             pruned: dict[str, Any] = {'ext': {}, 'config': {}, 'metadata': {}}
             ext: dict[str, dict[str, Any]] = {}
 
@@ -236,8 +235,7 @@ def parse_document(source: str) -> ParsedPrompt[T]:
                     raw=raw,
                     template=body.strip(),
                 )
-            except Exception as e:
-                print(f'Dotprompt: Error parsing YAML frontmatter: {e}')
+            except Exception:
                 # Return a basic ParsedPrompt with just the template
                 return ParsedPrompt(
                     ext={},
@@ -247,6 +245,7 @@ def parse_document(source: str) -> ParsedPrompt[T]:
                     template=body.strip(),
                 )
         except Exception as e:
+            # TODO: Should this be an error?
             print(f'Dotprompt: Error parsing YAML frontmatter: {e}')
             # Return a basic ParsedPrompt with just the template
             return ParsedPrompt(
@@ -415,6 +414,9 @@ def insert_history(
     if not history or messages_have_history(messages):
         return messages
 
+    if len(messages) == 0:
+        return history
+
     last_message = messages[-1]
     if last_message.role == 'user':
         # If the last message is a user message, insert the history before it.
@@ -474,7 +476,10 @@ def parse_media_part(piece: str) -> MediaPart:
         ValueError: If the media piece is invalid
     """
     if not piece.startswith(MEDIA_MARKER_PREFIX):
-        raise ValueError(f'Invalid media piece: {piece}')
+        raise ValueError(
+            f'Invalid media piece: {piece}; '
+            f'expected prefix {MEDIA_MARKER_PREFIX}'
+        )
 
     fields = piece.split(' ')
     n = len(fields)
@@ -484,7 +489,9 @@ def parse_media_part(piece: str) -> MediaPart:
         _, url = fields
         content_type = None
     else:
-        raise ValueError(f'Invalid media piece: {piece}')
+        raise ValueError(
+            f'Invalid media piece: {piece}; expected 2 or 3 fields, found {n}'
+        )
 
     part = MediaPart(media=dict(url=url))
     if content_type and content_type.strip():
@@ -505,13 +512,19 @@ def parse_section_part(piece: str) -> PendingPart:
         ValueError: If the section piece is invalid
     """
     if not piece.startswith(SECTION_MARKER_PREFIX):
-        raise ValueError(f'Invalid section piece: {piece}')
+        raise ValueError(
+            f'Invalid section piece: {piece}; '
+            f'expected prefix {SECTION_MARKER_PREFIX}'
+        )
 
     fields = piece.split(' ')
     if len(fields) == 2:
         section_type = fields[1]
     else:
-        raise ValueError(f'Invalid section piece: {piece}')
+        raise ValueError(
+            f'Invalid section piece: {piece}; '
+            f'expected 2 fields, found {len(fields)}'
+        )
     return PendingPart(metadata=dict(purpose=section_type, pending=True))
 
 

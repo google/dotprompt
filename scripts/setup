@@ -21,6 +21,7 @@ TOP_DIR=$(git rev-parse --show-toplevel)
 PNPM_VERSION="10.2.0"
 NODE_VERSION="23"
 NVM_VERSION="0.40.1"
+GOLANGCI_LINT_VERSION="1.64.6"
 
 AUDIENCE="eng"
 while getopts ":a:" opt; do
@@ -117,6 +118,8 @@ function dotpromptz::install_prerequisites() {
       gh \
       python3 \
       ripgrep
+
+
   elif [[ -x "$(command -v dnf)" ]]; then
     # Fedora-based systems.
     sudo dnf install -y \
@@ -131,10 +134,16 @@ function dotpromptz::install_prerequisites() {
     echo "Unsupported OS. Please install tools manually."
   fi
 
+  dotpromptz::install_golangci_lint
   dotpromptz::install_rust
   dotpromptz::install_uv
   dotpromptz::install_and_configure_nvm
   dotpromptz::install_pnpm
+}
+
+function dotpromptz::install_golangci_lint() {
+  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
+    | sh -s -- -b $(go env GOPATH)/bin "v${GOLANGCI_LINT_VERSION}"
 }
 
 function dotpromptz::install_rust() {
