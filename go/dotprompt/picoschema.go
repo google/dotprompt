@@ -163,21 +163,19 @@ func (p *PicoschemaParser) parsePico(obj any, path ...string) (JSONSchema, error
 		}
 
 		typeDesc := extractDescription(strings.TrimSuffix(nameType[1], ")"))
+		newProp := JSONSchema{}
 		switch typeDesc[0] {
 		case "array":
 			items, err := p.parsePico(value, append(path, key)...)
 			if err != nil {
 				return nil, err
 			}
-
-			prop := JSONSchema{
-				"type":  "array",
-				"items": items,
-			}
+			newProp["items"] = items
 			if isOptional {
-				prop["type"] = []any{"array", "null"}
+				newProp["type"] = []any{"array", "null"}
+			} else {
+				newProp["type"] = "array"
 			}
-			schema["properties"].(map[string]any)[propertyName] = prop
 		case "object":
 			prop, err := p.parsePico(value, append(path, key)...)
 			if err != nil {
@@ -186,21 +184,21 @@ func (p *PicoschemaParser) parsePico(obj any, path ...string) (JSONSchema, error
 			if isOptional {
 				prop["type"] = []any{prop["type"], "null"}
 			}
-			schema["properties"].(map[string]any)[propertyName] = prop
+			newProp = prop
 		case "enum":
 			enumValues := value.([]any)
 			if isOptional && !containsInterface(enumValues, nil) {
 				enumValues = append(enumValues, nil)
 			}
-			schema["properties"].(map[string]any)[propertyName] = JSONSchema{
-				"enum": enumValues,
-			}
+			newProp["enum"] = enumValues
 		default:
 			return nil, fmt.Errorf("Picoschema: parenthetical types must be 'object' or 'array', got: %s", typeDesc[0])
 		}
+
 		if typeDesc[1] != "" {
-			schema["properties"].(map[string]any)[propertyName].(map[string]any)["description"] = typeDesc[1]
+			newProp["description"] = typeDesc[1]
 		}
+		schema["properties"].(map[string]any)[propertyName] = newProp
 	}
 
 	if len(schema["required"].([]string)) == 0 {

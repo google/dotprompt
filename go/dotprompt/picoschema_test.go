@@ -151,6 +151,26 @@ func TestPicoschemaParser_parsePico(t *testing.T) {
 		assert.Equal(t, expected, result)
 	})
 
+	t.Run("description on optionl array type", func(t *testing.T) {
+		schema := map[string]any{
+			"items?(array, list of items)": "string",
+		}
+		expected := JSONSchema{
+			"type": "object",
+			"properties": map[string]any{
+				"items": JSONSchema{
+					"type":        []any{"array", "null"},
+					"items":       JSONSchema{"type": "string"},
+					"description": "list of items",
+				},
+			},
+			"additionalProperties": false,
+		}
+		result, err := parser.parsePico(schema)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, result)
+	})
+
 	t.Run("enum type", func(t *testing.T) {
 		schema := map[string]any{
 			"status(enum)": []any{"active", "inactive"},
