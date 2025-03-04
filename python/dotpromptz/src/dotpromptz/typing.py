@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any, Generic, Protocol, TypeVar
+from typing import Any, Callable, Generic, Protocol, TypeVar, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -221,18 +221,13 @@ class DataArgument(BaseModel, Generic[T]):
 
 
 # Type alias
-JSONSchema = Any
+JsonSchema = dict[str, Any]
 
 
-class SchemaResolver(Protocol):
-    """Resolves a provided schema name to an underlying JSON schema.
-
-    Utilized for shorthand to a schema library provided by an external tool.
-    """
-
-    def __call__(self, schema_name: str) -> JSONSchema | None: ...
+SchemaResolver = Callable[[str], JsonSchema | None]
 
 
+@runtime_checkable
 class ToolResolver(Protocol):
     """Resolves a provided tool name to an underlying ToolDefinition.
 
@@ -255,6 +250,7 @@ class RenderedPrompt(PromptMetadata[T], Generic[T]):
     messages: list[Message]
 
 
+@runtime_checkable
 class PromptFunction(Protocol, Generic[T]):
     """Takes runtime data/context and returns a rendered prompt result."""
 
@@ -267,6 +263,7 @@ class PromptFunction(Protocol, Generic[T]):
     ) -> RenderedPrompt[T]: ...
 
 
+@runtime_checkable
 class PromptRefFunction(Protocol, Generic[T]):
     """Takes runtime data / context and returns a rendered prompt result.
 
@@ -327,7 +324,7 @@ class PromptBundle(BaseModel):
     prompts: list[PromptData]
 
 
-# Protocol classes remain the same since Pydantic doesn't handle them directly
+@runtime_checkable
 class PromptStore(Protocol):
     """PromptStore is a common interface that provides for."""
 
@@ -357,6 +354,7 @@ class PromptStore(Protocol):
         ...
 
 
+@runtime_checkable
 class PromptStoreWritable(PromptStore, Protocol):
     """PromptStore that also has built-in methods for writing prompts."""
 
