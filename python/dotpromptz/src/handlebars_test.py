@@ -1,6 +1,6 @@
 # import json as json_lib
 # from typing import Any, Dict
-# import handlebars 
+# import handlebars
 # # Try different initialization methods
 # try:
 #     # Method 1
@@ -16,9 +16,8 @@
 # print("Handlebars type:", type(handlebars))
 # print("Available attributes:", dir(handlebars))
 
-import json as json_lib
-from typing import Any, Dict
 import handlebars
+
 # Print what we're working with
-print("Handlebars version:", handlebars.__file__)
-print("Available attributes:", dir(handlebars))
+print('Handlebars version:', handlebars.__file__)
+print('Available attributes:', dir(handlebars))
