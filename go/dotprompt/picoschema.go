@@ -169,15 +169,15 @@ func (p *PicoschemaParser) parsePico(obj any, path ...string) (JSONSchema, error
 			if err != nil {
 				return nil, err
 			}
-			schematype := []any{"array"}
-			if isOptional {
-				schematype = []any{"array", "null"}
-			}
 
-			schema["properties"].(map[string]any)[propertyName] = JSONSchema{
-				"type":  schematype,
+			prop := JSONSchema{
+				"type":  "array",
 				"items": items,
 			}
+			if isOptional {
+				prop["type"] = []any{"array", "null"}
+			}
+			schema["properties"].(map[string]any)[propertyName] = prop
 		case "object":
 			prop, err := p.parsePico(value, append(path, key)...)
 			if err != nil {

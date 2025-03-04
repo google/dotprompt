@@ -107,11 +107,43 @@ func TestPicoschemaParser_parsePico(t *testing.T) {
 			"type": "object",
 			"properties": map[string]any{
 				"names": JSONSchema{
-					"type":  []any{"array"},
+					"type":  "array",
 					"items": JSONSchema{"type": "string"},
 				},
 			},
 			"required":             []string{"names"},
+			"additionalProperties": false,
+		}
+		result, err := parser.parsePico(schema)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, result)
+	})
+
+	t.Run("nested array type", func(t *testing.T) {
+		schema := map[string]any{
+			"items(array)": map[string]any{"props(array)": "string"},
+		}
+		expected := JSONSchema{
+			"type": "object",
+			"properties": map[string]any{
+				"items": JSONSchema{
+					"type": "array",
+					"items": JSONSchema{
+						"type": "object",
+						"properties": map[string]any{
+							"props": JSONSchema{
+								"type": "array",
+								"items": JSONSchema{
+									"type": "string",
+								},
+							},
+						},
+						"required":             []string{"props"},
+						"additionalProperties": false,
+					},
+				},
+			},
+			"required":             []string{"items"},
 			"additionalProperties": false,
 		}
 		result, err := parser.parsePico(schema)
