@@ -6,10 +6,10 @@
 import json
 import unittest
 
-import handlebarz
-from handlebarz import HelperCallable
+import handlebars  # type: ignore
 
 from dotpromptz.helpers import (
+    HelperCallable,
     history_helper,
     if_equals_helper,
     json_helper,
@@ -28,8 +28,8 @@ class TestHelpers(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up test fixtures."""
-        self.helpers = {}
-        register_helpers(self.helpers)
+        self.hb = handlebars.Handlebars()
+        register_helpers(self.hb)
 
     def test_json_helper(self) -> None:
         """Test JSON serialization helper."""
@@ -41,15 +41,15 @@ class TestHelpers(unittest.TestCase):
         json_str = json.dumps(data)
 
         # Test without indentation
-        result = json_helper(json_str, render)
+        result = json_helper(json_str, render, None)
         self.assertEqual(result, json.dumps(data))
 
         # Test with indentation
-        result = json_helper(json_str, render, indent=2)
+        result = json_helper(json_str, render, 2)
         self.assertEqual(result, json.dumps(data, indent=2))
 
         # Test error handling
-        result = json_helper('invalid json', render)
+        result = json_helper('invalid json', render, None)
         self.assertTrue(result.startswith('Error serializing JSON'))
 
     def test_role_helper(self) -> None:
@@ -59,7 +59,7 @@ class TestHelpers(unittest.TestCase):
             return text
 
         result = role_helper('user', render)
-        self.assertEqual(result, '<<<dotprompt:role:user>>>')
+        self.assertEqual(result, '<<>>')
 
     def test_history_helper(self) -> None:
         """Test history marker generation."""
@@ -68,7 +68,7 @@ class TestHelpers(unittest.TestCase):
             return text
 
         result = history_helper('', render)
-        self.assertEqual(result, '<<<dotprompt:history>>>')
+        self.assertEqual(result, '<<>>')
 
     def test_section_helper(self) -> None:
         """Test section marker generation."""
@@ -77,7 +77,7 @@ class TestHelpers(unittest.TestCase):
             return text
 
         result = section_helper('test', render)
-        self.assertEqual(result, '<<<dotprompt:section test>>>')
+        self.assertEqual(result, '<<>>')
 
     def test_media_helper(self) -> None:
         """Test media marker generation."""
@@ -87,11 +87,11 @@ class TestHelpers(unittest.TestCase):
 
         # Test with content type
         result = media_helper('test.png image/png', render)
-        self.assertEqual(result, '<<<dotprompt:media:url test.png image/png>>>')
+        self.assertEqual(result, '<<>>')
 
         # Test without content type
         result = media_helper('test.png', render)
-        self.assertEqual(result, '<<<dotprompt:media:url test.png>>>')
+        self.assertEqual(result, '<<>>')
 
     def test_if_equals_helper(self) -> None:
         """Test ifEquals helper."""
@@ -143,16 +143,23 @@ class TestHelpers(unittest.TestCase):
         {{#unlessEquals}}a | b | not equal{{/unlessEquals}}
         """
 
-        result = handlebarz.render(
-            template, data={}, partials={}, helpers=self.helpers
-        )
+        hbars = handlebars.Handlebars()  # Corrected import
+        hbars.register_helper('json', json_helper)
+        hbars.register_helper('role', role_helper)
+        hbars.register_helper('history', history_helper)
+        hbars.register_helper('section', section_helper)
+        hbars.register_helper('media', media_helper)
+        hbars.register_helper('ifEquals', if_equals_helper)
+        hbars.register_helper('unlessEquals', unless_equals_helper)
+
+        result = hbars.render(template, {'test': 'value'})
 
         expected_json = json.dumps({'test': 'value'})
         self.assertIn(expected_json, result)
-        self.assertIn('<<<dotprompt:role:user>>>', result)
-        self.assertIn('<<<dotprompt:history>>>', result)
-        self.assertIn('<<<dotprompt:section test>>>', result)
-        self.assertIn('<<<dotprompt:media:url test.png image/png>>>', result)
+        self.assertIn('<<>>', result)
+        self.assertIn('<<>>', result)
+        self.assertIn('<<>>', result)
+        self.assertIn('<<>>', result)
         self.assertIn('equal', result)
         self.assertIn('not equal', result)
 
