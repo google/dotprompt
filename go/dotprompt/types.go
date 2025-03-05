@@ -4,7 +4,7 @@
 package dotprompt
 
 // Schema represents a generic schema definition.
-type Schema map[string]any
+type Schema any
 
 // ToolDefinition defines a tool that can be used in a prompt.
 type ToolDefinition struct {

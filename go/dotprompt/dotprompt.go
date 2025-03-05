@@ -155,7 +155,16 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata, 
 			return RenderedPrompt{}, err
 		}
 
-		inputContext := MergeMaps(data.Input, data.Context)
+		var inputContext map[string]any
+		defaultInput := make(map[string]any)
+		if mergedMetadata.Input.Default != nil {
+			for k, v := range mergedMetadata.Input.Default {
+				defaultInput[k] = v
+			}
+		}
+		inputContext = MergeMaps(defaultInput, data.Input)
+		inputContext = MergeMaps(inputContext, data.Context)
+
 		renderedString, err := renderTpl.Exec(inputContext)
 
 		if err != nil {
@@ -295,10 +304,6 @@ func (dp *Dotprompt) ResolveMetadata(base PromptMetadata, merges []*PromptMetada
 		if merge == nil {
 			continue
 		}
-		// config := out.Config
-		// if config == nil {
-		// 	config = make(map[string]any)
-		// }
 		out = mergeStructs(out, *merge)
 
 		for key, value := range merge.Config {

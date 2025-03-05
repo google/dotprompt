@@ -16,23 +16,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const SpecDir = "../../spec"
+const SpecDir = "../../../spec"
 
-type Expect struct {
-	Config   map[string]any   `yaml:"config"`
-	Ext      map[string]any   `yaml:"ext"`
-	Input    map[string]any   `yaml:"input"`
-	Output   map[string]any   `yaml:"output"`
-	Messages []map[string]any `yaml:"messages"`
-	Metadata map[string]any   `yaml:"metadata"`
-	Raw      map[string]any   `yaml:"raw"`
-}
-
-type SpecTest struct {
-	Desc    string         `yaml:"desc"`
-	Data    DataArgument   `yaml:"data"`
-	Expect  Expect         `yaml:"expect"`
-	Options map[string]any `yaml:"options"`
+func TestSpecFiles(t *testing.T) {
+	processSpecFiles(t)
 }
 
 // compareMaps performs a deep comparison of two maps of type map[string]any.
@@ -83,21 +70,6 @@ func deepEqual(v1, v2 any) bool {
 	}
 }
 
-type SpecSuite struct {
-	Name             string                    `yaml:"name"`
-	Template         string                    `yaml:"template"`
-	Data             DataArgument              `yaml:"data"`
-	Schemas          map[string]JSONSchema     `yaml:"schemas"`
-	Tools            map[string]ToolDefinition `yaml:"tools"`
-	Partials         map[string]string         `yaml:"partials"`
-	ResolverPartials map[string]string         `yaml:"resolverPartials"`
-	Tests            []SpecTest                `yaml:"tests"`
-}
-
-// TODO: Add spec test for helper functions
-// TODO: Add spec test for variables
-// TODO: Add spec test for picoschema
-
 func createTestCases(t *testing.T, s SpecSuite, tc SpecTest, dotpromptFactory func(suite SpecSuite) (*Dotprompt, *DotpromptOptions)) {
 	t.Run(tc.Desc, func(t *testing.T) {
 		env, dotpromptOptions := dotpromptFactory(s)
@@ -113,7 +85,7 @@ func createTestCases(t *testing.T, s SpecSuite, tc SpecTest, dotpromptFactory fu
 			t.Fatalf("Render failed: %v", err)
 		}
 		// Prune the result and compare to the expected output.
-		prunedResult := pruneResult(result.PromptMetadata)
+		prunedResult := pruneResult(t, result.PromptMetadata)
 		if len(result.Messages) > 0 {
 			prunedResult["messages"] = pruneMessages(result.Messages)
 		}
@@ -152,22 +124,18 @@ func processSpecFile(t *testing.T, file string, dotpromptFactory func(suite Spec
 	if err != nil {
 		t.Fatalf("Failed to read file: %v", err)
 	}
-	var suites []SpecSuite
 	fmt.Println(suiteName)
-	if err := yaml.Unmarshal(content, &suites); err != nil {
-		t.Fatalf("Failed to unmarshal YAML: %v", err)
-	}
+	suites := convertToSpecSuite(t, content)
 	createTestSuite(t, suiteName, suites, dotpromptFactory)
 }
 
 func processSpecFiles(t *testing.T) {
-	files, err := os.ReadDir(SpecDir)
-	if err != nil {
-		t.Fatalf("Failed to read spec directory: %v", err)
-	}
-	for _, file := range files {
-		if !file.IsDir() && filepath.Ext(file.Name()) == ".yaml" {
-			processSpecFile(t, filepath.Join(SpecDir, file.Name()), func(s SpecSuite) (*Dotprompt, *DotpromptOptions) {
+	err := filepath.Walk(SpecDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && filepath.Ext(info.Name()) == ".yaml" {
+			processSpecFile(t, path, func(s SpecSuite) (*Dotprompt, *DotpromptOptions) {
 				options := &DotpromptOptions{
 					Schemas:  s.Schemas,
 					Tools:    s.Tools,
@@ -182,11 +150,11 @@ func processSpecFiles(t *testing.T) {
 				return NewDotprompt(options), options
 			})
 		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("Failed to read spec directory: %v", err)
 	}
-}
-
-func TestSpecFiles(t *testing.T) {
-	processSpecFiles(t)
 }
 
 func mergeData(data1, data2 DataArgument) DataArgument {
@@ -216,7 +184,7 @@ func mergeData(data1, data2 DataArgument) DataArgument {
 	return merged
 }
 
-func pruneResult(result PromptMetadata) map[string]any {
+func pruneResult(t *testing.T, result PromptMetadata) map[string]any {
 	pruned := make(map[string]any)
 	if len(result.Config) > 0 {
 		pruned["config"] = result.Config
@@ -224,14 +192,25 @@ func pruneResult(result PromptMetadata) map[string]any {
 	if len(result.Ext) > 0 {
 		pruned["ext"] = result.Ext
 	}
-	if len(result.Input.Default) > 0 {
-		pruned["input"] = result.Input
-	}
 	if result.Input.Default != nil || result.Input.Schema != nil {
-		pruned["input"] = result.Input
+		inputMap := make(map[string]any)
+		if result.Input.Schema != nil {
+			inputMap["schema"] = pruneSchema(t, result.Input.Schema)
+		}
+		if result.Input.Default != nil {
+			inputMap["default"] = result.Input.Default
+		}
+		pruned["input"] = inputMap
 	}
 	if result.Output.Format != "" || result.Output.Schema != nil {
-		pruned["output"] = result.Output
+		outputMap := make(map[string]any)
+		if result.Output.Schema != nil {
+			outputMap["schema"] = pruneSchema(t, result.Output.Schema)
+		}
+		if result.Output.Format != "" {
+			outputMap["format"] = result.Output.Format
+		}
+		pruned["output"] = outputMap
 	}
 	if len(result.HasMetadata.Metadata) > 0 {
 		pruned["metadata"] = result.HasMetadata.Metadata
@@ -295,7 +274,10 @@ func pruneContent(content []Part) []map[string]any {
 			}
 		case *MediaPart:
 			if p.Media.URL != "" || p.Media.ContentType != "" {
-				prunedPart["media"] = p.Media
+				prunedPart["media"] = map[string]any{
+					"url":         p.Media.URL,
+					"contentType": p.Media.ContentType,
+				}
 			}
 		case *ToolRequestPart:
 			if len(p.ToolRequest) > 0 {
@@ -305,10 +287,6 @@ func pruneContent(content []Part) []map[string]any {
 			if len(p.ToolResponse) > 0 {
 				prunedPart["toolResponse"] = p.ToolResponse
 			}
-		case *PendingPart:
-			if p.IsPending() {
-				prunedPart["pending"] = true
-			}
 		}
 		if len(part.GetMetadata()) > 0 {
 			prunedPart["metadata"] = part.GetMetadata()
@@ -316,6 +294,15 @@ func pruneContent(content []Part) []map[string]any {
 		pruned = append(pruned, prunedPart)
 	}
 	return pruned
+}
+
+func pruneSchema(t *testing.T, schema Schema) map[string]any {
+	schemaMap := make(map[string]any)
+	schemaBytes, _ := yaml.Marshal(schema)
+	if err := yaml.Unmarshal(schemaBytes, &schemaMap); err != nil {
+		t.Fatalf("Failed to unmarshal output: %v", err)
+	}
+	return schemaMap
 }
 
 func compareResults(result, expected map[string]any) bool {

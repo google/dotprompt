@@ -777,7 +777,7 @@ func TestToMessages(t *testing.T) {
 		result, err := ToMessages(renderedString, data)
 
 		assert.NoError(t, err)
-		assert.Equal(t, 7, len(result))
+		assert.Equal(t, 6, len(result))
 
 		assert.Equal(t, RoleSystem, result[0].Role)
 		textPart0, ok := result[0].Content[0].(*TextPart)
@@ -797,20 +797,15 @@ func TestToMessages(t *testing.T) {
 		assert.Contains(t, result[3].Metadata, "purpose")
 		assert.Equal(t, "history", result[3].Metadata["purpose"])
 
-		assert.Equal(t, RoleModel, result[4].Role)
+		assert.Equal(t, RoleUser, result[4].Role)
 		textPart4, ok := result[4].Content[0].(*TextPart)
 		assert.True(t, ok)
-		assert.Equal(t, "\n", textPart4.Text)
+		assert.Equal(t, "Follow-up Question\n", textPart4.Text)
 
-		assert.Equal(t, RoleUser, result[5].Role)
+		assert.Equal(t, RoleModel, result[5].Role)
 		textPart5, ok := result[5].Content[0].(*TextPart)
 		assert.True(t, ok)
-		assert.Equal(t, "Follow-up Question\n", textPart5.Text)
-
-		assert.Equal(t, RoleModel, result[6].Role)
-		textPart6, ok := result[6].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Final Response", textPart6.Text)
+		assert.Equal(t, "Final Response", textPart5.Text)
 	})
 
 	t.Run("should handle an empty input string", func(t *testing.T) {

@@ -111,7 +111,7 @@ func splitByRegex(source string, regex *regexp.Regexp) []string {
 		// Filter out empty or whitespace-only pieces.
 		var result []string
 		for _, s := range pieces {
-			if trimUnicodeSpacesExceptNewlines(s) != "" {
+			if strings.TrimSpace(s) != "" {
 				result = append(result, s)
 			}
 		}
@@ -121,7 +121,7 @@ func splitByRegex(source string, regex *regexp.Regexp) []string {
 	// For marker regexes with capturing groups, include the matched portions.
 	matches := regex.FindAllStringSubmatchIndex(source, -1)
 	if len(matches) == 0 {
-		if trimUnicodeSpacesExceptNewlines(source) != "" {
+		if strings.TrimSpace(source) != "" {
 			return []string{source}
 		}
 		return []string{}
@@ -138,7 +138,7 @@ func splitByRegex(source string, regex *regexp.Regexp) []string {
 		// If there's text before the match that isn't empty...
 		if start > lastEnd {
 			textBefore := source[lastEnd:start]
-			if trimUnicodeSpacesExceptNewlines(textBefore) != "" {
+			if strings.TrimSpace(textBefore) != "" {
 				result = append(result, textBefore)
 			}
 		}
@@ -149,7 +149,7 @@ func splitByRegex(source string, regex *regexp.Regexp) []string {
 
 		if groupStart >= 0 && groupEnd >= 0 {
 			matchText := source[groupStart:groupEnd]
-			if trimUnicodeSpacesExceptNewlines(matchText) != "" {
+			if strings.TrimSpace(matchText) != "" {
 				result = append(result, matchText)
 			}
 		}
@@ -160,7 +160,7 @@ func splitByRegex(source string, regex *regexp.Regexp) []string {
 	// If there's text after the last match that isn't empty...
 	if lastEnd < len(source) {
 		textAfter := source[lastEnd:]
-		if trimUnicodeSpacesExceptNewlines(textAfter) != "" {
+		if strings.TrimSpace(textAfter) != "" {
 			result = append(result, textAfter)
 		}
 	}
@@ -295,6 +295,30 @@ func ParseDocument(source string) (ParsedPrompt, error) {
 						}
 						pruned.ToolDefs = toolDefs
 					}
+				case "input":
+					if inputMap, ok := value.(map[string]any); ok {
+						if defaultMap, ok := inputMap["default"].(map[string]any); ok {
+							pruned.Input.Default = defaultMap
+						}
+						if schemaMap, ok := inputMap["schema"].(map[string]any); ok {
+							pruned.Input.Schema = schemaMap
+						}
+						if schemaMap, ok := inputMap["schema"].(string); ok {
+							pruned.Input.Schema = schemaMap
+						}
+					}
+				case "output":
+					if outputMap, ok := value.(map[string]any); ok {
+						if formatMap, ok := outputMap["format"].(string); ok {
+							pruned.Output.Format = formatMap
+						}
+						if schemaMap, ok := outputMap["schema"].(map[string]any); ok {
+							pruned.Output.Schema = schemaMap
+						}
+						if schemaMap, ok := outputMap["schema"].(string); ok {
+							pruned.Output.Schema = schemaMap
+						}
+					}
 				}
 			} else if strings.Contains(key, ".") {
 				convertNamespacedEntryToNestedObject(key, value, ext)
@@ -307,7 +331,7 @@ func ParseDocument(source string) (ParsedPrompt, error) {
 
 		return ParsedPrompt{
 			PromptMetadata: pruned,
-			Template:       trimUnicodeSpacesExceptNewlines(body),
+			Template:       strings.TrimSpace(body),
 		}, nil
 	}
 
@@ -404,7 +428,7 @@ func messageSourcesToMessages(
 
 	for _, m := range messageSources {
 		// Only skip messages that have both empty Content and empty Source.
-		if m.Content == nil && trimUnicodeSpacesExceptNewlines(m.Source) == "" {
+		if m.Content == nil && strings.TrimSpace(m.Source) == "" {
 			continue
 		}
 
@@ -564,7 +588,7 @@ func parseMediaPart(piece string) (*MediaPart, error) {
 		HasMetadata: HasMetadata{},
 	}
 
-	if contentType != "" && trimUnicodeSpacesExceptNewlines(contentType) != "" {
+	if contentType != "" && strings.TrimSpace(contentType) != "" {
 		mediaPart.Media.ContentType = contentType
 	}
 
@@ -586,7 +610,7 @@ func parseSectionPart(piece string) (*PendingPart, error) {
 			"invalid section piece: %s; expected 2 fields, found %d", piece, n)
 	}
 
-	sectionType := trimUnicodeSpacesExceptNewlines(fields[1])
+	sectionType := strings.TrimSpace(fields[1])
 	pendingPart := NewPendingPart()
 	pendingPart.SetMetadata("purpose", sectionType)
 

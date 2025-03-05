@@ -10,10 +10,6 @@ import (
 	"github.com/aymerick/raymond"
 )
 
-type hash struct {
-	indent int
-}
-
 var templateHelpers = map[string]any{
 	"json":         JSON,
 	"role":         RoleFn,
@@ -26,11 +22,20 @@ var templateHelpers = map[string]any{
 
 // TODO: Add pending: true for section helper
 // JSON serializes the given data to a JSON string with optional indentation.
-func JSON(serializable any, options struct {
-	Hash hash
-}) raymond.SafeString {
+func JSON(serializable any, options *raymond.Options) raymond.SafeString {
+	var jsonData []byte
+	var err error
+	if options.HashProp("indent") == nil {
+		jsonData, err = json.Marshal(serializable)
+	} else {
+		indent := options.HashProp("indent").(int)
+		indentStr := ""
+		for i := 0; i < indent; i++ {
+			indentStr += " "
+		}
+		jsonData, err = json.MarshalIndent(serializable, "", indentStr)
+	}
 
-	jsonData, err := json.MarshalIndent(serializable, "", string(make([]byte, options.Hash.indent)))
 	if err != nil {
 		return ""
 	}
