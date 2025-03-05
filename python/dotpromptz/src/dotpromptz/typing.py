@@ -19,10 +19,11 @@ Schema = dict[str, Any]
 class Role(StrEnum):
     """The role of a message in a conversation."""
 
-    USER = 'user'
+    ASSISTANT = 'assistant'
     MODEL = 'model'
-    TOOL = 'tool'
     SYSTEM = 'system'
+    TOOL = 'tool'
+    USER = 'user'
 
 
 class ToolDefinition(BaseModel):

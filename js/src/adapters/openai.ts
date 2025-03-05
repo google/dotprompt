@@ -69,7 +69,9 @@ export interface OpenAIRequest {
 }
 
 function convertRole(role: Message['role']): OpenAIMessage['role'] {
-  if (role === 'model') return 'assistant';
+  if (role === 'model') {
+    return 'assistant';
+  }
   return role;
 }
 
@@ -103,7 +105,9 @@ function convertContent(parts: Part[]): OpenAIMessage['content'] {
 function convertTools(
   prompt: RenderedPrompt
 ): OpenAIToolDefintiion[] | undefined {
-  if (!prompt.toolDefs?.length) return undefined;
+  if (!prompt.toolDefs?.length) {
+    return undefined;
+  }
 
   return prompt.toolDefs.map((tool) => ({
     type: 'function',
