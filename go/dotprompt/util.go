@@ -76,3 +76,30 @@ func trimUnicodeSpacesExceptNewlines(s string) string {
 		return unicode.IsSpace(r) && r != '\n' && r != '\r'
 	})
 }
+
+func createDeepCopy(obj JSONSchema) JSONSchema {
+	copy := make(map[string]any)
+	for k, v := range obj {
+		copy[k] = deepCopyValue(v)
+	}
+	return copy
+}
+
+func deepCopyValue(value any) any {
+	switch v := value.(type) {
+	case map[string]any:
+		copy := make(map[string]any)
+		for k, v2 := range v {
+			copy[k] = deepCopyValue(v2)
+		}
+		return copy
+	case []any:
+		copy := make([]any, len(v))
+		for i, v2 := range v {
+			copy[i] = deepCopyValue(v2)
+		}
+		return copy
+	default:
+		return v
+	}
+}

@@ -8,8 +8,6 @@ import (
 	"slices"
 	"sort"
 	"strings"
-
-	deepcopy "github.com/barkimedes/go-deepcopy"
 )
 
 var JSONSchemaScalarTypes = []string{
@@ -161,10 +159,10 @@ func (p *PicoschemaParser) parsePico(obj any, path ...string) (JSONSchema, error
 			if err != nil {
 				return nil, err
 			}
-			propCopy := deepcopy.MustAnything(prop)
+			propCopy := createDeepCopy(prop)
 			if isOptional {
 				if propType, ok := prop["type"].(string); ok {
-					propCopy.(JSONSchema)["type"] = []any{propType, "null"}
+					propCopy["type"] = []any{propType, "null"}
 				}
 			}
 			schema["properties"].(map[string]any)[propertyName] = propCopy
@@ -190,10 +188,11 @@ func (p *PicoschemaParser) parsePico(obj any, path ...string) (JSONSchema, error
 			if err != nil {
 				return nil, err
 			}
+			propCopy := createDeepCopy(prop)
 			if isOptional {
-				prop["type"] = []any{prop["type"], "null"}
+				propCopy["type"] = []any{prop["type"], "null"}
 			}
-			newProp = prop
+			newProp = propCopy
 		case "enum":
 			enumValues := value.([]any)
 			if isOptional && !containsInterface(enumValues, nil) {
