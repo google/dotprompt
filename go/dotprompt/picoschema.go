@@ -141,7 +141,8 @@ func (p *PicoschemaParser) parsePico(obj any, path ...string) (JSONSchema, error
 			if err != nil {
 				return nil, err
 			}
-			schema["additionalProperties"] = parsedValue
+			parsedCopy := createDeepCopy(parsedValue)
+			schema["additionalProperties"] = parsedCopy
 			continue
 		}
 
