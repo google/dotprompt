@@ -11,9 +11,6 @@ from typing import Any, Generic, Protocol, TypeVar, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
-RenderCallable = Callable[[str], str]
-HelperCallable = Callable[[str, RenderCallable, int | None], str]
-
 T = TypeVar('T')
 
 # Type alias
