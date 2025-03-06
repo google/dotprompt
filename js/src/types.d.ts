@@ -113,7 +113,9 @@ export type Part =
   | ToolResponsePart
   | PendingPart;
 
-export type Role = 'user' | 'model' | 'tool' | 'system';
+// TODO: Check with mbleigh whether it is okay to add 'assistant' here.
+// TODO: Also update typing.py depending on what is decided.
+export type Role = 'user' | 'model' | 'tool' | 'system' | 'assistant';
 
 export interface Message extends HasMetadata {
   role: Role;

@@ -4,7 +4,7 @@
 package dotprompt
 
 // Schema represents a generic schema definition.
-type Schema map[string]any
+type Schema any
 
 // ToolDefinition defines a tool that can be used in a prompt.
 type ToolDefinition struct {
@@ -141,13 +141,16 @@ type DataPart struct {
 	Data map[string]any `json:"data"`
 }
 
+// Media represents a media part of a message.
+type Media struct {
+	URL         string `json:"url"`
+	ContentType string `json:"contentType,omitempty"`
+}
+
 // MediaPart represents a media part of a message.
 type MediaPart struct {
 	HasMetadata
-	Media struct {
-		URL         string `json:"url"`
-		ContentType string `json:"contentType,omitempty"`
-	} `json:"media"`
+	Media Media `json:"media"`
 }
 
 // ToolRequestPart represents a tool request part of a message.
@@ -204,10 +207,11 @@ type Role string
 
 // Predefined roles.
 const (
-	RoleUser   Role = "user"
-	RoleModel  Role = "model"
-	RoleTool   Role = "tool"
-	RoleSystem Role = "system"
+	RoleAssistant Role = "assistant"
+	RoleModel     Role = "model"
+	RoleSystem    Role = "system"
+	RoleTool      Role = "tool"
+	RoleUser      Role = "user"
 )
 
 // Message represents a message in a conversation.
@@ -254,7 +258,7 @@ type RenderedPrompt struct {
 
 // PromptFunction is a function that takes runtime data/context and returns a
 // rendered prompt.
-type PromptFunction func(data DataArgument, options PromptMetadata) (RenderedPrompt, error)
+type PromptFunction func(data *DataArgument, options *PromptMetadata) (RenderedPrompt, error)
 
 // PromptRefFunction is a function that takes runtime data/context and returns a
 // rendered prompt after loading a prompt via reference.
