@@ -12,6 +12,7 @@ service cloud.firestore {
 
     match /fiddles/{id} {
       allow get: if true;
+      allow list: if resource.data.owner == request.auth.uid;
       allow create: if
         request.resource.data.owner == request.auth.uid;
       allow update: if

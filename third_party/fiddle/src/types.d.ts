@@ -3,6 +3,7 @@ export interface Fiddle {
   name?: string;
   prompts: Prompt[];
   owner?: string;
+  updateTime?: string;
 }
 
 export interface Prompt {

@@ -1,5 +1,5 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from 'firebase/app';
+import { FirebaseError, initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
 import { getFirestore } from 'firebase/firestore';
 import {
@@ -8,7 +8,12 @@ import {
   onAuthStateChanged,
   signInAnonymously,
   signInWithPopup,
+  linkWithPopup,
   signOut as signOutRaw,
+  signInWithCredential,
+  UserCredential,
+  updateCurrentUser,
+  updateProfile,
 } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -26,8 +31,37 @@ export const app = initializeApp(firebaseConfig);
 export const analytics = getAnalytics(app);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export function signIn() {
-  return signInWithPopup(auth, new GoogleAuthProvider());
+export async function signIn() {
+  const provider = new GoogleAuthProvider();
+  const user = auth.currentUser;
+
+  if (user?.isAnonymous) {
+    let credential: UserCredential | undefined;
+    try {
+      credential = await linkWithPopup(user, provider);
+    } catch (e) {
+      if (e instanceof FirebaseError) {
+        const googleCredential = GoogleAuthProvider.credentialFromError(e);
+        if (googleCredential) {
+          credential = await signInWithCredential(auth, googleCredential);
+        }
+      }
+    }
+
+    if (credential) {
+      const googInfo = credential.user.providerData.find(
+        (d) => d.providerId === 'google.com',
+      );
+      await updateProfile(credential.user, {
+        displayName: googInfo?.displayName,
+        photoURL: googInfo?.photoURL,
+      });
+      await auth.currentUser?.reload();
+    }
+  }
+
+  // Otherwise do a normal sign in
+  return signInWithPopup(auth, provider);
 }
 export function signOut() {
   return signOutRaw(auth);

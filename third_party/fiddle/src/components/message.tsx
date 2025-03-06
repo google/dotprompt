@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import type { Message, Part } from 'dotprompt';
-import Markdown from 'react-markdown';
+import Markdown from '@/components/markdown';
 
 const SHARED_CLASSES = ['rounded-xl', 'my-4', 'p-4'];
 

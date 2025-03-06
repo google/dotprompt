@@ -1,4 +1,3 @@
-import React from 'react';
 import { ScrollArea } from './ui/scroll-area.tsx';
 import MonacoEditor from '@monaco-editor/react';
 import ReactMarkdown from 'react-markdown';
