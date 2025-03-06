@@ -11,14 +11,17 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// convertToSpecSuite converts the YAML content into a slice of SpecSuite objects.
 func convertToSpecSuite(t *testing.T, content []byte) []SpecSuite {
 	var suites []SpecSuite
 	var raw []map[string]any
 
+	// Unmarshal the YAML content into a raw slice of maps.
 	if err := yaml.Unmarshal(content, &raw); err != nil {
 		t.Fatalf("Failed to unmarshal YAML: %v", err)
 	}
 
+	// Iterate over each raw map and convert it to a SpecSuite object.
 	for _, r := range raw {
 		suite := SpecSuite{}
 		if name, ok := r["name"].(string); ok {
@@ -37,12 +40,12 @@ func convertToSpecSuite(t *testing.T, content []byte) []SpecSuite {
 			suite.Tests = convertTestSpec(t, r["tests"])
 		}
 		suites = append(suites, suite)
-
 	}
 
 	return suites
 }
 
+// convertSchema converts the raw schema data into a map of JSONSchema objects.
 func convertSchema(t *testing.T, schemaRaw any) map[string]dp.JSONSchema {
 	var schemas map[string]dp.JSONSchema
 	if schemaMap, ok := schemaRaw.(map[string]any); ok {
@@ -57,6 +60,7 @@ func convertSchema(t *testing.T, schemaRaw any) map[string]dp.JSONSchema {
 	return schemas
 }
 
+// convertTools converts the raw tools data into a map of ToolDefinition objects.
 func convertTools(t *testing.T, toolsRaw any) map[string]dp.ToolDefinition {
 	var tools map[string]dp.ToolDefinition
 	if toolsMap, ok := toolsRaw.(map[string]any); ok {
@@ -71,6 +75,7 @@ func convertTools(t *testing.T, toolsRaw any) map[string]dp.ToolDefinition {
 	return tools
 }
 
+// convertMapString converts a raw map into a map of strings.
 func convertMapString(rawMap any) map[string]string {
 	strMap := make(map[string]string)
 	if anyMap, ok := rawMap.(map[string]any); ok {
@@ -83,6 +88,7 @@ func convertMapString(rawMap any) map[string]string {
 	return strMap
 }
 
+// convertTestSpec converts the raw test specifications into a slice of SpecTest objects.
 func convertTestSpec(t *testing.T, testsRaw any) []SpecTest {
 	var specTests []SpecTest
 	if tests, ok := testsRaw.([]any); ok {
@@ -99,12 +105,12 @@ func convertTestSpec(t *testing.T, testsRaw any) []SpecTest {
 				}
 				specTests = append(specTests, specTest)
 			}
-
 		}
 	}
 	return specTests
 }
 
+// convertExpect converts the raw expect data into an Expect object.
 func convertExpect(expectRaw any) Expect {
 	var expect Expect
 	if expectMap, ok := expectRaw.(map[string]any); ok {
@@ -139,6 +145,7 @@ func convertExpect(expectRaw any) Expect {
 	return expect
 }
 
+// convertDataArg converts the raw data argument into a DataArgument object.
 func convertDataArg(t *testing.T, dataMap any) dp.DataArgument {
 	dataArg := dp.DataArgument{}
 	if data, ok := dataMap.(map[string]any); ok {
@@ -159,10 +166,10 @@ func convertDataArg(t *testing.T, dataMap any) dp.DataArgument {
 			dataArg.Context = data["context"].(map[string]any)
 		}
 	}
-
 	return dataArg
 }
 
+// convertMessages converts the raw messages data into a slice of Message objects.
 func convertMessages(t *testing.T, rawMessages []any) []dp.Message {
 	messages := []dp.Message{}
 	for _, rawMessage := range rawMessages {
@@ -186,6 +193,7 @@ func convertMessages(t *testing.T, rawMessages []any) []dp.Message {
 	return messages
 }
 
+// convertDocs converts the raw documents data into a slice of Document objects.
 func convertDocs(t *testing.T, rawDocs []any) []dp.Document {
 	docs := []dp.Document{}
 	for _, rawDoc := range rawDocs {
@@ -205,6 +213,7 @@ func convertDocs(t *testing.T, rawDocs []any) []dp.Document {
 	return docs
 }
 
+// convertContents converts the raw contents data into a slice of Part objects.
 func convertContents(t *testing.T, rawContents []any) []dp.Part {
 	contents := []dp.Part{}
 	for _, rawContent := range rawContents {
@@ -218,6 +227,7 @@ func convertContents(t *testing.T, rawContents []any) []dp.Part {
 	return contents
 }
 
+// convertContent converts a raw content map into a Part object.
 func convertContent(t *testing.T, content map[string]any) dp.Part {
 	partData, err := yaml.Marshal(content)
 	if err != nil {
@@ -244,6 +254,7 @@ func convertContent(t *testing.T, content map[string]any) dp.Part {
 	return part
 }
 
+// unmarshalTextPart unmarshals data into a TextPart object if possible.
 func unmarshalTextPart(data []byte) *dp.TextPart {
 	var textPart dp.TextPart
 	if err := yaml.Unmarshal(data, &textPart); err == nil && textPart.Text != "" {
@@ -252,6 +263,7 @@ func unmarshalTextPart(data []byte) *dp.TextPart {
 	return nil
 }
 
+// unmarshalDataPart unmarshals data into a DataPart object if possible.
 func unmarshalDataPart(data []byte) *dp.DataPart {
 	var dataPart dp.DataPart
 	if err := yaml.Unmarshal(data, &dataPart); err == nil && dataPart.Data != nil {
@@ -260,6 +272,7 @@ func unmarshalDataPart(data []byte) *dp.DataPart {
 	return nil
 }
 
+// unmarshalMediaPart unmarshals data into a MediaPart object if possible.
 func unmarshalMediaPart(data []byte) *dp.MediaPart {
 	var mediaPart dp.MediaPart
 	if err := yaml.Unmarshal(data, &mediaPart); err == nil && mediaPart.Media.URL != "" {
@@ -268,6 +281,7 @@ func unmarshalMediaPart(data []byte) *dp.MediaPart {
 	return nil
 }
 
+// unmarshalToolRequestPart unmarshals data into a ToolRequestPart object if possible.
 func unmarshalToolRequestPart(data []byte) *dp.ToolRequestPart {
 	var toolRequestPart dp.ToolRequestPart
 	if err := yaml.Unmarshal(data, &toolRequestPart); err == nil && toolRequestPart.ToolRequest != nil {
@@ -276,6 +290,7 @@ func unmarshalToolRequestPart(data []byte) *dp.ToolRequestPart {
 	return nil
 }
 
+// unmarshalToolResponsePart unmarshals data into a ToolResponsePart object if possible.
 func unmarshalToolResponsePart(data []byte) *dp.ToolResponsePart {
 	var toolResponsePart dp.ToolResponsePart
 	if err := yaml.Unmarshal(data, &toolResponsePart); err == nil && toolResponsePart.ToolResponse != nil {
@@ -284,6 +299,7 @@ func unmarshalToolResponsePart(data []byte) *dp.ToolResponsePart {
 	return nil
 }
 
+// unmarshalPendingPart unmarshals data into a PendingPart object if possible.
 func unmarshalPendingPart(data []byte) *dp.PendingPart {
 	var pendingPart dp.PendingPart
 	if err := yaml.Unmarshal(data, &pendingPart); err == nil {

@@ -280,7 +280,7 @@ func (dp *Dotprompt) RenderMetadata(source any, additionalMetadata *PromptMetada
 	return dp.ResolveMetadata(PromptMetadata{Config: modelConfig}, metadata)
 }
 
-// Assuming out and merges[i] are of type PromptMetadata
+// mergeStructs merges two structures of type PromptMetadata
 func mergeStructs(out, merge PromptMetadata) PromptMetadata {
 	outVal := reflect.ValueOf(&out).Elem()
 	mergeVal := reflect.ValueOf(merge)

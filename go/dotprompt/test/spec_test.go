@@ -70,6 +70,7 @@ func deepEqual(v1, v2 any) bool {
 	}
 }
 
+// createTestCases creates and runs test cases for a given SpecSuite and SpecTest.
 func createTestCases(t *testing.T, s SpecSuite, tc SpecTest, dotpromptFactory func(suite SpecSuite) (*Dotprompt, *DotpromptOptions)) {
 	t.Run(tc.Desc, func(t *testing.T) {
 		env, dotpromptOptions := dotpromptFactory(s)
@@ -105,12 +106,12 @@ func createTestCases(t *testing.T, s SpecSuite, tc SpecTest, dotpromptFactory fu
 	})
 }
 
+// createTestSuite creates and runs a test suite for a given suite name and SpecSuite.
 func createTestSuite(t *testing.T, suiteName string, suites []SpecSuite, dotpromptFactory func(suite SpecSuite) (*Dotprompt, *DotpromptOptions)) {
 	t.Run(suiteName, func(t *testing.T) {
 		for _, s := range suites {
 			t.Run(s.Name, func(t *testing.T) {
 				for _, tc := range s.Tests {
-					// fmt.Println(tc)
 					createTestCases(t, s, tc, dotpromptFactory)
 				}
 			})
@@ -118,6 +119,7 @@ func createTestSuite(t *testing.T, suiteName string, suites []SpecSuite, dotprom
 	})
 }
 
+// processSpecFile processes a single spec file and creates a test suite for it.
 func processSpecFile(t *testing.T, file string, dotpromptFactory func(suite SpecSuite) (*Dotprompt, *DotpromptOptions)) {
 	suiteName := filepath.Base(file)
 	content, err := os.ReadFile(file)
@@ -129,6 +131,7 @@ func processSpecFile(t *testing.T, file string, dotpromptFactory func(suite Spec
 	createTestSuite(t, suiteName, suites, dotpromptFactory)
 }
 
+// processSpecFiles processes all spec files in the SpecDir directory.
 func processSpecFiles(t *testing.T) {
 	err := filepath.Walk(SpecDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -157,6 +160,7 @@ func processSpecFiles(t *testing.T) {
 	}
 }
 
+// mergeData merges two DataArgument objects.
 func mergeData(data1, data2 DataArgument) DataArgument {
 	merged := data1
 	if data2.Input != nil {
@@ -184,6 +188,7 @@ func mergeData(data1, data2 DataArgument) DataArgument {
 	return merged
 }
 
+// pruneResult prunes the result of a PromptMetadata object for comparison.
 func pruneResult(t *testing.T, result PromptMetadata) map[string]any {
 	pruned := make(map[string]any)
 	if len(result.Config) > 0 {
@@ -218,6 +223,7 @@ func pruneResult(t *testing.T, result PromptMetadata) map[string]any {
 	return pruned
 }
 
+// pruneExpected prunes the expected output for comparison.
 func pruneExpected(expect Expect) map[string]any {
 	pruned := make(map[string]any)
 	if len(expect.Config) > 0 {
@@ -241,6 +247,7 @@ func pruneExpected(expect Expect) map[string]any {
 	return pruned
 }
 
+// pruneMessages prunes the messages for comparison.
 func pruneMessages(messages []Message) []map[string]any {
 	pruned := make([]map[string]any, 0)
 	for _, message := range messages {
@@ -259,6 +266,7 @@ func pruneMessages(messages []Message) []map[string]any {
 	return pruned
 }
 
+// pruneContent prunes the content of a message for comparison.
 func pruneContent(content []Part) []map[string]any {
 	pruned := make([]map[string]any, 0)
 	for _, part := range content {
@@ -296,6 +304,7 @@ func pruneContent(content []Part) []map[string]any {
 	return pruned
 }
 
+// pruneSchema prunes a schema for comparison.
 func pruneSchema(t *testing.T, schema Schema) map[string]any {
 	schemaMap := make(map[string]any)
 	schemaBytes, _ := yaml.Marshal(schema)
@@ -305,6 +314,7 @@ func pruneSchema(t *testing.T, schema Schema) map[string]any {
 	return schemaMap
 }
 
+// compareResults compares the result and expected output.
 func compareResults(result, expected map[string]any) bool {
 	resultJSON, _ := json.Marshal(result)
 	expectedJSON, _ := json.Marshal(expected)

@@ -77,6 +77,9 @@ func trimUnicodeSpacesExceptNewlines(s string) string {
 	})
 }
 
+// createDeepCopy creates a deep copy of a JSONSchema object.
+// It recursively copies all nested maps and slices to ensure that
+// modifications to the copy do not affect the original object.
 func createDeepCopy(obj JSONSchema) JSONSchema {
 	copy := make(map[string]any)
 	for k, v := range obj {
@@ -85,6 +88,8 @@ func createDeepCopy(obj JSONSchema) JSONSchema {
 	return copy
 }
 
+// deepCopyValue creates a deep copy of a value.
+// It handles nested maps and slices by recursively copying them.
 func deepCopyValue(value any) any {
 	switch v := value.(type) {
 	case map[string]any:
