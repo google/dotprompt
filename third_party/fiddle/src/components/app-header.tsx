@@ -10,6 +10,7 @@ import {
   Loader2,
   Sparkles,
   Share2,
+  GitFork,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SidebarTrigger } from '@/components/ui/sidebar.tsx';
@@ -28,6 +29,7 @@ interface AppHeaderProps {
   onPublish: () => Promise<string | null>;
   onRun: () => Promise<void>;
   onOpenPromptGenerator: () => void;
+  onFork: () => void;
 }
 
 export function AppHeader({
@@ -43,6 +45,7 @@ export function AppHeader({
   onPublish,
   onRun,
   onOpenPromptGenerator,
+  onFork,
 }: AppHeaderProps) {
   return (
     <div className="flex border-b p-2">
@@ -100,6 +103,17 @@ export function AppHeader({
         >
           <Share2 className="w-4 h-4 text-teal-500" />
           Share
+        </Button>
+      )}
+      {fiddle?.id && (
+        <Button
+          variant="outline"
+          className="text-s px-3 py-2 mr-2"
+          onClick={onFork}
+          title="Create a copy of this fiddle"
+        >
+          <GitFork className="w-4 h-4 text-purple-500" />
+          Fork
         </Button>
       )}
       {isOwner && hasChanges && (

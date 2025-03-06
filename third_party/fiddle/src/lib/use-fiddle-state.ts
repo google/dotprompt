@@ -49,6 +49,7 @@ interface UseFiddleResult {
   hasChanges: boolean;
   draftSaved: boolean;
   updateDraft: (updatedFiddle: Fiddle) => void;
+  updateStoredDraft: (fiddle: Fiddle) => boolean;
   publish: () => Promise<string | undefined>;
 }
 
@@ -57,6 +58,24 @@ const DEFAULT_FIDDLE_PROMPT = {
   source: `{{! your prompt goes here }}`,
 };
 
+const DRAFT_STORAGE_KEY = 'fiddle_draft';
+function loadLocalDraft() {
+  try {
+    const storedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (storedDraft) {
+      return JSON.parse(storedDraft);
+    }
+  } catch (error) {
+    console.error('Error reading draft from localStorage:', error);
+  }
+
+  // If no stored draft or error, create a new default fiddle
+  return {
+    name: 'Untitled Prompt',
+    prompts: [DEFAULT_FIDDLE_PROMPT],
+  };
+}
+
 export function useFiddle(
   id?: string | null,
   promptName?: string | null,
@@ -64,12 +83,9 @@ export function useFiddle(
   // Get current user
   const { data: currentUser } = useUser();
 
-  // If no ID is provided, use empty strings for paths but return no-ops
-  const effectiveId = id || '';
-
   // Load published data - always call hooks in the same order
   const { data: published, isLoading: publishedLoading } =
-    useDoc<Fiddle | null>(effectiveId ? `fiddles/${effectiveId}` : '');
+    useDoc<Fiddle | null>(id ? `fiddles/${id}` : '');
 
   // Load draft if owner - always call hooks in the same order
   const {
@@ -77,28 +93,19 @@ export function useFiddle(
     isLoading: draftLoading,
     update: updateDraftRaw,
   } = useDoc<Fiddle | null>(
-    effectiveId ? `fiddles/${effectiveId}/versions/draft` : '',
+    id ? `fiddles/${id}/versions/draft` : '',
     () => id || '',
   );
 
   // Initialize local draft state - used for both local-only fiddles and Firebase drafts
-  const [draft, setLocalDraft] = useState<Fiddle | null>(() => {
-    // If no ID is provided, create a new in-memory fiddle with default prompt
-    if (!id) {
-      return {
-        name: 'Untitled Prompt',
-        prompts: [DEFAULT_FIDDLE_PROMPT],
-      };
-    }
-    return null;
-  });
+  const [draft, setLocalDraft] = useState<Fiddle | null>(null);
 
   const isLocalUpdate = useRef(false);
 
-  useEffect(() => {
-    // Skip this effect for local-only fiddles (no ID)
-    if (!id) return;
+  // Track previous ID to detect changes
+  const prevIdRef = useRef<string | null | undefined>(id);
 
+  useEffect(() => {
     // Only update from savedDraft if it exists and it's not a local update
     if (savedDraft && !isLocalUpdate.current) {
       setLocalDraft(savedDraft);
@@ -110,22 +117,21 @@ export function useFiddle(
       // Only reset the flag if it was a local update
       isLocalUpdate.current = false;
     }
+
+    // Update the previous ID reference
+    prevIdRef.current = id;
   }, [savedDraft, id]);
 
-  const isLoading = useMemo(() => {
-    return publishedLoading || draftLoading;
-  }, [publishedLoading, draftLoading]);
-  // Determine ownership - for published fiddles, owner must match
-  // For drafts, anyone with the ID can edit
-  const isOwner = useMemo(() => {
-    if (isLoading) return false;
-    // For published fiddles, require authentication and ownership
-    if (published) {
-      return currentUser?.uid === published.owner;
+  useEffect(() => {
+    if (!id) {
+      console.log('RESETTING LOCAL DRAFT TO:', loadLocalDraft());
+      setLocalDraft(loadLocalDraft());
     }
-    // For drafts, anyone can edit if they have the ID
-    return true;
-  }, [currentUser, published, isLoading]);
+  }, [id]);
+
+  const isLoading = publishedLoading || draftLoading;
+  const isOwner =
+    !isLoading && (!published || published.owner === currentUser?.uid);
 
   // Compare draft with published version to check for unpublished changes
   const { hasChanges, draftSaved } = useMemo(() => {
@@ -153,6 +159,22 @@ export function useFiddle(
 
   const saveDraft = useDebouncedCallback(updateDraftRaw, 700);
 
+  // Create a debounced function for saving to localStorage
+  const saveToLocalStorage = useDebouncedCallback((draftToSave: Fiddle) => {
+    try {
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftToSave));
+    } catch (error) {
+      console.error('Error saving draft to localStorage:', error);
+    }
+  }, 700); // Use the same debounce time as for Firestore
+
+  // Effect to save draft to localStorage when it changes (only for local-only fiddles)
+  useEffect(() => {
+    if (!id && draft) {
+      saveToLocalStorage(draft);
+    }
+  }, [id, draft, saveToLocalStorage]);
+
   const updateDraft = useCallback(
     async (fiddle: Fiddle) => {
       console.log('updateDraft called', {
@@ -161,12 +183,9 @@ export function useFiddle(
         isLocalUpdate: isLocalUpdate.current,
       });
 
-      // For local-only fiddles (no ID), just update the local state
+      // For local-only fiddles (no ID), update the local state and localStorage
       if (!id) {
-        // Use functional update to ensure state is updated correctly
-        setLocalDraft((prevDraft) => {
-          return fiddle;
-        });
+        setLocalDraft(fiddle);
         return;
       }
 
@@ -190,6 +209,24 @@ export function useFiddle(
     },
     [id],
   );
+
+  // Function to update the stored draft in localStorage
+  const updateStoredDraft = useCallback((fiddle: Fiddle) => {
+    try {
+      // Create a copy of the fiddle without the ID
+      const storedFiddle = {
+        ...fiddle,
+        id: undefined, // Remove the ID
+      };
+
+      // Save to localStorage
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(storedFiddle));
+      return true;
+    } catch (error) {
+      console.error('Error saving fiddle to localStorage:', error);
+      return false;
+    }
+  }, []);
 
   // Publish draft to published version
   const publish = useCallback(async () => {
@@ -222,6 +259,9 @@ export function useFiddle(
 
     // If this is a new fiddle (no ID), update the URL
     if (!id) {
+      // Clear localStorage since we're publishing a previously local-only fiddle
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+
       // If there are prompts, include the first one in the URL
       if (draft.prompts && draft.prompts.length > 0) {
         const firstPromptName = draft.prompts[0].name;
@@ -277,6 +317,7 @@ export function useFiddle(
     hasChanges: isOwner ? hasChanges : false,
     draftSaved: isOwner ? draftSaved : true,
     updateDraft,
+    updateStoredDraft,
     publish,
   };
 }

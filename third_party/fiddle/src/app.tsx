@@ -22,13 +22,27 @@ import { DataInputEditor } from './components/data-input-editor.tsx';
 import { OutputPreview } from './components/output-preview.tsx';
 import { AppLayout } from './components/app-layout.tsx';
 
-import { useFiddleRouting } from './hooks/use-fiddle-routing.ts';
+import { useParams, useNavigate } from 'react-router-dom';
 import { usePromptSelection } from './hooks/use-prompt-selection.ts';
 import { useExampleManagement } from './hooks/use-example-management.ts';
 
 function App() {
-  // Use our custom routing hook
-  const { fiddleId, setFiddleId, urlPromptName } = useFiddleRouting();
+  // Use TanStack Router hooks for routing
+  const params = useParams();
+  const navigate = useNavigate();
+
+  // Extract fiddleId and promptName from route params
+  const fiddleId = params.fiddleId || null;
+  const urlPromptName = params.promptName || null;
+
+  // Function to update the URL when fiddleId changes
+  const setFiddleId = (newFiddleId: string | null) => {
+    if (newFiddleId) {
+      navigate(`/${newFiddleId}`);
+    } else {
+      navigate('/');
+    }
+  };
 
   // UI state
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -53,6 +67,7 @@ function App() {
     draftSaved,
     hasChanges,
     updateDraft: updateDraftRaw,
+    updateStoredDraft,
     publish,
   } = useFiddle(fiddleId, urlPromptName);
 
@@ -78,12 +93,10 @@ function App() {
   };
 
   // Always show draft if available, otherwise show published
-  const fiddle = useMemo(() => {
-    if (draft) {
-      return draft;
-    }
-    return published;
-  }, [draft, published, fiddleId, isLoading]);
+  const fiddle = draft || published;
+  useEffect(() => {
+    console.log('FIDDLE:', fiddle?.name, fiddle?.id);
+  }, [fiddle]);
 
   // Use our custom hooks
   const { selectedPrompt, setSelectedPrompt, currentPrompt } =
@@ -458,6 +471,13 @@ function App() {
     }
   };
 
+  const handleFork = () => {
+    if (fiddle) {
+      updateStoredDraft({ ...fiddle, name: fiddle.name + ' (Fork)' });
+      window.location.href = '/';
+    }
+  };
+
   return (
     <SidebarProvider>
       <Toaster />
@@ -497,6 +517,7 @@ function App() {
             }}
             onRun={handleRunPrompt}
             onOpenPromptGenerator={() => setDialogOpen(true)}
+            onFork={handleFork}
           />
         }
         promptEditorContent={

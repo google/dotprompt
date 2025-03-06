@@ -49,9 +49,10 @@ export default function MessageCard({ message }: { message: Message }) {
       <h4 className="uppercase text-xs text-primary-foreground opacity-70 mb-1">
         {message.role}
       </h4>
-      {textAndMedia.map((p) =>
+      {textAndMedia.map((p, i) =>
         p.text ? (
           <Markdown
+            key={i}
             className={
               'prose dark:prose-invert text-inherit prose-strong:text-inherit prose-sm prose-pre:bg-black prose-pre:text-white prose-li:ps-0 prose-li:m-0 prose-p:mb-1 prose-ul:mt-2 max-w-full'
             }
@@ -60,6 +61,7 @@ export default function MessageCard({ message }: { message: Message }) {
           </Markdown>
         ) : (
           <img
+            key={i}
             className="max-w-96 max-h-96 object-contain rounded-lg my-4"
             src={p.media!.url}
           />
