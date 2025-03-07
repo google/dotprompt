@@ -5,7 +5,7 @@ import { Fiddle } from '../types';
 import { useDebouncedCallback } from './use-debounced-callback.ts';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { generateUniqueId } from '../utils.ts';
-import { db } from './firebase.ts';
+import { db, logEvent } from './firebase.ts';
 
 /**
  * Compares two fiddles for equality based on their content
@@ -236,6 +236,7 @@ export function useFiddle(
     // Generate ID if needed
     const effectiveId = id || generateUniqueId(10);
 
+    logEvent('publish_fiddle', { id: effectiveId });
     // Copy draft to published and set owner
     await setDoc(
       doc(db, `fiddles/${effectiveId}`),

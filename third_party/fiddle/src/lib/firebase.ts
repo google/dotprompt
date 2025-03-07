@@ -1,6 +1,11 @@
 // Import the functions you need from the SDKs you need
 import { FirebaseError, initializeApp } from 'firebase/app';
-import { getAnalytics } from 'firebase/analytics';
+import {
+  Analytics,
+  getAnalytics,
+  logEvent as analyticsLogEvent,
+  setUserId,
+} from 'firebase/analytics';
 import { getFirestore } from 'firebase/firestore';
 import {
   getAuth,
@@ -12,7 +17,6 @@ import {
   signOut as signOutRaw,
   signInWithCredential,
   UserCredential,
-  updateCurrentUser,
   updateProfile,
 } from 'firebase/auth';
 
@@ -28,25 +32,29 @@ const firebaseConfig = {
 
 // Initialize Firebase
 export const app = initializeApp(firebaseConfig);
-export const analytics = getAnalytics(app);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
 export async function signIn() {
   const provider = new GoogleAuthProvider();
   const user = auth.currentUser;
 
   if (user?.isAnonymous) {
     let credential: UserCredential | undefined;
+    let linkConflict = false;
     try {
       credential = await linkWithPopup(user, provider);
     } catch (e) {
       if (e instanceof FirebaseError) {
+        linkConflict = true;
         const googleCredential = GoogleAuthProvider.credentialFromError(e);
         if (googleCredential) {
           credential = await signInWithCredential(auth, googleCredential);
         }
       }
     }
+
+    logEvent('sign_in', { conflict: linkConflict });
 
     if (credential) {
       const googInfo = credential.user.providerData.find(
@@ -64,9 +72,23 @@ export async function signIn() {
   return signInWithPopup(auth, provider);
 }
 export function signOut() {
+  logEvent('sign_out');
   return signOutRaw(auth);
+}
+
+let analytics: Analytics;
+if (typeof window !== 'undefined') {
+  analytics = getAnalytics(app);
 }
 
 onAuthStateChanged(auth, (user) => {
   if (!user) return signInAnonymously(auth);
+  setUserId(analytics, user.uid);
 });
+export function logEvent(name: string, props?: Record<string, any>) {
+  if (!analytics) analytics = getAnalytics(app);
+  analyticsLogEvent(analytics, name, props);
+}
+export function setCurrentScreen(name: string) {
+  if (!analytics) analytics = getAnalytics(app);
+}

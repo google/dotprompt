@@ -15,6 +15,7 @@ import {
 import { toast } from 'sonner';
 import { SidebarTrigger } from '@/components/ui/sidebar.tsx';
 import { Fiddle } from '../types';
+import { logEvent } from '@/lib/firebase.ts';
 
 interface AppHeaderProps {
   fiddle: Fiddle | null;
@@ -95,6 +96,7 @@ export function AppHeader({
           variant="outline"
           className="text-s px-3 py-2 mr-2"
           onClick={() => {
+            logEvent('share_button', { id: fiddle?.id });
             // Copy the current URL to clipboard
             navigator.clipboard.writeText(window.location.href);
             // Show toast notification

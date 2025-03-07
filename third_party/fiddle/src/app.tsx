@@ -25,6 +25,7 @@ import { AppLayout } from './components/app-layout.tsx';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePromptSelection } from './hooks/use-prompt-selection.ts';
 import { useExampleManagement } from './hooks/use-example-management.ts';
+import { logEvent } from './lib/firebase.ts';
 
 function App() {
   // Use TanStack Router hooks for routing
@@ -473,6 +474,7 @@ function App() {
 
   const handleFork = () => {
     if (fiddle) {
+      logEvent('fork', { id: fiddle.id });
       updateStoredDraft({ ...fiddle, name: fiddle.name + ' (Fork)' });
       window.location.href = '/';
     }
