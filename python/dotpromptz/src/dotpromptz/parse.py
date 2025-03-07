@@ -339,9 +339,11 @@ def message_sources_to_messages(
         if m.content or m.source:
             message = Message(
                 role=m.role,
-                content=m.content
-                if m.content is not None
-                else to_parts(m.source or ''),
+                content=(
+                    m.content
+                    if m.content is not None
+                    else to_parts(m.source or '')
+                ),
             )
 
             if m.metadata:
