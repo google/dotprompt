@@ -5,10 +5,13 @@
 
 import { SafeString } from 'handlebars';
 
-export function json(
-  serializable: any,
-  options: { hash: { indent?: number } }
-) {
+export interface JSONHelperOptions {
+  hash: {
+    indent?: number;
+  };
+}
+
+export function json(serializable: any, options: JSONHelperOptions) {
   return new SafeString(
     JSON.stringify(serializable, null, options.hash.indent || 0)
   );
