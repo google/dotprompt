@@ -4,158 +4,131 @@
 """Handlebars helper functions for dotprompt."""
 
 import json
+from collections.abc import Callable
+from typing import Any
 
-from handlebarz import HelperCallable, RenderCallable
+from handlebars import Handlebars
 
-# TODO: All of these implementations are subject to change. I have included only
-# a basic implementation for now since I couldn't get the handlebars library to
-# work, I've used a stub in its place.
-#
-# TODO: Do we need a "SafeString" in Python to wrap the rendered output returned
-# by these helpers?
+from dotpromptz.safe_string import SafeString
+
+RenderCallable = Callable[[str], str]
+RendererCallable = Callable[[dict[str, Any]], str]
 
 
-def register_helpers(env: dict[str, HelperCallable]) -> None:
-    """Register all dotprompt helpers with the Handlebars environment.
+def render(template: str, data: dict[str, Any]) -> str:
+    """Render a template with the given data.
 
     Args:
-        env: Dictionary of helper functions to register.
+        template: The template to render.
+        data: The data to render the template with.
 
     Returns:
-        None
+        The rendered template.
     """
-    env['json'] = json_helper
-    env['role'] = role_helper
-    env['history'] = history_helper
-    env['section'] = section_helper
-    env['media'] = media_helper
-    env['ifEquals'] = if_equals_helper
-    env['unlessEquals'] = unless_equals_helper
+    renderer: RendererCallable = Handlebars.compile(template)
+    return renderer(data)
 
 
-def json_helper(
-    text: str, render: RenderCallable, indent: int | None = None
-) -> str:
+def register_helpers() -> None:
+    """Register the helper functions with the Handlebars object."""
+    Handlebars.registerHelper('json', json_helper)
+    Handlebars.registerHelper('role', role_helper)
+    Handlebars.registerHelper('history', history_helper)
+    Handlebars.registerHelper('section', section_helper)
+    Handlebars.registerHelper('media', media_helper)
+    Handlebars.registerHelper('ifEquals', if_equals_helper)
+    Handlebars.registerHelper('unlessEquals', unless_equals_helper)
+
+
+def json_helper(serializable: Any, options: dict) -> SafeString:
     """Serialize a value to JSON with optional indentation.
 
     Args:
-        text: The text to parse as JSON.
-        render: Function to render the template.
-        indent: Optional indentation level.
+        serializable: The value to serialize to JSON.
+        options: Dictionary of options.
 
     Returns:
         JSON string representation of the value.
     """
-    try:
-        value = json.loads(render(text))
-        if isinstance(indent, int):
-            return json.dumps(value, indent=indent)
-        return json.dumps(value)
-    except Exception as e:
-        return f'Error serializing JSON: {e}'
+    indent = options.get('hash', {}).get('indent', 0)
+    return SafeString(json.dumps(serializable, indent=indent))
 
 
-def role_helper(text: str, render: RenderCallable) -> str:
+def role_helper(role: str) -> SafeString:
     """Generate a role marker.
 
     Args:
-        text: The role name.
-        render: Function to render the template.
+        role: The role name.
 
     Returns:
         Role marker string.
     """
-    role = render(text)
-    return f'<<<dotprompt:role:{role}>>>'
+    return SafeString(f'<<<dotprompt:role:{role}>>>')
 
 
-def history_helper(text: str, render: RenderCallable) -> str:
+def history_helper() -> SafeString:
     """Generate a history marker.
-
-    Args:
-        text: The text to render.
-        render: Function to render the template.
 
     Returns:
         History marker string.
     """
-    return '<<<dotprompt:history>>>'
+    return SafeString('<<<dotprompt:history>>>')
 
 
-def section_helper(text: str, render: RenderCallable) -> str:
+def section_helper(name: str) -> SafeString:
     """Generate a section marker.
 
     Args:
-        text: The section name.
-        render: Function to render the template.
+        name: The section name.
 
     Returns:
         Section marker string.
     """
-    name = render(text)
-    return f'<<<dotprompt:section {name}>>>'
+    return SafeString(f'<<<dotprompt:section {name}>>>')
 
 
-def media_helper(text: str, render: RenderCallable) -> str:
-    """Generate a media marker.
+def media_helper(options: dict) -> SafeString:
+    """Generate a media marker.'
 
     Args:
-        text: The media URL and optional content type.
-        render: Function to render the template.
+        context: The context of the media.
+        options: Dictionary of options.
 
     Returns:
         Media marker string.
     """
-    parts = render(text).split()
-    url = parts[0]
-    content_type = parts[1] if len(parts) > 1 else None
-
-    if content_type is not None:
-        return f'<<<dotprompt:media:url {url} {content_type}>>>'
-    return f'<<<dotprompt:media:url {url}>>>'
+    obj = options.get('hash', {})
+    url = obj.get('url', '')
+    content_type = obj.get('contentType', '')
+    content_type_padded = f' {content_type}' if content_type else ''
+    return SafeString(f'<<<dotprompt:media:url {url}{content_type_padded}>>>')
 
 
-def if_equals_helper(text: str, render: RenderCallable) -> str:
+def if_equals_helper(this: Any, arg1: Any, arg2: Any, options: dict) -> str:
     """Compare two values and render the block if they are equal.
 
     Args:
-        text: The values to compare and template to render.
-        render: Function to render the template.
+        this: The context of the template.
+        arg1: The first value to compare.
+        arg2: The second value to compare.
+        options: Dictionary of options.
 
     Returns:
         Rendered content based on comparison.
     """
-    parts = text.split('|')
-    if len(parts) != 3:
-        return ''
-
-    arg1 = render(parts[0].strip())
-    arg2 = render(parts[1].strip())
-    template = parts[2].strip()
-
-    if arg1 == arg2:
-        return render(template)
-    return ''
+    return options['fn'](this) if arg1 == arg2 else options['inverse'](this)
 
 
-def unless_equals_helper(text: str, render: RenderCallable) -> str:
+def unless_equals_helper(this: Any, arg1: Any, arg2: Any, options: dict) -> str:
     """Compare two values and render the block if they are not equal.
 
     Args:
-        text: The values to compare and template to render.
-        render: Function to render the template.
+        this: The context of the template.
+        arg1: The first value to compare.
+        arg2: The second value to compare.
+        options: Dictionary of options.
 
     Returns:
         Rendered content based on comparison.
     """
-    parts = text.split('|')
-    if len(parts) != 3:
-        return ''
-
-    arg1 = render(parts[0].strip())
-    arg2 = render(parts[1].strip())
-    template = parts[2].strip()
-
-    if arg1 != arg2:
-        return render(template)
-    return ''
+    return options['fn'](this) if arg1 != arg2 else options['inverse'](this)
