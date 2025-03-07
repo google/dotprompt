@@ -5,444 +5,294 @@ SPDX-License-Identifier: Apache-2.0
 """
 
 import asyncio
-from collections.abc import Awaitable, Callable
+import json
+import re
 from typing import (
     TYPE_CHECKING,
     Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Set,
     TypeVar,
+    Union,
+    cast,
 )
 
 from handlebars import Handlebars  # type: ignore
 
-from dotpromptz.helpers import register_helpers
-from dotpromptz.parse import to_messages
+from dotpromptz.typing import ToolDefinition as BaseToolDefinition
 
-# ---------------------------------------------------------------------------
-# external dependencies and helper functions/types
-# ---------------------------------------------------------------------------
+from . import helpers, picoschema
+from .helpers import hbs
+from .parse import parse_document, to_messages
+from .util import remove_undefined_fields
 
-# Type definitions
-DataArgument = dict[str, Any]
-JSONSchema = dict[str, Any]
-ParsedPrompt = dict[str, Any]
-PromptMetadata = dict[str, Any]
-RenderedPrompt = dict[str, Any]
+# Import the necessary modules
+# from .helpers import *
+# from .parse import parse_document, to_messages
+# from .picoschema import picoschema
+# from .util import remove_undefined_fields
 
-# Generic type variables for templates
-Variables = TypeVar('Variables', bound=dict[str, Any])
-ModelConfig = TypeVar('ModelConfig', bound=dict[str, Any])
+T = TypeVar('T')
+ModelConfig = TypeVar('ModelConfig', bound=Dict[str, Any])
+Variables = TypeVar('Variables', bound=Dict[str, Any])
 
-if TYPE_CHECKING:
-    pass
-
-
-# ToolDefinition type as a dataclass
-class ToolDefinition:
-    def __init__(self, name: str, **kwargs: Any):
-        self.name = name
-        self.__dict__.update(kwargs)
-
-
-# Type aliases for resolvers and prompt functions
-ToolResolver = Callable[[str], Awaitable[ToolDefinition | None]]
-SchemaResolver = Callable[[str], Awaitable[JSONSchema | None]]
-PartialResolver = Callable[[str], str | None | Awaitable[str | None]]
-PromptFunction = Callable[
-    [DataArgument, PromptMetadata | None], Awaitable[RenderedPrompt]
-]
-PromptStore = Any  # This should implement a method loadPartial(name: str) returning an object with a 'source' attribute.
-
-
-async def picoschema(schema: Any, options: dict[str, Any]) -> Any:
-    """
-    Asynchronously process a schema using picoschema.
-    """
-    # In a full implementation, this would validate or transform the schema.
-    return schema
-
-
-def parseDocument(source: str) -> ParsedPrompt:
-    """
-    Parses a document containing YAML frontmatter and template content.
-
-    Args:
-        source: The source document containing frontmatter and template
-
-    Returns:
-        Parsed prompt with metadata and template content
-    """
-    # Dummy implementation: return a dict with template set to source.
-    return {'template': source}
-
-
-def removeUndefinedFields(obj: dict[str, Any]) -> dict[str, Any]:
-    """
-    Removes keys with value None from the dictionary.
-
-    Args:
-        obj: The dictionary to be cleaned.
-
-    Returns:
-        A new dictionary with keys having non-None values.
-    """
-    return {k: v for k, v in obj.items() if v is not None}
-
-
-# ---------------------------------------------------------------------------
-# DotpromptOptions type definition as a simple dictionary type.
-# ---------------------------------------------------------------------------
-
+ToolDefinition = BaseToolDefinition
 
 class DotpromptOptions:
-    """
-    Options for configuring the Dotprompt engine.
-
-    Attributes:
-        defaultModel: A default model to use if none is supplied.
-        modelConfigs: A mapping of model names to their default configuration objects.
-        helpers: A mapping of helper names to their helper functions.
-        partials: A mapping of partial names to template strings.
-        tools: A mapping of tool names to their tool definitions.
-        toolResolver: A function to resolve tool names into tool definitions.
-        schemas: A mapping of schema names to JSON Schema definitions.
-        schemaResolver: A function to resolve schema names into JSON Schema definitions.
-        partialResolver: A function to resolve partial names to their content.
-    """
-
     def __init__(
         self,
-        defaultModel: str | None = None,
-        modelConfigs: dict[str, object] | None = None,
-        helpers: dict[str, Callable[..., Any]] | None = None,
-        partials: dict[str, str] | None = None,
-        tools: dict[str, ToolDefinition] | None = None,
-        toolResolver: ToolResolver | None = None,
-        schemas: dict[str, JSONSchema] | None = None,
-        schemaResolver: SchemaResolver | None = None,
-        partialResolver: PartialResolver | None = None,
-    ) -> None:
-        self.defaultModel = defaultModel
-        self.modelConfigs = modelConfigs or {}
+        default_model: Optional[str] = None,
+        model_configs: Optional[Dict[str, Dict[str, Any]]] = None,
+        schemas: Optional[Dict[str, Dict[str, Any]]] = None,
+        tools: Optional[Dict[str, Any]] = None,
+        tool_resolver: Optional[Callable[[str], Any]] = None,
+        schema_resolver: Optional[Callable[[str], Dict[str, Any]]] = None,
+        partial_resolver: Optional[Callable[[str], str]] = None,
+        helpers: Optional[Dict[str, Callable]] = None,
+        partials: Optional[Dict[str, str]] = None
+    ):
+        self.default_model = default_model
+        self.model_configs = model_configs or {}
+        self.schemas = schemas or {}
+        self.tools = tools or {}
+        self.tool_resolver = tool_resolver
+        self.schema_resolver = schema_resolver
+        self.partial_resolver = partial_resolver
         self.helpers = helpers or {}
         self.partials = partials or {}
-        self.tools = tools or {}
-        self.toolResolver = toolResolver
-        self.schemas = schemas or {}
-        self.schemaResolver = schemaResolver
-        self.partialResolver = partialResolver
-
-
-# ---------------------------------------------------------------------------
-# Dotprompt class implementation
-# ---------------------------------------------------------------------------
-
 
 class Dotprompt:
-    """
-    A class to handle prompt rendering, helpers, partials, and metadata.
-    """
+    #partial_resolver: Callable[[str], str] | None
 
-    def __init__(self, options: DotpromptOptions | None = None) -> None:
-        """
-        Initializes a new instance of Dotprompt.
+    def __init__(self, options: Optional[DotpromptOptions] = None):
+        options = options or DotpromptOptions()
+        self.handlebars = hbs  # Use the updated Handlebars instance from helpers
+        self.known_helpers = {}
+        self.store = {}
+        self.default_model = options.default_model
+        self.model_configs = options.model_configs
+        self.tools = options.tools
+        self.tool_resolver = options.tool_resolver
+        self.schemas = options.schemas
+        self.schema_resolver = options.schema_resolver
+        self.partial_resolver = options.partial_resolver
+        custom_helpers = options.helpers
+        custom_partials = options.partials
 
-        Args:
-            options: An optional DotpromptOptions object for configuration.
-        """
+        # Register custom helpers
+        if custom_helpers:
+            for key, helper in custom_helpers.items():
+                self.handlebars.helpers[key] = helper
 
-        self.handlebars = Handlebars
-        self.knownHelpers: dict[str, bool] = {}
-        self.defaultModel: str | None = None
-        self.modelConfigs: dict[str, object] = {}
-        self.tools: dict[str, ToolDefinition] = {}
-        self.toolResolver: ToolResolver | None = None
-        self.schemas: dict[str, JSONSchema] = {}
-        self.schemaResolver: SchemaResolver | None = None
-        self.partialResolver: PartialResolver | None = None
-        self.store: PromptStore | None = None
+        # Register partials
+        if custom_partials:
+            for key, partial in custom_partials.items():
+                self.handlebars.partials[key] = partial
 
-        if options:
-            self.modelConfigs = options.modelConfigs or self.modelConfigs
-            self.defaultModel = options.defaultModel
-            self.tools = options.tools or {}
-            self.toolResolver = options.toolResolver
-            self.schemas = options.schemas or {}
-            self.schemaResolver = options.schemaResolver
-            self.partialResolver = options.partialResolver
+    async def render(self, source: str, data=None, options=None) -> str:
+        """Render the template with provided data."""
+        data = data or {}
+        compiled_template = self.resolve_partials(source)
 
-        # Register default helpers from the helpers module.
-        # for key, helper_func in helpers.items():
-        #     self.defineHelper(key, helper_func)
+        # Ensure the data is converted to a standard Python dict if needed
+        if hasattr(data, "to_dict"):
+            data = data.to_dict()
 
-        # Register additional helpers if provided.
-        if options and options.helpers:
-            for key, helper_func in options.helpers.items():
-                self.defineHelper(key, helper_func)
+        return compiled_template(data)
 
-        # Register built-in helpers
-        register_helpers(self.handlebars)
 
-        # Register partials if provided.
-        if options and options.partials:
-            for key in options.partials:
-                self.definePartial(key, options.partials[key])
-
-    def render(
-        self, template: str, data: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
-        compiled = self.handlebars.compile(template)
-        rendered = compiled(data or {})
-        messages = to_messages(rendered, data or {})
-        return {'messages': messages, 'raw': rendered}
-
-    def defineHelper(self, name: str, fn: Callable[..., Any]) -> 'Dotprompt':
-        """
-        Registers a helper function and marks it as known.
-
-        Args:
-            name: The name of the helper.
-            fn: The helper function.
-
-        Returns:
-            The current instance for chaining.
-        """
-        self.handlebars.register_helper(name, fn)
-        self.knownHelpers[name] = True
+    def define_tool(self, def_: Dict[str, Any]) -> "Dotprompt":
+        self.tools[def_["name"]] = def_
         return self
 
-    def definePartial(self, name: str, source: str) -> 'Dotprompt':
-        """
-        Registers a partial template with Handlebars.
-
-        Args:
-            name: The name of the partial.
-            source: The template source for the partial.
-
-        Returns:
-            The current instance for chaining.
-        """
-        self.handlebars.registerPartial(name, source)
+    def define_helper(self, name: str, fn: Callable):
+        self.handlebars.register(name, fn)
+        self.known_helpers[name] = True
         return self
 
-    def defineTool(self, defn: ToolDefinition) -> 'Dotprompt':
-        """
-        Registers a tool definition.
-
-        Args:
-            defn: The tool definition.
-
-        Returns:
-            The current instance for chaining.
-        """
-        self.tools[defn.name] = defn
+    def define_partial(self, name: str, source: str):
+        self.handlebars.register_partial(name, source)
         return self
 
-    def parse(self, source: str) -> ParsedPrompt:
-        """
-        Parses a document containing YAML frontmatter and template content.
+    async def resolve_partials(self, template: str):
+        """Ensure the function returns an awaitable."""
+        resolved = self._resolve_partials(template)
 
-        Args:
-            source: The source document containing frontmatter and template.
+        # Convert JsObjectWrapper to a Python string (if needed)
+        if hasattr(resolved, "to_python"):
+            return resolved.to_python()
 
-        Returns:
-            A parsed prompt containing metadata and template content.
-        """
-        return parseDocument(source)
+        return resolved
 
-    async def renderMetadata(
-        self, base: PromptMetadata, *merges: PromptMetadata | None
-    ) -> PromptMetadata:
-        """
-        Merges multiple metadata objects and resolves tools and schemas.
+    def _resolve_partials(self, template: str) -> Any:
+        """Resolve all partials in the template."""
+        # Identify all partials used in the template
+        partials = self.identify_partials(template)
 
-        Args:
-            base: The base metadata.
-            merges: Additional metadata objects for merging.
+        # Resolve each partial if needed
+        for partial_name in partials:
+            if partial_name not in self.handlebars.partials:
+                if self.partial_resolver:
+                    partial_content = asyncio.run(
+                        self.partial_resolver(partial_name))
+                    if partial_content:
+                        self.handlebars.partials[partial_name] = partial_content
 
-        Returns:
-            The fully resolved metadata.
-        """
+        # Compile the template with resolved partials
+        return self.handlebars.compile(template)
+
+    def parse(self, source: str) -> Dict[str, Any]:
+        return parse_document(source)
+
+    async def render_picoschema(self, meta: Dict[str, Any]) -> Dict[str, Any]:
+        if not (
+            meta.get('output', {}).get('schema') or meta.get('input', {}).get(
+            'schema')):
+            return meta
+
+        new_meta = meta.copy()
+
+        if meta.get('input', {}).get('schema'):
+            new_meta['input'] = {
+                **(meta.get('input', {})),
+                'schema': await picoschema(meta['input']['schema'], {
+                    'schema_resolver': self.wrapped_schema_resolver
+                })
+            }
+
+        if meta.get('output', {}).get('schema'):
+            new_meta['output'] = {
+                **(meta.get('output', {})),
+                'schema': await picoschema(meta['output']['schema'], {
+                    'schema_resolver': self.wrapped_schema_resolver
+                })
+            }
+
+        return new_meta
+
+    async def wrapped_schema_resolver(self, name: str) -> Optional[
+        Dict[str, Any]]:
+        if name in self.schemas:
+            return self.schemas[name]
+        if self.schema_resolver:
+            return await self.schema_resolver(name)
+        return None
+
+    async def resolve_metadata(self, base: Dict[str, Any], *merges) -> Dict[str, Any]:
         out = base.copy()
         for merge in merges:
-            if not merge:
-                continue
-            config = out.get('config', {})
-            out = {**out, **merge}
-            out['config'] = {**config, **(merge.get('config') or {})}
-            if 'template' in out:
-                del out['template']
-        out = removeUndefinedFields(out)
-        out = await self._resolveTools(out)
-        return out
+            if merge:
+                out.update(merge)
+        return remove_undefined_fields(out)
 
-    async def _resolveTools(self, base: PromptMetadata) -> PromptMetadata:
-        """
-        Resolves tool definitions based on tool names present in metadata.
 
-        Args:
-            base: The base prompt metadata.
-
-        Returns:
-            The metadata with resolved tool definitions.
-        """
+    async def resolve_tools(self, base: Dict[str, Any]) -> Dict[str, Any]:
         out = base.copy()
+
         if out.get('tools'):
-            outTools: list[str] = []
-            out['toolDefs'] = out.get('toolDefs', [])
+            out_tools = []
+            out['tool_defs'] = out.get('tool_defs', [])
 
-            async def resolve_tool(toolName: str) -> None:
-                if toolName in self.tools:
-                    out['toolDefs'].append(self.tools[toolName])
-                elif self.toolResolver:
-                    resolvedTool = await self.toolResolver(toolName)
-                    if not resolvedTool:
+            for tool_name in out['tools']:
+                if tool_name in self.tools:
+                    out['tool_defs'].append(self.tools[tool_name])
+                elif self.tool_resolver:
+                    resolved_tool = await self.tool_resolver(tool_name)
+                    if not resolved_tool:
                         raise Exception(
-                            f"Dotprompt: Unable to resolve tool '{toolName}' to a recognized tool definition."
-                        )
-                    out['toolDefs'].append(resolvedTool)
+                            f"Dotprompt: Unable to resolve tool '{tool_name}' to a recognized tool definition.")
+                    out['tool_defs'].append(resolved_tool)
                 else:
-                    outTools.append(toolName)
+                    out_tools.append(tool_name)
 
-            await asyncio.gather(
-                *(resolve_tool(toolName) for toolName in out['tools'])
-            )
-            out['tools'] = outTools
+            out['tools'] = out_tools
+
         return out
 
-    def identifyPartials(self, template: str) -> set[str]:
-        ast = self.handlebars.parse(template)
-        partials: set[str] = set()
-
-        class PartialVisitor(Visitor):
-            def __init__(self, partials: set[str]) -> None:
-                self.partials = partials
-                super().__init__()
-
-            def PartialStatement(self, partial: Any) -> None:
-                if 'original' in partial.get('name', {}):
-                    self.partials.add(partial['name']['original'])
-
-        visitor = PartialVisitor(partials)
-        if ast is not None:  # Check if AST is valid
-            visitor.accept(ast)
+    def identify_partials(self, template: str) -> Set[str]:
+        # This is a simplified version - in Python we'd need to parse the template
+        # and extract partial names, which is more complex
+        partials = set()
+        # Implementation would depend on how handlebars library exposes AST
+        # For now, using a simple regex approach (not ideal but functional)
+        import re
+        partial_matches = re.findall(r'{{>\s*([a-zA-Z0-9_-]+)\s*}}', template)
+        partials.update(partial_matches)
         return partials
 
-    async def resolvePartials(self, template: str) -> None:
-        if not self.partialResolver and not self.store:
-            return
 
-        partials = self.identifyPartials(template)
-
-        async def resolve_partial(name: str) -> None:
-            if name not in self.handlebars.partials:
-                content: str | None = None
-                if self.partialResolver:
-                    result = self.partialResolver(name)
-                    if asyncio.iscoroutine(result):
-                        content = await result
-                    else:
-                        content = result  # type: ignore
-                if (
-                    not content
-                    and self.store
-                    and hasattr(self.store, 'loadPartial')
-                ):
-                    loaded = await self.store.loadPartial(name)
-                    if loaded and 'source' in loaded:
-                        content = loaded['source']
-                if content:
-                    self.definePartial(name, content)
-                    await self.resolvePartials(content)
-
-        await asyncio.gather(*(resolve_partial(name) for name in partials))
-
-    async def compile(
-        self,
-        source: str | ParsedPrompt,
-        additionalMetadata: PromptMetadata | None = None,
-    ) -> PromptFunction:
-        """
-        Compiles a prompt template into a render function.
-
-        Args:
-            source: The prompt template or its parsed representation.
-            additionalMetadata: Additional metadata to merge with the prompt.
-
-        Returns:
-            A function that renders the prompt with provided data.
-        """
+    async def compile(self, source: Union[str, Dict[str, Any]],
+                      additional_metadata=None) -> Callable:
         if isinstance(source, str):
             source = self.parse(source)
 
-        if additionalMetadata:
-            source = {**source, **additionalMetadata}
+        if additional_metadata:
+            source = {**source, **additional_metadata}
 
-        # Resolve all partials before compilation.
-        await self.resolvePartials(source['template'])
+        # Resolve all partials before compilation
+        # Check if source is a ParsedPrompt object or a dict
+        if hasattr(source, 'template'):
+            # It's a ParsedPrompt object
+            await self.resolve_partials(source.template)
+            template_str = source.template
+        else:
+            # It's a dictionary
+            await self.resolve_partials(source['template'])
+            template_str = source['template']
 
-        renderString = self.handlebars.compile(
-            source['template'],
-            {'knownHelpers': self.knownHelpers, 'knownHelpersOnly': True},
-        )
+        render_string = self.handlebars.compile(template_str)
 
-        async def renderFunc(
-            data: DataArgument | None, options: PromptMetadata | None = None
-        ) -> RenderedPrompt:
-            metadata: PromptMetadata = await self.renderMetadata(
-                source, options
-            )
-            options_dict = options or {}
-            data_dict = data or {}
-
-            # Build context and extra safely
+        async def render_func(data, options=None):
+            options = options or {}
+            # Discard the input schema as once rendered it doesn't make sense
+            merged_metadata = await self.render_metadata(source)
+            input_schema = merged_metadata.pop('input', {})
             context = {
-                **options_dict.get('input', {}).get('default', {}),
-                **data_dict.get('input', {}),
-            }
-            extra = {
-                'data': {
-                    'metadata': metadata,
-                    'docs': data_dict.get('docs'),
-                    'messages': data_dict.get('messages'),
-                }
+                **(options.get('input', {}).get('default', {})),
+                **(data.get('input', {}))
             }
 
-            rendered_string: str = renderString(context, extra)
+            metadata_context = {
+                'metadata': {
+                    'prompt': merged_metadata,
+                    'docs': data.get('docs'),
+                    'messages': data.get('messages')
+                },
+                **(data.get('context', {}))
+            }
 
-            # Pass the structured data to to_messages
+            rendered_string = render_string(context, metadata_context)
             return {
-                'messages': to_messages(rendered_string, data_dict),
-                **metadata,
+                **merged_metadata,
+                'messages': to_messages(rendered_string, data)
             }
 
-        return renderFunc
+        render_func.prompt = source
+        return render_func
 
-    def removeUndefinedFieldsFromDict(
-        self, obj: dict[str, Any]
-    ) -> dict[str, Any]:
-        """
-        Removes keys with value None from the dictionary.
+    async def render_metadata(self, source: Union[str, Dict[str, Any]],
+                              additional_metadata=None) -> Dict[str, Any]:
+        if isinstance(source, str):
+            source = self.parse(source)
 
-        Args:
-            obj: The dictionary to be cleaned.
+        # Handle ParsedPrompt objects
+        if hasattr(source, 'model'):
+            selected_model = (additional_metadata or {}).get(
+                'model') or source.model or self.default_model
+        else:
+            selected_model = (additional_metadata or {}).get(
+                'model') or source.get('model') or self.default_model
 
-        Returns:
-            A new dictionary with keys having non-None values.
-        """
-        return {k: v for k, v in obj.items() if v is not None}
+        model_config = self.model_configs.get(selected_model,
+                                              {}) if selected_model else {}
 
-
-class Visitor:
-    def accept(self, ast: dict[str, Any]) -> None:
-        partials = ast.get('partials', [])  # Use .get with default
-        for partial in partials:
-            self.PartialStatement(partial)
-
-    def PartialStatement(self, partial: Any) -> None:
-        """
-        Processes a partial statement from the AST.
-
-        Args:
-            partial: The partial statement.
-        """
-        return None
+        return await self.resolve_metadata(
+            {'config': model_config} if model_config else {},
+            source,
+            additional_metadata
+        )

@@ -5,10 +5,11 @@
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, TypeVar
+from typing import Any, Dict, Optional, TypeVar
 
 import yaml
 
+from dotpromptz import util
 from dotpromptz.typing import (
     DataArgument,
     MediaPart,
@@ -36,6 +37,8 @@ class MessageSource:
     metadata: dict[str, Any] | None = field(default_factory=dict)
 
 
+
+
 # Prefixes for the role markers in the template.
 ROLE_MARKER_PREFIX = '<<<dotprompt:role:'
 
@@ -43,7 +46,7 @@ ROLE_MARKER_PREFIX = '<<<dotprompt:role:'
 HISTORY_MARKER_PREFIX = '<<<dotprompt:history'
 
 # Prefixes for the media markers in the template.
-MEDIA_MARKER_PREFIX = '<<<dotprompt:media:'
+MEDIA_MARKER_PREFIX = '<<<dotprompt:media:url'
 
 # Prefixes for the section markers in the template.
 SECTION_MARKER_PREFIX = '<<<dotprompt:section'
@@ -53,6 +56,8 @@ SECTION_MARKER_PREFIX = '<<<dotprompt:section'
 FRONTMATTER_AND_BODY_REGEX = re.compile(
     r'^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$'
 )
+
+#MEDIA_AND_SECTION_MARKER_REGEX = re.compile(r'(<<(?:media:|section:)([^>]*))>>')
 
 # Regular expression to match <<<dotprompt:role:xxx>>> and
 # <<<dotprompt:history>>> markers in the template.
@@ -75,8 +80,9 @@ ROLE_AND_HISTORY_MARKER_REGEX = re.compile(
 # - <<<dotprompt:media:url>>>
 # - <<<dotprompt:section>>>
 MEDIA_AND_SECTION_MARKER_REGEX = re.compile(
-    r'(<<<dotprompt:(?:media:url|section).*?)>>>'
+    r'(<<<dotprompt:(?:media:url [^\s>]+|section [^\s>]+))>>>'
 )
+
 
 # List of reserved keywords that are handled specially in the metadata of a
 # .prompt file. These keys are processed differently from extension metadata.
@@ -128,17 +134,35 @@ def split_by_role_and_history_markers(rendered_string: str) -> list[str]:
     return split_by_regex(rendered_string, ROLE_AND_HISTORY_MARKER_REGEX)
 
 
-def split_by_media_and_section_markers(source: str) -> list[str]:
-    """Split the source into pieces based on media and section markers while
-    filtering out empty/whitespace-only pieces.
+def split_by_media_and_section_markers(input_str: str) -> list[str]:
+    if not input_str:
+        return []
 
-    Args:
-        source: The source string to split into parts
+    # Find all matches
+    matches = list(MEDIA_AND_SECTION_MARKER_REGEX.finditer(input_str))
+    if not matches:
+        return [input_str]
 
-    Returns:
-        An array of string parts
-    """
-    return split_by_regex(source, MEDIA_AND_SECTION_MARKER_REGEX)
+    result = []
+    last_end = 0
+
+    for match in matches:
+        start, end = match.span()
+
+        # Add text before the marker
+        if start > last_end:
+            result.append(input_str[last_end:start])
+
+        # Add the marker without the closing brackets
+        result.append(match.group(1))
+
+        last_end = end
+
+    # Add remaining text
+    if last_end < len(input_str):
+        result.append(input_str[last_end:])
+
+    return result
 
 
 def convert_namespaced_entry_to_nested_object(
@@ -262,93 +286,66 @@ def parse_document(source: str) -> ParsedPrompt[T]:
     )
 
 
-def to_messages(
-    rendered_string: str,
-    data: DataArgument[Any] | None = None,
-) -> list[Message]:
+def to_messages(rendered_string: str, data: Optional[Dict[str, Any]] = None) -> \
+list[Message]:
     """
-    Converts a rendered template string into an array of messages. Processes
-    role markers and history placeholders to structure the conversation.
-
-    Args:
-        rendered_string: The rendered template string to convert
-        data: Optional data containing message history
-
-    Returns:
-        List of structured messages
+    Converts a rendered template string into an array of messages.
+    Processes role markers and history placeholders to structure the conversation.
     """
     current_message = MessageSource(role=Role.USER, source='')
     message_sources = [current_message]
 
     for piece in split_by_role_and_history_markers(rendered_string):
         if piece.startswith(ROLE_MARKER_PREFIX):
-            role = piece[len(ROLE_MARKER_PREFIX) :]
-
+            role_str = piece[len(ROLE_MARKER_PREFIX):].strip('>')
             if current_message.source and current_message.source.strip():
-                # If the current message has content, create a new message
-                current_message = MessageSource(role=Role(role), source='')
+                current_message = MessageSource(role=Role(role_str), source='')
                 message_sources.append(current_message)
             else:
-                # Otherwise, update the role of the current message
-                current_message.role = Role(role)
-
+                current_message.role = Role(role_str)
         elif piece.startswith(HISTORY_MARKER_PREFIX):
-            # Add the history messages to the message sources
             msgs: list[Message] = []
-            if data and data.messages:
-                msgs = data.messages
+            if data and data.get("messages"):
+                msgs = data.get("messages")
             history_messages = transform_messages_to_history(msgs)
             if history_messages:
-                message_sources.extend(
-                    [
-                        MessageSource(
-                            role=msg.role,
-                            content=msg.content,
-                            metadata=msg.metadata,
-                        )
-                        for msg in history_messages
-                    ]
-                )
-
-            # Add a new message source for the model
+                message_sources.extend([
+                    MessageSource(
+                        role=msg.role,
+                        content=msg.content,
+                        metadata=msg.metadata
+                    )
+                    for msg in history_messages
+                ])
             current_message = MessageSource(role=Role.MODEL, source='')
             message_sources.append(current_message)
-
         else:
-            # Otherwise, add the piece to the current message source
             current_message.source = (current_message.source or '') + piece
 
     messages = message_sources_to_messages(message_sources)
-    return insert_history(messages, data.messages if data else None)
+    return messages
 
 
-def message_sources_to_messages(
-    message_sources: list[MessageSource],
-) -> list[Message]:
-    """
-    Processes an array of message sources into an array of messages.
-
-    Args:
-        message_sources: List of message sources
-
-    Returns:
-        List of structured messages
-    """
-    messages: list[Message] = []
+def message_sources_to_messages(message_sources: list[MessageSource]) -> list[
+    Message]:
+    messages = []
     for m in message_sources:
         if m.content or m.source:
+            content: list[Part] = []
+            if m.content:
+                content.extend(m.content)
+            elif m.source and m.source.strip():
+                content.extend(to_parts(m.source))
+
+            # Pass None for metadata if it's empty
+            metadata = m.metadata if m.metadata else None
+
             message = Message(
                 role=m.role,
-                content=m.content
-                if m.content is not None
-                else to_parts(m.source or ''),
+                content=content,
+                metadata=metadata
             )
-
-            if m.metadata:
-                message.metadata = m.metadata
-
             messages.append(message)
-
     return messages
 
 
@@ -363,6 +360,7 @@ def transform_messages_to_history(
     Returns:
         Array of messages with history metadata added
     """
+
     return [
         Message(
             role=message.role,
@@ -390,7 +388,7 @@ def messages_have_history(messages: list[Message]) -> bool:
 
 def insert_history(
     messages: list[Message],
-    history: list[Message] | None = None,
+    history: Optional[list[Message]] = None,
 ) -> list[Message]:
     """Inserts historical messages into the conversation.
 
@@ -431,19 +429,19 @@ def insert_history(
 
 def to_parts(source: str) -> list[Part]:
     """Converts a source string into an array of parts.
-
     Also processes media and section markers.
-
     Args:
         source: The source string to convert into parts
-
     Returns:
         Array of structured parts (text, media, or metadata)
     """
+    if not source:
+        return []
     return [
         parse_part(piece)
         for piece in split_by_media_and_section_markers(source)
     ]
+
 
 
 def parse_part(piece: str) -> Part:

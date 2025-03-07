@@ -1,161 +1,107 @@
-# Copyright 2025 Google LLC
-# SPDX-License-Identifier: Apache-2.0
-
-"""Handlebars helper functions for dotprompt."""
-
 import json
+from typing import Any, Dict
 
-from handlebarz import HelperCallable, RenderCallable
+from handlebars import Handlebars
 
-# TODO: All of these implementations are subject to change. I have included only
-# a basic implementation for now since I couldn't get the handlebars library to
-# work, I've used a stub in its place.
-#
-# TODO: Do we need a "SafeString" in Python to wrap the rendered output returned
-# by these helpers?
+# Initialize Handlebars instance
+hbs = Handlebars
 
 
-def register_helpers(env: dict[str, HelperCallable]) -> None:
-    """Register all dotprompt helpers with the Handlebars environment.
+# Define helper functions
+def json_helper(context, options=None):
+    """Convert context to JSON string safely."""
+    if hasattr(context, "to_dict"):
+        context = context.to_dict()
 
-    Args:
-        env: Dictionary of helper functions to register.
+    # Fix: Check if options exists and handle PyJs objects properly
+    if options:
+        if hasattr(options, 'to_python'):
+            options = options.to_python()
+        indent = options.get("indent") if isinstance(options, dict) else 0
+    else:
+        indent = 0
 
-    Returns:
-        None
-    """
-    env['json'] = json_helper
-    env['role'] = role_helper
-    env['history'] = history_helper
-    env['section'] = section_helper
-    env['media'] = media_helper
-    env['ifEquals'] = if_equals_helper
-    env['unlessEquals'] = unless_equals_helper
-
-
-def json_helper(
-    text: str, render: RenderCallable, indent: int | None = None
-) -> str:
-    """Serialize a value to JSON with optional indentation.
-
-    Args:
-        text: The text to parse as JSON.
-        render: Function to render the template.
-        indent: Optional indentation level.
-
-    Returns:
-        JSON string representation of the value.
-    """
-    try:
-        value = json.loads(render(text))
-        if isinstance(indent, int):
-            return json.dumps(value, indent=indent)
-        return json.dumps(value)
-    except Exception as e:
-        return f'Error serializing JSON: {e}'
+    return json.dumps(context, indent=indent)
 
 
-def role_helper(text: str, render: RenderCallable) -> str:
-    """Generate a role marker.
-
-    Args:
-        text: The role name.
-        render: Function to render the template.
-
-    Returns:
-        Role marker string.
-    """
-    role = render(text)
-    return f'<<<dotprompt:role:{role}>>>'
+# def json_helper(context, options=None):
+#     # Convert PyJsObject to Python native type before serializing
+#     if hasattr(context, 'to_python'):
+#         context = context.to_python()
+#     indent = options.get("indent", 0) if isinstance(options, dict) else 0
+#     return json.dumps(context, indent=indent)
 
 
-def history_helper(text: str, render: RenderCallable) -> str:
-    """Generate a history marker.
-
-    Args:
-        text: The text to render.
-        render: Function to render the template.
-
-    Returns:
-        History marker string.
-    """
-    return '<<<dotprompt:history>>>'
+def role_helper(role):
+    # Remove quotes and convert to string if needed
+    if hasattr(role, 'to_python'):
+        role = role.to_python()
+    return f"<<role:{role}>>"
 
 
-def section_helper(text: str, render: RenderCallable) -> str:
-    """Generate a section marker.
-
-    Args:
-        text: The section name.
-        render: Function to render the template.
-
-    Returns:
-        Section marker string.
-    """
-    name = render(text)
-    return f'<<<dotprompt:section {name}>>>'
+def history_helper(action=None):
+    return f"<<history>>"
 
 
-def media_helper(text: str, render: RenderCallable) -> str:
-    """Generate a media marker.
-
-    Args:
-        text: The media URL and optional content type.
-        render: Function to render the template.
-
-    Returns:
-        Media marker string.
-    """
-    parts = render(text).split()
-    url = parts[0]
-    content_type = parts[1] if len(parts) > 1 else None
-
-    if content_type is not None:
-        return f'<<<dotprompt:media:url {url} {content_type}>>>'
-    return f'<<<dotprompt:media:url {url}>>>'
+def section_helper(name):
+    # Remove quotes and convert to string if needed
+    if hasattr(name, 'to_python'):
+        name = name.to_python()
+    return f"<<section:{name}>>"
 
 
-def if_equals_helper(text: str, render: RenderCallable) -> str:
-    """Compare two values and render the block if they are equal.
+def media_helper(media_type, media_url):
+    # Remove quotes and convert to string if needed
+    if hasattr(media_type, 'to_python'):
+        media_type = media_type.to_python()
+    if hasattr(media_url, 'to_python'):
+        media_url = media_url.to_python()
+    return f"<<media:{media_url} {media_type}>>"
 
-    Args:
-        text: The values to compare and template to render.
-        render: Function to render the template.
 
-    Returns:
-        Rendered content based on comparison.
-    """
-    parts = text.split('|')
-    if len(parts) != 3:
-        return ''
-
-    arg1 = render(parts[0].strip())
-    arg2 = render(parts[1].strip())
-    template = parts[2].strip()
+def if_equals_helper(arg1, arg2, options):
+    """Handlebars ifEquals helper"""
+    # Convert PyJsObject to Python native type if needed
+    if hasattr(arg1, 'to_python'):
+        arg1 = arg1.to_python()
+    if hasattr(arg2, 'to_python'):
+        arg2 = arg2.to_python()
 
     if arg1 == arg2:
-        return render(template)
-    return ''
+        return options["fn"](options["data"])
+    return options["inverse"](options["data"])
 
 
-def unless_equals_helper(text: str, render: RenderCallable) -> str:
-    """Compare two values and render the block if they are not equal.
-
-    Args:
-        text: The values to compare and template to render.
-        render: Function to render the template.
-
-    Returns:
-        Rendered content based on comparison.
-    """
-    parts = text.split('|')
-    if len(parts) != 3:
-        return ''
-
-    arg1 = render(parts[0].strip())
-    arg2 = render(parts[1].strip())
-    template = parts[2].strip()
+def unless_equals_helper(arg1, arg2, options):
+    """Handlebars unlessEquals helper"""
+    # Convert PyJsObject to Python native type if needed
+    if hasattr(arg1, 'to_python'):
+        arg1 = arg1.to_python()
+    if hasattr(arg2, 'to_python'):
+        arg2 = arg2.to_python()
 
     if arg1 != arg2:
-        return render(template)
-    return ''
+        return options["fn"](options["data"])
+    return options["inverse"](options["data"])
+
+
+# Register helpers
+Handlebars.helpers["json"] = json_helper
+Handlebars.helpers["role"] = role_helper
+Handlebars.helpers["history"] = history_helper
+Handlebars.helpers["section"] = section_helper
+Handlebars.helpers["media"] = media_helper
+Handlebars.helpers["ifEquals"] = if_equals_helper
+Handlebars.helpers["unlessEquals"] = unless_equals_helper
+
+
+# Render function
+def render(template_str, context):
+    """Compile and render a Handlebars template with the provided context."""
+    template = Handlebars.compile(template_str)
+    result = template(context)
+    # Unescape HTML entities if needed
+    if hasattr(result, 'replace'):
+        result = result.replace('&lt;', '<').replace('&gt;', '>').replace(
+            '&#x27;', "'")
+    return result
