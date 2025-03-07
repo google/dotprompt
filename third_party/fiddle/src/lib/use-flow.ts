@@ -70,10 +70,14 @@ export function useFlow<Input = any, Output = any, Chunk = any>(
         output: newOutput,
         error: undefined,
       });
-      return newOutput;
+      return await newOutput;
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : String(e);
       const errorStatus = (e as any).status || 'unknown';
+      console.log('SETTING ERROR:', {
+        status: errorStatus,
+        message: errorMessage,
+      });
       setCurrent({
         isLoading: false,
         chunks: [],

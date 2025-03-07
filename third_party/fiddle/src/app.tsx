@@ -26,6 +26,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { usePromptSelection } from './hooks/use-prompt-selection.ts';
 import { useExampleManagement } from './hooks/use-example-management.ts';
 import { logEvent } from './lib/firebase.ts';
+import { GoogleSignInDialog } from './components/google-sign-in-dialog.tsx';
 
 function App() {
   // Use TanStack Router hooks for routing
@@ -50,6 +51,7 @@ function App() {
   const [renderedPrompt, setRenderedPrompt] = useState<
     RenderedPrompt | string | null
   >(null);
+  const [signInDialogOpen, setSignInDialogOpen] = useState(false);
 
   // Prompt generation state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -453,6 +455,9 @@ function App() {
         });
       }
     } catch (e) {
+      if ((e as Error).message.includes('RESOURCE_EXHAUSTED')) {
+        setSignInDialogOpen(true);
+      }
       console.error((e as Error).message);
     }
   };
@@ -468,6 +473,9 @@ function App() {
         existingPrompt: currentPrompt.source,
       });
     } catch (e) {
+      if ((e as Error).message.includes('RESOURCE_EXHAUSTED')) {
+        setSignInDialogOpen(true);
+      }
       console.error((e as Error).message);
     }
   };
@@ -575,6 +583,10 @@ function App() {
         onOpenChange={setDialogOpen}
         onGenerate={handleGeneratePrompt}
         isGenerating={promptGenerator.isLoading}
+      />
+      <GoogleSignInDialog
+        open={signInDialogOpen}
+        onOpenChange={setSignInDialogOpen}
       />
     </SidebarProvider>
   );

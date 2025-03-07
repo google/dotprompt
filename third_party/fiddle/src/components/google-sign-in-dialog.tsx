@@ -1,3 +1,4 @@
+import { signIn } from '@/lib/firebase.ts';
 import { Button } from './ui/button';
 import {
   Dialog,
@@ -21,14 +22,11 @@ export function GoogleSignInDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Sign in with Google</DialogTitle>
-          <DialogDescription className="space-y-4">
-            <p>
-              Sign in with your Google account to get started. You'll receive
-              increased credits when you sign in!
-            </p>
-            <div className="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+          <DialogDescription>
+            <div className="mt-4 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
               <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                ✨ Get 2x more credits when you sign in with Google
+                You've reached a usage limit for an unauthenticated user. Please
+                sign in with Google to continue.
               </p>
             </div>
           </DialogDescription>
@@ -37,9 +35,9 @@ export function GoogleSignInDialog({
           <Button
             variant="outline"
             className="w-full flex items-center justify-center gap-2"
-            onClick={() => {
-              // Handle Google sign in
-              console.log('Google sign in clicked');
+            onClick={async () => {
+              onOpenChange(false);
+              await signIn();
             }}
           >
             <svg
