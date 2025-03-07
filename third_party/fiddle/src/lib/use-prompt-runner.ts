@@ -1,5 +1,6 @@
 import { useFlow } from './use-flow.ts';
 import { Fiddle } from '../types';
+import { logEvent } from './firebase.ts';
 
 // For published fiddles with an ID
 export interface RunPromptOptions {
@@ -27,6 +28,10 @@ export function usePromptRunner() {
   >(
     'https://runfiddleprompt-niuqzqldsa-uc.a.run.app',
     // 'http://127.0.0.1:5001/promptfiddle/us-central1/runFiddlePrompt',
+    {
+      before: (input) =>
+        logEvent('run_prompt', { id: input.fiddle, type: 'stored' }),
+    },
   );
 }
 
@@ -39,5 +44,6 @@ export function useDraftPromptRunner() {
   >(
     'https://rundraftprompt-niuqzqldsa-uc.a.run.app',
     // 'http://127.0.0.1:5001/promptfiddle/us-central1/runDraftPrompt',
+    { before: () => logEvent('run_prompt', { type: 'draft' }) },
   );
 }

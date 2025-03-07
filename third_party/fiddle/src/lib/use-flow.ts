@@ -32,6 +32,7 @@ interface FlowData<Output, Chunk> {
 
 export function useFlow<Input = any, Output = any, Chunk = any>(
   url: string,
+  options?: { before?: (input: Input) => void },
 ): FlowState<Input, Output, Chunk> {
   const [{ isLoading, chunks, output, error }, setCurrent] = useState<
     FlowData<Output, Chunk>
@@ -56,6 +57,7 @@ export function useFlow<Input = any, Output = any, Chunk = any>(
     const headers: Record<string, string> = {};
     if (currentUser)
       headers['authorization'] = `Bearer ${await currentUser.getIdToken()}`;
+    if (options?.before) options.before(input);
     try {
       const newOutput = await runFlow({
         url,
