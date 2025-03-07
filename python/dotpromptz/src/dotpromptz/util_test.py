@@ -7,6 +7,7 @@ import unittest
 
 from dotpromptz.util import (
     remove_undefined_fields,
+    unquote,
 )
 
 
@@ -90,6 +91,37 @@ class TestRemoveUndefinedFields(unittest.TestCase):
         self.assertEqual(remove_undefined_fields([]), [])
         self.assertEqual(remove_undefined_fields({'a': {}}), {'a': {}})
         self.assertEqual(remove_undefined_fields({'a': []}), {'a': []})
+
+
+class TestUnquote(unittest.TestCase):
+    """Tests for unquote."""
+
+    def test_unquote(self) -> None:
+        """Test removing quotes from a string."""
+        self.assertEqual(unquote('"test"'), 'test')
+        self.assertEqual(unquote("'test'"), 'test')
+
+    def test_unquote_leaves_alone_unpaired(self) -> None:
+        """Test that unquote leaves alone strings that are not paired."""
+        self.assertEqual(unquote('test'), 'test')
+        self.assertEqual(unquote("'test"), "'test")
+        self.assertEqual(unquote('"test'), '"test')
+        self.assertEqual(unquote("test'"), "test'")
+        self.assertEqual(unquote('test"'), 'test"')
+        self.assertEqual(unquote('"test\''), '"test\'')
+        self.assertEqual(unquote('\'test"'), '\'test"')
+
+    def test_unquote_leaves_along_internal_quotes(self) -> None:
+        """Test that unquote leaves alone strings with internal quotes."""
+        self.assertEqual(unquote('"test\'test"'), "test'test")
+        self.assertEqual(unquote('\'test"'), '\'test"')
+        self.assertEqual(unquote('"test\'test""'), 'test\'test"')
+        self.assertEqual(unquote("'test\"test''"), 'test"test\'')
+
+    def test_unquote_only_unquotes_one_level(self) -> None:
+        """Test that unquote only removes one level of quotes."""
+        self.assertEqual(unquote('""test\'test""'), '"test\'test"')
+        self.assertEqual(unquote("''test\"test''"), "'test\"test'")
 
 
 if __name__ == '__main__':

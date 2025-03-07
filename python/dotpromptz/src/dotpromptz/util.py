@@ -35,3 +35,28 @@ def remove_undefined_fields(obj: Any) -> Any:
         if value is not None:
             result[key] = remove_undefined_fields(value)
     return result
+
+
+_QUOTE_PAIRS: set[tuple[str, str]] = {('"', '"'), ("'", "'")}
+
+
+def unquote(value: str, pairs: set[tuple[str, str]] | None = None) -> str:
+    """Remove quotes from a string literal representation.
+
+    Args:
+        value: The string to remove quotes from.
+        pairs: Set of quote pairs to remove. When None, uses default pairs
+            ("", "") and ("'", "'").
+
+    Returns:
+        The string with quotes removed.
+    """
+    if pairs is None:
+        pairs = _QUOTE_PAIRS
+
+    str_value = str(value)
+    for start, end in pairs:
+        if str_value.startswith(start) and str_value.endswith(end):
+            return str_value[len(start) : -len(end)]
+
+    return str_value
