@@ -7,6 +7,8 @@ This module provides a SafeString class that marks strings as safe for HTML
 output, meaning they will not be escaped when rendered in templates.
 """
 
+from __future__ import annotations
+
 
 class SafeString:
     """A string that should not be escaped when rendered in templates.

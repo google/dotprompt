@@ -5,7 +5,7 @@
 
 import unittest
 
-from dotpromptz.safe_string import SafeString
+from dotpromptz.handlebarz._safe_string import SafeString
 
 
 class TestSafeString(unittest.TestCase):
