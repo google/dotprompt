@@ -1,36 +1,72 @@
-import json as json_lib
-from typing import Any, Dict
-import handlebars
+# Copyright 2025 Google LLC
+# SPDX-License-Identifier: Apache-2.0
 
-hb = handlebars.Handlebars()
+"""Handlebars helper functions for dotprompt."""
 
-@hb.helper('json')
-def json(serializable: Any, options: Dict) -> str:
+import json as json_module
+from collections.abc import Callable
+from typing import Any
+
+from django.utils.safestring import SafeString
+from pybars import Compiler  # type: ignore[import-not-found]
+
+
+def json_helper(serializable: Any, options: dict[str, Any]) -> SafeString:
+    """Serialize a value to JSON with optional indentation."""
     indent = options.get('hash', {}).get('indent', 0)
-    return json_lib.dumps(serializable, indent=indent)
+    return SafeString(json_module.dumps(serializable, indent=indent))
 
-@hb.helper('role')
-def role(role: str) -> str:
-    return f"<<<dotprompt:role:{role}>>>"
 
-@hb.helper('history')
-def history() -> str:
-    return "<<<dotprompt:history>>>"
+def role_helper(role: str) -> SafeString:
+    """Wrap a role string in a SafeString formatted for dotprompt."""
+    return SafeString(f'<<<dotprompt:role:{role}>>>')
 
-@hb.helper('section')
-def section(name: str) -> str:
-    return f"<<<dotprompt:section {name}>>>"
 
-@hb.helper('media')
-def media(context: Any, options: Dict) -> str:
-    url = options.get('hash', {}).get('url', '')
-    content_type = options.get('hash', {}).get('contentType', '')
-    return f"<<<dotprompt:media:url {url}{' ' + content_type if content_type else ''}>>"
+def history_helper() -> SafeString:
+    """Return a SafeString containing the dotprompt history placeholder."""
+    return SafeString('<<<dotprompt:history>>>')
 
-@hb.helper('ifEquals')
-def ifEquals(this: Any, arg1: Any, arg2: Any, options: Dict) -> str:
-    return options['fn'](this) if arg1 == arg2 else options['inverse'](this)
 
-@hb.helper('unlessEquals')
-def unlessEquals(this: Any, arg1: Any, arg2: Any, options: Dict) -> str:
-    return options['fn'](this) if arg1 != arg2 else options['inverse'](this)
+def section_helper(name: str) -> SafeString:
+    """Wrap a section name in a SafeString formatted for dotprompt."""
+    return SafeString(f'<<<dotprompt:section {name}>>>')
+
+
+def media_helper(options: dict[str, Any]) -> SafeString:
+    """Wrap a media URL and optional content type in a SafeString."""
+    url = options['hash']['url']
+    content_type = options['hash'].get('contentType', '')
+    return SafeString(f'<<<dotprompt:media:url {url} {content_type}>>>'.strip())
+
+
+def if_equals(
+    this: Any, arg1: Any, arg2: Any, options: dict[str, Callable[[Any], Any]]
+) -> Any:
+    """Conditional helper for equality check."""
+    if arg1 == arg2:
+        return options['fn'](this)
+    return options['inverse'](this)
+
+
+def unless_equals(
+    this: Any, arg1: Any, arg2: Any, options: dict[str, Callable[[Any], Any]]
+) -> Any:
+    """Conditional helper for inequality check."""
+    if arg1 != arg2:
+        return options['fn'](this)
+    return options['inverse'](this)
+
+
+# Register helpers with pybars3
+helpers = {
+    'json': json_helper,
+    'role': role_helper,
+    'history': history_helper,
+    'section': section_helper,
+    'media': media_helper,
+    'ifEquals': if_equals,
+    'unlessEquals': unless_equals,
+}
+
+# Example template usage remains unchanged
+compiler = Compiler(helpers=helpers)
