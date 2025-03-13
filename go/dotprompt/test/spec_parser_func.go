@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	dp "github.com/google/dotprompt/go/dotprompt"
+	"github.com/invopop/jsonschema"
 	"gopkg.in/yaml.v3"
 )
 
@@ -45,9 +46,9 @@ func convertToSpecSuite(t *testing.T, content []byte) []SpecSuite {
 	return suites
 }
 
-// convertSchema converts the raw schema data into a map of JSONSchema objects.
-func convertSchema(t *testing.T, schemaRaw any) map[string]dp.JSONSchema {
-	var schemas map[string]dp.JSONSchema
+// convertSchema converts the listed schema data into a map of *jsonschema.Schema objects.
+func convertSchema(t *testing.T, schemaRaw any) map[string]*jsonschema.Schema {
+	var schemas map[string]*jsonschema.Schema
 	if schemaMap, ok := schemaRaw.(map[string]any); ok {
 		schemaBytes, err := yaml.Marshal(schemaMap)
 		if err != nil {

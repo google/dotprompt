@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/aymerick/raymond"
+	"github.com/invopop/jsonschema"
 )
 
 // PartialResolver is a function to resolve partial names to their content.
@@ -24,7 +25,7 @@ type DotpromptOptions struct {
 	Partials        map[string]string
 	Tools           map[string]ToolDefinition
 	ToolResolver    ToolResolver
-	Schemas         map[string]JSONSchema
+	Schemas         map[string]*jsonschema.Schema
 	SchemaResolver  SchemaResolver
 	PartialResolver PartialResolver
 }
@@ -36,7 +37,7 @@ type Dotprompt struct {
 	modelConfigs    map[string]any
 	tools           map[string]ToolDefinition
 	toolResolver    ToolResolver
-	schemas         map[string]JSONSchema
+	schemas         map[string]*jsonschema.Schema
 	schemaResolver  SchemaResolver
 	partialResolver PartialResolver
 	knownPartials   map[string]bool
@@ -357,7 +358,7 @@ func (dp *Dotprompt) RenderPicoschema(meta PromptMetadata) (PromptMetadata, erro
 	newMeta := meta
 	if meta.Input.Schema != nil {
 		schema, err := Picoschema(meta.Input.Schema, &PicoschemaOptions{
-			SchemaResolver: func(name string) (JSONSchema, error) {
+			SchemaResolver: func(name string) (*jsonschema.Schema, error) {
 				return dp.WrappedSchemaResolver(name)
 			},
 		})
@@ -368,7 +369,7 @@ func (dp *Dotprompt) RenderPicoschema(meta PromptMetadata) (PromptMetadata, erro
 	}
 	if meta.Output.Schema != nil {
 		schema, err := Picoschema(meta.Output.Schema, &PicoschemaOptions{
-			SchemaResolver: func(name string) (JSONSchema, error) {
+			SchemaResolver: func(name string) (*jsonschema.Schema, error) {
 				return dp.WrappedSchemaResolver(name)
 			},
 		})
@@ -381,7 +382,7 @@ func (dp *Dotprompt) RenderPicoschema(meta PromptMetadata) (PromptMetadata, erro
 }
 
 // WrappedSchemaResolver resolves schemas.
-func (dp *Dotprompt) WrappedSchemaResolver(name string) (JSONSchema, error) {
+func (dp *Dotprompt) WrappedSchemaResolver(name string) (*jsonschema.Schema, error) {
 	if schema, exists := dp.schemas[name]; exists {
 		return schema, nil
 	}

@@ -6,7 +6,9 @@ package dotprompt
 import (
 	"testing"
 
+	"github.com/invopop/jsonschema"
 	"github.com/stretchr/testify/assert"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 func TestStringOrEmpty(t *testing.T) {
@@ -116,28 +118,24 @@ func TestTrimUnicodeSpacesExceptNewlines(t *testing.T) {
 		assert.Equal(t, test.expected, result)
 	}
 }
-
-func TestCreateDeepCopy(t *testing.T) {
-	original := JSONSchema{
-		"key1": "value1",
-		"key2": map[string]any{
-			"nestedKey1": "nestedValue1",
-			"nestedKey2": 42,
-		},
-		"key3": []any{"item1", "item2"},
+func TestCreateCopy(t *testing.T) {
+	properties := orderedmap.New[string, *jsonschema.Schema]()
+	properties.Set("property1", &jsonschema.Schema{Type: "string"})
+	properties.Set("property2", &jsonschema.Schema{Type: "integer"})
+	original := &jsonschema.Schema{
+		Type:        "object",
+		Title:       "Original Schema",
+		Description: "This is the original schema",
+		Properties:  properties,
 	}
 
-	copy := createDeepCopy(original)
+	copy := createCopy(original)
 
-	// Verify that the copy is equal to the original
 	assert.Equal(t, original, copy)
+	assert.NotSame(t, original, copy)
 
-	// Verify that modifying the copy does not affect the original
-	copy["key1"] = "newValue1"
-	copy["key2"].(map[string]any)["nestedKey1"] = "newNestedValue1"
-	copy["key3"].([]any)[0] = "newItem1"
-
-	assert.NotEqual(t, original["key1"], copy["key1"])
-	assert.NotEqual(t, original["key2"].(map[string]any)["nestedKey1"], copy["key2"].(map[string]any)["nestedKey1"])
-	assert.NotEqual(t, original["key3"].([]any)[0], copy["key3"].([]any)[0])
+	// Modify the copy and ensure the original is not affected
+	copy.Title = "Modified Schema"
+	assert.NotEqual(t, original.Title, copy.Title)
+	assert.Equal(t, "Original Schema", original.Title)
 }

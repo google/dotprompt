@@ -3,6 +3,10 @@
 
 package dotprompt
 
+import (
+	"github.com/invopop/jsonschema"
+)
+
 // Schema represents a generic schema definition.
 type Schema any
 
@@ -241,11 +245,8 @@ type DataArgument struct {
 	Context map[string]any `json:"context,omitempty"`
 }
 
-// JSONSchema is a JSON schema.
-type JSONSchema map[string]any
-
 // SchemaResolver is a function that resolves a schema name to a JSON schema.
-type SchemaResolver func(schemaName string) (JSONSchema, error)
+type SchemaResolver func(schemaName string) (*jsonschema.Schema, error)
 
 // ToolResolver is a function that resolves a tool name to a tool definition.
 type ToolResolver func(toolName string) (ToolDefinition, error)

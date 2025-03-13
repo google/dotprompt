@@ -4,8 +4,12 @@
 package dotprompt
 
 import (
+	"encoding/json"
+	"fmt"
 	"strings"
 	"unicode"
+
+	"github.com/invopop/jsonschema"
 )
 
 // stringOrEmpty returns the string value of an any or an empty string if it's not a string.
@@ -77,34 +81,19 @@ func trimUnicodeSpacesExceptNewlines(s string) string {
 	})
 }
 
-// createDeepCopy creates a deep copy of a JSONSchema object.
-// It recursively copies all nested maps and slices to ensure that
-// modifications to the copy do not affect the original object.
-func createDeepCopy(obj JSONSchema) JSONSchema {
-	copy := make(map[string]any)
-	for k, v := range obj {
-		copy[k] = deepCopyValue(v)
+// createDeepCopy creates a copy of a *jsonschema.Schema object.
+func createCopy(obj *jsonschema.Schema) *jsonschema.Schema {
+	// Marshal the original object to JSON
+	data, err := json.Marshal(obj)
+	if err != nil {
+		panic(fmt.Sprintf("failed to marshal schema: %v", err))
 	}
-	return copy
-}
 
-// deepCopyValue creates a deep copy of a value.
-// It handles nested maps and slices by recursively copying them.
-func deepCopyValue(value any) any {
-	switch v := value.(type) {
-	case map[string]any:
-		copy := make(map[string]any)
-		for k, v2 := range v {
-			copy[k] = deepCopyValue(v2)
-		}
-		return copy
-	case []any:
-		copy := make([]any, len(v))
-		for i, v2 := range v {
-			copy[i] = deepCopyValue(v2)
-		}
-		return copy
-	default:
-		return v
+	// Unmarshal the JSON data back to a new object
+	copy := new(jsonschema.Schema)
+	if err := json.Unmarshal(data, copy); err != nil {
+		panic(fmt.Sprintf("failed to unmarshal schema: %v", err))
 	}
+
+	return copy
 }

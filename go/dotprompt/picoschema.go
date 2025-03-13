@@ -4,10 +4,14 @@
 package dotprompt
 
 import (
+	"encoding/json"
 	"fmt"
 	"slices"
 	"sort"
 	"strings"
+
+	"github.com/invopop/jsonschema"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 // JSONSchemaScalarTypes defines the scalar types allowed in JSON schema.
@@ -29,7 +33,7 @@ type PicoschemaOptions struct {
 }
 
 // Picoschema parses a schema with the given options.
-func Picoschema(schema any, options *PicoschemaOptions) (JSONSchema, error) {
+func Picoschema(schema any, options *PicoschemaOptions) (*jsonschema.Schema, error) {
 	parser := NewPicoschemaParser(options)
 	return parser.Parse(schema)
 }
@@ -47,7 +51,7 @@ func NewPicoschemaParser(options *PicoschemaOptions) *PicoschemaParser {
 }
 
 // mustResolveSchema resolves a schema name to a JSON schema using the SchemaResolver.
-func (p *PicoschemaParser) mustResolveSchema(schemaName string) (JSONSchema, error) {
+func (p *PicoschemaParser) mustResolveSchema(schemaName string) (*jsonschema.Schema, error) {
 	if p.SchemaResolver == nil {
 		return nil, fmt.Errorf("Picoschema: unsupported scalar type '%s'", schemaName)
 	}
@@ -63,7 +67,7 @@ func (p *PicoschemaParser) mustResolveSchema(schemaName string) (JSONSchema, err
 }
 
 // Parse parses the given schema and returns a JSON schema.
-func (p *PicoschemaParser) Parse(schema any) (JSONSchema, error) {
+func (p *PicoschemaParser) Parse(schema any) (*jsonschema.Schema, error) {
 	if schema == nil {
 		return nil, nil
 	}
@@ -72,9 +76,9 @@ func (p *PicoschemaParser) Parse(schema any) (JSONSchema, error) {
 	if schemaStr, ok := schema.(string); ok {
 		typeDesc := extractDescription(schemaStr)
 		if slices.Contains(JSONSchemaScalarTypes, typeDesc[0]) {
-			out := JSONSchema{"type": typeDesc[0]}
+			out := &jsonschema.Schema{Type: typeDesc[0]}
 			if typeDesc[1] != "" {
-				out["description"] = typeDesc[1]
+				out.Description = typeDesc[1]
 			}
 			return out, nil
 		}
@@ -83,33 +87,66 @@ func (p *PicoschemaParser) Parse(schema any) (JSONSchema, error) {
 			return nil, err
 		}
 		if typeDesc[1] != "" {
-			resolvedSchema["description"] = typeDesc[1]
+			resolvedSchema.Description = typeDesc[1]
 		}
 		return resolvedSchema, nil
 	}
 
 	// if there's a JSON schema-ish type at the top level, treat as JSON schema
 	if schemaMap, ok := schema.(map[string]any); ok {
-		if schemaType, ok := schemaMap["type"].(string); ok {
-			if slices.Contains(append(JSONSchemaScalarTypes, "object", "array"), schemaType) {
-				return schemaMap, nil
-			}
+		schemaBytes, err := json.Marshal(schemaMap)
+		if err != nil {
+			return nil, err
+		}
+		schemaJSON := &jsonschema.Schema{}
+		if err := json.Unmarshal(schemaBytes, schemaJSON); err != nil {
+			return nil, err
 		}
 
-		if _, ok := schemaMap["properties"].(map[string]any); ok {
-			schemaMap["type"] = "object"
-			return schemaMap, nil
+		// Validate that all fields in schemaMap are present in schemaJSON
+		if err := ValidateSchemaFields(schemaMap, schemaJSON); err == nil {
+			if schemaJSON.Type != "" {
+				if slices.Contains(append(JSONSchemaScalarTypes, "object", "array"), schemaJSON.Type) {
+					return schemaJSON, nil
+				}
+			}
+
+			if schemaJSON.Properties != nil {
+				schemaJSON.Type = "object"
+				return schemaJSON, nil
+			}
 		}
 	}
 
 	return p.parsePico(schema)
 }
 
+// validateSchemaFields checks if all fields in schemaMap are present in schemaJSON
+func ValidateSchemaFields(schemaMap map[string]any, schemaJSON *jsonschema.Schema) error {
+	// Convert schemaJSON to a map for comparison
+	schemaJSONMap := make(map[string]any)
+	schemaBytes, err := json.Marshal(schemaJSON)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(schemaBytes, &schemaJSONMap); err != nil {
+		return err
+	}
+
+	// Check for unknown fields
+	for key := range schemaMap {
+		if _, ok := schemaJSONMap[key]; !ok {
+			return fmt.Errorf("unknown field %s in schema", key)
+		}
+	}
+	return nil
+}
+
 // parsePico parses a Pico schema and returns a JSON schema.
 // The function ensures that the input schema is correctly
 // parsed and converted into a JSON schema, handling various
 // types and optional properties appropriately.
-func (p *PicoschemaParser) parsePico(obj any, path ...string) (JSONSchema, error) {
+func (p *PicoschemaParser) parsePico(obj any, path ...string) (*jsonschema.Schema, error) {
 	// Handle the case where the object is a string
 	if objStr, ok := obj.(string); ok {
 		typeDesc := extractDescription(objStr)
@@ -120,7 +157,7 @@ func (p *PicoschemaParser) parsePico(obj any, path ...string) (JSONSchema, error
 				return nil, err
 			}
 			if typeDesc[1] != "" {
-				resolvedSchema["description"] = typeDesc[1]
+				resolvedSchema.Description = typeDesc[1]
 			}
 			return resolvedSchema, nil
 		}
@@ -128,26 +165,25 @@ func (p *PicoschemaParser) parsePico(obj any, path ...string) (JSONSchema, error
 		// Handle the special case for "any" type
 		if typeDesc[0] == "any" {
 			if typeDesc[1] != "" {
-				return JSONSchema{"description": typeDesc[1]}, nil
+				return &jsonschema.Schema{Description: typeDesc[1]}, nil
 			}
-			return JSONSchema{}, nil
+			return &jsonschema.Schema{}, nil
 		}
 
 		// Return a JSON schema with type and optional description
 		if typeDesc[1] != "" {
-			return JSONSchema{"type": typeDesc[0], "description": typeDesc[1]}, nil
+			return &jsonschema.Schema{Type: typeDesc[0], Description: typeDesc[1]}, nil
 		}
-		return JSONSchema{"type": typeDesc[0]}, nil
+		return &jsonschema.Schema{Type: typeDesc[0]}, nil
 	} else if _, ok := obj.(map[string]any); !ok {
 		return nil, fmt.Errorf("Picoschema: only consists of objects and strings. Got: %v", obj)
 	}
 
 	// Initialize the schema as an object with properties and required fields
-	schema := JSONSchema{
-		"type":                 "object",
-		"properties":           map[string]any{},
-		"required":             []string{},
-		"additionalProperties": false,
+	schema := &jsonschema.Schema{
+		Type:       "object",
+		Properties: orderedmap.New[string, *jsonschema.Schema](),
+		Required:   []string{},
 	}
 
 	// Handle wildcard properties
@@ -159,8 +195,8 @@ func (p *PicoschemaParser) parsePico(obj any, path ...string) (JSONSchema, error
 			if err != nil {
 				return nil, err
 			}
-			parsedCopy := createDeepCopy(parsedValue)
-			schema["additionalProperties"] = parsedCopy
+			parsedCopy := createCopy(parsedValue)
+			schema.AdditionalProperties = parsedCopy
 			continue
 		}
 
@@ -172,7 +208,7 @@ func (p *PicoschemaParser) parsePico(obj any, path ...string) (JSONSchema, error
 
 		// Add the property to the required list if it is not optional
 		if !isOptional {
-			schema["required"] = append(schema["required"].([]string), propertyName)
+			schema.Required = append(schema.Required, propertyName)
 		}
 
 		// Handle properties without type description
@@ -181,61 +217,59 @@ func (p *PicoschemaParser) parsePico(obj any, path ...string) (JSONSchema, error
 			if err != nil {
 				return nil, err
 			}
-			propCopy := createDeepCopy(prop)
-			if isOptional {
-				if propType, ok := prop["type"].(string); ok {
-					propCopy["type"] = []any{propType, "null"}
-				}
+			propCopy := createCopy(prop)
+			updatedProp := createCopy(prop)
+			if isOptional && propCopy.Type != "" {
+				updatedProp.AnyOf = []*jsonschema.Schema{propCopy, {Type: "null"}}
 			}
-			schema["properties"].(map[string]any)[propertyName] = propCopy
+			schema.Properties.Set(propertyName, updatedProp)
 			continue
 		}
 
 		// Handle properties with type description
 		typeDesc := extractDescription(strings.TrimSuffix(nameType[1], ")"))
-		newProp := JSONSchema{}
+		newProp := &jsonschema.Schema{}
 		switch typeDesc[0] {
 		case "array":
 			items, err := p.parsePico(value, append(path, key)...)
 			if err != nil {
 				return nil, err
 			}
-			newProp["items"] = items
+			newProp.Items = items
 			if isOptional {
-				newProp["type"] = []any{"array", "null"}
+				newProp.AnyOf = []*jsonschema.Schema{{Type: "array"}, {Type: "null"}}
 			} else {
-				newProp["type"] = "array"
+				newProp.Type = "array"
 			}
 		case "object":
 			prop, err := p.parsePico(value, append(path, key)...)
 			if err != nil {
 				return nil, err
 			}
-			propCopy := createDeepCopy(prop)
+			propCopy := createCopy(prop)
+			updatedProp := createCopy(prop)
 			if isOptional {
-				propCopy["type"] = []any{prop["type"], "null"}
+				updatedProp.AnyOf = []*jsonschema.Schema{propCopy, {Type: "null"}}
 			}
-			newProp = propCopy
+			newProp = updatedProp
 		case "enum":
 			enumValues := value.([]any)
 			if isOptional && !containsInterface(enumValues, nil) {
 				enumValues = append(enumValues, nil)
 			}
-			newProp["enum"] = enumValues
+			newProp.Enum = enumValues
 		default:
 			return nil, fmt.Errorf("Picoschema: parenthetical types must be 'object' or 'array', got: %s", typeDesc[0])
 		}
 		if typeDesc[1] != "" {
-			newProp["description"] = typeDesc[1]
+			newProp.Description = typeDesc[1]
 		}
-		schema["properties"].(map[string]any)[propertyName] = newProp
+		schema.Properties.Set(propertyName, newProp)
 	}
 
 	// Sort the required properties and remove the required field if it is empty
-	if len(schema["required"].([]string)) == 0 {
-		delete(schema, "required")
-	} else {
-		sort.Strings(schema["required"].([]string))
+	if len(schema.Required) != 0 {
+		sort.Strings(schema.Required)
 	}
 	return schema, nil
 }

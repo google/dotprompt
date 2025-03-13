@@ -13,7 +13,7 @@ import (
 
 	"github.com/go-viper/mapstructure/v2"
 	. "github.com/google/dotprompt/go/dotprompt"
-	"gopkg.in/yaml.v3"
+	"github.com/invopop/jsonschema"
 )
 
 const SpecDir = "../../../spec"
@@ -200,7 +200,11 @@ func pruneResult(t *testing.T, result PromptMetadata) map[string]any {
 	if result.Input.Default != nil || result.Input.Schema != nil {
 		inputMap := make(map[string]any)
 		if result.Input.Schema != nil {
-			inputMap["schema"] = pruneSchema(t, result.Input.Schema)
+			if inputSchema, ok := result.Output.Schema.(*jsonschema.Schema); ok {
+				rawInput, _ := result.Raw["output"].(map[string]any)
+				rawSchema, _ := rawInput["schema"].(map[string]any)
+				inputMap["schema"] = pruneSchema(inputSchema, rawSchema)
+			}
 		}
 		if result.Input.Default != nil {
 			inputMap["default"] = result.Input.Default
@@ -210,7 +214,11 @@ func pruneResult(t *testing.T, result PromptMetadata) map[string]any {
 	if result.Output.Format != "" || result.Output.Schema != nil {
 		outputMap := make(map[string]any)
 		if result.Output.Schema != nil {
-			outputMap["schema"] = pruneSchema(t, result.Output.Schema)
+			if outputSchema, ok := result.Output.Schema.(*jsonschema.Schema); ok {
+				rawOutput, _ := result.Raw["output"].(map[string]any)
+				rawSchema, _ := rawOutput["schema"].(map[string]any)
+				outputMap["schema"] = pruneSchema(outputSchema, rawSchema)
+			}
 		}
 		if result.Output.Format != "" {
 			outputMap["format"] = result.Output.Format
@@ -304,14 +312,61 @@ func pruneContent(content []Part) []map[string]any {
 	return pruned
 }
 
-// pruneSchema prunes a schema for comparison.
-func pruneSchema(t *testing.T, schema Schema) map[string]any {
+func pruneSchema(schema *jsonschema.Schema, rawSchema map[string]any) map[string]any {
 	schemaMap := make(map[string]any)
-	schemaBytes, _ := yaml.Marshal(schema)
-	if err := yaml.Unmarshal(schemaBytes, &schemaMap); err != nil {
-		t.Fatalf("Failed to unmarshal output: %v", err)
+	if len(schema.AnyOf) != 0 {
+		schemaMap["type"] = []string{}
+		typeList := []string{}
+		for _, anySchema := range schema.AnyOf {
+			if anySchema.Type == "null" {
+				typeList = append(typeList, "null")
+			} else {
+				typeList = append(typeList, anySchema.Type)
+			}
+		}
+		schemaMap["type"] = typeList
+	} else if schema.Type != "" {
+		schemaMap["type"] = schema.Type
 	}
+	if schema.Description != "" {
+		schemaMap["description"] = schema.Description
+	}
+	if schema.Items != nil {
+		schemaMap["items"] = pruneSchema(schema.Items, rawSchema)
+	}
+
+	if schema.Type == "object" {
+		if schema.AdditionalProperties == nil {
+			if rawSchema != nil {
+				schemaBytes, _ := json.Marshal(rawSchema)
+				schemaJSON := &jsonschema.Schema{}
+				_ = json.Unmarshal(schemaBytes, schemaJSON)
+				// Validate that all fields in schemaMap are present in schemaJSON
+				if err := ValidateSchemaFields(rawSchema, schemaJSON); err != nil {
+					schemaMap["additionalProperties"] = false
+				}
+			}
+		} else {
+			schemaMap["additionalProperties"] = pruneSchema(schema.AdditionalProperties, rawSchema)
+		}
+		if len(schema.Required) != 0 {
+			schemaMap["required"] = schema.Required
+		}
+		propMap := make(map[string]any)
+		for property := schema.Properties.Oldest(); property != nil; property = property.Next() {
+			propName := property.Key
+			prop := property.Value
+			propMap[propName] = pruneSchema(prop, rawSchema)
+		}
+		schemaMap["properties"] = propMap
+	}
+
+	if len(schema.Enum) != 0 {
+		schemaMap["enum"] = schema.Enum
+	}
+
 	return schemaMap
+
 }
 
 // compareResults compares the result and expected output.
