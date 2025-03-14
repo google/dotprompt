@@ -15,8 +15,7 @@ classifiers = [
 ]
 dependencies = [
   "dotpromptz",
-  "pybars3",
-  "pydantic[email]>=2.10.6”
+  "pybars3"
 ]
 description = "Packaging smoke test"
 license = { text = "Apache-2.0" }
