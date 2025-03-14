@@ -39,6 +39,10 @@ class SafeString:
         """
         return f'SafeString({self._s!r})'
 
+    def __html__(self) -> str:
+        """Mark the string as safe for HTML output."""
+        return self._s
+
     def to_string(self) -> str:
         """Convert to string.
 
@@ -65,4 +69,13 @@ class SafeString:
         Returns:
             The unescaped string content.
         """
+        return str(self._s)
+
+    def __pybars__(self) -> str:
+        """Method recognized by pybars to indicate a safe string."""
+        return self._s
+
+        # This is the key method for pybars compatibility
+
+    def toString(self) -> str:
         return str(self._s)
