@@ -192,4 +192,4 @@ def test_edge_cases() -> None:
 
     assert 'JSON: null' in output
     assert 'Role: <<<dotprompt:role:>>>' in output
-    assert 'Section: <<<dotprompt:section 123>>>' in output 
+    assert 'Section: <<<dotprompt:section 123>>>' in output
