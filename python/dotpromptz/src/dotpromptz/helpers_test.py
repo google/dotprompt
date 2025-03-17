@@ -10,10 +10,12 @@ from handlebarrz import Handlebars
 
 from .helpers import (
     history_helper,
+    if_equals_helper,
     json_helper,
     media_helper,
     role_helper,
     section_helper,
+    unless_equals_helper,
 )
 
 
@@ -142,6 +144,8 @@ class TestDotpromptHelpers(unittest.TestCase):
         handlebars.register_helper('history', history_helper)
         handlebars.register_helper('section', section_helper)
         handlebars.register_helper('media', media_helper)
+        handlebars.register_helper('ifEquals', if_equals_helper)
+        handlebars.register_helper('unlessEquals', unless_equals_helper)
 
         # Role helper.
         handlebars.register_template('role_test', '{{role "system"}}')
@@ -177,3 +181,35 @@ class TestDotpromptHelpers(unittest.TestCase):
             '<<<dotprompt:media:url https://example.com/img.png image/png>>>'
         )
         self.assertEqual(result, expected)
+
+
+class TestIfEqualsHelper(unittest.TestCase):
+    def test_if_equals_helper_direct(self) -> None:
+        """Test ifEquals helper function directly."""
+        result = if_equals_helper(['test', 'test'], {}, {'fn': lambda: 'equal'})
+        self.assertEqual(result, 'equal')
+
+        result = if_equals_helper(
+            ['test', 'other'], {}, {'fn': lambda: 'equal'}
+        )
+        self.assertEqual(result, '')
+
+        result = if_equals_helper([], {}, {'fn': lambda: 'equal'})
+        self.assertEqual(result, '')
+
+
+class TestUnlessEqualsHelper(unittest.TestCase):
+    def test_unless_equals_helper_direct(self) -> None:
+        """Test unlessEquals helper function directly."""
+        result = unless_equals_helper(
+            ['test', 'other'], {}, {'fn': lambda: 'not equal'}
+        )
+        self.assertEqual(result, 'not equal')
+
+        result = unless_equals_helper(
+            ['test', 'test'], {}, {'fn': lambda: 'not equal'}
+        )
+        self.assertEqual(result, '')
+
+        result = unless_equals_helper([], {}, {'fn': lambda: 'not equal'})
+        self.assertEqual(result, '')

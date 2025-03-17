@@ -14,9 +14,7 @@ classifiers = [
   "Topic :: Software Development :: Libraries",
 ]
 dependencies = [
-  "dotpromptz",
-  #"handlebars@git+https://github.com/Manurajbharath/handlebars-py.git",
-  #"js2py@git+https://github.com/a-j-albert/Js2Py---supports-python-3.13.git",
+  "dotpromptz"
 ]
 description = "Packaging smoke test"
 license = { text = "Apache-2.0" }

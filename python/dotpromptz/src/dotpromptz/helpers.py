@@ -101,6 +101,7 @@ def media_helper(
     else:
         return f'<<<dotprompt:media:url {url}>>>'
 
+
 def if_equals_helper(params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]
 ) -> str:
     """Render content if the first two parameters are equal."""
