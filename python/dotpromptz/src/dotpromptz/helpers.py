@@ -101,6 +101,34 @@ def media_helper(
     else:
         return f'<<<dotprompt:media:url {url}>>>'
 
+def if_equals_helper(params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]
+) -> str:
+    """Render content if the first two parameters are equal."""
+    if len(params) < 2:
+        return ""
+
+    value1, value2 = params[0], params[1]
+
+    if value1 == value2:
+        return str(ctx.get("fn", lambda: "")())  # Ensure return type is str
+
+    return ""
+
+
+
+def unless_equals_helper(params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]
+) -> str:
+    """Check if two values are not equal and render content if true."""
+    if len(params) < 2:
+        return ""
+
+    value1, value2 = params[0], params[1]
+
+    if value1 != value2:
+        return ctx["fn"]() if "fn" in ctx and callable(ctx["fn"]) else ""  # Render block content
+
+    return ""
+
 
 def register_all_helpers(handlebars: Handlebars) -> None:
     """Register all custom helpers with the handlebars instance."""
