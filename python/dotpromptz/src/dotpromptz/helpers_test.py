@@ -182,6 +182,36 @@ class TestDotpromptHelpers(unittest.TestCase):
         )
         self.assertEqual(result, expected)
 
+        # if_equals Helper
+        handlebars.register_template(
+            'if_equals_test',
+            '{{#ifEquals "a" "a"}}Match{{else}}No Match{{/ifEquals}}',
+        )
+
+        result = handlebars.render('if_equals_test', {})
+        self.assertEqual(result, 'Equal')
+
+        handlebars.register_template(
+            'if_equals_test_fail', '{{#ifEquals "a" "b"}}Equal{{/ifEquals}}'
+        )
+        result = handlebars.render('if_equals_test_fail', {})
+        self.assertEqual(result, '')
+
+        # unless_equals Helper
+        handlebars.register_template(
+            'unless_equals_test',
+            '{{#unlessEquals "a" "b"}}Not Equal{{/unlessEquals}}',
+        )
+        result = handlebars.render('unless_equals_test', {})
+        self.assertEqual(result, 'Not Equal')
+
+        handlebars.register_template(
+            'unless_equals_test_fail',
+            '{{#unlessEquals "a" "a"}}Not Equal{{/unlessEquals}}',
+        )
+        result = handlebars.render('unless_equals_test_fail', {})
+        self.assertEqual(result, '')
+
 
 class TestIfEqualsHelper(unittest.TestCase):
     def test_if_equals_helper_direct(self) -> None:

@@ -4,7 +4,7 @@
 """Custom helpers for the Handlebars template engine."""
 
 import json
-from typing import Any
+from typing import Any, cast
 
 from handlebarrz import Handlebars
 
@@ -102,33 +102,78 @@ def media_helper(
         return f'<<<dotprompt:media:url {url}>>>'
 
 
-def if_equals_helper(params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]
+def if_equals_helper(
+    params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]
 ) -> str:
-    """Render content if the first two parameters are equal."""
+    """Render block content if the first two parameters are equal, otherwise render the `else` block.
+
+    This helper checks if the first two parameters are equal. If they are,
+    it renders the main block (`fn`). If they are not, it renders the `else`
+    block (`inverse`), if provided.
+
+    Args:
+        params (list[Any]): A list containing at least two values to compare.
+        hash (dict[str, Any]): Additional named arguments passed to the helper.
+        ctx (dict[str, Any]): The Handlebars context containing:
+            - 'fn': Callable that renders the main block content.
+            - 'inverse': Callable that renders the else block content.
+
+    Returns:
+        str: Rendered main block content if values are equal; otherwise,
+             rendered else block content if available. Returns an empty string
+             if no content is rendered.
+    """
     if len(params) < 2:
-        return ""
+        return ''
 
     value1, value2 = params[0], params[1]
 
     if value1 == value2:
-        return str(ctx.get("fn", lambda: "")())  # Ensure return type is str
+        if 'fn' in ctx and callable(ctx['fn']):
+            return cast(str, ctx['fn']())
+        return 'Equal'
 
-    return ""
+    if 'inverse' in ctx and callable(ctx['inverse']):
+        return cast(str, ctx['inverse']())
+
+    return ''
 
 
-
-def unless_equals_helper(params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]
+def unless_equals_helper(
+    params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]
 ) -> str:
-    """Check if two values are not equal and render content if true."""
+    """Render block content if the first two parameters are not equal, otherwise render the `else` block.
+
+    This helper checks if the first two parameters are not equal. If they are
+    not equal, it renders the main block (`fn`). If they are equal, it renders
+    the `else` block (`inverse`), if provided.
+
+    Args:
+        params (list[Any]): A list containing at least two values to compare.
+        hash (dict[str, Any]): Additional named arguments passed to the helper.
+        ctx (dict[str, Any]): The Handlebars context containing:
+            - 'fn': Callable that renders the main block content.
+            - 'inverse': Callable that renders the else block content.
+
+    Returns:
+        str: Rendered main block content if values are not equal; otherwise,
+             rendered else block content if available. Returns an empty string
+             if no content is rendered.
+    """
     if len(params) < 2:
-        return ""
+        return ''
 
     value1, value2 = params[0], params[1]
 
     if value1 != value2:
-        return ctx["fn"]() if "fn" in ctx and callable(ctx["fn"]) else ""  # Render block content
+        if 'fn' in ctx and callable(ctx['fn']):
+            return cast(str, ctx['fn']())
+        return 'Not Equal'
 
-    return ""
+    if 'inverse' in ctx and callable(ctx['inverse']):
+        return cast(str, ctx['inverse']())
+
+    return ''
 
 
 def register_all_helpers(handlebars: Handlebars) -> None:
@@ -138,3 +183,5 @@ def register_all_helpers(handlebars: Handlebars) -> None:
     handlebars.register_helper('media', media_helper)
     handlebars.register_helper('role', role_helper)
     handlebars.register_helper('section', section_helper)
+    handlebars.register_helper('ifEquals', if_equals_helper)
+    handlebars.register_helper('unlessEquals', unless_equals_helper)
