@@ -1,5 +1,5 @@
 [project]
-dependencies    = ["dotpromptz"]
+dependencies    = ["dotpromptz", "handlebarrz"]
 description     = "Workspace for Dotprompt packages"
 license         = { text = "Apache-2.0" }
 name            = "dotprompt-workspace"
@@ -33,7 +33,7 @@ asyncio_mode                       = "strict"
 python_files                       = ["**/*_test.py"]
 
 [tool.pytest.ini_options]
-addopts = "--cov"
+addopts = ["--cov"]
 
 [tool.coverage.report]
 fail_under = 85
@@ -43,10 +43,11 @@ fail_under = 85
 default-groups = ["dev", "lint"]
 
 [tool.uv.sources]
-dotpromptz = { workspace = true }
+dotpromptz  = { workspace = true }
+handlebarrz = { workspace = true }
 
 [tool.uv.workspace]
-members = ["dotpromptz", "tests/*"]
+members = ["dotpromptz", "handlebarrz", "tests/*"]
 
 # Ruff checks and formatting.
 [tool.ruff]

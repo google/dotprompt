@@ -1,0 +1,17 @@
+[package]
+authors     = ["Yesudeep Mangalapilly <yesudeep@google.com>"]
+description = "Python bindings for handlebars-rust"
+edition     = "2021"
+license     = "Apache-2.0"
+name        = "handlebarrz"
+version     = "0.1.0"
+
+[lib]
+crate-type = ["cdylib"]
+name       = "handlebarrz"
+
+[dependencies]
+handlebars = "6.3.2"
+pyo3       = { version = "0.24.0", features = ["extension-module"] }
+serde      = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
