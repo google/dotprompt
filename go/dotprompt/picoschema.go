@@ -86,10 +86,11 @@ func (p *PicoschemaParser) Parse(schema any) (*jsonschema.Schema, error) {
 		if err != nil {
 			return nil, err
 		}
+		resolvedSchemaCopy := createCopy(resolvedSchema)
 		if typeDesc[1] != "" {
-			resolvedSchema.Description = typeDesc[1]
+			resolvedSchemaCopy.Description = typeDesc[1]
 		}
-		return resolvedSchema, nil
+		return resolvedSchemaCopy, nil
 	}
 
 	// if there's a JSON schema-ish type at the top level, treat as JSON schema
@@ -156,10 +157,12 @@ func (p *PicoschemaParser) parsePico(obj any, path ...string) (*jsonschema.Schem
 			if err != nil {
 				return nil, err
 			}
+			// Create a deep copy to prevent shared references.
+			resolvedSchemaCopy := createCopy(resolvedSchema)
 			if typeDesc[1] != "" {
-				resolvedSchema.Description = typeDesc[1]
+				resolvedSchemaCopy.Description = typeDesc[1]
 			}
-			return resolvedSchema, nil
+			return resolvedSchemaCopy, nil
 		}
 
 		// Handle the special case for "any" type

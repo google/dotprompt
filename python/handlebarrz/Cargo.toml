@@ -1,10 +1,13 @@
 [package]
-authors     = ["Yesudeep Mangalapilly <yesudeep@google.com>"]
-description = "Python bindings for handlebars-rust"
-edition     = "2021"
-license     = "Apache-2.0"
-name        = "handlebarrz"
-version     = "0.1.0"
+authors       = ["Yesudeep Mangalapilly <yesudeep@google.com>"]
+description   = "Handlebars library for Python based on handlebars-rust"
+documentation = "https://github.com/google/dotprompt"
+edition       = "2021"
+homepage      = "https://github.com/google/dotprompt"
+license       = "Apache-2.0"
+name          = "handlebarrz"
+repository    = "https://github.com/google/dotprompt"
+version       = "0.1.0"
 
 [lib]
 crate-type = ["cdylib"]

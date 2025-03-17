@@ -1,161 +1,179 @@
 # Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 
-"""Tests for dotprompt helpers."""
+"""Tests for Handlebars helpers."""
 
 import json
 import unittest
 
-import handlebarz
-from handlebarz import HelperCallable
+from handlebarrz import Handlebars
 
-from dotpromptz.helpers import (
+from .helpers import (
     history_helper,
-    if_equals_helper,
     json_helper,
     media_helper,
-    register_helpers,
     role_helper,
     section_helper,
-    unless_equals_helper,
 )
 
 
-class TestHelpers(unittest.TestCase):
-    """Test cases for dotprompt helpers."""
+class TestJsonHelper(unittest.TestCase):
+    def test_json_helper_direct(self) -> None:
+        """Test the JSON helper function directly."""
+        # Basic object
+        data = {'a': 1, 'b': 2}
+        result = json_helper([data], {}, {})
+        self.assertEqual(json.loads(result), data)
 
-    helpers: dict[str, HelperCallable] = {}
+        # With indent
+        result = json_helper([data], {'indent': 2}, {})
+        self.assertEqual(json.loads(result), data)
 
-    def setUp(self) -> None:
-        """Set up test fixtures."""
-        self.helpers = {}
-        register_helpers(self.helpers)
+        # Empty params
+        result = json_helper([], {}, {})
+        self.assertEqual(result, '')
 
-    def test_json_helper(self) -> None:
-        """Test JSON serialization helper."""
+        # Non-serializable object
+        class TestObj:
+            pass
 
-        def render(text: str) -> str:
-            return text
+        result = json_helper([TestObj()], {}, {})
+        self.assertEqual(result, '{}')
 
-        data = {'name': 'test', 'value': 42}
-        json_str = json.dumps(data)
+    def test_json_helper_in_template(self) -> None:
+        """Test the JSON helper function in a template."""
+        handlebars = Handlebars()
+        handlebars.register_helper('json', json_helper)
 
-        # Test without indentation
-        result = json_helper(json_str, render)
-        self.assertEqual(result, json.dumps(data))
+        # Basic usage
+        handlebars.register_template('test1', '{{json data}}')
+        result = handlebars.render(
+            'test1', {'data': {'name': 'John', 'age': 30}}
+        )
+        expected = {'name': 'John', 'age': 30}
+        self.assertEqual(json.loads(result), expected)
 
-        # Test with indentation
-        result = json_helper(json_str, render, indent=2)
-        self.assertEqual(result, json.dumps(data, indent=2))
+        # With indent
+        handlebars.register_template('test2', '{{json data indent=2}}')
+        result = handlebars.render(
+            'test2', {'data': {'name': 'John', 'age': 30}}
+        )
+        self.assertEqual(json.loads(result), expected)
 
-        # Test error handling
-        result = json_helper('invalid json', render)
-        self.assertTrue(result.startswith('Error serializing JSON'))
+        # With string indent (should convert to int)
+        handlebars.register_template('test3', '{{json data indent="4"}}')
+        result = handlebars.render(
+            'test3', {'data': {'name': 'John', 'age': 30}}
+        )
+        self.assertEqual(json.loads(result), expected)
 
-    def test_role_helper(self) -> None:
-        """Test role marker generation."""
+        # Array.
+        handlebars.register_template('test4', '{{json data}}')
+        result = handlebars.render('test4', {'data': [1, 2, 3]})
+        self.assertEqual(json.loads(result), [1, 2, 3])
 
-        def render(text: str) -> str:
-            return text
 
-        result = role_helper('user', render)
+class TestRoleHelper(unittest.TestCase):
+    def test_role_helper_direct(self) -> None:
+        """Test role helper function directly."""
+        result = role_helper(['system'], {}, {})
+        self.assertEqual(result, '<<<dotprompt:role:system>>>')
+
+        result = role_helper(['user'], {}, {})
         self.assertEqual(result, '<<<dotprompt:role:user>>>')
 
-    def test_history_helper(self) -> None:
-        """Test history marker generation."""
+        # Empty params.
+        result = role_helper([], {}, {})
+        self.assertEqual(result, '')
 
-        def render(text: str) -> str:
-            return text
 
-        result = history_helper('', render)
+class TestHistoryHelper(unittest.TestCase):
+    def test_history_helper_direct(self) -> None:
+        """Test history helper function directly."""
+        result = history_helper([], {}, {})
         self.assertEqual(result, '<<<dotprompt:history>>>')
 
-    def test_section_helper(self) -> None:
-        """Test section marker generation."""
 
-        def render(text: str) -> str:
-            return text
-
-        result = section_helper('test', render)
+class TestSectionHelper(unittest.TestCase):
+    def test_section_helper_direct(self) -> None:
+        """Test section helper function directly."""
+        result = section_helper(['test'], {}, {})
         self.assertEqual(result, '<<<dotprompt:section test>>>')
 
-    def test_media_helper(self) -> None:
-        """Test media marker generation."""
+        # Empty params.
+        result = section_helper([], {}, {})
 
-        def render(text: str) -> str:
-            return text
-
-        # Test with content type
-        result = media_helper('test.png image/png', render)
-        self.assertEqual(result, '<<<dotprompt:media:url test.png image/png>>>')
-
-        # Test without content type
-        result = media_helper('test.png', render)
-        self.assertEqual(result, '<<<dotprompt:media:url test.png>>>')
-
-    def test_if_equals_helper(self) -> None:
-        """Test ifEquals helper."""
-
-        def render(text: str) -> str:
-            return text
-
-        # Test equal values
-        result = if_equals_helper('test | test | equal', render)
-        self.assertEqual(result, 'equal')
-
-        # Test unequal values
-        result = if_equals_helper('test | other | equal', render)
         self.assertEqual(result, '')
 
-        # Test invalid format
-        result = if_equals_helper('test | other', render)
-        self.assertEqual(result, '')
 
-    def test_unless_equals_helper(self) -> None:
-        """Test unlessEquals helper."""
-
-        def render(text: str) -> str:
-            return text
-
-        # Test equal values
-        result = unless_equals_helper('test | test | not equal', render)
-        self.assertEqual(result, '')
-
-        # Test unequal values
-        result = unless_equals_helper('test | other | not equal', render)
-        self.assertEqual(result, 'not equal')
-
-        # Test invalid format
-        result = unless_equals_helper('test | other', render)
-        self.assertEqual(result, '')
-
-    # TODO: Re-enable this test once we have a way to render templates.
-    @unittest.skip('Skipping template rendering test')
-    def test_template_rendering(self) -> None:
-        """Test helpers in actual template rendering."""
-        template = """
-        {{#json}}{"test": "value"}{{/json}}
-        {{#role}}user{{/role}}
-        {{#history}}{{/history}}
-        {{#section}}test{{/section}}
-        {{#media}}test.png image/png{{/media}}
-        {{#ifEquals}}a | a | equal{{/ifEquals}}
-        {{#unlessEquals}}a | b | not equal{{/unlessEquals}}
-        """
-
-        result = handlebarz.render(
-            template, data={}, partials={}, helpers=self.helpers
+class TestMediaHelper(unittest.TestCase):
+    def test_media_helper_direct(self) -> None:
+        """Test media helper function directly."""
+        # With URL only.
+        result = media_helper([], {'url': 'https://example.com/image.png'}, {})
+        self.assertEqual(
+            result, '<<<dotprompt:media:url https://example.com/image.png>>>'
         )
 
-        expected_json = json.dumps({'test': 'value'})
-        self.assertIn(expected_json, result)
-        self.assertIn('<<<dotprompt:role:user>>>', result)
-        self.assertIn('<<<dotprompt:history>>>', result)
-        self.assertIn('<<<dotprompt:section test>>>', result)
-        self.assertIn('<<<dotprompt:media:url test.png image/png>>>', result)
-        self.assertIn('equal', result)
-        self.assertIn('not equal', result)
+        # With URL and content type.
+        result = media_helper(
+            [],
+            {
+                'url': 'https://example.com/image.png',
+                'contentType': 'image/png',
+            },
+            {},
+        )
+        expected = (
+            '<<<dotprompt:media:url https://example.com/image.png image/png>>>'
+        )
+        self.assertEqual(result, expected)
+
+        # Missing URL.
+        result = media_helper([], {}, {})
+        self.assertEqual(result, '')
 
 
-if __name__ == '__main__':
-    unittest.main()
+class TestDotpromptHelpers(unittest.TestCase):
+    def test_dotprompt_helpers_in_template(self) -> None:
+        """Test dotprompt helpers in templates."""
+        handlebars = Handlebars()
+        handlebars.register_helper('role', role_helper)
+        handlebars.register_helper('history', history_helper)
+        handlebars.register_helper('section', section_helper)
+        handlebars.register_helper('media', media_helper)
+
+        # Role helper.
+        handlebars.register_template('role_test', '{{role "system"}}')
+        result = handlebars.render('role_test', {})
+        self.assertEqual(result, '<<<dotprompt:role:system>>>')
+
+        # History helper.
+        handlebars.register_template('history_test', '{{history}}')
+        result = handlebars.render('history_test', {})
+        self.assertEqual(result, '<<<dotprompt:history>>>')
+
+        # Section helper.
+        handlebars.register_template('section_test', '{{section "example"}}')
+        result = handlebars.render('section_test', {})
+        self.assertEqual(result, '<<<dotprompt:section example>>>')
+
+        # Media helper.
+        template = '{{media url="https://example.com/img.png"}}'
+        handlebars.register_template('media_test1', template)
+        result = handlebars.render('media_test1', {})
+        self.assertEqual(
+            result, '<<<dotprompt:media:url https://example.com/img.png>>>'
+        )
+
+        # Media helper with content type.
+        template = (
+            '{{media url="https://example.com/img.png"'
+            ' contentType="image/png"}}'
+        )
+        handlebars.register_template('media_test2', template)
+        result = handlebars.render('media_test2', {})
+        expected = (
+            '<<<dotprompt:media:url https://example.com/img.png image/png>>>'
+        )
+        self.assertEqual(result, expected)

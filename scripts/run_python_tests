@@ -13,12 +13,14 @@ PYTHON_VERSIONS=(
   "3.13"
 )
 
+pushd "${TOP_DIR}/python"
 for VERSION in "${PYTHON_VERSIONS[@]}"; do
   echo "Running tests with Python ${VERSION}..."
+  uv run --directory handlebarrz maturin build
   uv run \
     --python "python${VERSION}" \
-    --directory "${TOP_DIR}/python" \
     pytest -vv --log-level=DEBUG .
 done
+popd
 
 exit $?

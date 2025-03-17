@@ -14,13 +14,15 @@ fi
 
 TOP_DIR=$(git rev-parse --show-toplevel)
 
+# NOTE: Order matters.
 PROJECT_DIRS=(
-  "dotpromptz"
+  "python/handlebarrz"
+  "python/dotpromptz"
 )
 
 for PROJECT_DIR in "${PROJECT_DIRS[@]}"; do
   uv \
-    --directory=${TOP_DIR}/python \
+    --directory="${TOP_DIR}" \
     --project "$PROJECT_DIR" \
     build
 done

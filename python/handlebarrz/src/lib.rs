@@ -93,7 +93,7 @@ impl HelperDef for PyHelperDef {
                 Ok(json) => json,
                 Err(e) => {
                     let desc = format!("Failed to serialize params: {}", e);
-                    return Err(RenderError::new(desc));
+                    return Err(RenderError::from(RenderErrorReason::Other(desc.into())));
                 }
             };
 
@@ -107,7 +107,7 @@ impl HelperDef for PyHelperDef {
                 Ok(json) => json,
                 Err(e) => {
                     let desc = format!("Failed to serialize hash: {}", e);
-                    return Err(RenderError::new(desc));
+                    return Err(RenderError::from(RenderErrorReason::Other(desc.into())));
                 }
             };
 
@@ -116,7 +116,7 @@ impl HelperDef for PyHelperDef {
                 Ok(json) => json,
                 Err(e) => {
                     let desc = format!("Failed to serialize context: {}", e);
-                    return Err(RenderError::new(desc));
+                    return Err(RenderError::from(RenderErrorReason::Other(desc.into())));
                 }
             };
 
@@ -129,7 +129,7 @@ impl HelperDef for PyHelperDef {
                         Ok(s) => s,
                         Err(e) => {
                             let desc = format!("Failed to extract result: {}", e);
-                            return Err(RenderError::new(desc));
+                            return Err(RenderError::from(RenderErrorReason::Other(desc.into())));
                         }
                     };
                     out.write(&result_str)?;
@@ -137,7 +137,7 @@ impl HelperDef for PyHelperDef {
                 }
                 Err(e) => {
                     let desc = format!("Helper execution failed: {}", e);
-                    Err(RenderError::new(desc))
+                    Err(RenderError::from(RenderErrorReason::Other(desc.into())))
                 }
             }
         })

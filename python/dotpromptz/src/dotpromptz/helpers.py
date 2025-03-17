@@ -1,161 +1,111 @@
 # Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 
-"""Handlebars helper functions for dotprompt."""
+"""Custom helpers for the Handlebars template engine."""
 
 import json
+from typing import Any
 
-from handlebarz import HelperCallable, RenderCallable
-
-# TODO: All of these implementations are subject to change. I have included only
-# a basic implementation for now since I couldn't get the handlebars library to
-# work, I've used a stub in its place.
-#
-# TODO: Do we need a "SafeString" in Python to wrap the rendered output returned
-# by these helpers?
+from handlebarrz import Handlebars
 
 
-def register_helpers(env: dict[str, HelperCallable]) -> None:
-    """Register all dotprompt helpers with the Handlebars environment.
-
-    Args:
-        env: Dictionary of helper functions to register.
-
-    Returns:
-        None
-    """
-    env['json'] = json_helper
-    env['role'] = role_helper
-    env['history'] = history_helper
-    env['section'] = section_helper
-    env['media'] = media_helper
-    env['ifEquals'] = if_equals_helper
-    env['unlessEquals'] = unless_equals_helper
-
-
+# JSON helper
 def json_helper(
-    text: str, render: RenderCallable, indent: int | None = None
+    params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]
 ) -> str:
-    """Serialize a value to JSON with optional indentation.
+    """Convert a value to a JSON string.
 
     Args:
-        text: The text to parse as JSON.
-        render: Function to render the template.
-        indent: Optional indentation level.
+        params: List of values to convert to JSON
+        hash: Hash arguments including formatting options
+        ctx: Current context
 
     Returns:
-        JSON string representation of the value.
+        JSON string representation of the value
     """
+    if not params or len(params) < 1:
+        return ''
+
+    obj = params[0]
+    indent = hash.get('indent', 0)
+
     try:
-        value = json.loads(render(text))
-        if isinstance(indent, int):
-            return json.dumps(value, indent=indent)
-        return json.dumps(value)
-    except Exception as e:
-        return f'Error serializing JSON: {e}'
+        if isinstance(indent, str):
+            indent = int(indent)
+    except (ValueError, TypeError):
+        indent = 0
+
+    try:
+        return json.dumps(obj, indent=indent)
+    except (TypeError, ValueError):
+        return '{}'
 
 
-def role_helper(text: str, render: RenderCallable) -> str:
-    """Generate a role marker.
+# Dotprompt helpers
+def role_helper(
+    params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]
+) -> str:
+    """Create a dotprompt role marker.
 
-    Args:
-        text: The role name.
-        render: Function to render the template.
-
-    Returns:
-        Role marker string.
+    Usage in template:
+    {{role "system"}}
     """
-    role = render(text)
-    return f'<<<dotprompt:role:{role}>>>'
+    if not params or len(params) < 1:
+        return ''
+
+    role_name = str(params[0])
+    return f'<<<dotprompt:role:{role_name}>>>'
 
 
-def history_helper(text: str, render: RenderCallable) -> str:
-    """Generate a history marker.
+def history_helper(
+    params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]
+) -> str:
+    """Create a dotprompt history marker.
 
-    Args:
-        text: The text to render.
-        render: Function to render the template.
-
-    Returns:
-        History marker string.
+    Usage in template:
+    {{history}}
     """
     return '<<<dotprompt:history>>>'
 
 
-def section_helper(text: str, render: RenderCallable) -> str:
-    """Generate a section marker.
+def section_helper(
+    params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]
+) -> str:
+    """Create a dotprompt section marker.
 
-    Args:
-        text: The section name.
-        render: Function to render the template.
-
-    Returns:
-        Section marker string.
+    Usage in template:
+    {{section "name"}}
     """
-    name = render(text)
-    return f'<<<dotprompt:section {name}>>>'
+    if not params or len(params) < 1:
+        return ''
+
+    section_name = str(params[0])
+    return f'<<<dotprompt:section {section_name}>>>'
 
 
-def media_helper(text: str, render: RenderCallable) -> str:
-    """Generate a media marker.
+def media_helper(
+    params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]
+) -> str:
+    """Create a dotprompt media marker.
 
-    Args:
-        text: The media URL and optional content type.
-        render: Function to render the template.
-
-    Returns:
-        Media marker string.
+    Usage in template:
+    {{media url="https://example.com/image.png" contentType="image/png"}}
     """
-    parts = render(text).split()
-    url = parts[0]
-    content_type = parts[1] if len(parts) > 1 else None
+    url = hash.get('url', '')
+    if not url:
+        return ''
 
-    if content_type is not None:
+    content_type = hash.get('contentType', '')
+    if content_type:
         return f'<<<dotprompt:media:url {url} {content_type}>>>'
-    return f'<<<dotprompt:media:url {url}>>>'
+    else:
+        return f'<<<dotprompt:media:url {url}>>>'
 
 
-def if_equals_helper(text: str, render: RenderCallable) -> str:
-    """Compare two values and render the block if they are equal.
-
-    Args:
-        text: The values to compare and template to render.
-        render: Function to render the template.
-
-    Returns:
-        Rendered content based on comparison.
-    """
-    parts = text.split('|')
-    if len(parts) != 3:
-        return ''
-
-    arg1 = render(parts[0].strip())
-    arg2 = render(parts[1].strip())
-    template = parts[2].strip()
-
-    if arg1 == arg2:
-        return render(template)
-    return ''
-
-
-def unless_equals_helper(text: str, render: RenderCallable) -> str:
-    """Compare two values and render the block if they are not equal.
-
-    Args:
-        text: The values to compare and template to render.
-        render: Function to render the template.
-
-    Returns:
-        Rendered content based on comparison.
-    """
-    parts = text.split('|')
-    if len(parts) != 3:
-        return ''
-
-    arg1 = render(parts[0].strip())
-    arg2 = render(parts[1].strip())
-    template = parts[2].strip()
-
-    if arg1 != arg2:
-        return render(template)
-    return ''
+def register_all_helpers(handlebars: Handlebars) -> None:
+    """Register all custom helpers with the handlebars instance."""
+    handlebars.register_helper('history', history_helper)
+    handlebars.register_helper('json', json_helper)
+    handlebars.register_helper('media', media_helper)
+    handlebars.register_helper('role', role_helper)
+    handlebars.register_helper('section', section_helper)
