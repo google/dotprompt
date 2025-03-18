@@ -47,8 +47,19 @@ def role_helper(
 ) -> str:
     """Create a dotprompt role marker.
 
-    Usage in template:
-    {{role "system"}}
+    Example:
+
+        ```handlebars
+        {{role "system"}}
+        ```
+
+    Args:
+        params: List of values.
+        hash: Hash arguments including formatting options.
+        ctx: Current context
+
+    Returns:
+        Role marker.
     """
     if not params or len(params) < 1:
         return ''
@@ -62,8 +73,19 @@ def history_helper(
 ) -> str:
     """Create a dotprompt history marker.
 
-    Usage in template:
-    {{history}}
+    Example:
+
+        ```handlebars
+        {{history}}
+        ```
+
+    Args:
+        params: List of values.
+        hash: Hash arguments including formatting options
+        ctx: Current context
+
+    Returns:
+        History marker.
     """
     return '<<<dotprompt:history>>>'
 
@@ -73,8 +95,19 @@ def section_helper(
 ) -> str:
     """Create a dotprompt section marker.
 
-    Usage in template:
-    {{section "name"}}
+    Example:
+
+        ```handlebars
+        {{section "name"}}
+        ```
+
+    Args:
+        params: List of values.
+        hash: Hash arguments including formatting options
+        ctx: Current context
+
+    Returns:
+        Section marker.
     """
     if not params or len(params) < 1:
         return ''
@@ -88,8 +121,19 @@ def media_helper(
 ) -> str:
     """Create a dotprompt media marker.
 
-    Usage in template:
-    {{media url="https://example.com/image.png" contentType="image/png"}}
+    Example:
+
+        ```handlebars
+        {{media url="https://example.com/image.png" contentType="image/png"}}
+        ```
+
+    Args:
+        params: List of values.
+        hash: Hash arguments including formatting options
+        ctx: Current context
+
+    Returns:
+        Media marker.
     """
     url = hash.get('url', '')
     if not url:
