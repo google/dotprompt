@@ -3,6 +3,7 @@
 
 use handlebars::{
     Context, Handlebars, Helper, HelperDef, Output, RenderContext, RenderError, RenderErrorReason,
+    Renderable,
 };
 use pyo3::exceptions::{PyFileNotFoundError, PyValueError};
 use pyo3::prelude::*;
@@ -188,8 +189,6 @@ impl HandlebarrzTemplate {
     fn new() -> Self {
         let registry = Handlebars::new();
 
-        // Configure registry for block helpers Block helpers are built into
-        // handlebars-rust, so we don't need to register them explicitly.
         Self {
             registry,
             py_helpers: HashMap::new(),
@@ -455,5 +454,302 @@ impl HandlebarrzTemplate {
         self.registry
             .render_template(template_string, &data)
             .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// Registers the extra helper functions.
+    ///
+    /// These helpers are not registered by default in the base template:
+    ///
+    /// - `ifEquals`
+    /// - `unlessEquals`
+    /// - `json`
+    ///
+    /// # Returns
+    ///
+    /// `None`
+    #[pyo3(text_signature = "($self)")]
+    fn register_extra_helpers(&mut self) -> PyResult<()> {
+        self.registry
+            .register_helper("ifEquals", Box::new(IF_EQUALS_HELPER));
+        self.registry
+            .register_helper("unlessEquals", Box::new(UNLESS_EQUALS_HELPER));
+        self.registry.register_helper("json", Box::new(JSON_HELPER));
+        Ok(())
+    }
+}
+
+/// Helper for comparing equality between two values.
+///
+/// Renders the template block if `arg1` is equal to `arg2`.
+/// Otherwise, it renders the inverse block (if provided).
+///
+/// ## Usage
+///
+/// ```handlebars
+/// {{#ifEquals arg1 arg2}}
+///   <p>arg1 is equal to arg2</p>
+/// {{else}}
+///   <p>arg1 is not equal to arg2</p>
+/// {{/ifEquals}}
+/// ```
+///
+/// ## Parameters
+///
+/// * `arg1`: The first argument to compare.
+/// * `arg2`: The second argument to compare.
+///
+/// The helper renders the template block if `arg1` is equal to `arg2`.
+/// Otherwise, it renders the inverse block (if provided).
+#[derive(Clone, Copy, Debug)]
+pub struct IfEqualsHelper {}
+
+impl HelperDef for IfEqualsHelper {
+    fn call<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'rc>,
+        reg: &'reg Handlebars<'reg>,
+        ctx: &'rc Context,
+        rc: &mut RenderContext<'reg, 'rc>,
+        out: &mut dyn Output,
+    ) -> Result<(), RenderError> {
+        let first = h.param(0).ok_or_else(|| {
+            RenderError::from(RenderErrorReason::ParamNotFoundForIndex("ifEquals", 0))
+        })?;
+        let second = h.param(1).ok_or_else(|| {
+            RenderError::from(RenderErrorReason::ParamNotFoundForIndex("ifEquals", 1))
+        })?;
+
+        if first.value() == second.value() {
+            if let Some(template) = h.template() {
+                template.render(reg, ctx, rc, out)?;
+            }
+        } else if let Some(template) = h.inverse() {
+            template.render(reg, ctx, rc, out)?;
+        }
+
+        Ok(())
+    }
+}
+
+/// Helper for comparing inequality between two values.
+///
+/// Renders the template block if `arg1` is not equal to `arg2`.
+/// Otherwise, it renders the inverse block (if provided).
+///
+/// ## Usage
+///
+/// ```handlebars
+/// {{#unlessEquals arg1 arg2}}
+///   <p>arg1 is not equal to arg2</p>
+/// {{else}}
+///   <p>arg1 is equal to arg2</p>
+/// {{/unlessEquals}}
+/// ```
+///
+/// ## Parameters
+///
+/// * `arg1`: The first argument to compare.
+/// * `arg2`: The second argument to compare.
+///
+/// The helper renders the template block if `arg1` is not equal to `arg2`.
+/// Otherwise, it renders the inverse block (if provided).
+#[derive(Clone, Copy, Debug)]
+pub struct UnlessEqualsHelper {}
+
+impl HelperDef for UnlessEqualsHelper {
+    fn call<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'rc>,
+        reg: &'reg Handlebars<'reg>,
+        ctx: &'rc Context,
+        rc: &mut RenderContext<'reg, 'rc>,
+        out: &mut dyn Output,
+    ) -> Result<(), RenderError> {
+        let first = h.param(0).ok_or_else(|| {
+            RenderError::from(RenderErrorReason::ParamNotFoundForIndex("unlessEquals", 0))
+        })?;
+        let second = h.param(1).ok_or_else(|| {
+            RenderError::from(RenderErrorReason::ParamNotFoundForIndex("unlessEquals", 1))
+        })?;
+
+        if first.value() != second.value() {
+            if let Some(template) = h.template() {
+                template.render(reg, ctx, rc, out)?;
+            }
+        } else if let Some(template) = h.inverse() {
+            template.render(reg, ctx, rc, out)?;
+        }
+
+        Ok(())
+    }
+}
+
+/// Helper to serialize data to a JSON string.
+///
+/// ## Usage
+///
+/// ```handlebars
+/// <script type="application/json">
+///   {{json data indent=2}}
+/// </script>
+/// ```
+///
+/// ## Parameters
+///
+/// * `data`: The data to serialize to JSON.
+///
+/// ## Hash Arguments
+///
+/// * `indent`: Optional. If provided, the JSON output will be pretty-printed with the specified indent level (integer).
+///             If not provided, the JSON output will be compact (no whitespace).
+///
+/// This helper is useful for embedding JSON data directly into templates,
+/// for example, to pass configuration or data to client-side JavaScript code.
+#[derive(Clone, Copy, Debug)]
+pub struct JsonHelper {}
+
+impl HelperDef for JsonHelper {
+    fn call<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'rc>,
+        _reg: &'reg Handlebars<'reg>,
+        _ctx: &'rc Context,
+        _rc: &mut RenderContext<'reg, 'rc>,
+        out: &mut dyn Output,
+    ) -> Result<(), RenderError> {
+        let param = match h.param(0) {
+            Some(p) => p.value(),
+            None => {
+                out.write("")?;
+                return Ok(());
+            }
+        };
+
+        let indent_param = h.hash_get("indent");
+        let use_pretty = indent_param.is_some();
+        let result = if use_pretty {
+            serde_json::to_string_pretty(param)
+        } else {
+            serde_json::to_string(param)
+        };
+        let json_str = result.unwrap_or_else(|_| "{}".to_string());
+        out.write(&json_str)?;
+        Ok(())
+    }
+}
+
+static IF_EQUALS_HELPER: IfEqualsHelper = IfEqualsHelper {};
+static UNLESS_EQUALS_HELPER: UnlessEqualsHelper = UnlessEqualsHelper {};
+static JSON_HELPER: JsonHelper = JsonHelper {};
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_if_equals_helper() {
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("ifEquals", Box::new(IF_EQUALS_HELPER));
+
+        assert_eq!(
+            handlebars
+                .render_template("{{#ifEquals 1 1}}yes{{else}}no{{/ifEquals}}", &json!({}))
+                .unwrap(),
+            "yes"
+        );
+
+        assert_eq!(
+            handlebars
+                .render_template("{{#ifEquals 1 2}}yes{{else}}no{{/ifEquals}}", &json!({}))
+                .unwrap(),
+            "no"
+        );
+
+        assert_eq!(
+            handlebars
+                .render_template("{{#ifEquals 1 2}}yes{{/ifEquals}}", &json!({}))
+                .unwrap(),
+            ""
+        );
+    }
+
+    #[test]
+    fn test_unless_equals_helper() {
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("unlessEquals", Box::new(UNLESS_EQUALS_HELPER));
+
+        assert_eq!(
+            handlebars
+                .render_template(
+                    "{{#unlessEquals 1 2}}yes{{else}}no{{/unlessEquals}}",
+                    &json!({})
+                )
+                .unwrap(),
+            "yes"
+        );
+
+        assert_eq!(
+            handlebars
+                .render_template(
+                    "{{#unlessEquals 1 1}}yes{{else}}no{{/unlessEquals}}",
+                    &json!({})
+                )
+                .unwrap(),
+            "no"
+        );
+
+        assert_eq!(
+            handlebars
+                .render_template("{{#unlessEquals 1 1}}yes{{/unlessEquals}}", &json!({}))
+                .unwrap(),
+            ""
+        );
+    }
+
+    #[test]
+    fn test_json_helper() {
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("json", Box::new(JSON_HELPER));
+
+        // Test basic object
+        let data = json!({"a": 1, "b": 2});
+        let rendered = handlebars.render_template("{{json this}}", &data).unwrap();
+        assert_eq!(rendered, r#"{"a":1,"b":2}"#);
+
+        // Test with indent
+        let rendered_indent = handlebars
+            .render_template("{{json this indent=2}}", &data)
+            .unwrap();
+        // Just verify it contains the data and has some formatting
+        assert!(rendered_indent.contains("\"a\": 1"));
+        assert!(rendered_indent.contains("\"b\": 2"));
+
+        // Test empty params
+        let rendered_empty_params = handlebars.render_template("{{json}}", &json!({})).unwrap();
+        assert_eq!(rendered_empty_params, "");
+
+        // Test with array
+        let array_data = json!([1, 2, 3]);
+        let rendered_array = handlebars
+            .render_template("{{json this}}", &array_data)
+            .unwrap();
+        assert_eq!(rendered_array, r#"[1,2,3]"#);
+
+        // Test with indent on array
+        let rendered_array_pretty = handlebars
+            .render_template("{{json this indent=2}}", &array_data)
+            .unwrap();
+        // Verify array formatting
+        assert!(rendered_array_pretty.contains("1,"));
+        assert!(rendered_array_pretty.contains("2,"));
+        assert!(rendered_array_pretty.contains("3"));
+
+        // Test with empty object
+        let empty_map = json!({});
+        let rendered_empty = handlebars
+            .render_template("{{json this}}", &empty_map)
+            .unwrap();
+        assert_eq!(rendered_empty, "{}");
     }
 }

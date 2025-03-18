@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Copyright 2025 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TOP_DIR="$(git rev-parse --show-toplevel)"
+HANDLEBARRZ_DIR="${TOP_DIR}/python/handlebarrz"
+
+echo "=== Running Rust tests for Handlebarrz ==="
+echo "Project root: ${TOP_DIR}"
+echo "Handlebarrz directory: ${HANDLEBARRZ_DIR}"
+echo ""
+
+# Check if cargo is installed
+if ! command -v cargo &>/dev/null; then
+  echo "Error: cargo is not installed. Please install Rust and Cargo." >&2
+  exit 1
+fi
+
+cd "${HANDLEBARRZ_DIR}"
+
+CARGO_ARGS=()
+VERBOSE=false
+
+for arg in "$@"; do
+  case $arg in
+  -v | --verbose)
+    VERBOSE=true
+    CARGO_ARGS+=("--verbose")
+    ;;
+  *)
+    CARGO_ARGS+=("$arg")
+    ;;
+  esac
+done
+
+if [ "$VERBOSE" = true ]; then
+  echo "Running tests in verbose mode..."
+  cargo test "${CARGO_ARGS[@]}"
+else
+  echo "Running tests..."
+  cargo test "${CARGO_ARGS[@]}" --quiet
+fi
+
+echo ""
+echo "=== Rust tests completed ==="

@@ -8,12 +8,18 @@
 set -euo pipefail
 
 TOP_DIR=$(git rev-parse --show-toplevel)
+JS_DIR="${TOP_DIR}/js"
 NODE_VERSIONS=(
   "20"
   "21"
   "22"
   "23"
 )
+
+echo "=== Running Node.js tests ==="
+echo "Project root: ${TOP_DIR}"
+echo "Node.js directory: ${JS_DIR}"
+echo ""
 
 if [[ -z ${NVM_DIR-} ]]; then
   echo "NVM_DIR is not set. Please ensure nvm is installed and properly configured."
@@ -27,11 +33,15 @@ for VERSION in "${NODE_VERSIONS[@]}"; do
 
   nvm install "${VERSION}" || true
   nvm use "${VERSION}"
-  cd "${TOP_DIR}/js" && pnpm install && pnpm run test
+  pushd "${JS_DIR}"
+  pnpm install && pnpm run test
   if [ $? -ne 0 ]; then
     echo "JavaScript tests failed."
     exit 1
   fi
+  popd
 done
 
 nvm use default
+
+echo "=== Node.js tests completed ==="

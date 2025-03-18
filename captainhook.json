@@ -43,6 +43,9 @@
           "run": "scripts/run_lint"
         },
         {
+          "run": "scripts/run_rust_tests"
+        },
+        {
           "run": "scripts/run_python_tests"
         },
         {
@@ -90,6 +93,9 @@
         },
         {
           "run": "scripts/run_lint"
+        },
+        {
+          "run": "scripts/run_rust_tests"
         },
         {
           "run": "scripts/run_python_tests"

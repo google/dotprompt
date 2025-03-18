@@ -8,12 +8,18 @@
 set -euo pipefail
 
 TOP_DIR=$(git rev-parse --show-toplevel)
+PYTHON_DIR="${TOP_DIR}/python"
 PYTHON_VERSIONS=(
   "3.12"
   "3.13"
 )
 
-pushd "${TOP_DIR}/python"
+echo "=== Running Python tests ==="
+echo "Project root: ${TOP_DIR}"
+echo "Python directory: ${PYTHON_DIR}"
+echo ""
+
+pushd "${PYTHON_DIR}"
 for VERSION in "${PYTHON_VERSIONS[@]}"; do
   echo "Running tests with Python ${VERSION}..."
   uv run --directory handlebarrz maturin build
@@ -22,5 +28,7 @@ for VERSION in "${PYTHON_VERSIONS[@]}"; do
     pytest -vv --log-level=DEBUG .
 done
 popd
+
+echo "=== Python tests completed ==="
 
 exit $?
