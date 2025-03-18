@@ -8,6 +8,7 @@
 set -euo pipefail
 
 TOP_DIR=$(git rev-parse --show-toplevel)
+GO_DIR="${TOP_DIR}/go"
 
 # We're concerned about only the release versions of Go, not "tip", but it has
 # been included as an example in case it is needed in the future.
@@ -18,11 +19,14 @@ GO_VERSIONS=(
   #"tip" # Fetches and builds the latest version of go from source and is slow.
 )
 
-cd "${TOP_DIR}/go"
+echo "=== Running Go tests ==="
+echo "Project root: ${TOP_DIR}"
+echo "Go directory: ${GO_DIR}"
+echo ""
 
+pushd "${GO_DIR}"
 for VERSION in "${GO_VERSIONS[@]}"; do
   echo "Running tests with Go ${VERSION}..."
-  pushd "${TOP_DIR}/go" &>/dev/null
   # Ensure that the build works too.
   "${TOP_DIR}/scripts/golang" "${VERSION}" build ./...
   # Run the tests.
@@ -42,7 +46,9 @@ for VERSION in "${GO_VERSIONS[@]}"; do
   #  echo "Coverage is $COVERAGE%, which is below the threshold of $THRESHOLD%."
   #  exit 1
   #fi
-
-  popd &>/dev/null
 done
+popd
+
+echo "=== Go tests completed ==="
+
 exit $?

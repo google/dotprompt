@@ -3,6 +3,7 @@
 
 use handlebars::{
     Context, Handlebars, Helper, HelperDef, Output, RenderContext, RenderError, RenderErrorReason,
+    Renderable,
 };
 use pyo3::exceptions::{PyFileNotFoundError, PyValueError};
 use pyo3::prelude::*;
@@ -11,20 +12,15 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::path::Path;
 
-/// Python bindings for the Handlebars templating engine implemented in Rust.
+/// Python bindings for the handlebars-rust library.
 ///
 /// This module provides Python access to the high-performance Handlebars-rust
-/// implementation. It exposes the core functionality needed for template
-/// rendering, including:
+/// implementation. Features includee:
 ///
-/// - Template registration and management
-/// - Context-based rendering
-/// - Helper function registration
-/// - Configuration options like strict mode and development mode
-/// - HTML escaping utilities
-///
-/// The main class exposed is `HandlebarrzTemplate`, which wraps the Rust
-/// `Handlebars` registry and provides methods for template operations.
+/// - Context-based rendering.
+/// - HTML escaping utilities.
+/// - Strict mode and development mode.
+/// - Template and helper function registration.
 #[pymodule]
 fn _native(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<HandlebarrzTemplate>()?;
@@ -33,45 +29,52 @@ fn _native(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     Ok(())
 }
 
-/// Escapes special HTML characters in a string to prevent XSS attacks.
+/// Escapes special HTML characters in a string to prevent XSS injection attacks
+/// by converting the following characters to their corresponding HTML entities.
 ///
-/// Converts the characters `&`, `<`, `>`, `"`, and `'` to their corresponding
-/// HTML entities (`&amp;`, `&lt;`, `&gt;`, `&quot;`, and `&#x27;`).
+/// | Character | HTML Entity |
+/// |-----------|-------------|
+/// | `&`       | `&amp;`     |
+/// | `<`       | `&lt;`      |
+/// | `>`       | `&gt;`      |
+/// | `"`       | `&quot;`    |
+/// | `'`       | `&#x27;`    |
 ///
 /// This function is used by default for all variable interpolations in
-/// Handlebars templates (e.g., `{{variable}}`), unless specifically bypassed
-/// with triple braces (`{{{variable}}}`) or the ampersand prefix (`{{&variable}}`).
+/// Handlebars templates (e.g., `{{var}}`), unless specifically bypassed with
+/// triple braces (`{{{var}}}`) or the ampersand prefix (`{{&var}}`).
 ///
 /// # Arguments
 ///
-/// * `text` - The string to be HTML-escaped
+/// * `text` - String to be escaped.
 ///
 /// # Returns
 ///
-/// A new string with HTML special characters escaped
+/// String with HTML special characters escaped.
 #[pyfunction]
 fn html_escape(text: &str) -> String {
     handlebars::html_escape(text)
 }
 
-/// Passes through a string without any escaping or modification.
+/// Passes through a string without any escaping.
 ///
-/// This function can be set as the escape function using `set_escape_fn()`
-/// when HTML escaping is not desired for the entire template engine.
+/// This function can be set as the escape function using `set_escape_fn()` when
+/// HTML escaping is not desired for the entire template engine.  This is the
+/// equivalent of the JS `SafeString` object.
 ///
 /// # Arguments
 ///
-/// * `text` - The string to be returned without modification
+/// * `text` - String to be returned without escaping.
 ///
 /// # Returns
 ///
-/// The same string that was passed in, without any changes
+/// Unescaped string that was passed in.
 #[pyfunction]
 fn no_escape(text: &str) -> String {
     handlebars::no_escape(text)
 }
 
-/// Python callable helper
+/// Callable helper.
 struct PyHelperDef {
     func: PyObject,
 }
@@ -85,9 +88,8 @@ impl HelperDef for PyHelperDef {
         _rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> Result<(), RenderError> {
-        // Acquire GIL
         Python::with_gil(|py| {
-            // Extract params
+            // Extract params.
             let params: Vec<&Value> = h.params().iter().map(|p| p.value()).collect();
             let params_json = match serde_json::to_string(&params) {
                 Ok(json) => json,
@@ -97,7 +99,7 @@ impl HelperDef for PyHelperDef {
                 }
             };
 
-            // Extract hash
+            // Get hash.
             let hash = h.hash();
             let mut hash_map = HashMap::new();
             for (k, v) in hash.iter() {
@@ -111,7 +113,7 @@ impl HelperDef for PyHelperDef {
                 }
             };
 
-            // Convert context to JSON
+            // Convert context to JSON.
             let ctx_json = match serde_json::to_string(ctx.data()) {
                 Ok(json) => json,
                 Err(e) => {
@@ -120,7 +122,7 @@ impl HelperDef for PyHelperDef {
                 }
             };
 
-            // Call the Python function
+            // Call Python function.
             let result = self.func.call1(py, (params_json, hash_json, ctx_json));
 
             match result {
@@ -146,24 +148,29 @@ impl HelperDef for PyHelperDef {
 
 /// A Handlebars template engine instance.
 ///
-/// This class provides methods for registering templates, partials, and helpers,
-/// as well as rendering templates with data.
+/// This class provides methods for:
+///
+/// - registering templates
+/// - registering partials
+/// - registering helpers
+/// - rendering with data
 ///
 /// # Examples
 ///
 /// ```python
 /// import handlebarrz
 ///
-/// # Create a new template engine instance
+/// # Create a new template native engine instance. In user-facing python
+/// # code, please use the `Handlebars/Template` wrapper class.
 /// engine = handlebarrz.HandlebarrzTemplate()
 ///
-/// # Register a template
+/// # Register template.
 /// engine.register_template('my_template', '<p>{{name}}</p>')
 ///
-/// # Render the template with data
+/// # Render template with data.
 /// data = {'name': 'John'}
 /// result = engine.render('my_template', data)
-/// print(result)  # Output: <p>John</p>
+/// print(result)              # Output: <p>John</p>
 /// ```
 #[pyclass]
 struct HandlebarrzTemplate {
@@ -177,13 +184,10 @@ impl HandlebarrzTemplate {
     ///
     /// # Returns
     ///
-    /// A new `HandlebarrzTemplate` instance
+    /// A new `HandlebarrzTemplate` instance.
     #[new]
     fn new() -> Self {
         let registry = Handlebars::new();
-
-        // Configure registry for block helpers
-        // Block helpers are built into handlebars-rust, so we don't need to register them explicitly
 
         Self {
             registry,
@@ -193,12 +197,12 @@ impl HandlebarrzTemplate {
 
     /// Sets the strict mode for the template engine.
     ///
-    /// In strict mode, the engine will raise an error if a template tries to
-    /// access a non-existent variable or helper.
+    /// In strict mode, the engine raises an error if a template tries to access
+    /// a non-existent variable or helper.
     ///
     /// # Arguments
     ///
-    /// * `enabled` - Whether to enable strict mode
+    /// * `enabled` - Whether to enable strict mode.
     ///
     /// # Returns
     ///
@@ -213,7 +217,7 @@ impl HandlebarrzTemplate {
     ///
     /// # Returns
     ///
-    /// Whether strict mode is currently enabled
+    /// Whether strict mode is currently enabled.
     #[pyo3(text_signature = "($self)")]
     fn get_strict_mode(&self) -> bool {
         self.registry.strict_mode()
@@ -221,12 +225,12 @@ impl HandlebarrzTemplate {
 
     /// Sets the development mode for the template engine.
     ///
-    /// In development mode, the engine will recompile templates on every render,
-    /// which can be useful for development and debugging.
+    /// In development mode, the engine will recompile templates on every
+    /// render, which can be useful for development and debugging.
     ///
     /// # Arguments
     ///
-    /// * `enabled` - Whether to enable development mode
+    /// * `enabled` - Whether to enable development mode.
     ///
     /// # Returns
     ///
@@ -237,11 +241,11 @@ impl HandlebarrzTemplate {
         Ok(())
     }
 
-    /// Gets the current development mode setting.
+    /// Gets the development mode setting.
     ///
     /// # Returns
     ///
-    /// Whether development mode is currently enabled
+    /// Whether development mode is currently enabled.
     #[pyo3(text_signature = "($self)")]
     fn get_dev_mode(&self) -> bool {
         self.registry.dev_mode()
@@ -254,7 +258,8 @@ impl HandlebarrzTemplate {
     ///
     /// # Arguments
     ///
-    /// * `escape_fn` - The name of the escape function to use (either "html_escape" or "no_escape")
+    /// * `escape_fn` - The name of the escape function to use (either
+    ///   "html_escape" or "no_escape").
     ///
     /// # Returns
     ///
@@ -262,7 +267,7 @@ impl HandlebarrzTemplate {
     ///
     /// # Raises
     ///
-    /// `PyValueError` if the specified escape function is not recognized
+    /// `PyValueError` if the specified escape function is not recognized.
     #[pyo3(text_signature = "($self, escape_fn)")]
     fn set_escape_fn(&mut self, escape_fn: &str) -> PyResult<()> {
         match escape_fn {
@@ -282,8 +287,8 @@ impl HandlebarrzTemplate {
     ///
     /// # Arguments
     ///
-    /// * `name` - The name of the template
-    /// * `template_string` - The template source code
+    /// * `name` - Name of the template.
+    /// * `template_string` - Template text.
     ///
     /// # Returns
     ///
@@ -291,7 +296,7 @@ impl HandlebarrzTemplate {
     ///
     /// # Raises
     ///
-    /// `PyValueError` if the template cannot be registered
+    /// `PyValueError` if the template cannot be registered.
     #[pyo3(text_signature = "($self, name, template_string)")]
     fn register_template(&mut self, name: &str, template_string: &str) -> PyResult<()> {
         self.registry
@@ -303,8 +308,8 @@ impl HandlebarrzTemplate {
     ///
     /// # Arguments
     ///
-    /// * `name` - The name of the partial
-    /// * `template_string` - The partial source code
+    /// * `name` - The name of the partial.
+    /// * `template_string` - The partial source code.
     ///
     /// # Returns
     ///
@@ -312,7 +317,7 @@ impl HandlebarrzTemplate {
     ///
     /// # Raises
     ///
-    /// `PyValueError` if the partial cannot be registered
+    /// `PyValueError` if the partial cannot be registered.
     #[pyo3(text_signature = "($self, name, template_string)")]
     fn register_partial(&mut self, name: &str, template_string: &str) -> PyResult<()> {
         self.registry
@@ -324,8 +329,8 @@ impl HandlebarrzTemplate {
     ///
     /// # Arguments
     ///
-    /// * `name` - The name of the template
-    /// * `file_path` - The path to the template file
+    /// * `name` - The name of the template.
+    /// * `file_path` - The path to the template file.
     ///
     /// # Returns
     ///
@@ -333,8 +338,8 @@ impl HandlebarrzTemplate {
     ///
     /// # Raises
     ///
-    /// `PyFileNotFoundError` if the template file does not exist
-    /// `PyValueError` if the template cannot be registered
+    /// `PyFileNotFoundError` if the template file does not exist.
+    /// `PyValueError` if the template cannot be registered.
     #[pyo3(text_signature = "($self, name, file_path)")]
     fn register_template_file(&mut self, name: &str, file_path: &str) -> PyResult<()> {
         let path = Path::new(file_path);
@@ -354,23 +359,20 @@ impl HandlebarrzTemplate {
     ///
     /// # Arguments
     ///
-    /// * `name` - The name of the helper
-    /// * `helper_fn` - The Python function to use as the helper
+    /// * `name` - The name of the helper.
+    /// * `helper_fn` - The Python function to use as the helper.
     ///
     /// # Returns
     ///
     /// `None`
     #[pyo3(text_signature = "($self, name, helper_fn)")]
     fn register_helper(&mut self, name: &str, helper_fn: PyObject) -> PyResult<()> {
-        // Store Python function reference using GIL
         Python::with_gil(|py| {
             self.py_helpers
                 .insert(name.to_string(), helper_fn.clone_ref(py));
 
-            // Create helper wrapper
             let helper = PyHelperDef { func: helper_fn };
 
-            // Register helper
             self.registry.register_helper(name, Box::new(helper));
         });
 
@@ -381,7 +383,7 @@ impl HandlebarrzTemplate {
     ///
     /// # Arguments
     ///
-    /// * `name` - The name of the template
+    /// * `name` - The name of the template.
     ///
     /// # Returns
     ///
@@ -396,11 +398,11 @@ impl HandlebarrzTemplate {
     ///
     /// # Arguments
     ///
-    /// * `name` - The name of the template
+    /// * `name` - The name of the template.
     ///
     /// # Returns
     ///
-    /// Whether the template exists
+    /// Whether the template exists.
     #[pyo3(text_signature = "($self, name)")]
     fn has_template(&self, name: &str) -> bool {
         self.registry.has_template(name)
@@ -410,20 +412,20 @@ impl HandlebarrzTemplate {
     ///
     /// # Arguments
     ///
-    /// * `name` - The name of the template
-    /// * `data` - The data to use for rendering (as a JSON string)
+    /// * `name` - The name of the template.
+    /// * `data` - The data to use for rendering (as JSON).
     ///
     /// # Returns
     ///
-    /// The rendered template as a string
+    /// Rendered template as string.
     ///
     /// # Raises
     ///
-    /// `PyValueError` if the template cannot be rendered
+    /// `PyValueError` if the template cannot be rendered.
     #[pyo3(text_signature = "($self, name, data)")]
     fn render(&self, name: &str, data: &str) -> PyResult<String> {
         let data: Value = serde_json::from_str(data)
-            .map_err(|e| PyValueError::new_err(format!("Invalid JSON data: {}", e)))?;
+            .map_err(|e| PyValueError::new_err(format!("invalid JSON: {}", e)))?;
 
         self.registry
             .render(name, &data)
@@ -434,23 +436,320 @@ impl HandlebarrzTemplate {
     ///
     /// # Arguments
     ///
-    /// * `template_string` - The template source code
-    /// * `data` - The data to use for rendering (as a JSON string)
-    ///
-    /// # Returns
-    ///
-    /// The rendered template as a string
+    /// * `template_string` - The template source code.
+    /// * `data` - The data to use for rendering (as JSON).
     ///
     /// # Raises
     ///
-    /// `PyValueError` if the template cannot be rendered
+    /// `PyValueError` if the template cannot be rendered.
+    ///
+    /// # Returns
+    ///
+    /// Rendered template as a string.
     #[pyo3(text_signature = "($self, template_string, data)")]
     fn render_template(&self, template_string: &str, data: &str) -> PyResult<String> {
         let data: Value = serde_json::from_str(data)
-            .map_err(|e| PyValueError::new_err(format!("Invalid JSON data: {}", e)))?;
+            .map_err(|e| PyValueError::new_err(format!("invalid JSON: {}", e)))?;
 
         self.registry
             .render_template(template_string, &data)
             .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// Registers the extra helper functions.
+    ///
+    /// These helpers are not registered by default in the base template:
+    ///
+    /// - `ifEquals`
+    /// - `unlessEquals`
+    /// - `json`
+    ///
+    /// # Returns
+    ///
+    /// `None`
+    #[pyo3(text_signature = "($self)")]
+    fn register_extra_helpers(&mut self) -> PyResult<()> {
+        self.registry
+            .register_helper("ifEquals", Box::new(IF_EQUALS_HELPER));
+        self.registry
+            .register_helper("unlessEquals", Box::new(UNLESS_EQUALS_HELPER));
+        self.registry.register_helper("json", Box::new(JSON_HELPER));
+        Ok(())
+    }
+}
+
+/// Helper for comparing equality between two values.
+///
+/// Renders the template block if `arg1` is equal to `arg2`.
+/// Otherwise, it renders the inverse block (if provided).
+///
+/// ## Usage
+///
+/// ```handlebars
+/// {{#ifEquals arg1 arg2}}
+///   <p>arg1 is equal to arg2</p>
+/// {{else}}
+///   <p>arg1 is not equal to arg2</p>
+/// {{/ifEquals}}
+/// ```
+///
+/// ## Parameters
+///
+/// * `arg1`: The first argument to compare.
+/// * `arg2`: The second argument to compare.
+///
+/// The helper renders the template block if `arg1` is equal to `arg2`.
+/// Otherwise, it renders the inverse block (if provided).
+#[derive(Clone, Copy, Debug)]
+pub struct IfEqualsHelper {}
+
+impl HelperDef for IfEqualsHelper {
+    fn call<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'rc>,
+        reg: &'reg Handlebars<'reg>,
+        ctx: &'rc Context,
+        rc: &mut RenderContext<'reg, 'rc>,
+        out: &mut dyn Output,
+    ) -> Result<(), RenderError> {
+        let first = h.param(0).ok_or_else(|| {
+            RenderError::from(RenderErrorReason::ParamNotFoundForIndex("ifEquals", 0))
+        })?;
+        let second = h.param(1).ok_or_else(|| {
+            RenderError::from(RenderErrorReason::ParamNotFoundForIndex("ifEquals", 1))
+        })?;
+
+        if first.value() == second.value() {
+            if let Some(template) = h.template() {
+                template.render(reg, ctx, rc, out)?;
+            }
+        } else if let Some(template) = h.inverse() {
+            template.render(reg, ctx, rc, out)?;
+        }
+
+        Ok(())
+    }
+}
+
+/// Helper for comparing inequality between two values.
+///
+/// Renders the template block if `arg1` is not equal to `arg2`.
+/// Otherwise, it renders the inverse block (if provided).
+///
+/// ## Usage
+///
+/// ```handlebars
+/// {{#unlessEquals arg1 arg2}}
+///   <p>arg1 is not equal to arg2</p>
+/// {{else}}
+///   <p>arg1 is equal to arg2</p>
+/// {{/unlessEquals}}
+/// ```
+///
+/// ## Parameters
+///
+/// * `arg1`: The first argument to compare.
+/// * `arg2`: The second argument to compare.
+///
+/// The helper renders the template block if `arg1` is not equal to `arg2`.
+/// Otherwise, it renders the inverse block (if provided).
+#[derive(Clone, Copy, Debug)]
+pub struct UnlessEqualsHelper {}
+
+impl HelperDef for UnlessEqualsHelper {
+    fn call<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'rc>,
+        reg: &'reg Handlebars<'reg>,
+        ctx: &'rc Context,
+        rc: &mut RenderContext<'reg, 'rc>,
+        out: &mut dyn Output,
+    ) -> Result<(), RenderError> {
+        let first = h.param(0).ok_or_else(|| {
+            RenderError::from(RenderErrorReason::ParamNotFoundForIndex("unlessEquals", 0))
+        })?;
+        let second = h.param(1).ok_or_else(|| {
+            RenderError::from(RenderErrorReason::ParamNotFoundForIndex("unlessEquals", 1))
+        })?;
+
+        if first.value() != second.value() {
+            if let Some(template) = h.template() {
+                template.render(reg, ctx, rc, out)?;
+            }
+        } else if let Some(template) = h.inverse() {
+            template.render(reg, ctx, rc, out)?;
+        }
+
+        Ok(())
+    }
+}
+
+/// Helper to serialize data to a JSON string.
+///
+/// ## Usage
+///
+/// ```handlebars
+/// <script type="application/json">
+///   {{json data indent=2}}
+/// </script>
+/// ```
+///
+/// ## Parameters
+///
+/// * `data`: The data to serialize to JSON.
+///
+/// ## Hash Arguments
+///
+/// * `indent`: Optional. If provided, the JSON output will be pretty-printed with the specified indent level (integer).
+///             If not provided, the JSON output will be compact (no whitespace).
+///
+/// This helper is useful for embedding JSON data directly into templates,
+/// for example, to pass configuration or data to client-side JavaScript code.
+#[derive(Clone, Copy, Debug)]
+pub struct JsonHelper {}
+
+impl HelperDef for JsonHelper {
+    fn call<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'rc>,
+        _reg: &'reg Handlebars<'reg>,
+        _ctx: &'rc Context,
+        _rc: &mut RenderContext<'reg, 'rc>,
+        out: &mut dyn Output,
+    ) -> Result<(), RenderError> {
+        let param = match h.param(0) {
+            Some(p) => p.value(),
+            None => {
+                out.write("")?;
+                return Ok(());
+            }
+        };
+
+        let indent_param = h.hash_get("indent");
+        let use_pretty = indent_param.is_some();
+        let result = if use_pretty {
+            serde_json::to_string_pretty(param)
+        } else {
+            serde_json::to_string(param)
+        };
+        let json_str = result.unwrap_or_else(|_| "{}".to_string());
+        out.write(&json_str)?;
+        Ok(())
+    }
+}
+
+static IF_EQUALS_HELPER: IfEqualsHelper = IfEqualsHelper {};
+static UNLESS_EQUALS_HELPER: UnlessEqualsHelper = UnlessEqualsHelper {};
+static JSON_HELPER: JsonHelper = JsonHelper {};
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_if_equals_helper() {
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("ifEquals", Box::new(IF_EQUALS_HELPER));
+
+        assert_eq!(
+            handlebars
+                .render_template("{{#ifEquals 1 1}}yes{{else}}no{{/ifEquals}}", &json!({}))
+                .unwrap(),
+            "yes"
+        );
+
+        assert_eq!(
+            handlebars
+                .render_template("{{#ifEquals 1 2}}yes{{else}}no{{/ifEquals}}", &json!({}))
+                .unwrap(),
+            "no"
+        );
+
+        assert_eq!(
+            handlebars
+                .render_template("{{#ifEquals 1 2}}yes{{/ifEquals}}", &json!({}))
+                .unwrap(),
+            ""
+        );
+    }
+
+    #[test]
+    fn test_unless_equals_helper() {
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("unlessEquals", Box::new(UNLESS_EQUALS_HELPER));
+
+        assert_eq!(
+            handlebars
+                .render_template(
+                    "{{#unlessEquals 1 2}}yes{{else}}no{{/unlessEquals}}",
+                    &json!({})
+                )
+                .unwrap(),
+            "yes"
+        );
+
+        assert_eq!(
+            handlebars
+                .render_template(
+                    "{{#unlessEquals 1 1}}yes{{else}}no{{/unlessEquals}}",
+                    &json!({})
+                )
+                .unwrap(),
+            "no"
+        );
+
+        assert_eq!(
+            handlebars
+                .render_template("{{#unlessEquals 1 1}}yes{{/unlessEquals}}", &json!({}))
+                .unwrap(),
+            ""
+        );
+    }
+
+    #[test]
+    fn test_json_helper() {
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("json", Box::new(JSON_HELPER));
+
+        // Test basic object
+        let data = json!({"a": 1, "b": 2});
+        let rendered = handlebars.render_template("{{json this}}", &data).unwrap();
+        assert_eq!(rendered, r#"{"a":1,"b":2}"#);
+
+        // Test with indent
+        let rendered_indent = handlebars
+            .render_template("{{json this indent=2}}", &data)
+            .unwrap();
+        // Just verify it contains the data and has some formatting
+        assert!(rendered_indent.contains("\"a\": 1"));
+        assert!(rendered_indent.contains("\"b\": 2"));
+
+        // Test empty params
+        let rendered_empty_params = handlebars.render_template("{{json}}", &json!({})).unwrap();
+        assert_eq!(rendered_empty_params, "");
+
+        // Test with array
+        let array_data = json!([1, 2, 3]);
+        let rendered_array = handlebars
+            .render_template("{{json this}}", &array_data)
+            .unwrap();
+        assert_eq!(rendered_array, r#"[1,2,3]"#);
+
+        // Test with indent on array
+        let rendered_array_pretty = handlebars
+            .render_template("{{json this indent=2}}", &array_data)
+            .unwrap();
+        // Verify array formatting
+        assert!(rendered_array_pretty.contains("1,"));
+        assert!(rendered_array_pretty.contains("2,"));
+        assert!(rendered_array_pretty.contains("3"));
+
+        // Test with empty object
+        let empty_map = json!({});
+        let rendered_empty = handlebars
+            .render_template("{{json this}}", &empty_map)
+            .unwrap();
+        assert_eq!(rendered_empty, "{}");
     }
 }

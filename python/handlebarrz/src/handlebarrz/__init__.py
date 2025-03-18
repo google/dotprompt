@@ -3,29 +3,28 @@
 
 """Python wrapper for the Handlebars templating language using handlebars-rust.
 
-This module provides a Pythonic interface to the Handlebars templating system
-implemented in Rust. It supports full Handlebars functionality including
-template registration, rendering, partials, block helpers, custom helpers,
-subexpressions, inline partials, and various configuration options.
+It supports most Handlebars functionality including template registration,
+rendering, partials, block helpers, custom helpers, subexpressions, inline
+partials, and various configuration options.
 
 ## Features:
 
-- Template registration (strings, files, directories)
-- Partial templates and blocks
+- Block helpers with inverse sections (`else` blocks)
+- Built-in helpers (`each`, `if`, `unless`, `with`, `lookup`, `log`)
+- Context navigation (`this`, `../parent`, `@root`)
 - Custom helper functions
-- Built-in helpers (each, if, unless, with, lookup, log)
-- Block helpers with inverse sections (else blocks)
-- Context navigation (this, ../parent, @root)
-- Subexpressions and parameter literals
-- HTML escaping options and customization
-- Strict mode for missing fields
 - Development mode for automatic template reloading
-- Whitespace control with ~ operator
+- HTML escaping options and customization
+- Partial templates and blocks
+- Strict mode for missing fields
+- Subexpressions and parameter literals
+- Template registration (strings, files, directories)
+- Whitespace control with `~` operator
 
-## Typical usage example:
+## Example
 
 ```python
-# Using the Template class
+# Using the Template class.
 from handlebarrz import Template
 
 template = Template()
@@ -34,15 +33,13 @@ result = template.render("hello", {"name": "World"})
 # result = "Hello World!"
 
 # Using the Handlebars alias.
-# Import is placed here as an example. In real usage, import at the top
 from handlebarrz import Handlebars
 
 handlebars = Handlebars()
 handlebars.register_template("greeting", "Hello {{name}}!")
-result = handlebars.render("greeting", {"name": "World"})
-# result = "Hello World!"
+result = handlebars.render("greeting", {"name": "World"}) # "Hello World!"
 
-# Using custom helpers
+# Using custom helpers.
 def format_name(params, hash, ctx):
     name = params[0]
     return name.upper() if hash.get("uppercase") else name
@@ -51,8 +48,7 @@ handlebars.register_helper("format", format_name)
 handlebars.register_template(
     "formatted", "Hello {{format name uppercase=true}}!"
 )
-result = handlebars.render("formatted", {"name": "World"})
-# result = "Hello WORLD!"
+result = handlebars.render("formatted", {"name": "World"}) # "Hello WORLD!"
 ```
 """
 
@@ -79,10 +75,18 @@ class EscapeFunction:
 
     These constants define how content is escaped when rendered in templates.
     By default, Handlebars escapes HTML entities in variables to prevent XSS
-    attacks, but this behavior can be customized.
+    attacks, but this behavior can be customized:
+
+    | Character | HTML Entity |
+    |-----------|-------------|
+    | `&`       | `&amp;`     |
+    | `<`       | `&lt;`      |
+    | `>`       | `&gt;`      |
+    | `"`       | `&quot;`    |
+    | `'`       | `&#x27;`    |
 
     Attributes:
-        HTML_ESCAPE: Escapes HTML entities (default, converts &<>"' to entities)
+        HTML_ESCAPE: Escapes HTML entities (default)
         NO_ESCAPE: Passes content through without any escaping
     """
 
@@ -95,68 +99,54 @@ class Template:
 
     This class wraps the Rust implementation of Handlebars and provides a
     Pythonic interface for template registration, rendering, and configuration.
+    The following language features are supported:
 
-    The Handlebars template language extends basic templating with expressions,
-    helpers, partials, block expressions, and more. This implementation supports
-    the full range of Handlebars features including:
-
-    * Expressions: `{{var}}`, `{{{var}}}`, `{{&var}}`
     * Block Expressions: `{{#block}}...{{/block}}`
-    * Partials: `{{> partial}}`
-    * Comments: `{{! comment }}`
-    * Helpers: `{{helper param1 param2 key=value}}`
     * Block Helpers: `{{#helper}}...{{else}}...{{/helper}}`
-    * Path Navigation: `{{../parent}}`, `{{this}}`, `{{@root}}`
+    * Comments: `{{! comment }}`
+    * Expressions: `{{var}}`, `{{{var}}}`, `{{&var}}`
+    * Helpers: `{{helper param1 param2 key=value}}`
     * Literals: `{{helper "string" 123 true null undefined}}`
+    * Partials: `{{> partial}}`
+    * Path Navigation: `{{../parent}}`, `{{this}}`, `{{@root}}`
     * Subexpressions: `{{helper (subhelper param) param2}}`
     * Whitespace Control: `{{~helper}}` or `{{helper~}}`
 
     Attributes:
-        strict_mode: Whether to raise errors for missing fields in templates
-        dev_mode: Whether to enable development mode features for auto-reloading
+        strict_mode: Whether to raise errors for missing fields in templates.
+        dev_mode: Whether to enable development mode features for auto-reloading.
     """
 
     def __init__(self) -> None:
-        """Initialize a new Handlebars template engine.
-
-        Creates a fresh template registry with default settings:
-        - HTML escaping enabled.
-        - Strict mode disabled.
-        - Development mode disabled.
-        - Built-in helpers registered (if, unless, each, with, lookup, log,
-          etc.).
-        """
+        """Create a new Handlebars template engine."""
         self._template = _HandlebarrzTemplate()
 
     @property
     def strict_mode(self) -> bool:
-        """Get the current strict mode setting.
+        """Whether the strict mode setting is enabled.
 
         Returns:
-            bool: True if strict mode is enabled, False otherwise
+            Whether the strict mode setting is enabled.
         """
         return self._template.get_strict_mode()
 
     @strict_mode.setter
     def strict_mode(self, enabled: bool) -> None:
-        """Set strict mode for this template engine.
-
-        In strict mode, accessing missing fields raises an error instead of
-        returning an empty string. This helps catch typos and undefined
-        variables during development.
+        """Set strict mode to turn typos, missing field access, and undefined
+        variables into errors.
 
         Args:
-            enabled: Whether to enable strict mode
+            enabled: Whether strict mode should be enable.
         """
         self._template.set_strict_mode(enabled)
         logger.debug({'event': 'strict_mode_changed', 'enabled': enabled})
 
     @property
     def dev_mode(self) -> bool:
-        """Get the current dev mode setting.
+        """Whether dev mode has been enabled.
 
         Returns:
-            bool: True if dev mode is enabled, False otherwise
+            Whether dev mode has been enabled.
         """
         return self._template.get_dev_mode()
 
@@ -177,9 +167,9 @@ class Template:
     def set_escape_function(self, escape_fn: str) -> None:
         """Set the escape function used for HTML escaping.
 
-        Controls how variable values are escaped when rendered in templates with
-        the `{{var}}` syntax (triple stache `{{{var}}}` and ampersand `{{&var}}`
-        will still render unescaped).
+        Controls how variable values are escaped when rendered with the
+        `{{var}}` syntax (triple stache `{{{var}}}` and ampersand `{{&var}}`
+        will still be rendered unescaped).
 
         Args:
             escape_fn: The escape function to use, one of the values from
@@ -376,24 +366,23 @@ class Template:
             raise
 
     def has_template(self, name: str) -> bool:
-        """Check if a template with the given name exists.
+        """Determines whether the template with teh given name exists.
 
         Args:
-            name: The name of the template to check
+            name: Name of the template.
 
         Returns:
-            bool: True if the template exists, False otherwise
+            Whether the template exists.
         """
         return self._template.has_template(name)
 
     def unregister_template(self, name: str) -> None:
         """Unregister a template with the given name.
 
-        Removes the template from the registry. If the template doesn't exist,
-        this is a no-op.
+        Removes the template from the registry if it exists.
 
         Args:
-            name: The name of the template to unregister
+            name: The name of the template to unregister.
         """
         self._template.unregister_template(name)
         logger.debug({'event': 'template_unregistered', 'name': name})
@@ -444,7 +433,7 @@ class Template:
             data: The data to render the template with
 
         Returns:
-            str: The rendered template string
+            Rendered template string.
 
         Raises:
             ValueError: If there is a syntax error in the template or a
@@ -462,6 +451,25 @@ class Template:
             )
             raise
 
+    def register_extra_helpers(self) -> None:
+        """Registers extra helper functions.
+
+        - `ifEquals`
+        - `unlessEquals`
+        - `json`
+
+        These helpers are not registered by default and must be registered
+        explicitly if needed.
+        """
+        try:
+            self._template.register_extra_helpers()
+            logger.debug({'event': 'extra_helpers_registered'})
+        except Exception as e:
+            logger.error(
+                {'event': 'extra_helpers_registration_error', 'error': str(e)}
+            )
+            raise
+
 
 def create_helper(
     fn: Callable[[list[Any], dict[str, Any], dict[str, Any]], str],
@@ -473,11 +481,12 @@ def create_helper(
     deserialization of JSON data between Rust and Python.
 
     Helper functions in Handlebars can be used for various purposes:
-    - Formatting data (dates, numbers, strings)
-    - Conditional rendering with custom logic
-    - Transforming data (sorting, filtering, mapping)
-    - Generating HTML or other output formats
-    - Implementing custom block helpers
+
+    - Conditional rendering with custom logic.
+    - Formatting data (dates, numbers, strings).
+    - Generating HTML or other output formats.
+    - Implementing custom block helpers.
+    - Transforming data (sorting, filtering, mapping).
 
     Args:
         fn: A function taking (params, hash, context) and returning a string
@@ -486,7 +495,7 @@ def create_helper(
             - context: The current template context
 
     Returns:
-        Callable: A function compatible with the Rust interface
+        Function compatible with the Rust interface.
     """
 
     def wrapper(params_json: str, hash_json: str, ctx_json: str) -> str:
@@ -500,14 +509,15 @@ def create_helper(
     return wrapper
 
 
-# Alias Template as Handlebars.
+# Alias Template as Handlebars.  This is done because the JS implementation
+# calls its template class `Handlebars` so mostly for familiarity.
 Handlebars = Template
 
 
 __all__ = [
-    'Template',
-    'Handlebars',
     'EscapeFunction',
+    'Handlebars',
+    'Template',
     'create_helper',
     'html_escape',
     'no_escape',

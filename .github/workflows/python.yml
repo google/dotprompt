@@ -53,8 +53,11 @@ jobs:
       - name: Check licenses
         run: ./scripts/check_license
 
-      - name: Run tests
+      - name: Run Python tests
         run: ./scripts/run_python_tests
+
+      - name: Run Rust tests for handlebarrz
+        run: ./scripts/run_rust_tests
 
       - name: Build documentation
         run: uv run mkdocs build --strict
