@@ -451,6 +451,25 @@ class Template:
             )
             raise
 
+    def register_extra_helpers(self) -> None:
+        """Registers extra helper functions.
+
+        - `ifEquals`
+        - `unlessEquals`
+        - `json`
+
+        These helpers are not registered by default and must be registered
+        explicitly if needed.
+        """
+        try:
+            self._template.register_extra_helpers()
+            logger.debug({'event': 'extra_helpers_registered'})
+        except Exception as e:
+            logger.error(
+                {'event': 'extra_helpers_registration_error', 'error': str(e)}
+            )
+            raise
+
 
 def create_helper(
     fn: Callable[[list[Any], dict[str, Any], dict[str, Any]], str],

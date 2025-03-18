@@ -66,7 +66,7 @@ func NewDotprompt(options *DotpromptOptions) *Dotprompt {
 }
 
 // DefineHelper registers a helper function.
-func (dp *Dotprompt) defineHelper(name string, helper any, tpl *raymond.Template) {
+func (dp *Dotprompt) DefineHelper(name string, helper any, tpl *raymond.Template) {
 	if dp.knownHelpers[name] {
 		return
 	}
@@ -75,7 +75,7 @@ func (dp *Dotprompt) defineHelper(name string, helper any, tpl *raymond.Template
 }
 
 // DefinePartial registers a partial template.
-func (dp *Dotprompt) definePartial(name string, source string, tpl *raymond.Template) {
+func (dp *Dotprompt) DefinePartial(name string, source string, tpl *raymond.Template) {
 	if dp.knownPartials[name] {
 		return
 	}
@@ -87,18 +87,18 @@ func (dp *Dotprompt) definePartial(name string, source string, tpl *raymond.Temp
 func (dp *Dotprompt) RegisterHelpers(options *DotpromptOptions, tpl *raymond.Template) {
 	if options != nil && options.Helpers != nil {
 		for key, helper := range options.Helpers {
-			dp.defineHelper(key, helper, tpl)
+			dp.DefineHelper(key, helper, tpl)
 		}
 	}
 	for name, helper := range templateHelpers {
-		dp.defineHelper(name, helper, tpl)
+		dp.DefineHelper(name, helper, tpl)
 	}
 }
 
 func (dp *Dotprompt) RegisterPartials(options *DotpromptOptions, tpl *raymond.Template, template string) error {
 	if options.Partials != nil {
 		for key, partial := range options.Partials {
-			dp.definePartial(key, partial, tpl)
+			dp.DefinePartial(key, partial, tpl)
 		}
 	}
 	err := dp.resolvePartials(template, tpl)
@@ -219,7 +219,7 @@ func (dp *Dotprompt) resolvePartials(template string, tpl *raymond.Template) err
 				return err
 			}
 			if content != "" {
-				dp.definePartial(partial, content, tpl)
+				dp.DefinePartial(partial, content, tpl)
 				err = dp.resolvePartials(content, tpl)
 				if err != nil {
 					return err
