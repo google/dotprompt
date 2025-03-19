@@ -14,12 +14,17 @@ jobs:
       matrix:
         python-version:
           - "3.12"
+          - "3.13"
+      fail-fast: false
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Pre-requisites
-        run: scripts/setup -a ci
+      #- name: Pre-requisites
+      #  run: scripts/setup -a ci
+
+      - name: Set up Go
+        uses: actions/setup-go@main
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -53,11 +58,36 @@ jobs:
       - name: Check licenses
         run: ./scripts/check_license
 
-      - name: Run Python tests
-        run: ./scripts/run_python_tests
+      - name: Build Rust extension for Python ${{ matrix.python-version }}
+        working-directory: ./python
+        run: |
+          # Create a fresh virtual environment for the current Python version
+          uv venv --python python${{ matrix.python-version }}
+          # Build the Rust extension for the current Python version
+          uv run --active --directory handlebarrz maturin develop
+
+      - name: Run Python tests for Python ${{ matrix.python-version }}
+        working-directory: ./python
+        run: |
+          uv run --active pytest -vv --log-level=DEBUG .
 
       - name: Run Rust tests for handlebarrz
         run: ./scripts/run_rust_tests
+
+      - name: Install d2lang diagramming tool
+        run: go install oss.terrastruct.com/d2@latest
+
+      - name: Install mkdocs
+        run: |
+          uv tool install \
+          mkdocs \
+          --with mkdocs-autorefs \
+          --with mkdocs-d2-plugin \
+          --with mkdocs-literate-nav \
+          --with mkdocs-material \
+          --with mkdocs-mermaid2-plugin \
+          --with mkdocs-minify-plugin \
+          --with mkdocstrings[python]
 
       - name: Build documentation
         run: uv run mkdocs build --strict

@@ -21,13 +21,18 @@ echo ""
 
 pushd "${PYTHON_DIR}"
 for VERSION in "${PYTHON_VERSIONS[@]}"; do
+  # NOTE: Build the Rust extension for a specific Python version in an isolated
+  # virtual environment; otherwise we see weird missing import errors.
+  echo "Creating virtual environment for ${VERSION}..."
+  uv venv --python "${VERSION}"
+  uv run --python "${VERSION}" --active --directory handlebarrz maturin develop
   echo "Running tests with Python ${VERSION}..."
-  # NOTE: Build the Rust extension for a specific Python version; otherwise we
-  # see weird missing import errors.
-  uv run --python "${VERSION}" --directory handlebarrz maturin develop
   uv run \
     --python "${VERSION}" \
+    --active \
     pytest -vv --log-level=DEBUG .
+  echo "Cleaning up virtual environment for ${VERSION}..."
+  rm -rf .venv
 done
 popd
 
