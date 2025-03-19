@@ -183,11 +183,11 @@ def if_equals_helper(
         return ''
 
     arg1, arg2 = params[0], params[1]
-    fn = hash.get('fn')
+    fn = ctx.get('fn')
     if arg1 == arg2 and fn is not None:
         return str(fn(ctx))
     else:
-        inverse = hash.get('inverse')
+        inverse = ctx.get('inverse')
         if inverse is not None:
             return str(inverse(ctx))
     return ''
@@ -210,11 +210,11 @@ def unless_equals_helper(
         return ''
 
     arg1, arg2 = params[0], params[1]
-    fn = hash.get('fn')
+    fn = ctx.get('fn')
     if arg1 != arg2 and fn is not None:
         return str(fn(ctx))
     else:
-        inverse = hash.get('inverse')
+        inverse = ctx.get('inverse')
         if inverse is not None:
             return str(inverse(ctx))
     return ''
