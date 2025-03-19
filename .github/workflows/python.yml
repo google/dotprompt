@@ -20,11 +20,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      #- name: Pre-requisites
-      #  run: scripts/setup -a ci
-
       - name: Set up Go
         uses: actions/setup-go@main
+        with:
+          go-version: stable
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -61,15 +60,13 @@ jobs:
       - name: Build Rust extension for Python ${{ matrix.python-version }}
         working-directory: ./python
         run: |
-          # Create a fresh virtual environment for the current Python version
           uv venv --python python${{ matrix.python-version }}
-          # Build the Rust extension for the current Python version
           uv run --active --directory handlebarrz maturin develop
 
       - name: Run Python tests for Python ${{ matrix.python-version }}
         working-directory: ./python
         run: |
-          uv run --active pytest -vv --log-level=DEBUG .
+          uv run --active pytest -xvvs --log-level=DEBUG .
 
       - name: Run Rust tests for handlebarrz
         run: ./scripts/run_rust_tests
