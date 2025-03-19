@@ -1,6 +1,14 @@
 # Copyright 2025 Google LLC
-
 # SPDX-License-Identifier: Apache-2.0
+"""
+This module provides classes and utilities designed to work with the `Dotprompt` system for template rendering,
+dynamic partial resolution, tools integration, and schema configuration. The main classes are `DotpromptOptions`
+and `Dotprompt`.
+
+Classes:
+    1. DotpromptOptions:
+    2. Dotprompt:
+"""
 
 from __future__ import annotations
 
@@ -9,7 +17,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, Set, TypeVar, Union
 
-from handlebarrz import Handlebars
+from handlebarrz import Handlebars, Template
 
 from .helpers import register_all_helpers
 from .parse import parse_document, to_messages
@@ -18,13 +26,14 @@ from .typing import (
     ParsedPrompt,
     PromptMetadata,
     RenderedPrompt,
+    T,
     ToolDefinition,
 )
 
 # Regular expression pattern for finding partials
 PARTIAL_PATTERN = re.compile(r'\{\{>\s*([A-Za-z0-9_-]+)\s*\}\}')
 
-T = TypeVar('T')
+
 PartialResolver = Callable[[str], str | None]
 ToolResolver = Callable[[str], ToolDefinition | None]
 SchemaResolver = Callable[[str], dict[str, Any] | None]
@@ -151,34 +160,66 @@ class Dotprompt:
     def compile(
         self,
         source: Union[str, ParsedPrompt[T]],
-        metadata: PromptMetadata[T] | None = None,
+        metadata: Optional[PromptMetadata[T]] = None,
     ) -> Callable[
-        [DataArgument[Any], PromptMetadata[T] | None], RenderedPrompt[T]
+        [DataArgument[Any], Optional[PromptMetadata[T]]], RenderedPrompt[T]
     ]:
-        """Compile a template for repeated rendering
+        """
+        Compiles a given source (template or pre-parsed prompt) into a render function.
 
         Args:
-            source: Template string or parsed prompt
-            metadata: Additional metadata
+            source: The source to be compiled, which can either be a raw template string or an already parsed prompt.
+            metadata: Optional prompt metadata to be associated with the compilation.
 
         Returns:
-            Render function for the compiled template
+            A callable render function that takes input data and optional metadata. This function produces a RenderedPrompt by rendering the source template with the provided data and metadata
         """
         parsed = (
             source if isinstance(source, ParsedPrompt) else self.parse(source)
         )
-
         self.resolve_partials(parsed.template)
-        # Add type ignore for Handlebars compile method
-        template = self.handlebars.compile(parsed.template)  # type: ignore[attr-defined]
+
+        # Generate a unique template name
+        template_name = f'template_{id(parsed.template)}'
+
+        # Register the template instead of trying to compile it
+        self.handlebars.register_template(template_name, parsed.template)
 
         def render_function(
-            data: DataArgument[Any], options: PromptMetadata[T] | None = None
+            data: DataArgument[Any], options: Optional[PromptMetadata[T]] = None
         ) -> RenderedPrompt[T]:
+            """
+            This class is responsible for compiling prompt templates and subsequently rendering them with provided data and optional metadata, leveraging pre-defined handles and context preparation steps.
+
+            Args:
+            - source: A source object, which may be a string or a pre-parsed prompt template. Represents the input template to be rendered.
+            - metadata: Optional metadata that can provide additional context or override behavior during the prompt rendering process.
+
+            Returns:
+            Returns a callable render function. The render function accepts data and optional metadata, which it uses to generate a rendered prompt object.
+
+            Attributes:
+            - render_function: A function that combines provided data and metadata with the compiled template, producing a final structured and rendered prompt.
+                - data: Input data object to populate the template placeholders during rendering.
+                - options: Additional optional metadata that may modify or extend the behavior during rendering.
+                - merged_meta: Resulting metadata after merging the provided metadata options with the actual parsed template's metadata.
+                - context: Prepared context dictionary, synthesizing the provided data and metadata for rendering purposes.
+                - rendered: Interpolated template string generated using the rendered context.
+
+            Raises:
+            - Ensures template rendering stability by utilizing compiled metadata and source context.
+
+            Purpose:
+            The main aim is to streamline the process of combining raw templates, input data, and supporting metadata into a final, coherent prompt that can be output as structured content.
+            """
             merged_meta = self.render_metadata(parsed, options)
             context = self._prepare_context(data, merged_meta)
+
+            # Render the template using the registered name
+            rendered = self.handlebars.render(template_name, context)
+
             return RenderedPrompt[T].model_construct(
-                messages=to_messages(template(context), data),
+                messages=to_messages(rendered, data),
                 **merged_meta.model_dump(by_alias=True, exclude_unset=True),
             )
 
@@ -273,11 +314,19 @@ class Dotprompt:
             Context dictionary for template rendering
         """
         return {
-            '@input': data.input or {},
-            '@context': data.context or {},
+            '@input': data.get('input', {})
+            if isinstance(data, dict)
+            else getattr(data, 'input', {}) or {},
+            '@context': data.get('context', {})
+            if isinstance(data, dict)
+            else getattr(data, 'context', {}) or {},
             '@metadata': {
                 'prompt': metadata.model_dump(),
-                'docs': data.docs,
-                'messages': data.messages,
+                'docs': data.get('docs', [])
+                if isinstance(data, dict)
+                else getattr(data, 'docs', []),
+                'messages': data.get('messages', [])
+                if isinstance(data, dict)
+                else getattr(data, 'messages', []),
             },
         }

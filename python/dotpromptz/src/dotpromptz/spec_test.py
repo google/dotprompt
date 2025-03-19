@@ -1,9 +1,11 @@
 # Copyright 2025 Google LLC
-
 # SPDX-License-Identifier: Apache-2.0
+"""
+This module provides utilities for processing specification files, managing test cases (`SpecTest`),
+and test suites (`SpecSuite`), as well as synchronization of partial resolvers.
+"""
 
-import asyncio
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
@@ -15,15 +17,24 @@ import yaml
 from .dotprompt import Dotprompt, DotpromptOptions
 from .typing import DataArgument, RenderedPrompt, ToolDefinition
 
-# Initialize logger
 logger = structlog.get_logger()
 
-SPEC_DIR = Path(__file__).parent.parent.parent.parent / 'spec'
+SPEC_DIR = Path('..') / 'spec'
+
+SPEC_DIR = SPEC_DIR.resolve()
 
 
 @dataclass
 class SpecTest:
-    """Individual test case specification"""
+    """
+    Dataclass representing a specification test.
+
+    Attributes:
+    desc: An optional string providing a description of the test.
+    data: An optional dictionary containing input data for the test.
+    expect: An optional dictionary specifying expected output or results of the test.
+    options: An optional dictionary specifying additional options or configurations for the test.
+    """
 
     desc: str | None = None
     data: dict[str, Any] | None = None
@@ -104,7 +115,7 @@ def make_test_function(
     s: SpecSuite,
     tc: SpecTest,
     dotprompt_factory: Callable[[SpecSuite], Dotprompt],
-) -> Callable[[], Coroutine[Any, Any, None]]:
+) -> Callable[[], None]:
     """Generate pytest test function from spec
 
     Args:
@@ -116,11 +127,9 @@ def make_test_function(
         Async test function for pytest
     """
 
-    @pytest.mark.asyncio
-    async def test_function() -> None:
+    def test_function() -> None:
         env = dotprompt_factory(s)
-        # Handle async resolution with type hint
-        await env.resolve_partials(s.template)  # type: ignore[func-returns-value]
+        env.resolve_partials(s.template)
 
         if s.partials:
             for name, template in s.partials.items():
@@ -135,22 +144,42 @@ def make_test_function(
             },
         )
 
-        # Type-annotate the awaitable render result
-        result: dict[str, Any] = cast(
-            dict[str, Any],
-            await env.render(s.template, render_data),  # type: ignore[misc]
-        )
+        # render result
+        result = env.render(s.template, render_data)
 
         if tc.expect:
-            # Direct dictionary access
-            assert result.get('messages') == tc.expect.get('messages', []), (
+            # Convert Message objects to dictionaries for comparison
+            result_dict = [
+                {
+                    'role': msg.role.value
+                    if hasattr(msg, 'role')
+                    else msg.role,
+                    'content': [
+                        {'text': part.text}
+                        if hasattr(part, 'text')
+                        else {'media': part.metadata}
+                        if hasattr(part, 'metadata')
+                        and part.metadata
+                        and 'contentType' in part.metadata
+                        else part
+                        for part in (
+                            msg.content
+                            if hasattr(msg, 'content')
+                            else msg.content
+                        )
+                    ],
+                }
+                for msg in result.messages
+            ]
+
+            assert result_dict == tc.expect.get('messages', []), (
                 f'Messages mismatch in {tc.desc}'
             )
-            assert result.get('metadata') == tc.expect.get('metadata', {}), (
+            assert result.metadata == tc.expect.get('metadata', {}), (
                 f'Metadata mismatch in {tc.desc}'
             )
             if 'raw' in tc.expect:
-                assert result.get('raw') == tc.expect['raw'], (
+                assert result.raw == tc.expect['raw'], (
                     f'Raw output mismatch in {tc.desc}'
                 )
 
@@ -212,8 +241,4 @@ def process_spec_files() -> None:
         pytest.fail(f'Failed to load spec tests: {str(e)}')
 
 
-# Initialize tests during module import
 process_spec_files()
-
-if __name__ == '__main__':
-    process_spec_files()
