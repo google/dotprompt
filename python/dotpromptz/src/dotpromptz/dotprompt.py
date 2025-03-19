@@ -160,9 +160,9 @@ class Dotprompt:
     def compile(
         self,
         source: Union[str, ParsedPrompt[T]],
-        metadata: Optional[PromptMetadata[T]] = None,
+        metadata: PromptMetadata[T] | None = None,
     ) -> Callable[
-        [DataArgument[Any], Optional[PromptMetadata[T]]], RenderedPrompt[T]
+        [DataArgument[Any], PromptMetadata[T] | None], RenderedPrompt[T]
     ]:
         """
         Compiles a given source (template or pre-parsed prompt) into a render function.
@@ -186,7 +186,7 @@ class Dotprompt:
         self.handlebars.register_template(template_name, parsed.template)
 
         def render_function(
-            data: DataArgument[Any], options: Optional[PromptMetadata[T]] = None
+             data: DataArgument[Any], options: PromptMetadata[T] | None = None
         ) -> RenderedPrompt[T]:
             """
             This class is responsible for compiling prompt templates and subsequently rendering them with provided data and optional metadata, leveraging pre-defined handles and context preparation steps.
