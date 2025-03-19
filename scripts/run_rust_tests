@@ -21,7 +21,7 @@ fi
 
 cd "${HANDLEBARRZ_DIR}"
 
-CARGO_ARGS=()
+CARGO_ARGS=("")
 VERBOSE=false
 
 for arg in "$@"; do

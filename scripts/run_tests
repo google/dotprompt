@@ -15,6 +15,12 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+"${TOP_DIR}/scripts/run_rust_tests"
+if [ $? -ne 0 ]; then
+  echo "Rust tests failed."
+  exit 1
+fi
+
 "${TOP_DIR}/scripts/run_python_tests"
 if [ $? -ne 0 ]; then
   echo "Python tests failed."

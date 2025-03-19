@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+set -x
+set -euo pipefail
+
+TOP_DIR=$(git rev-parse --show-toplevel)
+
+PYTHON_DIR="${TOP_DIR}/python"
+HANDLEBARRZ_DIR="${TOP_DIR}/python/handlebarrz"
+GO_DIR="${TOP_DIR}/go"
+JS_DIR="${TOP_DIR}"
+
+pushd "${JS_DIR}"
+pnpm update -L -r
+popd
+
+pushd "${GO_DIR}"
+go get -u ./...
+go mod tidy
+popd
+
+pushd "${HANDLEBARRZ_DIR}"
+cargo update
+popd
+
+pushd "${PYTHON_DIR}"
+uv lock --upgrade
+popd
