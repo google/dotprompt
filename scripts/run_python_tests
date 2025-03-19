@@ -10,8 +10,8 @@ set -euo pipefail
 TOP_DIR=$(git rev-parse --show-toplevel)
 PYTHON_DIR="${TOP_DIR}/python"
 PYTHON_VERSIONS=(
-  "3.12"
-  "3.13"
+  "python3.12"
+  "python3.13"
 )
 
 echo "=== Running Python tests ==="
@@ -22,9 +22,11 @@ echo ""
 pushd "${PYTHON_DIR}"
 for VERSION in "${PYTHON_VERSIONS[@]}"; do
   echo "Running tests with Python ${VERSION}..."
-  uv run --directory handlebarrz maturin build
+  # NOTE: Build the Rust extension for a specific Python version; otherwise we
+  # see weird missing import errors.
+  uv run --python "${VERSION}" --directory handlebarrz maturin develop
   uv run \
-    --python "python${VERSION}" \
+    --python "${VERSION}" \
     pytest -vv --log-level=DEBUG .
 done
 popd

@@ -63,7 +63,7 @@ function dotpromptz::update_path() {
 
   # Check if path is already in PATH
   if [[ ":$PATH:" != *":$new_path:"* ]]; then
-    if [ -n "${ZSH_VERSION:-}" ]; then
+    if [ -n "${ZSH_VERSION-}" ]; then
       echo "export PATH=\"$new_path:\$PATH\"" >>"$HOME/.zshrc"
     else
       echo "export PATH=\"$new_path:\$PATH\"" >>"$HOME/.bashrc"
@@ -119,7 +119,6 @@ function dotpromptz::install_prerequisites() {
       python3 \
       ripgrep
 
-
   elif [[ -x "$(command -v dnf)" ]]; then
     # Fedora-based systems.
     sudo dnf install -y \
@@ -142,8 +141,8 @@ function dotpromptz::install_prerequisites() {
 }
 
 function dotpromptz::install_golangci_lint() {
-  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
-    | sh -s -- -b $(go env GOPATH)/bin "v${GOLANGCI_LINT_VERSION}"
+  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh |
+    sh -s -- -b $(go env GOPATH)/bin "v${GOLANGCI_LINT_VERSION}"
 }
 
 function dotpromptz::install_rust() {

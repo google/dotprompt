@@ -8,7 +8,7 @@ from typing import Any
 from handlebarrz import Template
 
 
-class TestExtraHelpers(unittest.TestCase):
+class TestIfEqualsHelper(unittest.TestCase):
     def setUp(self) -> None:
         self.template = Template()
         self.template.register_extra_helpers()

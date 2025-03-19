@@ -43,10 +43,20 @@ consistency across different uses of the same prompt.
 Here's an example of a Dotprompt file that extracts structured data from provided text:
 
 ```handlebars
---- model: googleai/gemini-1.5-pro input: schema: text: string output: format: json schema: name?:
-string, the full name of the person age?: number, the age of the person occupation?: string, the
-person's occupation --- Extract the requested information from the given text. If a piece of
-information is not present, omit that field from the output. Text:
+---
+model: googleai/gemini-1.5-pro
+input:
+  schema:
+    text: string
+output:
+  format: json
+  schema:
+    name?: string, the full name of the person
+    age?: number, the age of the person
+    occupation?: string, the person's occupation
+---
+Extract the requested information from the given text. If a piece of information is not
+present, omit that field from the output. Text:
 {{text}}
 ```
 

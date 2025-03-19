@@ -60,9 +60,7 @@ from typing import Any
 import structlog
 
 from ._native import (
-    HandlebarrzTemplate as _HandlebarrzTemplate,
-)
-from ._native import (
+    HandlebarrzTemplate,
     html_escape,
     no_escape,
 )
@@ -114,12 +112,13 @@ class Template:
 
     Attributes:
         strict_mode: Whether to raise errors for missing fields in templates.
-        dev_mode: Whether to enable development mode features for auto-reloading.
+        dev_mode: Whether to enable development mode features for
+            auto-reloading.
     """
 
     def __init__(self) -> None:
         """Create a new Handlebars template engine."""
-        self._template = _HandlebarrzTemplate()
+        self._template = HandlebarrzTemplate()
 
     @property
     def strict_mode(self) -> bool:
