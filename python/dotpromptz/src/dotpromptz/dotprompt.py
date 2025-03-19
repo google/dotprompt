@@ -1,10 +1,13 @@
 # Copyright 2025 Google LLC
+
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
 
 import re
-from typing import Any, Callable, Dict, List, Optional, Set, TypeVar, Union
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any, Dict, Optional, Set, TypeVar, Union
 
 from handlebarrz import Handlebars
 
@@ -18,26 +21,41 @@ from .typing import (
     ToolDefinition,
 )
 
+# Regular expression pattern for finding partials
+PARTIAL_PATTERN = re.compile(r'\{\{>\s*([A-Za-z0-9_-]+)\s*\}\}')
+
 T = TypeVar('T')
-PartialResolver = Callable[[str], Optional[str]]
-ToolResolver = Callable[[str], Optional[ToolDefinition]]
-SchemaResolver = Callable[[str], Optional[Dict[str, Any]]]
+PartialResolver = Callable[[str], str | None]
+ToolResolver = Callable[[str], ToolDefinition | None]
+SchemaResolver = Callable[[str], dict[str, Any] | None]
 
 
 class DotpromptOptions:
+    """Configuration options for Dotprompt
+
+    Args:
+        default_model: Default model to use if not specified in prompt
+        model_configs: Configuration options for different models
+        helpers: Custom helper functions for handlebars
+        partials: Predefined partials
+        tools: Tool definitions
+        tool_resolver: Function to resolve tool names to definitions
+        schemas: JSON schemas
+        schema_resolver: Function to resolve schema references
+        partial_resolver: Function to resolve partial references
+    """
+
     def __init__(
         self,
-        default_model: Optional[str] = None,
-        model_configs: Optional[Dict[str, Any]] = None,
-        helpers: Optional[Dict[str, Callable[..., Any]]] = None,
-        # Fixed Callable type
-        partials: Optional[Dict[str, str]] = None,
-        tools: Optional[Dict[str, ToolDefinition]] = None,
-        # Enforce ToolDefinition type
-        tool_resolver: Optional[ToolResolver] = None,
-        schemas: Optional[Dict[str, Dict[str, Any]]] = None,
-        schema_resolver: Optional[SchemaResolver] = None,
-        partial_resolver: Optional[PartialResolver] = None,
+        default_model: str | None = None,
+        model_configs: dict[str, Any] | None = None,
+        helpers: dict[str, Callable[..., Any]] | None = None,
+        partials: dict[str, str] | None = None,
+        tools: dict[str, ToolDefinition] | None = None,
+        tool_resolver: ToolResolver | None = None,
+        schemas: dict[str, dict[str, Any]] | None = None,
+        schema_resolver: SchemaResolver | None = None,
+        partial_resolver: PartialResolver | None = None,
     ):
         self.default_model = default_model
         self.model_configs = model_configs or {}
@@ -51,7 +69,13 @@ class DotpromptOptions:
 
 
 class Dotprompt:
-    def __init__(self, options: Optional[DotpromptOptions] = None):
+    """Main Dotprompt template engine
+
+    Args:
+        options: Configuration options for the engine
+    """
+
+    def __init__(self, options: DotpromptOptions | None = None):
         self.handlebars = Handlebars()
         self.options = options or DotpromptOptions()
         self.known_helpers: Set[str] = set()
@@ -66,16 +90,33 @@ class Dotprompt:
             self.define_partial(name, partial)
 
     def define_helper(self, name: str, helper: Callable[..., Any]) -> None:
+        """Register a helper function
+
+        Args:
+            name: Name of the helper
+            helper: Helper function implementation
+        """
         if name not in self.known_helpers:
             self.handlebars.register_helper(name, helper)
             self.known_helpers.add(name)
 
     def define_partial(self, name: str, source: str) -> None:
+        """Register a partial template
+
+        Args:
+            name: Name of the partial
+            source: Template content
+        """
         if name not in self.known_partials:
             self.handlebars.register_partial(name, source)
             self.known_partials.add(name)
 
     def resolve_partials(self, template: str) -> None:
+        """Recursively resolve partials in a template
+
+        Args:
+            template: Template string to process
+        """
         if not self.options.partial_resolver:
             return
 
@@ -86,28 +127,53 @@ class Dotprompt:
                     self.resolve_partials(content)
 
     def _identify_partials(self, template: str) -> Set[str]:
-        return set(re.findall(r'\{\{>\s*([A-Za-z0-9_-]+)\s*\}\}', template))
+        """Find all partial references in a template
+
+        Args:
+            template: Template string to scan
+
+        Returns:
+            Set of partial names referenced in the template
+        """
+        return set(PARTIAL_PATTERN.findall(template))
 
     def parse(self, source: str) -> ParsedPrompt[Any]:
+        """Parse a template string into a structured format
+
+        Args:
+            source: Template string
+
+        Returns:
+            Parsed prompt structure
+        """
         return parse_document(source)
 
     def compile(
         self,
         source: Union[str, ParsedPrompt[T]],
-        metadata: Optional[PromptMetadata[T]] = None,
+        metadata: PromptMetadata[T] | None = None,
     ) -> Callable[
-        [DataArgument[Any], Optional[PromptMetadata[T]]], RenderedPrompt[T]
+        [DataArgument[Any], PromptMetadata[T] | None], RenderedPrompt[T]
     ]:
+        """Compile a template for repeated rendering
+
+        Args:
+            source: Template string or parsed prompt
+            metadata: Additional metadata
+
+        Returns:
+            Render function for the compiled template
+        """
         parsed = (
             source if isinstance(source, ParsedPrompt) else self.parse(source)
         )
-        self.resolve_partials(parsed.template)
 
+        self.resolve_partials(parsed.template)
         # Add type ignore for Handlebars compile method
         template = self.handlebars.compile(parsed.template)  # type: ignore[attr-defined]
 
         def render_function(
-            data: DataArgument[Any], options: Optional[PromptMetadata[T]] = None
+            data: DataArgument[Any], options: PromptMetadata[T] | None = None
         ) -> RenderedPrompt[T]:
             merged_meta = self.render_metadata(parsed, options)
             context = self._prepare_context(data, merged_meta)
@@ -121,8 +187,17 @@ class Dotprompt:
     def render_metadata(
         self,
         parsed: ParsedPrompt[T],
-        additional: Optional[PromptMetadata[T]] = None,
+        additional: PromptMetadata[T] | None = None,
     ) -> PromptMetadata[T]:
+        """Merge and process metadata
+
+        Args:
+            parsed: Parsed prompt with metadata
+            additional: Additional metadata to merge
+
+        Returns:
+            Combined metadata
+        """
         # Initialize with explicit toolDefs alias if creating new instance
         base_meta = (
             parsed.model_copy()
@@ -152,15 +227,33 @@ class Dotprompt:
         self,
         source: str,
         data: DataArgument[Any],
-        options: Optional[PromptMetadata[Any]] = None,
+        options: PromptMetadata[Any] | None = None,
     ) -> RenderedPrompt[Any]:
+        """Render a template with data
+
+        Args:
+            source: Template string
+            data: Data for template rendering
+            options: Additional metadata options
+
+        Returns:
+            Rendered prompt with messages
+        """
         renderer: Callable[
-            [DataArgument[Any], Optional[PromptMetadata[Any]]],
+            [DataArgument[Any], PromptMetadata[Any] | None],
             RenderedPrompt[Any],
         ] = self.compile(source)
         return renderer(data, options)
 
-    def _resolve_tool(self, name: str) -> Optional[ToolDefinition]:
+    def _resolve_tool(self, name: str) -> ToolDefinition | None:
+        """Resolve a tool by name
+
+        Args:
+            name: Tool name to resolve
+
+        Returns:
+            Tool definition or None if not found
+        """
         if tool := self.options.tools.get(name):
             return tool
         if self.options.tool_resolver:
@@ -169,7 +262,16 @@ class Dotprompt:
 
     def _prepare_context(
         self, data: DataArgument[Any], metadata: PromptMetadata[Any]
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
+        """Prepare context for template rendering
+
+        Args:
+            data: Input data
+            metadata: Prompt metadata
+
+        Returns:
+            Context dictionary for template rendering
+        """
         return {
             '@input': data.input or {},
             '@context': data.context or {},

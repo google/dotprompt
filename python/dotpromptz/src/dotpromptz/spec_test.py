@@ -1,72 +1,69 @@
 # Copyright 2025 Google LLC
+
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+from collections.abc import Callable, Coroutine
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Coroutine, Dict, List, Optional, cast
+from typing import Any, cast
 
 import pytest
+import structlog
 import yaml
 
 from .dotprompt import Dotprompt, DotpromptOptions
 from .typing import DataArgument, RenderedPrompt, ToolDefinition
 
-# In spec_test.py
-SPEC_DIR = Path(__file__).parent.parent.parent.parent / "spec"
+# Initialize logger
+logger = structlog.get_logger()
+
+SPEC_DIR = Path(__file__).parent.parent.parent.parent / 'spec'
 
 
+@dataclass
 class SpecTest:
     """Individual test case specification"""
 
-    def __init__(
-        self,
-        desc: Optional[str] = None,
-        data: Optional[Dict[str, Any]] = None,
-        expect: Optional[Dict[str, Any]] = None,
-        options: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        self.desc = desc
-        self.data = data
-        self.expect = expect
-        self.options = options
+    desc: str | None = None
+    data: dict[str, Any] | None = None
+    expect: dict[str, Any] | None = None
+    options: dict[str, Any] | None = None
 
 
+@dataclass
 class SpecSuite:
     """Collection of test cases for a template"""
 
-    def __init__(
-        self,
-        name: str,
-        template: str,
-        data: Optional[Dict[str, Any]] = None,
-        schemas: Optional[Dict[str, Dict[str, Any]]] = None,
-        tools: Optional[Dict[str, Dict[str, Any]]] = None,
-        partials: Optional[Dict[str, str]] = None,
-        resolver_partials: Optional[Dict[str, str]] = None,
-        tests: Optional[List[SpecTest]] = None,
-    ) -> None:
-        self.name = name
-        self.template = template
-        self.data = data
-        self.schemas = schemas
-        self.tools = tools
-        self.partials = partials
-        self.resolver_partials = resolver_partials
-        self.tests = tests
+    name: str
+    template: str
+    data: dict[str, Any] | None = None
+    schemas: dict[str, dict[str, Any]] | None = None
+    tools: dict[str, dict[str, Any]] | None = None
+    partials: dict[str, str] | None = None
+    resolver_partials: dict[str, str] | None = None
+    tests: list[SpecTest] | None = None
 
 
 def process_spec_file(
     file: Path,
     dotprompt_factory: Callable[[SpecSuite], Dotprompt],
 ) -> None:
-    """Process individual YAML spec file"""
-    try:
-        print(f"\nProcessing spec file: {file}")
-        raw_data = yaml.safe_load(file.read_text(encoding='utf-8'))
-        print(f"Found {len(raw_data)} test suites in {file.name}")
-        suite_name = file.relative_to(SPEC_DIR).stem
+    """Process individual YAML spec file
 
-        suites: List[SpecSuite] = []
+    Args:
+        file: Path to the YAML spec file
+        dotprompt_factory: Factory function to create Dotprompt instances
+    """
+    try:
+        logger.info(f'Processing spec file', file=str(file))
+        raw_data = yaml.safe_load(file.read_text(encoding='utf-8'))
+        logger.info(
+            f'Found test suites', count=len(raw_data), file_name=file.name
+        )
+        suite_name = file.relative_to(SPEC_DIR).stem
+        suites: list[SpecSuite] = []
+
         for raw_suite in raw_data:
             tests = [
                 SpecTest(
@@ -88,17 +85,19 @@ def process_spec_file(
                 resolver_partials=raw_suite.get('resolver_partials'),
                 tests=tests,
             )
+
             suites.append(suite)
 
         for s in suites:
             for idx, tc in enumerate(s.tests or []):
                 test_name = f'test_{suite_name}_{s.name}_{idx}'
-                globals()[test_name] = make_test_function(s, tc, dotprompt_factory)
+                globals()[test_name] = make_test_function(
+                    s, tc, dotprompt_factory
+                )
     except yaml.YAMLError as ye:
-        pytest.fail(f"YAML error in {file.name}: {str(ye)}")
-
+        pytest.fail(f'YAML error in {file.name}: {str(ye)}')
     except Exception as e:
-        pytest.fail(f"Error processing {file.name}: {str(e)}")
+        pytest.fail(f'Error processing {file.name}: {str(e)}')
 
 
 def make_test_function(
@@ -106,7 +105,16 @@ def make_test_function(
     tc: SpecTest,
     dotprompt_factory: Callable[[SpecSuite], Dotprompt],
 ) -> Callable[[], Coroutine[Any, Any, None]]:
-    """Generate pytest test function from spec"""
+    """Generate pytest test function from spec
+
+    Args:
+        s: Test suite specification
+        tc: Individual test case
+        dotprompt_factory: Factory function to create Dotprompt instances
+
+    Returns:
+        Async test function for pytest
+    """
 
     @pytest.mark.asyncio
     async def test_function() -> None:
@@ -128,31 +136,42 @@ def make_test_function(
         )
 
         # Type-annotate the awaitable render result
-        result: Dict[str, Any] = cast(
-            Dict[str, Any],
+        result: dict[str, Any] = cast(
+            dict[str, Any],
             await env.render(s.template, render_data),  # type: ignore[misc]
         )
 
         if tc.expect:
             # Direct dictionary access
-            assert result.get('messages') == tc.expect.get('messages', []), \
+            assert result.get('messages') == tc.expect.get('messages', []), (
                 f'Messages mismatch in {tc.desc}'
-            assert result.get('metadata') == tc.expect.get('metadata', {}), \
+            )
+            assert result.get('metadata') == tc.expect.get('metadata', {}), (
                 f'Metadata mismatch in {tc.desc}'
+            )
             if 'raw' in tc.expect:
-                assert result.get('raw') == tc.expect['raw'], \
+                assert result.get('raw') == tc.expect['raw'], (
                     f'Raw output mismatch in {tc.desc}'
+                )
 
     test_function.__name__ = tc.desc or f'test_{s.name}'
     return test_function
 
 
 def sync_partial_resolver(
-    resolver_partials: Optional[Dict[str, str]],
-) -> Optional[Callable[[str], Optional[str]]]:
-    """Create synchronous partial resolver"""
+    resolver_partials: dict[str, str] | None,
+) -> Callable[[str], str | None] | None:
+    """Create synchronous partial resolver
+
+    Args:
+        resolver_partials: Dictionary mapping partial names to content
+
+    Returns:
+        Resolver function or None if no partials provided
+    """
     if not resolver_partials:
         return None
+
     return lambda name: resolver_partials.get(name)
 
 
@@ -160,20 +179,16 @@ def process_spec_files() -> None:
     """Process all spec files in the spec directory"""
     try:
         # Get absolute path to spec directory
-        print(f"SPEC_DIR absolute path: {SPEC_DIR.resolve()}")
-        print(f"SPEC_DIR exists: {SPEC_DIR.exists()}")
+        logger.info(f'SPEC_DIR absolute path', path=str(SPEC_DIR.resolve()))
+        logger.info(f'SPEC_DIR exists', exists=SPEC_DIR.exists())
         spec_path = SPEC_DIR.resolve()
-        print(f"Looking for spec files in: {spec_path}")  # Debugging
+        logger.info(f'Looking for spec files', path=str(spec_path))
 
-        files = [
-            f for f in spec_path.rglob('*.yaml')
-            if f.is_file()
-        ]
+        files = [f for f in spec_path.rglob('*.yaml') if f.is_file()]
 
-        print(f"Found {len(files)} spec files")  # Debugging
-
+        logger.info(f'Found spec files', count=len(files))
         for file in files:
-            print(f"Processing: {file}")  # Debugging
+            logger.info(f'Processing file', file=str(file))
             process_spec_file(
                 file,
                 lambda s: Dotprompt(
@@ -188,16 +203,17 @@ def process_spec_files() -> None:
                             else None
                         ),
                         partial_resolver=sync_partial_resolver(
-                            s.resolver_partials),
+                            s.resolver_partials
+                        ),
                     ),
                 ),
             )
-
     except Exception as e:
-        pytest.fail(f"Failed to load spec tests: {str(e)}")
+        pytest.fail(f'Failed to load spec tests: {str(e)}')
 
 
 # Initialize tests during module import
 process_spec_files()
 
-
+if __name__ == '__main__':
+    process_spec_files()
