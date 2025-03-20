@@ -41,6 +41,7 @@ type Dotprompt struct {
 	schemaResolver  SchemaResolver
 	partialResolver PartialResolver
 	knownPartials   map[string]bool
+	Template        *raymond.Template
 }
 
 // NewDotprompt creates a new Dotprompt instance with the given options.
@@ -142,10 +143,11 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata, 
 	if err != nil {
 		return nil, err
 	}
+	dp.Template = renderTpl
 
 	// RegisterHelpers()
-	dp.RegisterHelpers(dotpromptOptions, renderTpl)
-	err = dp.RegisterPartials(dotpromptOptions, renderTpl, parsedPrompt.Template)
+	dp.RegisterHelpers(dotpromptOptions, dp.Template)
+	err = dp.RegisterPartials(dotpromptOptions, dp.Template, parsedPrompt.Template)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +168,7 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata, 
 		inputContext = MergeMaps(defaultInput, data.Input)
 		inputContext = MergeMaps(inputContext, data.Context)
 
-		renderedString, err := renderTpl.Exec(inputContext)
+		renderedString, err := dp.Template.Exec(inputContext)
 
 		if err != nil {
 			return RenderedPrompt{}, err
