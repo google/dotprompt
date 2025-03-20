@@ -157,10 +157,10 @@ def make_test_function(
                     'content': [
                         {'text': part.text}
                         if hasattr(part, 'text')
-                        else {'media': part.metadata}
-                        if hasattr(part, 'metadata')
-                        and part.metadata
-                        and 'contentType' in part.metadata
+                        else {'media': part.media}
+                        if hasattr(part, 'media') and part.media
+                        else {'metadata': part.metadata}
+                        if hasattr(part, 'metadata') and part.metadata
                         else part
                         for part in (
                             msg.content
@@ -231,6 +231,7 @@ def process_spec_files() -> None:
                             if s.tools
                             else None
                         ),
+                        partials=s.partials,
                         partial_resolver=sync_partial_resolver(
                             s.resolver_partials
                         ),
@@ -239,6 +240,7 @@ def process_spec_files() -> None:
             )
     except Exception as e:
         pytest.fail(f'Failed to load spec tests: {str(e)}')
+
 
 
 process_spec_files()

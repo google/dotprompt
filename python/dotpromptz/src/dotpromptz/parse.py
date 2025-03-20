@@ -219,6 +219,7 @@ def parse_document(source: str) -> ParsedPrompt[T]:
                 elif '.' in key:
                     convert_namespaced_entry_to_nested_object(key, value, ext)
 
+
             try:
                 return ParsedPrompt(
                     name=raw.get('name'),
@@ -295,20 +296,25 @@ def to_messages(
         elif piece.startswith(HISTORY_MARKER_PREFIX):
             # Add the history messages to the message sources
             msgs: list[Message] = []
-            if data and data.messages:
-                msgs = data.messages
-            history_messages = transform_messages_to_history(msgs)
-            if history_messages:
-                message_sources.extend(
-                    [
-                        MessageSource(
-                            role=msg.role,
-                            content=msg.content,
-                            metadata=msg.metadata,
-                        )
-                        for msg in history_messages
-                    ]
-                )
+            if data:
+                # Extract messages from data, handling both dict and object formats
+                if isinstance(data, dict):
+                    msgs = data.get('messages', [])
+                else:
+                    msgs = getattr(data, 'messages', [])
+
+                history_messages = transform_messages_to_history(msgs)
+                if history_messages:
+                    message_sources.extend(
+                        [
+                            MessageSource(
+                                role=msg.role if hasattr(msg, 'role') else msg.get('role'),
+                                content=msg.content if hasattr(msg, 'content') else msg.get('content', []),
+                                metadata=msg.metadata if hasattr(msg, 'metadata') else msg.get('metadata', {}),
+                            )
+                            for msg in history_messages
+                        ]
+                    )
 
             # Add a new message source for the model
             current_message = MessageSource(role=Role.MODEL, source='')
@@ -319,7 +325,10 @@ def to_messages(
             current_message.source = (current_message.source or '') + piece
 
     messages = message_sources_to_messages(message_sources)
-    return insert_history(messages, data.messages if data else None)
+    history_messages = None
+    if data:
+        history_messages = data.get('messages', None) if isinstance(data, dict) else getattr(data, 'messages', None)
+    return insert_history(messages, history_messages)
 
 
 def message_sources_to_messages(
@@ -354,25 +363,32 @@ def message_sources_to_messages(
     return messages
 
 
-def transform_messages_to_history(
-    messages: list[Message],
-) -> list[Message]:
-    """Adds history metadata to an array of messages.
+def transform_messages_to_history(messages: list[Message]) -> list[Message]:
+    """Adds history metadata to an array of messages."""
+    result = []
+    for message in messages:
+        # Handle both dict and object message formats
+        if isinstance(message, dict):
+            role = message.get('role')
+            content = message.get('content', [])
+            metadata = message.get('metadata', {}) or {}  # Handle None metadata
+        else:
+            role = getattr(message, 'role', None)
+            content = getattr(message, 'content', [])
+            metadata = getattr(message, 'metadata',
+                               {}) or {}  # Handle None metadata
 
-    Args:
-        messages: Array of messages to transform
+        # Create a new metadata dict preserving existing keys and adding 'purpose': 'history'
+        new_metadata = {**metadata, 'purpose': 'history'}
 
-    Returns:
-        Array of messages with history metadata added
-    """
-    return [
-        Message(
-            role=message.role,
-            content=message.content,
-            metadata={**(message.metadata or {}), 'purpose': 'history'},
+        # Create a new message with history metadata
+        new_message = Message(
+            role=role,
+            content=content,
+            metadata=new_metadata
         )
-        for message in messages
-    ]
+        result.append(new_message)
+    return result
 
 
 def messages_have_history(messages: list[Message]) -> bool:
@@ -385,10 +401,13 @@ def messages_have_history(messages: list[Message]) -> bool:
         True if the messages have history metadata, False otherwise
     """
     return any(
-        msg.metadata and msg.metadata.get('purpose') == 'history'
+        (isinstance(msg, dict) and msg.get('metadata') is not None and msg.get(
+            'metadata', {}).get('purpose') == 'history') or
+        (hasattr(msg,
+                 'metadata') and msg.metadata is not None and msg.metadata.get(
+            'purpose') == 'history')
         for msg in messages
     )
-
 
 def insert_history(
     messages: list[Message],
@@ -420,14 +439,26 @@ def insert_history(
         return history
 
     last_message = messages[-1]
-    if last_message.role == 'user':
+    # Check if the role is 'user', handling both dict and object message formats
+    # Extract role from last message, handling both dict and object formats
+    if isinstance(last_message, dict):
+        last_role = last_message.get('role')
+    else:
+        last_role = getattr(last_message, 'role', None)
+
+    # Check if last message is from a user (comparing both string and enum values)
+    is_user_message = (last_role == 'user' or
+                       last_role == Role.USER or
+                       (hasattr(last_role, 'value') and last_role.value == 'user'))
+
+    if is_user_message:
         # If the last message is a user message, insert the history before it.
         messages = messages[:-1]
-        messages.extend(history)
+        messages.extend(transform_messages_to_history(history))
         messages.append(last_message)
     else:
         # Otherwise, append the history to the end of the messages.
-        messages.extend(history)
+        messages.extend(transform_messages_to_history(history))
     return messages
 
 
