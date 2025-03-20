@@ -33,7 +33,13 @@ asyncio_mode                       = "strict"
 python_files                       = ["**/*_test.py"]
 
 [tool.pytest.ini_options]
-addopts = ["--cov"]
+addopts             = ["--cov", "-v", "--no-header"]
+log_cli             = true
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+log_cli_format      = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+log_cli_level       = "DEBUG"
+
+verbosity = 2
 
 [tool.coverage.report]
 fail_under = 85
@@ -93,16 +99,34 @@ select = [
   "UP",   # pyupgrade (Python version upgrades)
   "B",    # flake8-bugbear (common bugs)
   "N",    # pep8-naming (naming conventions)
+  "D",    # pydocstyle
   "F401", # unused imports
   "F403", # wildcard imports
   "F841", # unused variables
 ]
 
+[tool.ruff.lint.isort]
+combine-as-imports = true
+force-single-line = false
+known-first-party = ["dotpromptz", "aioia", "handlebarrz"]
+section-order = [
+  "future",
+  "standard-library",
+  "third-party",
+  "first-party",
+  "local-folder",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
 [tool.ruff.format]
-indent-style              = "space"
-line-ending               = "lf"
-quote-style               = "single"
-skip-magic-trailing-comma = false
+docstring-code-format      = true
+docstring-code-line-length = 80
+indent-style               = "space"
+line-ending                = "lf"
+quote-style                = "single"
+skip-magic-trailing-comma  = false
 
 # Static type checking.
 [tool.mypy]

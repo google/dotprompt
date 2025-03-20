@@ -46,7 +46,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Format check
-        run: uv run --directory python ruff format --check .
+        run: uv run --directory python ruff format --check --preview .
 
       - name: Lint with ruff
         run: uv run --directory python ruff check --select I .

@@ -30,4 +30,16 @@ requires      = ["hatchling"]
 packages = ["src/dotpromptz"]
 
 [dependency-groups]
-dev = ["pyyaml>=6.0.2", "types-pyyaml>=6.0.12.20241230"]
+dev = [
+  "pytest>=8.3.5",
+  "pytest-asyncio>=0.25.3",
+  "pytest-cov>=6.0.0",
+  "pyyaml>=6.0.2",
+  "types-pyyaml>=6.0.12.20241230",
+]
+
+[tool.pytest.ini_options]
+log_cli             = true
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+log_cli_format      = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+log_cli_level       = "DEBUG"

@@ -5,11 +5,14 @@
 
 from __future__ import annotations
 
-import unittest
+import hashlib
+import re
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, TypedDict
+from unicodedata import normalize
 
+import pytest
 import structlog
 import yaml
 
@@ -19,6 +22,8 @@ logger = structlog.get_logger(__name__)
 
 
 class Expect(TypedDict, total=False):
+    """Expected output from a spec test."""
+
     config: bool
     ext: bool
     input: bool
@@ -28,6 +33,8 @@ class Expect(TypedDict, total=False):
 
 
 class SpecTest(TypedDict, total=False):
+    """Specification test definition."""
+
     desc: str
     data: DataArgument[Any]
     expect: Expect
@@ -37,6 +44,13 @@ class SpecTest(TypedDict, total=False):
 class SpecSuite(TypedDict, total=False):
     """Specification test suite definition."""
 
+    # These fields are not defined in other spec tests but are here for our
+    # convenience.
+    module_id: str
+    suite_id: str
+    location: Path
+
+    # Common fields.
     name: str
     template: str
     data: DataArgument[Any]
@@ -52,18 +66,63 @@ ROOT_DIR = CURRENT_FILE.parent.parent.parent.parent.parent
 SPECS_DIR = ROOT_DIR / 'spec'
 
 
-def create_spec_suites(filepath: Path) -> list[SpecSuite]:
-    """Create a list of spec suites from a spec file.
+def base64_hash(filepath: Path, length: int = -1) -> str:
+    """Generate a base64 hash of a file.
 
     Args:
-        filepath: The file to process.
+        filepath: The file to hash.
+        length: The length of the hash to return.
 
     Returns:
-        A list of spec suites.
+        A base64 hash of the file.
     """
-    with open(filepath) as f:
-        data = yaml.safe_load(f)
-    return [SpecSuite(**suite) for suite in data]  # type: ignore[typeddict-item]
+    digest = hashlib.sha256(filepath.read_bytes()).hexdigest()
+    if length < 0:
+        return digest
+    if length > len(digest):
+        raise ValueError(
+            f'Length {length} is greater than the digest length {len(digest)}'
+        )
+    return digest[:length]
+
+
+def slugify(text: str, chars: str = r' /\\:;,.?!@#$%^&*()[]{}|<>+="\'') -> str:
+    """Slugify a path component.
+
+    Replaces special characters found in a path component with an underscore,
+    handles Unicode characters, and removes consecutive underscores.
+
+    Args:
+        text: The string to slugify.
+        chars: The characters to replace.
+
+    Returns:
+        A slugified string.
+    """
+    text = normalize('NFKD', text).encode('ASCII', 'ignore').decode('ASCII')
+    pattern = f'[{re.escape(chars)}]+'
+    text = re.sub(pattern, '_', text)
+    text = text.strip('_')
+    text = re.sub('_+', '_', text)
+    return text.lower()
+
+
+def generate_module_id(root_dir: Path, filepath: Path) -> str:
+    """Generate a unique ID for a spec module.
+
+    Args:
+        root_dir: The root directory of the project.
+        filepath: The file to generate an ID for.
+
+    Returns:
+        A unique ID for the spec module.
+    """
+    if not filepath.exists():
+        raise FileNotFoundError(f'File {filepath} does not exist')
+    digest = base64_hash(filepath, 8)
+    fname = filepath.relative_to(root_dir).name
+    slug = slugify(fname)
+    return f'{slug}_{digest}'
 
 
 def is_allowed_spec_file(file: Path) -> bool:
@@ -109,12 +168,36 @@ def enlist_spec_files(
     return [file for file in directory.glob(glob) if filter(file)]
 
 
-def create_test_suites(
+def create_spec_suites_for(filepath: Path, module_id: str) -> list[SpecSuite]:
+    """Create a list of spec suites from a spec file.
+
+    Args:
+        filepath: The file to process.
+        module_id: The ID of the module.
+
+    Returns:
+        A list of spec suites.
+    """
+    with open(filepath) as f:
+        data = yaml.safe_load(f)
+    suites = []
+    for suite in data:
+        suite['module_id'] = module_id
+        suite['location'] = filepath
+        name_slug = slugify(suite['name'])
+        suite['suite_id'] = f'{module_id}_{name_slug}'
+        suites.append(SpecSuite(**suite))  # type: ignore[typeddict-item]
+    return suites
+
+
+def create_spec_suites(
     directory: Path,
     glob: str = '**/*.yaml',
     filter: Callable[[Path], bool] = lambda p: True,
 ) -> list[SpecSuite]:
     """Create test suites from spec files in the given directory.
+
+    The test suites are grouped by the spec file name.
 
     Args:
         directory: The directory to process.
@@ -124,60 +207,95 @@ def create_test_suites(
     Returns:
         A list of spec suites.
     """
-    suites = []
+    suites: list[SpecSuite] = []
     for file in enlist_spec_files(directory, glob, filter):
-        suites.extend(create_spec_suites(file))
+        module_id = generate_module_id(directory, file)
+        spec_suites = create_spec_suites_for(file, module_id=module_id)
+        suites.extend(spec_suites)
     return suites
 
 
-class TestSpecLocation(unittest.TestCase):
-    def test_spec_path(self) -> None:
-        self.assertTrue(SPECS_DIR.exists())
-        self.assertTrue(SPECS_DIR.is_dir())
-
-    def test_spec_path_contains_yaml_files(self) -> None:
-        self.assertTrue(list(SPECS_DIR.glob('**/*.yaml')))
-
-    def test_spec_files_are_valid(self) -> None:
-        for file in SPECS_DIR.glob('**/*.yaml'):
-            with open(file) as f:
-                data = yaml.safe_load(f)
-                print(data)
-
-    def test_spec_files_set(self) -> None:
-        files = list(SPECS_DIR.glob('**/*.yaml'))
-        names = [file.name for file in files]
-        expected = [
-            'history.yaml',
-            'ifEquals.yaml',
-            'json.yaml',
-            'media.yaml',
-            'metadata.yaml',
-            'partials.yaml',
-            'picoschema.yaml',
-            'role.yaml',
-            'section.yaml',
-            'unlessEquals.yaml',
-            'variables.yaml',
-        ]
-
-        names.sort()
-        expected.sort()
-
-        self.assertEqual(len(files), 11)
-        self.assertEqual(names, expected)
+def test_spec_path() -> None:
+    """Test that the spec directory exists."""
+    assert SPECS_DIR.exists()
+    assert SPECS_DIR.is_dir()
 
 
-if __name__ == '__main__':
-    from pprint import pprint
+def test_spec_path_contains_yaml_files() -> None:
+    """Test that the spec directory contains YAML files."""
+    assert list(SPECS_DIR.glob('**/*.yaml'))
 
-    logger.info('Running spec tests')
-    logger.info(
-        'Locations:',
-        current_file=CURRENT_FILE,
-        root_dir=ROOT_DIR,
-        specs_dir=SPECS_DIR,
+
+def test_spec_files_are_valid() -> None:
+    """Test that all spec files contain valid YAML."""
+    for file in SPECS_DIR.glob('**/*.yaml'):
+        with open(file) as f:
+            data = yaml.safe_load(f)
+            assert data is not None
+
+
+def test_spec_files_set() -> None:
+    """Test that the expected set of spec files exists."""
+    files = list(SPECS_DIR.glob('**/*.yaml'))
+    names = [file.name for file in files]
+    expected = [
+        'history.yaml',
+        'ifEquals.yaml',
+        'json.yaml',
+        'media.yaml',
+        'metadata.yaml',
+        'partials.yaml',
+        'picoschema.yaml',
+        'role.yaml',
+        'section.yaml',
+        'unlessEquals.yaml',
+        'variables.yaml',
+    ]
+
+    names.sort()
+    expected.sort()
+
+    assert len(files) == 11
+    assert names == expected
+
+
+@pytest.fixture(scope='session')
+def all_spec_suites() -> list[SpecSuite]:
+    """Create test suites from spec files in the given directory."""
+    return create_spec_suites(SPECS_DIR, filter=is_allowed_spec_file)
+
+
+def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
+    """Generate tests dynamically from spec files."""
+    if (
+        'spec_suite' in metafunc.fixturenames
+        and 'spec_test' in metafunc.fixturenames
+    ):
+        suites = create_spec_suites(SPECS_DIR, filter=is_allowed_spec_file)
+        tests = [(suite, test) for suite in suites for test in suite['tests']]
+        metafunc.parametrize('spec_suite, spec_test', tests)
+
+
+@pytest.mark.asyncio
+async def test_spec_test_case(
+    spec_suite: SpecSuite, spec_test: SpecTest
+) -> None:
+    """Dynamically generated test case."""
+    module_id = spec_suite.get('module_id', 'unknown_module')
+    suite_id = spec_suite.get('suite_id', 'unknown_suite')
+
+    await logger.ainfo(
+        'Running spec test',
+        module_id=module_id,
+        suite_id=suite_id,
+        test_desc=spec_test.get('desc', 'Unnamed test'),
+        suite_name=spec_suite['name'],
+        test_data=spec_test.get('data'),
+        expected=spec_test.get('expect'),
     )
-    pprint(enlist_spec_files(SPECS_DIR, filter=is_allowed_spec_file))
-    pprint(create_test_suites(SPECS_DIR, filter=is_allowed_spec_file))
-    unittest.main()
+
+    # TODO: Implement the core testing logic in a follow up PR.
+    # message = (
+    #    f'Test not implemented. MODULE_ID={module_id}, SUITE_ID={suite_id}'
+    # )
+    # raise AssertionError(message)

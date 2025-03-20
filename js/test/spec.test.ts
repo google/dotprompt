@@ -162,20 +162,20 @@ function processSpecFile(
 /**
  * Top level processing, orchestrates the other functions.
  */
-function processSpecFiles() {
+function processSpecFiles(dotpromptFactory: (suite: SpecSuite) => Dotprompt) {
   const files = readdirSync(SPEC_DIR, { recursive: true, withFileTypes: true });
-  // Process each YAML file
   for (const file of files.filter(
     (file) => !file.isDirectory() && file.name.endsWith('.yaml')
   )) {
-    processSpecFile(file, readFileSync, (s: SpecSuite) => {
-      return new Dotprompt({
-        schemas: s.schemas,
-        tools: s.tools,
-        partialResolver: (name: string) => s.resolverPartials?.[name] || null,
-      });
-    });
+    processSpecFile(file, readFileSync, dotpromptFactory);
   }
 }
 
-processSpecFiles();
+const dotpromptFactory = (s: SpecSuite) => {
+  return new Dotprompt({
+    schemas: s.schemas,
+    tools: s.tools,
+    partialResolver: (name: string) => s.resolverPartials?.[name] || null,
+  });
+};
+processSpecFiles(dotpromptFactory);
