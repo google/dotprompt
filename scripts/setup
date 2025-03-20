@@ -61,13 +61,10 @@ function dotpromptz::update_path() {
   # Remove trailing slash if present.
   new_path="${new_path%/}"
 
-  # Check if path is already in PATH
+  # Check if the path is already in PATH.
   if [[ ":$PATH:" != *":$new_path:"* ]]; then
-    if [ -n "${ZSH_VERSION-}" ]; then
-      echo "export PATH=\"$new_path:\$PATH\"" >>"$HOME/.zshrc"
-    else
-      echo "export PATH=\"$new_path:\$PATH\"" >>"$HOME/.bashrc"
-    fi
+    echo "export PATH=\"$new_path:\$PATH\"" >>"$HOME/.zshrc"
+    echo "export PATH=\"$new_path:\$PATH\"" >>"$HOME/.bashrc"
 
     export PATH="$new_path:$PATH"
     echo "Path $new_path added successfully"
@@ -78,6 +75,9 @@ function dotpromptz::update_path() {
 
 function dotpromptz::preconfigure_environment() {
   git clean -Xfd
+  if [[ ${OS_NAME} == "Darwin" ]]; then
+    dotpromptz::update_path "/opt/homebrew/bin"
+  fi
   dotpromptz::update_path "$HOME/.cargo/bin"
   dotpromptz::update_path "$HOME/.local/bin"
   dotpromptz::update_path "$HOME/.local/share/pnpm"

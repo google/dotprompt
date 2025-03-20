@@ -30,7 +30,7 @@ importers:
         specifier: ^3.5.3
         version: 3.5.3
       tsup:
-        specifier: ^8.4.0
+        specifier: ^8.3.5
         version: 8.4.0(jiti@1.21.6)(postcss@8.5.3)(tsx@4.19.3)(typescript@5.8.2)(yaml@2.7.0)
       tsx:
         specifier: ^4.19.3

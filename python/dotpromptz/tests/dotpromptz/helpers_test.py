@@ -6,15 +6,14 @@
 import json
 import unittest
 
-from handlebarrz import Handlebars
-
-from .helpers import (
+from dotpromptz.helpers import (
     history_helper,
     json_helper,
     media_helper,
     role_helper,
     section_helper,
 )
+from handlebarrz import Handlebars
 
 
 class TestJsonHelper(unittest.TestCase):
