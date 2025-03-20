@@ -66,15 +66,15 @@ ROOT_DIR = CURRENT_FILE.parent.parent.parent.parent.parent
 SPECS_DIR = ROOT_DIR / 'spec'
 
 
-def base64_hash(filepath: Path, length: int = -1) -> str:
-    """Generate a base64 hash of a file.
+def file_digest(filepath: Path, length: int = -1) -> str:
+    """Generate a hex-encoded SHA256 hash of a file.
 
     Args:
         filepath: The file to hash.
         length: The length of the hash to return.
 
     Returns:
-        A base64 hash of the file.
+        A hex-encoded SHA256 hash of the file.
     """
     digest = hashlib.sha256(filepath.read_bytes()).hexdigest()
     if length < 0:
@@ -119,7 +119,7 @@ def generate_module_id(root_dir: Path, filepath: Path) -> str:
     """
     if not filepath.exists():
         raise FileNotFoundError(f'File {filepath} does not exist')
-    digest = base64_hash(filepath, 8)
+    digest = file_digest(filepath, 8)
     fname = filepath.relative_to(root_dir).name
     slug = slugify(fname)
     return f'{slug}_{digest}'
