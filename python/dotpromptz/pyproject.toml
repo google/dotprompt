@@ -14,7 +14,7 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
   "Topic :: Software Development :: Libraries",
 ]
-dependencies = ["handlebarrz", "pydantic[email]>=2.10.6"]
+dependencies = ["handlebarrz", "pydantic[email]>=2.10.6", "structlog>=25.2.0"]
 description = "Dotpromptz is a language-neutral executable prompt template file format for Generative AI."
 license = { text = "Apache-2.0" }
 name = "dotpromptz"
@@ -28,3 +28,6 @@ requires      = ["hatchling"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/dotpromptz"]
+
+[dependency-groups]
+dev = ["pyyaml>=6.0.2", "types-pyyaml>=6.0.12.20241230"]

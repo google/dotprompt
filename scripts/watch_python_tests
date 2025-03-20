@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#
+# Watch python tests.
+#
+# Copyright 2025 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
+#set -x
+set -euo pipefail
+
+TOP_DIR=$(git rev-parse --show-toplevel)
+
+pushd "${TOP_DIR}/python"
+uv run ptw -- .
+popd

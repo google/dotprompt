@@ -464,12 +464,26 @@ source = { editable = "dotpromptz" }
 dependencies = [
     { name = "handlebarrz" },
     { name = "pydantic", extra = ["email"] },
+    { name = "structlog" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pyyaml" },
+    { name = "types-pyyaml" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "handlebarrz", editable = "handlebarrz" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.10.6" },
+    { name = "structlog", specifier = ">=25.2.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pyyaml", specifier = ">=6.0.2" },
+    { name = "types-pyyaml", specifier = ">=6.0.12.20241230" },
 ]
 
 [[package]]
