@@ -14,6 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""Tests for the extra helpers."""
+
 import json
 import unittest
 from typing import Any
@@ -22,8 +24,16 @@ from handlebarrz import Template
 
 
 class TestIfEqualsHelper(unittest.TestCase):
+    """Test the ifEquals helper."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the test."""
+        super().__init__(*args, **kwargs)
+        self.template: Template = Template()
+
     def setUp(self) -> None:
-        self.template = Template()
+        """Set up the test."""
+        self.template.register_extra_helpers()
         self.template.register_extra_helpers()
 
     def test_if_equals_helper_equal_values(self) -> None:
@@ -68,8 +78,15 @@ class TestIfEqualsHelper(unittest.TestCase):
 
 
 class TestUnlessEqualsHelper(unittest.TestCase):
+    """Test the unlessEquals helper."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the test."""
+        super().__init__(*args, **kwargs)
+        self.template: Template = Template()
+
     def setUp(self) -> None:
-        self.template = Template()
+        """Set up the test."""
         self.template.register_extra_helpers()
 
     def test_unless_equals_helper_unequal_values(self) -> None:
@@ -118,8 +135,15 @@ class TestUnlessEqualsHelper(unittest.TestCase):
 
 
 class TestJsonHelper(unittest.TestCase):
+    """Test the json helper."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the test."""
+        super().__init__(*args, **kwargs)
+        self.template: Template = Template()
+
     def setUp(self) -> None:
-        self.template = Template()
+        """Set up the test."""
         self.template.register_extra_helpers()
 
     def test_json_helper_basic_object(self) -> None:
@@ -128,7 +152,10 @@ class TestJsonHelper(unittest.TestCase):
         data = {'a': 1, 'b': 2}
         result = self.template.render('json_basic', {'data': data})
         parsed_result = json.loads(result)
-        self.assertEqual(parsed_result, data)
+        self.assertEqual(
+            json.dumps(parsed_result, sort_keys=True),
+            json.dumps(data, sort_keys=True),
+        )
 
     def test_json_helper_with_indent(self) -> None:
         """Test the JSON helper with explicit indent."""
@@ -136,7 +163,10 @@ class TestJsonHelper(unittest.TestCase):
         data = {'a': 1, 'b': 2}
         result = self.template.render('json_indent', {'data': data})
         parsed_result = json.loads(result)
-        self.assertEqual(parsed_result, data)
+        self.assertEqual(
+            json.dumps(parsed_result, sort_keys=True),
+            json.dumps(data, sort_keys=True),
+        )
         self.assertIn('\n', result)
 
     def test_json_helper_empty_params_renders_empty_string(self) -> None:
@@ -151,7 +181,10 @@ class TestJsonHelper(unittest.TestCase):
         array_data = [1, 2, 3]
         result = self.template.render('json_basic', {'data': array_data})
         parsed_result = json.loads(result)
-        self.assertEqual(parsed_result, array_data)
+        self.assertEqual(
+            json.dumps(parsed_result, sort_keys=True),
+            json.dumps(array_data, sort_keys=True),
+        )
 
     def test_json_helper_with_indent_on_array(self) -> None:
         """Test the JSON helper with indent on array."""
@@ -159,7 +192,10 @@ class TestJsonHelper(unittest.TestCase):
         array_data = [1, 2, 3]
         result = self.template.render('json_indent', {'data': array_data})
         parsed_result = json.loads(result)
-        self.assertEqual(parsed_result, array_data)
+        self.assertEqual(
+            json.dumps(parsed_result, sort_keys=True),
+            json.dumps(array_data, sort_keys=True),
+        )
         self.assertIn('\n', result)
 
     def test_json_helper_empty_object(self) -> None:

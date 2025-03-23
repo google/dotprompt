@@ -14,6 +14,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""Dotpromptz implements the .prompt templates for Python."""
+
 
 def package_name() -> str:
+    """Stub function to test imports."""
     return 'dotpromptz'

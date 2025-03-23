@@ -133,7 +133,7 @@ class Template:
 
     def __init__(self) -> None:
         """Create a new Handlebars template engine."""
-        self._template = HandlebarrzTemplate()
+        self._template: HandlebarrzTemplate = HandlebarrzTemplate()
 
     @property
     def strict_mode(self) -> bool:
@@ -146,8 +146,10 @@ class Template:
 
     @strict_mode.setter
     def strict_mode(self, enabled: bool) -> None:
-        """Set strict mode to turn typos, missing field access, and undefined
-        variables into errors.
+        """Set strict mode.
+
+        This turns typos, missing field access, and undefined variables into
+        errors.
 
         Args:
             enabled: Whether strict mode should be enable.
