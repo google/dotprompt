@@ -656,113 +656,173 @@ static UNLESS_EQUALS_HELPER: UnlessEqualsHelper = UnlessEqualsHelper {};
 static JSON_HELPER: JsonHelper = JsonHelper {};
 
 #[cfg(test)]
-mod test {
-    use super::*;
-    use serde_json::json;
+mod tests {
+    mod if_equals_tests {
+        use super::super::*;
+        use serde_json::json;
 
-    #[test]
-    fn test_if_equals_helper() {
-        let mut handlebars = Handlebars::new();
-        handlebars.register_helper("ifEquals", Box::new(IF_EQUALS_HELPER));
+        #[test]
+        fn with_true_condition_renders_main_block() {
+            let mut handlebars = Handlebars::new();
+            handlebars.register_helper("ifEquals", Box::new(IF_EQUALS_HELPER));
 
-        assert_eq!(
-            handlebars
-                .render_template("{{#ifEquals 1 1}}yes{{else}}no{{/ifEquals}}", &json!({}))
-                .unwrap(),
-            "yes"
-        );
+            assert_eq!(
+                handlebars
+                    .render_template("{{#ifEquals 1 1}}yes{{else}}no{{/ifEquals}}", &json!({}))
+                    .unwrap(),
+                "yes"
+            );
+        }
 
-        assert_eq!(
-            handlebars
-                .render_template("{{#ifEquals 1 2}}yes{{else}}no{{/ifEquals}}", &json!({}))
-                .unwrap(),
-            "no"
-        );
+        #[test]
+        fn with_false_condition_renders_else_block() {
+            let mut handlebars = Handlebars::new();
+            handlebars.register_helper("ifEquals", Box::new(IF_EQUALS_HELPER));
 
-        assert_eq!(
-            handlebars
-                .render_template("{{#ifEquals 1 2}}yes{{/ifEquals}}", &json!({}))
-                .unwrap(),
-            ""
-        );
+            assert_eq!(
+                handlebars
+                    .render_template("{{#ifEquals 1 2}}yes{{else}}no{{/ifEquals}}", &json!({}))
+                    .unwrap(),
+                "no"
+            );
+        }
+
+        #[test]
+        fn with_false_condition_and_no_else_renders_empty_string() {
+            let mut handlebars = Handlebars::new();
+            handlebars.register_helper("ifEquals", Box::new(IF_EQUALS_HELPER));
+
+            assert_eq!(
+                handlebars
+                    .render_template("{{#ifEquals 1 2}}yes{{/ifEquals}}", &json!({}))
+                    .unwrap(),
+                ""
+            );
+        }
     }
 
-    #[test]
-    fn test_unless_equals_helper() {
-        let mut handlebars = Handlebars::new();
-        handlebars.register_helper("unlessEquals", Box::new(UNLESS_EQUALS_HELPER));
+    mod unless_equals_tests {
+        use super::super::*;
+        use serde_json::json;
 
-        assert_eq!(
-            handlebars
-                .render_template(
-                    "{{#unlessEquals 1 2}}yes{{else}}no{{/unlessEquals}}",
-                    &json!({})
-                )
-                .unwrap(),
-            "yes"
-        );
+        #[test]
+        fn with_false_condition_renders_main_block() {
+            let mut handlebars = Handlebars::new();
+            handlebars.register_helper("unlessEquals", Box::new(UNLESS_EQUALS_HELPER));
 
-        assert_eq!(
-            handlebars
-                .render_template(
-                    "{{#unlessEquals 1 1}}yes{{else}}no{{/unlessEquals}}",
-                    &json!({})
-                )
-                .unwrap(),
-            "no"
-        );
+            assert_eq!(
+                handlebars
+                    .render_template(
+                        "{{#unlessEquals 1 2}}yes{{else}}no{{/unlessEquals}}",
+                        &json!({})
+                    )
+                    .unwrap(),
+                "yes"
+            );
+        }
 
-        assert_eq!(
-            handlebars
-                .render_template("{{#unlessEquals 1 1}}yes{{/unlessEquals}}", &json!({}))
-                .unwrap(),
-            ""
-        );
+        #[test]
+        fn with_true_condition_renders_else_block() {
+            let mut handlebars = Handlebars::new();
+            handlebars.register_helper("unlessEquals", Box::new(UNLESS_EQUALS_HELPER));
+
+            assert_eq!(
+                handlebars
+                    .render_template(
+                        "{{#unlessEquals 1 1}}yes{{else}}no{{/unlessEquals}}",
+                        &json!({})
+                    )
+                    .unwrap(),
+                "no"
+            );
+        }
+
+        #[test]
+        fn with_true_condition_and_no_else_renders_empty_string() {
+            let mut handlebars = Handlebars::new();
+            handlebars.register_helper("unlessEquals", Box::new(UNLESS_EQUALS_HELPER));
+
+            assert_eq!(
+                handlebars
+                    .render_template("{{#unlessEquals 1 1}}yes{{/unlessEquals}}", &json!({}))
+                    .unwrap(),
+                ""
+            );
+        }
     }
 
-    #[test]
-    fn test_json_helper() {
-        let mut handlebars = Handlebars::new();
-        handlebars.register_helper("json", Box::new(JSON_HELPER));
+    mod json_tests {
+        use super::super::*;
+        use serde_json::json;
 
-        // Test basic object
-        let data = json!({"a": 1, "b": 2});
-        let rendered = handlebars.render_template("{{json this}}", &data).unwrap();
-        assert_eq!(rendered, r#"{"a":1,"b":2}"#);
+        #[test]
+        fn renders_object_as_json() {
+            let mut handlebars = Handlebars::new();
+            handlebars.register_helper("json", Box::new(JSON_HELPER));
 
-        // Test with indent
-        let rendered_indent = handlebars
-            .render_template("{{json this indent=2}}", &data)
-            .unwrap();
-        // Just verify it contains the data and has some formatting
-        assert!(rendered_indent.contains("\"a\": 1"));
-        assert!(rendered_indent.contains("\"b\": 2"));
+            let data = json!({"a": 1, "b": 2});
+            let rendered = handlebars.render_template("{{json this}}", &data).unwrap();
+            assert_eq!(rendered, r#"{"a":1,"b":2}"#);
+        }
 
-        // Test empty params
-        let rendered_empty_params = handlebars.render_template("{{json}}", &json!({})).unwrap();
-        assert_eq!(rendered_empty_params, "");
+        #[test]
+        fn renders_object_with_indent() {
+            let mut handlebars = Handlebars::new();
+            handlebars.register_helper("json", Box::new(JSON_HELPER));
 
-        // Test with array
-        let array_data = json!([1, 2, 3]);
-        let rendered_array = handlebars
-            .render_template("{{json this}}", &array_data)
-            .unwrap();
-        assert_eq!(rendered_array, r#"[1,2,3]"#);
+            let data = json!({"a": 1, "b": 2});
+            let rendered_indent = handlebars
+                .render_template("{{json this indent=2}}", &data)
+                .unwrap();
+            assert!(rendered_indent.contains("\"a\": 1"));
+            assert!(rendered_indent.contains("\"b\": 2"));
+        }
 
-        // Test with indent on array
-        let rendered_array_pretty = handlebars
-            .render_template("{{json this indent=2}}", &array_data)
-            .unwrap();
-        // Verify array formatting
-        assert!(rendered_array_pretty.contains("1,"));
-        assert!(rendered_array_pretty.contains("2,"));
-        assert!(rendered_array_pretty.contains("3"));
+        #[test]
+        fn handles_empty_params() {
+            let mut handlebars = Handlebars::new();
+            handlebars.register_helper("json", Box::new(JSON_HELPER));
 
-        // Test with empty object
-        let empty_map = json!({});
-        let rendered_empty = handlebars
-            .render_template("{{json this}}", &empty_map)
-            .unwrap();
-        assert_eq!(rendered_empty, "{}");
+            let rendered_empty_params = handlebars.render_template("{{json}}", &json!({})).unwrap();
+            assert_eq!(rendered_empty_params, "");
+        }
+
+        #[test]
+        fn renders_array_as_json() {
+            let mut handlebars = Handlebars::new();
+            handlebars.register_helper("json", Box::new(JSON_HELPER));
+
+            let array_data = json!([1, 2, 3]);
+            let rendered_array = handlebars
+                .render_template("{{json this}}", &array_data)
+                .unwrap();
+            assert_eq!(rendered_array, r#"[1,2,3]"#);
+        }
+
+        #[test]
+        fn renders_array_with_indent() {
+            let mut handlebars = Handlebars::new();
+            handlebars.register_helper("json", Box::new(JSON_HELPER));
+
+            let array_data = json!([1, 2, 3]);
+            let rendered_array_pretty = handlebars
+                .render_template("{{json this indent=2}}", &array_data)
+                .unwrap();
+            assert!(rendered_array_pretty.contains("1,"));
+            assert!(rendered_array_pretty.contains("2,"));
+            assert!(rendered_array_pretty.contains("3"));
+        }
+
+        #[test]
+        fn renders_empty_object() {
+            let mut handlebars = Handlebars::new();
+            handlebars.register_helper("json", Box::new(JSON_HELPER));
+
+            let empty_map = json!({});
+            let rendered_empty = handlebars
+                .render_template("{{json this}}", &empty_map)
+                .unwrap();
+            assert_eq!(rendered_empty, "{}");
+        }
     }
 }
