@@ -69,6 +69,7 @@ result = handlebars.render('formatted', {'name': 'World'})  # "Hello WORLD!"
 
 import json
 from collections.abc import Callable
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -83,7 +84,12 @@ from ._native import (
 logger = structlog.get_logger(__name__)
 
 
-class EscapeFunction:
+# Type aliases for helper functions.
+type HelperFn = Callable[[list[Any], dict[str, Any], dict[str, Any]], str]
+type NativeHelperFn = Callable[[str, str, str], str]
+
+
+class EscapeFunction(StrEnum):
     """Enumeration of built-in escape functions for Handlebars templates.
 
     These constants define how content is escaped when rendered in templates.
@@ -180,7 +186,7 @@ class Template:
         self._template.set_dev_mode(enabled)
         logger.debug({'event': 'dev_mode_changed', 'enabled': enabled})
 
-    def set_escape_function(self, escape_fn: str) -> None:
+    def set_escape_function(self, escape_fn: EscapeFunction) -> None:
         """Set the escape function used for HTML escaping.
 
         Controls how variable values are escaped when rendered with the
@@ -323,7 +329,7 @@ class Template:
     def register_helper(
         self,
         name: str,
-        helper_fn: Callable[[list[Any], dict[str, Any], dict[str, Any]], str],
+        helper_fn: HelperFn,
     ) -> None:
         """Register a helper function.
 
@@ -476,8 +482,8 @@ class Template:
 
 
 def create_helper(
-    fn: Callable[[list[Any], dict[str, Any], dict[str, Any]], str],
-) -> Callable[[str, str, str], str]:
+    fn: HelperFn,
+) -> NativeHelperFn:
     """Create a helper function compatible with the Rust interface.
 
     This function adapts a Python function with typed parameters to the format
@@ -493,10 +499,7 @@ def create_helper(
     - Transforming data (sorting, filtering, mapping).
 
     Args:
-        fn: A function taking (params, hash, context) and returning a string
-            - params: List of positional parameters
-            - hash: Dictionary of named parameters
-            - context: The current template context
+        fn: A function taking of type HelperFn (params, hash, context).
 
     Returns:
         Function compatible with the Rust interface.

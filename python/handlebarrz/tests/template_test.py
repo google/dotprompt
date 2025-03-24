@@ -32,6 +32,8 @@ from handlebarrz import (
 
 
 class TestTemplate(unittest.TestCase):
+    """Test the Template class."""
+
     def test_basic_template_rendering(self) -> None:
         """Test that a basic template renders correctly."""
         template = Template()
@@ -124,7 +126,7 @@ class TestTemplate(unittest.TestCase):
 
         # Invalid escape function should raise ValueError
         with pytest.raises(ValueError):
-            template.set_escape_function('invalid_function')
+            template.set_escape_function(EscapeFunction('invalid_function'))
 
     def test_strict_mode(self) -> None:
         """Test that strict mode raises error for missing fields."""

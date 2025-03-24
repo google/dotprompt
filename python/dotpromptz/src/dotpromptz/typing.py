@@ -18,15 +18,27 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from enum import StrEnum
-from typing import Any, Callable, Generic, Protocol, TypeVar, runtime_checkable
+from typing import Any, Generic, Protocol, TypeVar, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
 T = TypeVar('T')
 
-# Type alias
-Schema = dict[str, Any]
+type Schema = dict[str, Any]
+type ToolArgument = str | ToolDefinition
+type JsonSchema = dict[str, Any]
+type SchemaResolver = Callable[[str], JsonSchema | None]
+type PartialResolver = Callable[[str], str | Awaitable[str | None] | None]
+type Part = (
+    TextPart
+    | DataPart
+    | MediaPart
+    | ToolRequestPart[Any]
+    | ToolResponsePart[Any]
+    | PendingPart
+)
 
 
 class Role(StrEnum):
@@ -55,16 +67,12 @@ class ToolDefinition(BaseModel):
     output_schema: dict[str, Any] | None = Field(None, alias='outputSchema')
 
 
-# Type alias
-ToolArgument = str | ToolDefinition
-
-
 class HasMetadata(BaseModel):
-    """
-    Whether contains metadata.
+    """Whether contains metadata.
 
     Attributes:
-        metadata: Arbitrary metadata to be used by tooling or for informational purposes.
+        metadata: Arbitrary metadata to be used by tooling or for informational
+            purposes.
     """
 
     model_config = ConfigDict(
@@ -187,17 +195,6 @@ class PendingPart(EmptyPart):
     metadata: dict[str, Any] = Field(default_factory=lambda: {'pending': True})
 
 
-# Union type for Part
-Part = (
-    TextPart
-    | DataPart
-    | MediaPart
-    | ToolRequestPart[Any]
-    | ToolResponsePart[Any]
-    | PendingPart
-)
-
-
 class Message(HasMetadata):
     """A message in a conversation."""
 
@@ -212,8 +209,7 @@ class Document(HasMetadata):
 
 
 class DataArgument(BaseModel, Generic[T]):
-    """
-    Provides all of the information necessary to render a template at runtime.
+    """Provides all information necessary to render a template at runtime.
 
     Attributes:
         input: Input variables for the prompt template.
@@ -234,13 +230,6 @@ class DataArgument(BaseModel, Generic[T]):
     context: dict[str, Any] | None = None
 
 
-# Type alias
-JsonSchema = dict[str, Any]
-
-
-SchemaResolver = Callable[[str], JsonSchema | None]
-
-
 @runtime_checkable
 class ToolResolver(Protocol):
     """Resolves a provided tool name to an underlying ToolDefinition.
@@ -248,7 +237,9 @@ class ToolResolver(Protocol):
     Utilized for shorthand to a tool registry provided by an external library.
     """
 
-    def __call__(self, tool_name: str) -> ToolDefinition | None: ...
+    def __call__(self, tool_name: str) -> ToolDefinition | None:
+        """Resolves a provided tool name to an underlying ToolDefinition."""
+        ...
 
 
 class RenderedPrompt(PromptMetadata[T], Generic[T]):
@@ -274,7 +265,9 @@ class PromptFunction(Protocol, Generic[T]):
         self,
         data: DataArgument[Any],
         options: PromptMetadata[T] | None = None,
-    ) -> RenderedPrompt[T]: ...
+    ) -> RenderedPrompt[T]:
+        """Takes runtime data/context and returns a rendered prompt result."""
+        ...
 
 
 @runtime_checkable
