@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/goccy/go-yaml"
 	dp "github.com/google/dotprompt/go/dotprompt"
 	"github.com/invopop/jsonschema"
-	"gopkg.in/yaml.v3"
 )
 
 // convertToSpecSuite converts the YAML content into a slice of SpecSuite objects.

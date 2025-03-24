@@ -22,7 +22,7 @@ import (
 	"slices"
 	"strings"
 
-	"gopkg.in/yaml.v3"
+	"github.com/goccy/go-yaml"
 )
 
 // MessageSource is a message with a source string and optional content and
@@ -244,7 +244,18 @@ func ParseDocument(source string) (ParsedPrompt, error) {
 
 	if frontmatter != "" {
 		var parsedMetadata map[string]any
-		err := yaml.Unmarshal([]byte(frontmatter), &parsedMetadata)
+		// The github.com/goccy/go-yaml library can panic on certain malformed YAML
+		// so we need to use a custom error handler to recover from panics
+		var err error
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					err = fmt.Errorf("panic while parsing YAML: %v", r)
+				}
+			}()
+			err = yaml.Unmarshal([]byte(frontmatter), &parsedMetadata)
+		}()
+
 		if err != nil {
 			fmt.Printf("Dotprompt: Error parsing YAML frontmatter: %v\n", err)
 			// Return a basic ParsedPrompt with just the template
