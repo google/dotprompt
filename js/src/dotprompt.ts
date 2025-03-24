@@ -110,7 +110,7 @@ export class Dotprompt {
    *
    * @param name The name of the helper function to register
    * @param fn The helper function implementation
-   * @returns This instance for method chaining
+   * @return This instance for method chaining
    */
   defineHelper(name: string, fn: Handlebars.HelperDelegate): this {
     this.handlebars.registerHelper(name, fn);
@@ -123,7 +123,7 @@ export class Dotprompt {
    *
    * @param name The name of the partial to register
    * @param source The template source for the partial
-   * @returns This instance for method chaining
+   * @return This instance for method chaining
    */
   definePartial(name: string, source: string): this {
     this.handlebars.registerPartial(name, source);
@@ -134,7 +134,7 @@ export class Dotprompt {
    * Registers a tool definition for use in prompts.
    *
    * @param def The tool definition to register
-   * @returns This instance for method chaining
+   * @return This instance for method chaining
    */
   defineTool(def: ToolDefinition): this {
     this.tools[def.name] = def;
@@ -145,7 +145,7 @@ export class Dotprompt {
    * Parses a prompt template string into a structured ParsedPrompt object.
    *
    * @param source The template source string to parse
-   * @returns A parsed prompt object with extracted metadata and template
+   * @return A parsed prompt object with extracted metadata and template
    */
   parse<ModelConfig = Record<string, unknown>>(
     source: string
@@ -159,7 +159,7 @@ export class Dotprompt {
    * @param source The template source string to render
    * @param data The data to use when rendering the template
    * @param options Additional metadata and options for rendering
-   * @returns A promise resolving to the rendered prompt
+   * @return A promise resolving to the rendered prompt
    */
   async render<
     Variables = Record<string, unknown>,
@@ -177,7 +177,7 @@ export class Dotprompt {
    * Processes schema definitions in picoschema format into standard JSON Schema.
    *
    * @param meta The prompt metadata containing schema definitions
-   * @returns A promise resolving to the processed metadata with expanded schemas
+   * @return A promise resolving to the processed metadata with expanded schemas
    */
   private async renderPicoschema<ModelConfig>(
     meta: PromptMetadata<ModelConfig>
@@ -210,7 +210,7 @@ export class Dotprompt {
    * Resolves a schema name to its definition, using registered schemas or schema resolver.
    *
    * @param name The name of the schema to resolve
-   * @returns A promise resolving to the schema definition or null if not found
+   * @return A promise resolving to the schema definition or null if not found
    */
   private async wrappedSchemaResolver(
     name: string
@@ -229,7 +229,7 @@ export class Dotprompt {
    *
    * @param base The base metadata object
    * @param merges Additional metadata objects to merge into the base
-   * @returns A promise resolving to the merged and processed metadata
+   * @return A promise resolving to the merged and processed metadata
    */
   private async resolveMetadata<ModelConfig = Record<string, unknown>>(
     base: PromptMetadata<ModelConfig>,
@@ -258,7 +258,7 @@ export class Dotprompt {
    * Resolves tool names to their definitions using registered tools or tool resolver.
    *
    * @param base The metadata containing tool references to resolve
-   * @returns A promise resolving to metadata with resolved tool definitions
+   * @return A promise resolving to metadata with resolved tool definitions
    */
   private async resolveTools<ModelConfig>(
     base: PromptMetadata<ModelConfig>
@@ -301,7 +301,7 @@ export class Dotprompt {
    * Identifies all partial references in a template.
    *
    * @param template The template to scan for partial references
-   * @returns A set of partial names referenced in the template
+   * @return A set of partial names referenced in the template
    */
   private identifyPartials(template: string): Set<string> {
     const ast = this.handlebars.parse(template);
@@ -333,7 +333,7 @@ export class Dotprompt {
    * Resolves and registers all partials referenced in a template.
    *
    * @param template The template containing partial references
-   * @returns A promise that resolves when all partials are registered
+   * @return A promise that resolves when all partials are registered
    */
   private async resolvePartials(template: string): Promise<void> {
     if (!this.partialResolver && !this.store) {
@@ -372,7 +372,7 @@ export class Dotprompt {
    *
    * @param source The template source or parsed prompt to compile
    * @param additionalMetadata Additional metadata to include in the compiled template
-   * @returns A promise resolving to a function for rendering the template
+   * @return A promise resolving to a function for rendering the template
    */
   async compile<
     Variables = Record<string, unknown>,
@@ -439,7 +439,7 @@ export class Dotprompt {
    *
    * @param source The template source or parsed prompt
    * @param additionalMetadata Additional metadata to include
-   * @returns A promise resolving to the fully processed metadata
+   * @return A promise resolving to the fully processed metadata
    */
   async renderMetadata<ModelConfig>(
     source: string | ParsedPrompt<ModelConfig>,

@@ -18,14 +18,14 @@
 
 from __future__ import annotations
 
-from typing import Any, TypedDict
+import re
+from typing import Any, TypedDict, TypeVar
 
 from dotpromptz.helpers import register_all_helpers
 from dotpromptz.parse import parse_document
 from dotpromptz.typing import (
     DataArgument,
     JsonSchema,
-    ModelConfig,
     ParsedPrompt,
     PartialResolver,
     PromptMetadata,
@@ -35,6 +35,13 @@ from dotpromptz.typing import (
     ToolResolver,
 )
 from handlebarrz import Handlebars, HelperFn
+
+# Pre-compiled regex for finding partial references in handlebars templates
+
+# Since the handlebars-rust implementation doesn't expose a visitor
+# to walk the AST to find partial nodes, we're using a crude regular expression
+# to find partials.
+_PARTIAL_PATTERN = re.compile(r'{{\s*>\s*([a-zA-Z0-9_.-]+)\s*}}')
 
 
 class Options(TypedDict, total=False):
@@ -76,13 +83,25 @@ class Dotprompt:
         self._options: Options = options or {}
         self._handlebars: Handlebars = Handlebars()
         self._known_helpers: dict[str, bool] = {}
-        self._default_model: str | None = None
-        self._model_configs: dict[str, Any] = {}
-        self._tools: dict[str, ToolDefinition] = {}
-        self._tool_resolver: ToolResolver | None = None
-        self._schemas: dict[str, JsonSchema] = {}
-        self._schema_resolver: SchemaResolver | None = None
-        self._partial_resolver: PartialResolver | None = None
+        self._default_model: str | None = self._options.get('default_model')
+        self._model_configs: dict[str, Any] | None = self._options.get(
+            'model_configs', {}
+        )
+        self._tools: dict[str, ToolDefinition] = (
+            self._options.get('tools', {}) or {}
+        )
+        self._tool_resolver: ToolResolver | None = self._options.get(
+            'tool_resolver'
+        )
+        self._schemas: dict[str, JsonSchema] | None = self._options.get(
+            'schemas', {}
+        )
+        self._schema_resolver: SchemaResolver | None = self._options.get(
+            'schema_resolver'
+        )
+        self._partial_resolver: PartialResolver | None = self._options.get(
+            'partial_resolver'
+        )
         self._store: PromptStore | None = None
 
         self._register_initial_helpers()
@@ -133,11 +152,14 @@ class Dotprompt:
         Args:
             name: The name of the tool.
             definition: The definition of the tool.
+
+        Returns:
+            The Dotprompt instance.
         """
         self._tools[name] = definition
         return self
 
-    def parse[ModelConfig](self, source: str) -> ParsedPrompt[ModelConfig]:
+    def parse(self, source: str) -> ParsedPrompt[Any]:
         """Parse a prompt from a string.
 
         Args:
@@ -147,3 +169,15 @@ class Dotprompt:
             The parsed prompt.
         """
         return parse_document(source)
+
+    def identify_partials(self, template: str) -> set[str]:
+        """Identify all partial references in a template.
+
+        Args:
+            template: The template to scan for partial references.
+
+        Returns:
+            A set of partial names referenced in the template.
+        """
+        partials = set(_PARTIAL_PATTERN.findall(template))
+        return partials

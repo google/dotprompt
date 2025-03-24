@@ -27,7 +27,10 @@ The tests cover:
 5. Method chaining interface.
 """
 
-from typing import Any, Generator, cast
+from __future__ import annotations
+
+from collections.abc import Generator
+from typing import Any, cast
 from unittest.mock import Mock, patch
 
 import pytest
@@ -153,7 +156,7 @@ def test_define_tool(mock_handlebars: Mock) -> None:
 
     result = dotprompt.define_tool('test_tool', tool_def)
 
-    assert dotprompt._tools.get('test_tool') == tool_def
+    assert dotprompt._tools['test_tool'] == tool_def
 
     # Ensure chaining works.
     assert result == dotprompt
@@ -203,7 +206,30 @@ def test_chainable_interface(mock_handlebars: Mock) -> None:
 
     mock_handlebars.register_helper.assert_called_once()
     mock_handlebars.register_partial.assert_called_once()
-    assert dotprompt._tools.get('tool1') == tool_def
+    assert dotprompt._tools['tool1'] == tool_def
 
     # Ensure chaining works.
     assert result == dotprompt
+
+
+@pytest.mark.parametrize(
+    'template,expected',
+    [
+        # No partials.
+        ('Hello {{name}}', set()),
+        # One partial.
+        ('Hello {{> header}}', {'header'}),
+        # Multiple partials.
+        (
+            'Hello {{> header}} {{> footer}} {{> sidebar}}',
+            {'header', 'footer', 'sidebar'},
+        ),
+        # Partial with dash and underscore.
+        ('Hello {{> header-component_name}}', {'header-component_name'}),
+    ],
+)
+def test_identify_partials(template: str, expected: set[str]) -> None:
+    """Test the identify_partials method with various templates."""
+    dotprompt = Dotprompt()
+    partials = dotprompt.identify_partials(template)
+    assert partials == expected
