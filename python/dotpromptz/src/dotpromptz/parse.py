@@ -38,10 +38,7 @@ T = TypeVar('T')
 
 @dataclass
 class MessageSource:
-    """
-    A message source is a message with a source string and optional content and
-    metadata.
-    """
+    """A message with a source string and optional content and metadata."""
 
     role: Role
     source: str | None = None
@@ -111,8 +108,7 @@ RESERVED_METADATA_KEYWORDS = [
 
 
 def split_by_regex(source: str, regex: re.Pattern[str]) -> list[str]:
-    """Splits a string by a regular expression while filtering out
-    empty/whitespace-only pieces.
+    """Splits string by regexp while filtering out empty/whitespace-only pieces.
 
     Args:
         source: The source string to split into parts.
@@ -129,8 +125,9 @@ def split_by_regex(source: str, regex: re.Pattern[str]) -> list[str]:
 
 
 def split_by_role_and_history_markers(rendered_string: str) -> list[str]:
-    """Splits a rendered template string into pieces based on role and history
-    markers while filtering out empty/whitespace-only pieces.
+    """Splits a rendered string into pieces based on role and history markers.
+
+    Empty/whitespace-only pieces are filtered out.
 
     Args:
         rendered_string: The template string to split.
@@ -142,8 +139,9 @@ def split_by_role_and_history_markers(rendered_string: str) -> list[str]:
 
 
 def split_by_media_and_section_markers(source: str) -> list[str]:
-    """Split the source into pieces based on media and section markers while
-    filtering out empty/whitespace-only pieces.
+    """Split the source into pieces based on media and section markers.
+
+    Empty/whitespace-only pieces are filtered out.
 
     Args:
         source: The source string to split into parts
@@ -160,7 +158,8 @@ def convert_namespaced_entry_to_nested_object(
     obj: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Processes a namespaced key-value pair into a nested object structure.
-    For example, 'foo.bar': 'value' becomes { foo: { bar: 'value' } }
+
+    For example, 'foo.bar': 'value' becomes { foo: { bar: 'value' } }.
 
     Args:
         key: The dotted namespace key (e.g., 'foo.bar')
@@ -203,8 +202,7 @@ def extract_frontmatter_and_body(source: str) -> tuple[str, str]:
 
 
 def parse_document(source: str) -> ParsedPrompt[T]:
-    """Parses a document containing YAML frontmatter and a template content
-    section.
+    """Parses document containing YAML frontmatter and template content.
 
     The frontmatter contains metadata and configuration for the prompt.
 
@@ -279,9 +277,10 @@ def to_messages(
     rendered_string: str,
     data: DataArgument[Any] | None = None,
 ) -> list[Message]:
-    """
-    Converts a rendered template string into an array of messages. Processes
-    role markers and history placeholders to structure the conversation.
+    """Converts a rendered template string into an array of messages.
+
+    Processes role markers and history placeholders to structure the
+    conversation.
 
     Args:
         rendered_string: The rendered template string to convert
@@ -336,8 +335,7 @@ def to_messages(
 def message_sources_to_messages(
     message_sources: list[MessageSource],
 ) -> list[Message]:
-    """
-    Processes an array of message sources into an array of messages.
+    """Processes an array of message sources into an array of messages.
 
     Args:
         message_sources: List of message sources

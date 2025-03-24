@@ -31,6 +31,7 @@ type ToolArgument = str | ToolDefinition
 type JsonSchema = dict[str, Any]
 type SchemaResolver = Callable[[str], JsonSchema | None]
 type PartialResolver = Callable[[str], str | Awaitable[str | None] | None]
+type ModelConfig = dict[str, Any]
 type Part = (
     TextPart
     | DataPart

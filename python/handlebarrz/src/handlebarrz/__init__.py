@@ -84,7 +84,6 @@ from ._native import (
 logger = structlog.get_logger(__name__)
 
 
-# Type aliases for helper functions.
 type HelperFn = Callable[[list[Any], dict[str, Any], dict[str, Any]], str]
 type NativeHelperFn = Callable[[str, str, str], str]
 
