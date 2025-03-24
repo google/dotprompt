@@ -40,6 +40,7 @@ export type PartialResolver = (
   partialName: string
 ) => string | null | Promise<string | null>;
 
+/** Options for the Dotprompt class. */
 export interface DotpromptOptions {
   /** A default model to use if none is supplied. */
   defaultModel?: string;
@@ -61,6 +62,9 @@ export interface DotpromptOptions {
   partialResolver?: PartialResolver;
 }
 
+/**
+ * The main class for the Dotprompt library.
+ */
 export class Dotprompt {
   private handlebars: typeof Handlebars;
   private knownHelpers: Record<string, true> = {};
@@ -101,31 +105,65 @@ export class Dotprompt {
     }
   }
 
+  /**
+   * Registers a helper function for use in templates.
+   *
+   * @param name The name of the helper function to register
+   * @param fn The helper function implementation
+   * @returns This instance for method chaining
+   */
   defineHelper(name: string, fn: Handlebars.HelperDelegate): this {
     this.handlebars.registerHelper(name, fn);
     this.knownHelpers[name] = true;
     return this;
   }
 
+  /**
+   * Registers a partial template for use in other templates.
+   *
+   * @param name The name of the partial to register
+   * @param source The template source for the partial
+   * @returns This instance for method chaining
+   */
   definePartial(name: string, source: string): this {
     this.handlebars.registerPartial(name, source);
     return this;
   }
 
+  /**
+   * Registers a tool definition for use in prompts.
+   *
+   * @param def The tool definition to register
+   * @returns This instance for method chaining
+   */
   defineTool(def: ToolDefinition): this {
     this.tools[def.name] = def;
     return this;
   }
 
-  parse<ModelConfig = Record<string, any>>(
+  /**
+   * Parses a prompt template string into a structured ParsedPrompt object.
+   *
+   * @param source The template source string to parse
+   * @returns A parsed prompt object with extracted metadata and template
+   */
+  parse<ModelConfig = Record<string, unknown>>(
     source: string
   ): ParsedPrompt<ModelConfig> {
     return parseDocument<ModelConfig>(source);
   }
 
+  /**
+   * Renders a prompt template with the provided data.
+   *
+   * @param source The template source string to render
+   * @param data The data to use when rendering the template
+   * @param options Additional metadata and options for rendering
+   * @returns A promise resolving to the rendered prompt
+   */
   async render<
-    Variables = Record<string, any>,
-    ModelConfig = Record<string, any>,
+    Variables = Record<string, unknown>,
+    ModelConfig = Record<string, unknown>,
   >(
     source: string,
     data: DataArgument<Variables> = {},
@@ -135,10 +173,18 @@ export class Dotprompt {
     return renderer(data, options);
   }
 
+  /**
+   * Processes schema definitions in picoschema format into standard JSON Schema.
+   *
+   * @param meta The prompt metadata containing schema definitions
+   * @returns A promise resolving to the processed metadata with expanded schemas
+   */
   private async renderPicoschema<ModelConfig>(
     meta: PromptMetadata<ModelConfig>
   ): Promise<PromptMetadata<ModelConfig>> {
-    if (!meta.output?.schema && !meta.input?.schema) return meta;
+    if (!meta.output?.schema && !meta.input?.schema) {
+      return meta;
+    }
 
     const newMeta = { ...meta };
     if (meta.input?.schema) {
@@ -160,37 +206,66 @@ export class Dotprompt {
     return newMeta;
   }
 
+  /**
+   * Resolves a schema name to its definition, using registered schemas or schema resolver.
+   *
+   * @param name The name of the schema to resolve
+   * @returns A promise resolving to the schema definition or null if not found
+   */
   private async wrappedSchemaResolver(
     name: string
   ): Promise<JSONSchema | null> {
-    if (this.schemas[name]) return this.schemas[name];
-    if (this.schemaResolver) return await this.schemaResolver(name);
+    if (this.schemas[name]) {
+      return this.schemas[name];
+    }
+    if (this.schemaResolver) {
+      return await this.schemaResolver(name);
+    }
     return null;
   }
 
-  private async resolveMetadata<ModelConfig = Record<string, any>>(
+  /**
+   * Merges multiple metadata objects together, resolving tools and schemas.
+   *
+   * @param base The base metadata object
+   * @param merges Additional metadata objects to merge into the base
+   * @returns A promise resolving to the merged and processed metadata
+   */
+  private async resolveMetadata<ModelConfig = Record<string, unknown>>(
     base: PromptMetadata<ModelConfig>,
     ...merges: (PromptMetadata<ModelConfig> | undefined)[]
   ): Promise<PromptMetadata<ModelConfig>> {
     let out = { ...base };
+
     for (let i = 0; i < merges.length; i++) {
       if (!merges[i]) continue;
       const config = out.config || ({} as ModelConfig);
       out = { ...out, ...merges[i] };
       out.config = { ...config, ...(merges[i]?.config || {}) };
     }
-    delete (out as any).template;
+
+    const { template: _, ...outWithoutTemplate } =
+      out as PromptMetadata<ModelConfig> & { template?: string };
+    out = outWithoutTemplate as PromptMetadata<ModelConfig>;
+
     out = removeUndefinedFields(out);
     out = await this.resolveTools(out);
     out = await this.renderPicoschema(out);
     return out;
   }
 
+  /**
+   * Resolves tool names to their definitions using registered tools or tool resolver.
+   *
+   * @param base The metadata containing tool references to resolve
+   * @returns A promise resolving to metadata with resolved tool definitions
+   */
   private async resolveTools<ModelConfig>(
     base: PromptMetadata<ModelConfig>
   ): Promise<PromptMetadata<ModelConfig>> {
     const out = { ...base };
-    // Resolve tools that are already registered into toolDefs, leave unregistered tools alone.
+    // Resolve tools that are already registered into toolDefs, leave
+    // unregistered tools alone..
     if (out.tools) {
       const outTools: string[] = [];
       out.toolDefs = out.toolDefs || [];
@@ -198,7 +273,9 @@ export class Dotprompt {
       await Promise.all(
         out.tools.map(async (toolName) => {
           if (this.tools[toolName]) {
-            out.toolDefs!.push(this.tools[toolName]);
+            if (out.toolDefs) {
+              out.toolDefs.push(this.tools[toolName]);
+            }
           } else if (this.toolResolver) {
             const resolvedTool = await this.toolResolver(toolName);
             if (!resolvedTool) {
@@ -206,7 +283,9 @@ export class Dotprompt {
                 `Dotprompt: Unable to resolve tool '${toolName}' to a recognized tool definition.`
               );
             }
-            out.toolDefs!.push(resolvedTool);
+            if (out.toolDefs) {
+              out.toolDefs.push(resolvedTool);
+            }
           } else {
             outTools.push(toolName);
           }
@@ -218,41 +297,69 @@ export class Dotprompt {
     return out;
   }
 
+  /**
+   * Identifies all partial references in a template.
+   *
+   * @param template The template to scan for partial references
+   * @returns A set of partial names referenced in the template
+   */
   private identifyPartials(template: string): Set<string> {
     const ast = this.handlebars.parse(template);
     const partials = new Set<string>();
 
-    class PartialVisitor extends this.handlebars.Visitor {
-      constructor(private partials: Set<string>) {
-        super();
-      }
-
-      PartialStatement(partial: any) {
-        if ('original' in partial.name) {
-          this.partials.add(partial.name.original);
+    // Create a visitor to collect partial names.
+    const visitor = new (class extends this.handlebars.Visitor {
+      // Visit partial statements and add their names to our set.
+      PartialStatement(partial: unknown): void {
+        if (
+          partial &&
+          typeof partial === 'object' &&
+          'name' in partial &&
+          partial.name &&
+          typeof partial.name === 'object' &&
+          'original' in partial.name &&
+          typeof partial.name.original === 'string'
+        ) {
+          partials.add(partial.name.original);
         }
       }
-    }
+    })();
 
-    new PartialVisitor(partials).accept(ast);
+    visitor.accept(ast);
     return partials;
   }
 
+  /**
+   * Resolves and registers all partials referenced in a template.
+   *
+   * @param template The template containing partial references
+   * @returns A promise that resolves when all partials are registered
+   */
   private async resolvePartials(template: string): Promise<void> {
-    if (!this.partialResolver && !this.store) return;
+    if (!this.partialResolver && !this.store) {
+      return;
+    }
 
     const partials = this.identifyPartials(template);
 
-    // Resolve and register each partial
+    // Resolve and register each partial.
     await Promise.all(
       Array.from(partials).map(async (name) => {
         if (!this.handlebars.partials[name]) {
-          const content =
-            (await this.partialResolver!(name)) ||
-            (await this.store?.loadPartial(name))?.source;
+          let content: string | null | undefined = null;
+
+          if (this.partialResolver) {
+            content = await this.partialResolver(name);
+          }
+
+          if (!content && this.store) {
+            const partial = await this.store.loadPartial(name);
+            content = partial?.source;
+          }
+
           if (content) {
             this.definePartial(name, content);
-            // Recursively resolve partials in the partial content
+            // Recursively resolve partials in the partial content.
             await this.resolvePartials(content);
           }
         }
@@ -260,27 +367,49 @@ export class Dotprompt {
     );
   }
 
-  async compile<Variables = any, ModelConfig = Record<string, any>>(
+  /**
+   * Compiles a template into a reusable function for rendering prompts.
+   *
+   * @param source The template source or parsed prompt to compile
+   * @param additionalMetadata Additional metadata to include in the compiled template
+   * @returns A promise resolving to a function for rendering the template
+   */
+  async compile<
+    Variables = Record<string, unknown>,
+    ModelConfig = Record<string, unknown>,
+  >(
     source: string | ParsedPrompt<ModelConfig>,
     additionalMetadata?: PromptMetadata<ModelConfig>
   ): Promise<PromptFunction<ModelConfig>> {
-    if (typeof source === 'string') source = this.parse<ModelConfig>(source);
-    if (additionalMetadata) source = { ...source, ...additionalMetadata };
+    let parsedSource: ParsedPrompt<ModelConfig>;
+    if (typeof source === 'string') {
+      parsedSource = this.parse<ModelConfig>(source);
+    } else {
+      parsedSource = source;
+    }
 
-    // Resolve all partials before compilation
-    await this.resolvePartials(source.template);
+    if (additionalMetadata) {
+      parsedSource = { ...parsedSource, ...additionalMetadata };
+    }
 
-    const renderString = this.handlebars.compile<Variables>(source.template, {
-      knownHelpers: this.knownHelpers,
-      knownHelpersOnly: true,
-    });
+    // Resolve all partials before compilation.
+    await this.resolvePartials(parsedSource.template);
+
+    const renderString = this.handlebars.compile<Variables>(
+      parsedSource.template,
+      {
+        knownHelpers: this.knownHelpers,
+        knownHelpersOnly: true,
+      }
+    );
 
     const renderFunc = async (
       data: DataArgument,
       options?: PromptMetadata<ModelConfig>
     ) => {
-      // discard the input schema as once rendered it doesn't make sense
-      const { input, ...mergedMetadata } = await this.renderMetadata(source);
+      // Discard the input schema as once rendered it doesn't make sense.
+      const { input, ...mergedMetadata } =
+        await this.renderMetadata(parsedSource);
 
       const renderedString = renderString(
         { ...(options?.input?.default || {}), ...data.input },
@@ -301,22 +430,39 @@ export class Dotprompt {
         messages: toMessages<ModelConfig>(renderedString, data),
       };
     };
-    (renderFunc as PromptFunction<ModelConfig>).prompt = source;
+    (renderFunc as PromptFunction<ModelConfig>).prompt = parsedSource;
     return renderFunc as PromptFunction<ModelConfig>;
   }
 
+  /**
+   * Processes and resolves all metadata for a prompt template.
+   *
+   * @param source The template source or parsed prompt
+   * @param additionalMetadata Additional metadata to include
+   * @returns A promise resolving to the fully processed metadata
+   */
   async renderMetadata<ModelConfig>(
     source: string | ParsedPrompt<ModelConfig>,
     additionalMetadata?: PromptMetadata<ModelConfig>
   ): Promise<PromptMetadata<ModelConfig>> {
-    if (typeof source === 'string') source = this.parse<ModelConfig>(source);
+    let parsedSource: ParsedPrompt<ModelConfig>;
+    if (typeof source === 'string') {
+      parsedSource = this.parse<ModelConfig>(source);
+    } else {
+      parsedSource = source;
+    }
 
     const selectedModel =
-      additionalMetadata?.model || source.model || this.defaultModel;
-    const modelConfig = this.modelConfigs[selectedModel!] as ModelConfig;
+      additionalMetadata?.model || parsedSource.model || this.defaultModel;
+
+    let modelConfig: ModelConfig | undefined;
+    if (selectedModel && this.modelConfigs[selectedModel]) {
+      modelConfig = this.modelConfigs[selectedModel] as ModelConfig;
+    }
+
     return this.resolveMetadata<ModelConfig>(
       modelConfig ? { config: modelConfig } : {},
-      source,
+      parsedSource,
       additionalMetadata
     );
   }
