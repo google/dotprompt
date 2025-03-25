@@ -1,6 +1,6 @@
 module github.com/google/dotprompt/go
 
-go 1.22.0
+go 1.23.7
 
 require (
 	github.com/aymerick/raymond v2.0.2+incompatible
