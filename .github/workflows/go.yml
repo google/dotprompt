@@ -16,7 +16,17 @@
 
 name: Go build, tests and other checks
 
-on: pull_request
+on:
+  push:
+    paths:
+      - "go/**"
+      - "spec/**"
+      - ".github/workflows/go.yml"
+  pull_request:
+    paths:
+      - "go/**"
+      - "spec/**"
+      - ".github/workflows/go.yml"
 
 jobs:
   tests:

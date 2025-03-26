@@ -21,11 +21,12 @@ on:
     paths:
       - "js/**"
       - "spec/**"
+      - ".github/workflows/test.yml"
   pull_request:
     paths:
       - "js/**"
       - "spec/**"
-
+      - ".github/workflows/test.yml"
 jobs:
   test:
     name: Run tests (Node ${{ matrix.node-version }})
@@ -47,10 +48,10 @@ jobs:
           version: 8
 
       - name: Install dependencies
-        run: cd js && pnpm install
+        run: pnpm -C js install
 
       - name: Run tests
-        run: cd js && pnpm test
+        run: pnpm -C js test
 
       - name: Build
-        run: cd js && pnpm build
+        run: pnpm -C js build
