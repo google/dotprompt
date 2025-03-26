@@ -579,24 +579,22 @@ name = "handlebarrz"
 version = "0.1.0"
 source = { editable = "handlebarrz" }
 dependencies = [
-    { name = "maturin" },
     { name = "structlog" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "maturin" },
     { name = "pytest" },
     { name = "pytest-cov" },
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "maturin", specifier = ">=1.8.3" },
-    { name = "structlog", specifier = ">=25.2.0" },
-]
+requires-dist = [{ name = "structlog", specifier = ">=25.2.0" }]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "maturin", specifier = ">=1.8.3" },
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
 ]

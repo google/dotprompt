@@ -8,12 +8,12 @@ classifiers = [
   "Topic :: Text Processing :: Markup",
   "License :: OSI Approved :: Apache Software License",
 ]
-dependencies = ["maturin>=1.8.3", "structlog>=25.2.0"]
+dependencies = ["structlog>=25.2.0"]
 description = "Handlebars library for Python based on handlebars-rust."
 name = "handlebarrz"
 readme = "README.md"
 requires-python = ">=3.12"
-version = "0.1.0"
+version = "0.1.5"
 
 [build-system]
 build-backend = "maturin"
@@ -25,4 +25,4 @@ module-name   = "handlebarrz._native"
 python-source = "src"
 
 [dependency-groups]
-dev = ["pytest>=8.3.5", "pytest-cov>=6.0.0"]
+dev = ["pytest>=8.3.5", "pytest-cov>=6.0.0", "maturin>=1.8.3"]
