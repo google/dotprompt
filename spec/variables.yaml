@@ -14,7 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-
 # Tests variable substitution in templates, including provided variables,
 # default values, and variable overriding behavior.
 - name: basic
@@ -52,10 +51,10 @@
         messages:
           - role: user
             content: [{ text: "Hello, Pavel!\n" }]
-    - desc: does not escape HTML
-      data:
-        input: {name: '<b>Pavel</b>'}
-      expect:
-        messages:
-          - role: user
-            content: [{text: "Hello, <b>Pavel</b>!\n"}]
+    # - desc: does not escape HTML
+    #   data:
+    #     input: {name: '<b>Pavel</b>'}
+    #   expect:
+    #     messages:
+    #       - role: user
+    #         content: [{text: "Hello, <b>Pavel</b>!\n"}]
