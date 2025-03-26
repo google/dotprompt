@@ -115,8 +115,6 @@ export class DirStore implements PromptStoreWritable {
    * directory where prompt files will be managed.
    *
    * @param options Configuration options for the store.
-   * @param options.directory The base directory path for storing prompt files.
-   * This path is used for all subsequent file system operations.
    */
   constructor(options: DirStoreOptions) {
     this.directory = options.directory;
@@ -230,6 +228,7 @@ export class DirStore implements PromptStoreWritable {
 
     return results;
   }
+
   /**
    * Lists available prompts (excluding partials) found within the store's
    * configured directory and its subdirectories. It calculates the version
