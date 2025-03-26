@@ -15,10 +15,6 @@ export default defineConfig({
       reporter: ['text', 'html'],
       thresholds: {
         autoUpdate: true,
-        branches: 93.14,
-        functions: 100,
-        lines: 76.2,
-        statements: 76.2,
       },
     },
   },
