@@ -52,3 +52,10 @@
         messages:
           - role: user
             content: [{ text: "Hello, Pavel!\n" }]
+    - desc: does not escape HTML
+      data:
+        input: {name: '<b>Pavel</b>'}
+      expect:
+        messages:
+          - role: user
+            content: [{text: "Hello, <b>Pavel</b>!\n"}]
