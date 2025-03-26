@@ -29,12 +29,66 @@ import type {
 /**
  * Options for configuring the DirStore.
  */
-interface DirStoreOptions {
+export interface DirStoreOptions {
   /**
    * Base directory to read prompts from and write prompts to. This directory
    * will serve as the root for all prompt file operations.
    */
   directory: string;
+}
+
+/**
+ * Options for listing prompts with pagination.
+ */
+export interface PaginationOptions {
+  /**
+   * The cursor to start listing from.
+   */
+  cursor?: string;
+  /**
+   * The maximum number of items to return.
+   */
+  limit?: number;
+}
+
+/**
+ * Options for loading a prompt.
+ */
+export interface LoadOptions {
+  /**
+   * The specific variant identifier of the prompt to load.
+   */
+  variant?: string;
+  /**
+   * A specific version hash to load. If provided, an error is thrown if the
+   * calculated version of the file content does not match this value.
+   */
+  version?: string;
+}
+
+/**
+ * Options for deleting a prompt or partial.
+ */
+export interface DeleteOptions {
+  /**
+   * The specific variant identifier to delete. If omitted, targets the
+   * default (no variant) file.
+   */
+  variant?: string;
+}
+
+/**
+ * A paginated list of partials.
+ */
+export interface PaginatedPartials {
+  /**
+   * The list of partials.
+   */
+  partials: PartialRef[];
+  /**
+   * The cursor to start the next page of results.
+   */
+  cursor?: string;
 }
 
 /**
@@ -176,7 +230,6 @@ export class DirStore implements PromptStoreWritable {
 
     return results;
   }
-
   /**
    * Lists available prompts (excluding partials) found within the store's
    * configured directory and its subdirectories. It calculates the version
@@ -187,16 +240,12 @@ export class DirStore implements PromptStoreWritable {
    * matching prompts found in a single operation.
    *
    * @param options Listing options (currently unused for pagination).
-   * @param options.cursor Optional cursor for pagination (not implemented).
-   * @param options.limit Optional limit for pagination (not implemented).
-   *
    * @return A promise resolving to an object containing the list of prompt
    * references (`PromptRef[]`) and no cursor (`undefined`).
    */
-  async list(options?: {
-    cursor?: string;
-    limit?: number;
-  }): Promise<{ prompts: PromptRef[]; cursor?: string }> {
+  async list(
+    options?: PaginationOptions
+  ): Promise<{ prompts: PromptRef[]; cursor?: string }> {
     const files = await this.scanDirectory();
     const prompts: PromptRef[] = [];
 
@@ -246,16 +295,10 @@ export class DirStore implements PromptStoreWritable {
    * matching partials found in a single operation.
    *
    * @param options Listing options (currently unused for pagination).
-   * @param options.cursor Optional cursor for pagination (not implemented).
-   * @param options.limit Optional limit for pagination (not implemented).
-   *
    * @return A promise resolving to an object containing the list of partial
    * references (`PartialRef[]`) and no cursor (`undefined`).
    */
-  async listPartials(options?: {
-    cursor?: string;
-    limit?: number;
-  }): Promise<{ partials: PartialRef[]; cursor?: string }> {
+  async listPartials(options?: PaginationOptions): Promise<PaginatedPartials> {
     const files = await this.scanDirectory();
     const partials: PartialRef[] = [];
 
@@ -306,22 +349,13 @@ export class DirStore implements PromptStoreWritable {
    * @param name The full logical name of the prompt, including any relative
    * path from the base directory.
    * @param options Loading options.
-   * @param options.variant The specific variant identifier of the prompt to
-   * load. If omitted, loads the default prompt (no variant in filename).
-   * @param options.version A specific version hash to load. If provided, an
-   * error is thrown if the calculated version of the file content does not
-   * match this value.
-   *
    * @return A promise resolving to the loaded prompt data (`PromptData`),
    * including its source content and calculated version hash.
    *
    * @throws If the prompt file is not found (`ENOENT`), cannot be read, or if a
    * requested `version` does not match the actual calculated version.
    */
-  async load(
-    name: string,
-    options?: { variant?: string; version?: string }
-  ): Promise<PromptData> {
+  async load(name: string, options?: LoadOptions): Promise<PromptData> {
     const variant = options?.variant;
     const dirName = path.dirname(name); // Relative dir path or ".".
     const baseName = path.basename(name); // The logical name part.
@@ -384,20 +418,12 @@ export class DirStore implements PromptStoreWritable {
    * @param name The full logical name of the partial (e.g., "common/header").
    * Do not include the leading underscore in this parameter.
    * @param options Loading options.
-   * @param options.variant The specific variant identifier of the partial.
-   * @param options.version A specific version hash to load. If provided,
-   * throws an error if the calculated version doesn't match.
-   *
    * @return A promise resolving to the loaded partial data (as `PromptData`),
    * including its source content and calculated version hash.
-   *
    * @throws If the partial file is not found (`ENOENT`), cannot be read, or if
    * a requested `version` doesn't match the actual version.
    */
-  async loadPartial(
-    name: string,
-    options?: { variant?: string; version?: string }
-  ): Promise<PromptData> {
+  async loadPartial(name: string, options?: LoadOptions): Promise<PromptData> {
     const variant = options?.variant;
     const dirName = path.dirname(name); // Relative dir path or ".".
     const baseName = path.basename(name); // Logical name part.
@@ -515,15 +541,11 @@ export class DirStore implements PromptStoreWritable {
    * "subDir/myPrompt" or "subDir/myPartial"). For partials, use the name
    * *without* the leading underscore.
    * @param options Deletion options.
-   * @param options.variant The specific variant identifier to delete. If
-   * omitted, targets the default (no variant) file.
-   *
    * @return A promise that resolves when the deletion is complete.
-   *
    * @throws If neither the corresponding prompt nor partial file can be found
    * (`ENOENT`), or if there's another file system error during deletion.
    */
-  async delete(name: string, options?: { variant?: string }): Promise<void> {
+  async delete(name: string, options?: DeleteOptions): Promise<void> {
     const variant = options?.variant;
     const dirName = path.dirname(name);
     const baseName = path.basename(name);
