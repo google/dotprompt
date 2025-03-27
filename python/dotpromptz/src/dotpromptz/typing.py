@@ -336,6 +336,56 @@ class PromptBundle(BaseModel):
 class PromptStore(Protocol):
     """PromptStore is a common interface that provides for."""
 
+    async def list(
+        self, options: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Return a list of all prompts in the store (optionally paginated).
+
+        Be aware that some store providers may return limited metadata.
+        """
+        ...
+
+    async def list_partials(
+        self, options: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Return a list of partial names available in this store."""
+        ...
+
+    async def load(
+        self, name: str, options: dict[str, Any] | None = None
+    ) -> PromptData:
+        """Retrieve a prompt from the store."""
+        ...
+
+    async def load_partial(
+        self, name: str, options: dict[str, Any] | None = None
+    ) -> PromptData:
+        """Retrieve a partial from the store."""
+        ...
+
+
+@runtime_checkable
+class PromptStoreWritable(PromptStore, Protocol):
+    """PromptStore that also has built-in methods for writing prompts."""
+
+    async def save(self, prompt: PromptData) -> None:
+        """Save a prompt in the store.
+
+        May be destructive for prompt stores without versioning.
+        """
+        ...
+
+    async def delete(
+        self, name: str, options: dict[str, Any] | None = None
+    ) -> None:
+        """Delete a prompt from the store."""
+        ...
+
+
+@runtime_checkable
+class SyncPromptStore(Protocol):
+    """PromptStore is a common interface that provides for."""
+
     def list(self, options: dict[str, Any] | None = None) -> dict[str, Any]:
         """Return a list of all prompts in the store (optionally paginated).
 
@@ -363,7 +413,7 @@ class PromptStore(Protocol):
 
 
 @runtime_checkable
-class PromptStoreWritable(PromptStore, Protocol):
+class SyncPromptStoreWritable(SyncPromptStore, Protocol):
     """PromptStore that also has built-in methods for writing prompts."""
 
     def save(self, prompt: PromptData) -> None:
