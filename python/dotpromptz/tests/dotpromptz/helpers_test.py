@@ -30,6 +30,8 @@ from handlebarrz import Handlebars
 
 
 class TestJsonHelper(unittest.TestCase):
+    """Tests for the JSON helper function."""
+
     def test_json_helper_direct(self) -> None:
         """Test the JSON helper function directly."""
         # Basic object
@@ -86,6 +88,8 @@ class TestJsonHelper(unittest.TestCase):
 
 
 class TestRoleHelper(unittest.TestCase):
+    """Tests for the role helper function."""
+
     def test_role_helper_direct(self) -> None:
         """Test role helper function directly."""
         result = role_helper(['system'], {}, {})
@@ -100,6 +104,8 @@ class TestRoleHelper(unittest.TestCase):
 
 
 class TestHistoryHelper(unittest.TestCase):
+    """Tests for the history helper function."""
+
     def test_history_helper_direct(self) -> None:
         """Test history helper function directly."""
         result = history_helper([], {}, {})
@@ -107,6 +113,8 @@ class TestHistoryHelper(unittest.TestCase):
 
 
 class TestSectionHelper(unittest.TestCase):
+    """Tests for the section helper function."""
+
     def test_section_helper_direct(self) -> None:
         """Test section helper function directly."""
         result = section_helper(['test'], {}, {})
@@ -119,6 +127,8 @@ class TestSectionHelper(unittest.TestCase):
 
 
 class TestMediaHelper(unittest.TestCase):
+    """Tests for the media helper function."""
+
     def test_media_helper_direct(self) -> None:
         """Test media helper function directly."""
         # With URL only.
@@ -147,6 +157,8 @@ class TestMediaHelper(unittest.TestCase):
 
 
 class TestDotpromptHelpers(unittest.TestCase):
+    """Tests for the dotprompt helpers."""
+
     def test_dotprompt_helpers_in_template(self) -> None:
         """Test dotprompt helpers in templates."""
         handlebars = Handlebars()
@@ -192,7 +204,10 @@ class TestDotpromptHelpers(unittest.TestCase):
 
 
 class TestIfEqualsHelper(unittest.TestCase):
+    """Tests for the ifEquals helper function."""
+
     def setUp(self) -> None:
+        """Set up the test environment."""
         self.handlebars = Handlebars()
         self.handlebars.register_extra_helpers()
 
@@ -242,7 +257,10 @@ class TestIfEqualsHelper(unittest.TestCase):
 
 
 class TestUnlessEqualsHelper(unittest.TestCase):
+    """Tests for the unlessEquals helper function."""
+
     def setUp(self) -> None:
+        """Set up the test environment."""
         self.handlebars = Handlebars()
         self.handlebars.register_extra_helpers()
 
@@ -289,3 +307,7 @@ class TestUnlessEqualsHelper(unittest.TestCase):
             'unless_equals_test', {'arg1': 'test', 'arg2': 'test'}
         )
         self.assertEqual(result, 'no')
+
+
+if __name__ == '__main__':
+    unittest.main()

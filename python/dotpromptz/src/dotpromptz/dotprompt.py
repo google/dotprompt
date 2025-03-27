@@ -19,22 +19,20 @@
 from __future__ import annotations
 
 import re
-from typing import Any, TypedDict, TypeVar
+from typing import Any, TypedDict
 
 from dotpromptz.helpers import register_all_helpers
 from dotpromptz.parse import parse_document
 from dotpromptz.typing import (
-    DataArgument,
     JsonSchema,
     ParsedPrompt,
     PartialResolver,
-    PromptMetadata,
     PromptStore,
     SchemaResolver,
     ToolDefinition,
     ToolResolver,
 )
-from handlebarrz import Handlebars, HelperFn
+from handlebarrz import EscapeFunction, Handlebars, HelperFn
 
 # Pre-compiled regex for finding partial references in handlebars templates
 
@@ -74,14 +72,19 @@ class Options(TypedDict, total=False):
 class Dotprompt:
     """Dotprompt extends a Handlebars template for use with Gen AI prompts."""
 
-    def __init__(self, options: Options | None = None) -> None:
+    def __init__(
+        self,
+        options: Options | None = None,
+        escape_fn: EscapeFunction = EscapeFunction.NO_ESCAPE,
+    ) -> None:
         """Initialize Dotprompt with a Handlebars template.
 
         Args:
             options: Options for Dotprompt.
         """
         self._options: Options = options or {}
-        self._handlebars: Handlebars = Handlebars()
+        self._handlebars: Handlebars = Handlebars(escape_fn=escape_fn)
+
         self._known_helpers: dict[str, bool] = {}
         self._default_model: str | None = self._options.get('default_model')
         self._model_configs: dict[str, Any] | None = self._options.get(

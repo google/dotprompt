@@ -25,6 +25,8 @@ from dotpromptz.util import (
 
 
 class TestRemoveUndefinedFields(unittest.TestCase):
+    """Tests for remove_undefined_fields."""
+
     def test_remove_undefined_fields_recursively(self) -> None:
         """Test removing undefined fields from dictionaries."""
         input_dict = {
