@@ -17,11 +17,6 @@
 name: Python Checks
 
 on:
-  push:
-    paths:
-      - "python/**"
-      - "spec/**"
-      - ".github/workflows/python.yml"
   pull_request:
     paths:
       - "python/**"

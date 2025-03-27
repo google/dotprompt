@@ -17,11 +17,6 @@
 name: Go build, tests and other checks
 
 on:
-  push:
-    paths:
-      - "go/**"
-      - "spec/**"
-      - ".github/workflows/go.yml"
   pull_request:
     paths:
       - "go/**"

@@ -24,10 +24,12 @@ import yaml
 
 from dotpromptz.typing import (
     DataArgument,
+    MediaContent,
     MediaPart,
     Message,
     ParsedPrompt,
     Part,
+    PendingMetadata,
     PendingPart,
     Role,
     TextPart,
@@ -504,10 +506,13 @@ def parse_media_part(piece: str) -> MediaPart:
             f'Invalid media piece: {piece}; expected 2 or 3 fields, found {n}'
         )
 
-    part = MediaPart(media=dict(url=url))
-    if content_type and content_type.strip():
-        part.media['contentType'] = content_type
-    return part
+    media_content = MediaContent(
+        url=url,
+        contentType=(
+            content_type if content_type and content_type.strip() else None
+        ),
+    )
+    return MediaPart(media=media_content)
 
 
 def parse_section_part(piece: str) -> PendingPart:
@@ -536,7 +541,10 @@ def parse_section_part(piece: str) -> PendingPart:
             f'Invalid section piece: {piece}; '
             f'expected 2 fields, found {len(fields)}'
         )
-    return PendingPart(metadata=dict(purpose=section_type, pending=True))
+
+    # Use the helper method to set purpose
+    pending_metadata = PendingMetadata.with_purpose(section_type)
+    return PendingPart(metadata=pending_metadata)
 
 
 def parse_text_part(piece: str) -> TextPart:

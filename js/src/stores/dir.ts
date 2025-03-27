@@ -327,8 +327,8 @@ export class DirStore implements PromptStoreWritable {
       if (options?.version && options.version !== version) {
         throw new Error(
           `Version mismatch for prompt '${name}'` +
-          `${variant ? ` (variant: ${variant})` : ''}` +
-          `: requested ${options.version} but found ${version}`
+            `${variant ? ` (variant: ${variant})` : ''}` +
+            `: requested ${options.version} but found ${version}`
         );
       }
 
@@ -349,13 +349,13 @@ export class DirStore implements PromptStoreWritable {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         throw new Error(
           `Prompt '${name}'${variantInfo}${versionInfo} ` +
-          `not found at path: ${filePath}`
+            `not found at path: ${filePath}`
         );
       }
       // General loading failure.
       throw new Error(
         `Failed to load prompt '${name}'${variantInfo}${versionInfo}: ` +
-        `${message}`
+          `${message}`
       );
     }
   }
@@ -398,8 +398,8 @@ export class DirStore implements PromptStoreWritable {
       if (options?.version && options.version !== version) {
         throw new Error(
           `Version mismatch for partial '${name}'` +
-          `${variant ? ` (variant: ${variant})` : ''}` +
-          `: requested ${options.version} but found ${version}`
+            `${variant ? ` (variant: ${variant})` : ''}` +
+            `: requested ${options.version} but found ${version}`
         );
       }
 
@@ -420,13 +420,13 @@ export class DirStore implements PromptStoreWritable {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         throw new Error(
           `Partial '${name}'${variantInfo}${versionInfo} ` +
-          `not found at path: ${filePath}`
+            `not found at path: ${filePath}`
         );
       }
       // General loading failure.
       throw new Error(
         `Failed to load partial '${name}'${variantInfo}${versionInfo}: ` +
-        `${message}`
+          `${message}`
       );
     }
   }
@@ -481,7 +481,7 @@ export class DirStore implements PromptStoreWritable {
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(
         `Failed to save prompt '${prompt.name}'${variantInfo} ` +
-        `to ${filePath}: ${message}`
+          `to ${filePath}: ${message}`
       );
     }
   }
@@ -540,8 +540,8 @@ export class DirStore implements PromptStoreWritable {
         // Error indicating neither expected file was found.
         throw new Error(
           `Failed to delete ${fileType} '${name}'${variantInfo}: ` +
-          `File not found at expected paths ${promptFilePath} ` +
-          `or ${partialFilePath}`
+            `File not found at expected paths ${promptFilePath} ` +
+            `or ${partialFilePath}`
         );
       }
     }
@@ -557,7 +557,7 @@ export class DirStore implements PromptStoreWritable {
         const message = error instanceof Error ? error.message : String(error);
         throw new Error(
           `Failed to delete ${fileType} '${name}'${variantInfo} ` +
-          `at ${filePathToDelete}: ${message}`
+            `at ${filePathToDelete}: ${message}`
         );
       }
     }

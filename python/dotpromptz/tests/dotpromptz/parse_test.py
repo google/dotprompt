@@ -43,10 +43,12 @@ from dotpromptz.parse import (
     transform_messages_to_history,
 )
 from dotpromptz.typing import (
+    MediaContent,
     MediaPart,
     Message,
     ParsedPrompt,
     Part,
+    PendingMetadata,
     PendingPart,
     Role,
     TextPart,
@@ -604,7 +606,7 @@ class TestInsertHistory(unittest.TestCase):
         (
             '<<<dotprompt:media:url>>> https://example.com/image.jpg',
             MediaPart(
-                media=dict(
+                media=MediaContent(
                     url='https://example.com/image.jpg',
                 )
             ),
@@ -613,10 +615,10 @@ class TestInsertHistory(unittest.TestCase):
             '<<<dotprompt:media:url>>> https://example.com/image.jpg'
             + ' image/jpeg',
             MediaPart(
-                media={
-                    'url': 'https://example.com/image.jpg',
-                    'contentType': 'image/jpeg',
-                },
+                media=MediaContent(
+                    url='https://example.com/image.jpg',
+                    contentType='image/jpeg',
+                ),
             ),
         ),
         (
@@ -625,7 +627,9 @@ class TestInsertHistory(unittest.TestCase):
         ),
         (
             '<<<dotprompt:section>>> code',
-            PendingPart(metadata=dict(purpose='code', pending=True)),
+            PendingPart(
+                metadata=PendingMetadata.with_purpose('code'),
+            ),
         ),
         (
             (
@@ -651,7 +655,9 @@ def test_parse_media_piece() -> None:
     """Test parsing media pieces."""
     piece = '<<<dotprompt:media:url>>> https://example.com/image.jpg'
     result = parse_media_part(piece)
-    assert result == MediaPart(media={'url': 'https://example.com/image.jpg'})
+    assert result == MediaPart(
+        media=MediaContent(url='https://example.com/image.jpg')
+    )
 
 
 def test_parse_media_piece_invalid() -> None:
@@ -664,8 +670,9 @@ def test_parse_media_piece_invalid() -> None:
 def test_parse_section_piece() -> None:
     """Test parsing section pieces."""
     piece = '<<<dotprompt:section>>> code'
+    pending_metadata = PendingMetadata.with_purpose('code')
     result = parse_section_part(piece)
-    assert result == PendingPart(metadata={'purpose': 'code', 'pending': True})
+    assert result == PendingPart(metadata=pending_metadata)
 
 
 def test_parse_section_piece_invalid() -> None:

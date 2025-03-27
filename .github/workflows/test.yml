@@ -17,11 +17,6 @@
 name: "JS: Run Tests and Build"
 
 on:
-  push:
-    paths:
-      - "js/**"
-      - "spec/**"
-      - ".github/workflows/test.yml"
   pull_request:
     paths:
       - "js/**"

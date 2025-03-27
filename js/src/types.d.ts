@@ -118,7 +118,7 @@ export type ToolResponsePart<Output = any> = Omit<EmptyPart, 'toolResponse'> & {
   toolResponse: { name: string; output?: Output; ref?: string };
 };
 export type PendingPart = EmptyPart & {
-  metadata: { pending: true;[key: string]: any };
+  metadata: { pending: true; [key: string]: any };
 };
 export type Part =
   | TextPart
