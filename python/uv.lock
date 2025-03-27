@@ -11,6 +11,15 @@ members = [
 ]
 
 [[package]]
+name = "aiofiles"
+version = "24.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0b/03/a88171e277e8caa88a4c77808c20ebb04ba74cc4681bf1e9416c862de237/aiofiles-24.1.0.tar.gz", hash = "sha256:22a075c9e5a3810f0c2e48f3008c94d68c65d763b9b03857924c99e57355166c", size = 30247 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a5/45/30bb92d442636f570cb5651bc661f52b610e2eec3f891a5dc3a4c3667db0/aiofiles-24.1.0-py3-none-any.whl", hash = "sha256:b4ec55f4195e3eb5d7abd1bf7e061763e864dd4954231fb8539a0ef8bb8260e5", size = 15896 },
+]
+
+[[package]]
 name = "annotated-types"
 version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -462,9 +471,11 @@ name = "dotpromptz"
 version = "0.1.0"
 source = { editable = "dotpromptz" }
 dependencies = [
+    { name = "aiofiles" },
     { name = "handlebarrz" },
     { name = "pydantic", extra = ["email"] },
     { name = "structlog" },
+    { name = "types-aiofiles" },
 ]
 
 [package.dev-dependencies]
@@ -478,9 +489,11 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aiofiles", specifier = ">=24.1.0" },
     { name = "handlebarrz", editable = "handlebarrz" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.10.6" },
     { name = "structlog", specifier = ">=25.2.0" },
+    { name = "types-aiofiles", specifier = ">=24.1.0.20250326" },
 ]
 
 [package.metadata.requires-dev]
@@ -1851,6 +1864,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/eb/79/72064e6a701c2183016abbbfedaba506d81e30e232a68c9f0d6f6fcd1574/traitlets-5.14.3.tar.gz", hash = "sha256:9ed0579d3502c94b4b3732ac120375cda96f923114522847de4b3bb98b96b6b7", size = 161621 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/00/c0/8f5d070730d7836adc9c9b6408dec68c6ced86b304a9b26a14df072a6e8c/traitlets-5.14.3-py3-none-any.whl", hash = "sha256:b74e89e397b1ed28cc831db7aea759ba6640cb3de13090ca145426688ff1ac4f", size = 85359 },
+]
+
+[[package]]
+name = "types-aiofiles"
+version = "24.1.0.20250326"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/8d/25/c76a9ee91eefac376ed8905b029272e27c44739e3f148faf5c00afe71e43/types_aiofiles-24.1.0.20250326.tar.gz", hash = "sha256:c4bbe432fd043911ba83fb635456f5cc54f6d05fda2aadf6bef12a84f07a6efe", size = 14369 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0e/18/1016ffd4c7775f24371f6a0309483dc5597e8245b5add67924e54ea3b83a/types_aiofiles-24.1.0.20250326-py3-none-any.whl", hash = "sha256:dfb58c9aa18bd449e80fb5d7f49dc3dd20d31de920a46223a61798ee4a521a70", size = 14344 },
 ]
 
 [[package]]
