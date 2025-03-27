@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,8 +15,6 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-
-#!/usr/bin/env bash
 
 . /venv/bin/activate
 echo "building for python version $1"
