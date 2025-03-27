@@ -20,6 +20,13 @@ import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type {
+  DeletePromptOrPartialOptions,
+  ListPartialsOptions,
+  ListPromptsOptions,
+  LoadPartialOptions,
+  LoadPromptOptions,
+  PaginatedPartials,
+  PaginatedPrompts,
   PartialRef,
   PromptData,
   PromptRef,
@@ -35,60 +42,6 @@ export interface DirStoreOptions {
    * will serve as the root for all prompt file operations.
    */
   directory: string;
-}
-
-/**
- * Options for listing prompts with pagination.
- */
-export interface PaginationOptions {
-  /**
-   * The cursor to start listing from.
-   */
-  cursor?: string;
-  /**
-   * The maximum number of items to return.
-   */
-  limit?: number;
-}
-
-/**
- * Options for loading a prompt.
- */
-export interface LoadOptions {
-  /**
-   * The specific variant identifier of the prompt to load.
-   */
-  variant?: string;
-  /**
-   * A specific version hash to load. If provided, an error is thrown if the
-   * calculated version of the file content does not match this value.
-   */
-  version?: string;
-}
-
-/**
- * Options for deleting a prompt or partial.
- */
-export interface DeleteOptions {
-  /**
-   * The specific variant identifier to delete. If omitted, targets the
-   * default (no variant) file.
-   */
-  variant?: string;
-}
-
-/**
- * A paginated list of partials.
- */
-export interface PaginatedPartials {
-  /**
-   * The list of partials.
-   */
-  partials: PartialRef[];
-  /**
-   * The cursor to start the next page of results.
-   */
-  cursor?: string;
 }
 
 /**
@@ -115,8 +68,6 @@ export class DirStore implements PromptStoreWritable {
    * directory where prompt files will be managed.
    *
    * @param options Configuration options for the store.
-   * @param options.directory The base directory path for storing prompt files.
-   * This path is used for all subsequent file system operations.
    */
   constructor(options: DirStoreOptions) {
     this.directory = options.directory;
@@ -230,6 +181,7 @@ export class DirStore implements PromptStoreWritable {
 
     return results;
   }
+
   /**
    * Lists available prompts (excluding partials) found within the store's
    * configured directory and its subdirectories. It calculates the version
@@ -243,9 +195,7 @@ export class DirStore implements PromptStoreWritable {
    * @return A promise resolving to an object containing the list of prompt
    * references (`PromptRef[]`) and no cursor (`undefined`).
    */
-  async list(
-    options?: PaginationOptions
-  ): Promise<{ prompts: PromptRef[]; cursor?: string }> {
+  async list(options?: ListPromptsOptions): Promise<PaginatedPrompts> {
     const files = await this.scanDirectory();
     const prompts: PromptRef[] = [];
 
@@ -298,7 +248,9 @@ export class DirStore implements PromptStoreWritable {
    * @return A promise resolving to an object containing the list of partial
    * references (`PartialRef[]`) and no cursor (`undefined`).
    */
-  async listPartials(options?: PaginationOptions): Promise<PaginatedPartials> {
+  async listPartials(
+    options?: ListPartialsOptions
+  ): Promise<PaginatedPartials> {
     const files = await this.scanDirectory();
     const partials: PartialRef[] = [];
 
@@ -355,7 +307,7 @@ export class DirStore implements PromptStoreWritable {
    * @throws If the prompt file is not found (`ENOENT`), cannot be read, or if a
    * requested `version` does not match the actual calculated version.
    */
-  async load(name: string, options?: LoadOptions): Promise<PromptData> {
+  async load(name: string, options?: LoadPromptOptions): Promise<PromptData> {
     const variant = options?.variant;
     const dirName = path.dirname(name); // Relative dir path or ".".
     const baseName = path.basename(name); // The logical name part.
@@ -375,8 +327,8 @@ export class DirStore implements PromptStoreWritable {
       if (options?.version && options.version !== version) {
         throw new Error(
           `Version mismatch for prompt '${name}'` +
-            `${variant ? ` (variant: ${variant})` : ''}` +
-            `: requested ${options.version} but found ${version}`
+          `${variant ? ` (variant: ${variant})` : ''}` +
+          `: requested ${options.version} but found ${version}`
         );
       }
 
@@ -397,13 +349,13 @@ export class DirStore implements PromptStoreWritable {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         throw new Error(
           `Prompt '${name}'${variantInfo}${versionInfo} ` +
-            `not found at path: ${filePath}`
+          `not found at path: ${filePath}`
         );
       }
       // General loading failure.
       throw new Error(
         `Failed to load prompt '${name}'${variantInfo}${versionInfo}: ` +
-          `${message}`
+        `${message}`
       );
     }
   }
@@ -423,7 +375,10 @@ export class DirStore implements PromptStoreWritable {
    * @throws If the partial file is not found (`ENOENT`), cannot be read, or if
    * a requested `version` doesn't match the actual version.
    */
-  async loadPartial(name: string, options?: LoadOptions): Promise<PromptData> {
+  async loadPartial(
+    name: string,
+    options?: LoadPartialOptions
+  ): Promise<PromptData> {
     const variant = options?.variant;
     const dirName = path.dirname(name); // Relative dir path or ".".
     const baseName = path.basename(name); // Logical name part.
@@ -443,8 +398,8 @@ export class DirStore implements PromptStoreWritable {
       if (options?.version && options.version !== version) {
         throw new Error(
           `Version mismatch for partial '${name}'` +
-            `${variant ? ` (variant: ${variant})` : ''}` +
-            `: requested ${options.version} but found ${version}`
+          `${variant ? ` (variant: ${variant})` : ''}` +
+          `: requested ${options.version} but found ${version}`
         );
       }
 
@@ -465,13 +420,13 @@ export class DirStore implements PromptStoreWritable {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         throw new Error(
           `Partial '${name}'${variantInfo}${versionInfo} ` +
-            `not found at path: ${filePath}`
+          `not found at path: ${filePath}`
         );
       }
       // General loading failure.
       throw new Error(
         `Failed to load partial '${name}'${variantInfo}${versionInfo}: ` +
-          `${message}`
+        `${message}`
       );
     }
   }
@@ -526,7 +481,7 @@ export class DirStore implements PromptStoreWritable {
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(
         `Failed to save prompt '${prompt.name}'${variantInfo} ` +
-          `to ${filePath}: ${message}`
+        `to ${filePath}: ${message}`
       );
     }
   }
@@ -545,7 +500,10 @@ export class DirStore implements PromptStoreWritable {
    * @throws If neither the corresponding prompt nor partial file can be found
    * (`ENOENT`), or if there's another file system error during deletion.
    */
-  async delete(name: string, options?: DeleteOptions): Promise<void> {
+  async delete(
+    name: string,
+    options?: DeletePromptOrPartialOptions
+  ): Promise<void> {
     const variant = options?.variant;
     const dirName = path.dirname(name);
     const baseName = path.basename(name);
@@ -582,8 +540,8 @@ export class DirStore implements PromptStoreWritable {
         // Error indicating neither expected file was found.
         throw new Error(
           `Failed to delete ${fileType} '${name}'${variantInfo}: ` +
-            `File not found at expected paths ${promptFilePath} ` +
-            `or ${partialFilePath}`
+          `File not found at expected paths ${promptFilePath} ` +
+          `or ${partialFilePath}`
         );
       }
     }
@@ -599,7 +557,7 @@ export class DirStore implements PromptStoreWritable {
         const message = error instanceof Error ? error.message : String(error);
         throw new Error(
           `Failed to delete ${fileType} '${name}'${variantInfo} ` +
-            `at ${filePathToDelete}: ${message}`
+          `at ${filePathToDelete}: ${message}`
         );
       }
     }

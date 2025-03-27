@@ -52,7 +52,8 @@ export interface PromptMetadata<ModelConfig = Record<string, any>>
   version?: string;
   /** A description of the prompt. */
   description?: string;
-  /** The name of the model to use for this prompt, e.g. `vertexai/gemini-1.0-pro` */
+  /** The name of the model to use for this prompt, e.g.
+   * `vertexai/gemini-1.0-pro` */
   model?: string;
   /** Names of tools (registered separately) to allow use of in this prompt. */
   tools?: string[];
@@ -76,16 +77,17 @@ export interface PromptMetadata<ModelConfig = Record<string, any>>
     schema?: Schema;
   };
   /**
-   * This field will contain the raw frontmatter as parsed with no additional processing
-   * or substitutions. If your implementation requires custom fields they will be available
-   * here.
-   **/
+   * This field will contain the raw frontmatter as parsed with no additional
+   * processing or substitutions. If your implementation requires custom fields
+   * they will be available here.
+   */
   raw?: Record<string, any>;
   /**
-   * Fields that contain a period will be considered "extension fields" in the frontmatter
-   * and will be gathered by namespace. For example, `myext.foo: 123` would be available
-   * at `parsedPrompt.ext.myext.foo`. Nested namespaces will be flattened, so `myext.foo.bar: 123`
-   * would be available at `parsedPrompt.ext["myext.foo"].bar`.
+   * Fields that contain a period will be considered "extension fields" in the
+   * frontmatter and will be gathered by namespace. For example, `myext.foo:
+   * 123` would be available at `parsedPrompt.ext.myext.foo`. Nested namespaces
+   * will be flattened, so `myext.foo.bar: 123` would be available at
+   * `parsedPrompt.ext["myext.foo"].bar`.
    */
   ext?: Record<string, Record<string, any>>;
 }
@@ -116,7 +118,7 @@ export type ToolResponsePart<Output = any> = Omit<EmptyPart, 'toolResponse'> & {
   toolResponse: { name: string; output?: Output; ref?: string };
 };
 export type PendingPart = EmptyPart & {
-  metadata: { pending: true; [key: string]: any };
+  metadata: { pending: true;[key: string]: any };
 };
 export type Part =
   | TextPart
@@ -227,41 +229,133 @@ export interface PartialData extends PartialRef {
 }
 
 /**
- * PromptStore is a common interface that provides for
+ * Options for listing prompts with pagination.
  */
-export interface PromptStore {
-  /** Return a list of all prompts in the store (optionally paginated). Some store providers may return limited metadata. */
-  list(options?: {
-    cursor?: string;
-    limit?: number;
-  }): Promise<{ prompts: Array<PromptRef>; cursor?: string }>;
-  /** Return a list of partial names available in this store. */
-  listPartials(options?: { cursor?: string; limit?: number }): Promise<{
-    partials: Array<PartialRef>;
-    cursor?: string;
-  }>;
-  /** Retrieve a prompt from the store.  */
-  load(
-    name: string,
-    options?: { variant?: string; version?: string }
-  ): Promise<PromptData>;
-  /** Retrieve a partial from the store. */
-  loadPartial(
-    name: string,
-    options?: { variant?: string; version?: string }
-  ): Promise<PromptData>;
+export interface ListPromptsOptions {
+  /**
+   * The cursor to start listing from.
+   */
+  cursor?: string;
+  /**
+   * The maximum number of items to return.
+   */
+  limit?: number;
 }
 
 /**
- * PromptStoreWritable is a PromptStore that also has built-in methods for writing prompts in addition to reading them.
+ * Options for listing partials with pagination.
  */
-export interface PromptStoreWritable extends PromptStore {
-  /** Save a prompt in the store. May be destructive for prompt stores without versioning. */
-  save(prompt: PromptData): Promise<void>;
-  /** Delete a prompt from the store. */
-  delete(name: string, options?: { variant?: string }): Promise<void>;
+export interface ListPartialsOptions {
+  /**
+   * The cursor to start listing from.
+   */
+  cursor?: string;
+  /**
+   * The maximum number of items to return.
+   */
+  limit?: number;
 }
 
+/**
+ * Options for loading a prompt.
+ */
+export interface LoadPromptOptions {
+  /**
+   * The specific variant identifier of the prompt to load.
+   */
+  variant?: string;
+  /**
+   * A specific version hash to load. If provided, an error is thrown if the
+   * calculated version of the file content does not match this value.
+   */
+  version?: string;
+}
+
+/**
+ * Options for loading a partial.
+ */
+export interface LoadPartialOptions {
+  /**
+   * The specific variant identifier of the partial to load.
+   */
+  variant?: string;
+  /**
+   * A specific version hash to load. If provided, an error is thrown if the
+   * calculated version of the file content does not match this value.
+   */
+  version?: string;
+}
+
+/**
+ * Options for deleting a prompt or partial.
+ */
+export interface DeletePromptOrPartialOptions {
+  /**
+   * The specific variant identifier to delete. If omitted, targets the
+   * default (no variant) file.
+   */
+  variant?: string;
+}
+
+/**
+ * A paginated list of prompts.
+ */
+export interface PaginatedPrompts {
+  /**
+   * The list of prompts.
+   */
+  prompts: PromptRef[];
+  /**
+   * The cursor to start the next page of results.
+   */
+  cursor?: string;
+}
+
+/**
+ * A paginated list of partials.
+ */
+export interface PaginatedPartials {
+  /**
+   * The list of partials.
+   */
+  partials: PartialRef[];
+  /**
+   * The cursor to start the next page of results.
+   */
+  cursor?: string;
+}
+
+/**
+ * PromptStore is a common interface that provides for reading and writing
+ * prompts and partials.
+ */
+export interface PromptStore {
+  /** Return a list of all prompts in the store (optionally paginated). Some
+   * store providers may return limited metadata. */
+  list(options?: ListPromptsOptions): Promise<PaginatedPrompts>;
+  /** Return a list of partial names available in this store. */
+  listPartials(options?: ListPartialsOptions): Promise<PaginatedPartials>;
+  /** Retrieve a prompt from the store.  */
+  load(name: string, options?: LoadOptions): Promise<PromptData>;
+  /** Retrieve a partial from the store. */
+  loadPartial(name: string, options?: LoadOptions): Promise<PromptData>;
+}
+
+/**
+ * PromptStoreWritable is a PromptStore that also has built-in methods for
+ * writing prompts in addition to reading them.
+ */
+export interface PromptStoreWritable extends PromptStore {
+  /** Save a prompt in the store. May be destructive for prompt stores without
+   * versioning. */
+  save(prompt: PromptData): Promise<void>;
+  /** Delete a prompt from the store. */
+  delete(name: string, options?: DeletePromptOrPartialOptions): Promise<void>;
+}
+
+/**
+ * A bundle of prompts and partials.
+ */
 export interface PromptBundle {
   partials: PartialData[];
   prompts: PromptData[];
