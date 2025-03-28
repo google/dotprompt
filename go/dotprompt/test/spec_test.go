@@ -86,7 +86,7 @@ func deepEqual(v1, v2 any) bool {
 // createTestCases creates and runs test cases for a given SpecSuite and SpecTest.
 func createTestCases(t *testing.T, s SpecSuite, tc SpecTest, dotpromptFactory func(suite SpecSuite) (*Dotprompt, *DotpromptOptions)) {
 	t.Run(tc.Desc, func(t *testing.T) {
-		env, dotpromptOptions := dotpromptFactory(s)
+		env, _ := dotpromptFactory(s)
 
 		// Render the template.
 		options := &PromptMetadata{}
@@ -94,7 +94,7 @@ func createTestCases(t *testing.T, s SpecSuite, tc SpecTest, dotpromptFactory fu
 			t.Fatalf("Failed to decode options: %v", err)
 		}
 		dataArg := mergeData(s.Data, tc.Data)
-		result, err := env.Render(s.Template, &dataArg, options, dotpromptOptions)
+		result, err := env.Render(s.Template, &dataArg, options)
 		if err != nil {
 			t.Fatalf("Render failed: %v", err)
 		}

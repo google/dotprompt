@@ -55,6 +55,8 @@ type Dotprompt struct {
 	partialResolver PartialResolver
 	knownPartials   map[string]bool
 	Template        *raymond.Template
+	Helpers         map[string]any
+	Partials        map[string]string
 }
 
 // NewDotprompt creates a new Dotprompt instance with the given options.
@@ -73,6 +75,8 @@ func NewDotprompt(options *DotpromptOptions) *Dotprompt {
 			schemaResolver:  options.SchemaResolver,
 			partialResolver: options.PartialResolver,
 			knownPartials:   make(map[string]bool),
+			Helpers:         options.Helpers,
+			Partials:        options.Partials,
 		}
 	}
 
@@ -98,9 +102,9 @@ func (dp *Dotprompt) DefinePartial(name string, source string, tpl *raymond.Temp
 }
 
 // TODO: Add register helpers
-func (dp *Dotprompt) RegisterHelpers(options *DotpromptOptions, tpl *raymond.Template) {
-	if options != nil && options.Helpers != nil {
-		for key, helper := range options.Helpers {
+func (dp *Dotprompt) RegisterHelpers(tpl *raymond.Template) {
+	if dp.Helpers != nil {
+		for key, helper := range dp.Helpers {
 			dp.DefineHelper(key, helper, tpl)
 		}
 	}
@@ -109,9 +113,9 @@ func (dp *Dotprompt) RegisterHelpers(options *DotpromptOptions, tpl *raymond.Tem
 	}
 }
 
-func (dp *Dotprompt) RegisterPartials(options *DotpromptOptions, tpl *raymond.Template, template string) error {
-	if options.Partials != nil {
-		for key, partial := range options.Partials {
+func (dp *Dotprompt) RegisterPartials(tpl *raymond.Template, template string) error {
+	if dp.Partials != nil {
+		for key, partial := range dp.Partials {
 			dp.DefinePartial(key, partial, tpl)
 		}
 	}
@@ -134,8 +138,8 @@ func (dp *Dotprompt) Parse(source string) (ParsedPrompt, error) {
 }
 
 // Render renders the source string with the given data and options.
-func (dp *Dotprompt) Render(source string, data *DataArgument, options *PromptMetadata, dotpromptOptions *DotpromptOptions) (RenderedPrompt, error) {
-	renderer, err := dp.Compile(source, options, dotpromptOptions)
+func (dp *Dotprompt) Render(source string, data *DataArgument, options *PromptMetadata) (RenderedPrompt, error) {
+	renderer, err := dp.Compile(source, options)
 	if err != nil {
 		return RenderedPrompt{}, err
 	}
@@ -143,7 +147,7 @@ func (dp *Dotprompt) Render(source string, data *DataArgument, options *PromptMe
 }
 
 // Compile compiles the source string into a PromptFunction.
-func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata, dotpromptOptions *DotpromptOptions) (PromptFunction, error) {
+func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata) (PromptFunction, error) {
 	parsedPrompt, err := dp.Parse(source)
 	if err != nil {
 		return nil, err
@@ -159,8 +163,8 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata, 
 	dp.Template = renderTpl
 
 	// RegisterHelpers()
-	dp.RegisterHelpers(dotpromptOptions, dp.Template)
-	err = dp.RegisterPartials(dotpromptOptions, dp.Template, parsedPrompt.Template)
+	dp.RegisterHelpers(dp.Template)
+	err = dp.RegisterPartials(dp.Template, parsedPrompt.Template)
 	if err != nil {
 		return nil, err
 	}
