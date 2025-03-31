@@ -128,9 +128,7 @@ export type Part =
   | ToolResponsePart
   | PendingPart;
 
-// TODO: Check with mbleigh whether it is okay to add 'assistant' here.
-// TODO: Also update typing.py depending on what is decided.
-export type Role = 'user' | 'model' | 'tool' | 'system' | 'assistant';
+export type Role = 'user' | 'model' | 'tool' | 'system';
 
 export interface Message extends HasMetadata {
   role: Role;
@@ -167,7 +165,7 @@ export type JSONSchema = any;
  * provided by an external tool.
  **/
 export type SchemaResolver = (
-  schemaName: string,
+  schemaName: string
 ) => JSONSchema | null | Promise<JSONSchema | null>;
 
 /**
@@ -176,7 +174,7 @@ export type SchemaResolver = (
  * provided by an external library.
  **/
 export type ToolResolver = (
-  toolName: string,
+  toolName: string
 ) => ToolDefinition | null | Promise<ToolDefinition | null>;
 
 /**
@@ -197,7 +195,7 @@ export interface RenderedPrompt<ModelConfig = Record<string, any>>
 export interface PromptFunction<ModelConfig = Record<string, any>> {
   (
     data: DataArgument,
-    options?: PromptMetadata<ModelConfig>,
+    options?: PromptMetadata<ModelConfig>
   ): Promise<RenderedPrompt<ModelConfig>>;
   prompt: ParsedPrompt<ModelConfig>;
 }
@@ -209,7 +207,7 @@ export interface PromptFunction<ModelConfig = Record<string, any>> {
 export interface PromptRefFunction<ModelConfig = Record<string, any>> {
   (
     data: DataArgument,
-    options?: PromptMetadata<ModelConfig>,
+    options?: PromptMetadata<ModelConfig>
   ): Promise<RenderedPrompt<ModelConfig>>;
   promptRef: PromptRef;
 }

@@ -367,7 +367,6 @@ class Role(str, Enum):
     MODEL = 'model'
     TOOL = 'tool'
     SYSTEM = 'system'
-    ASSISTANT = 'assistant'
 
 
 # Role constants with ROLE_ prefix for explicit imports
@@ -375,7 +374,6 @@ ROLE_USER = Role.USER
 ROLE_MODEL = Role.MODEL
 ROLE_TOOL = Role.TOOL
 ROLE_SYSTEM = Role.SYSTEM
-ROLE_ASSISTANT = Role.ASSISTANT
 
 
 class Message(HasMetadata):

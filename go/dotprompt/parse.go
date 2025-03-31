@@ -66,7 +66,6 @@ var (
 	//
 	// Examples of matching patterns:
 	// - <<<dotprompt:role:user>>>
-	// - <<<dotprompt:role:assistant>>>
 	// - <<<dotprompt:role:system>>>
 	// - <<<dotprompt:history>>>
 	RoleAndHistoryMarkerRegex = regexp.MustCompile(
