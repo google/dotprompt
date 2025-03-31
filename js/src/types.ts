@@ -167,7 +167,7 @@ export type JSONSchema = any;
  * provided by an external tool.
  **/
 export type SchemaResolver = (
-  schemaName: string
+  schemaName: string,
 ) => JSONSchema | null | Promise<JSONSchema | null>;
 
 /**
@@ -176,7 +176,7 @@ export type SchemaResolver = (
  * provided by an external library.
  **/
 export type ToolResolver = (
-  toolName: string
+  toolName: string,
 ) => ToolDefinition | null | Promise<ToolDefinition | null>;
 
 /**
@@ -197,7 +197,7 @@ export interface RenderedPrompt<ModelConfig = Record<string, any>>
 export interface PromptFunction<ModelConfig = Record<string, any>> {
   (
     data: DataArgument,
-    options?: PromptMetadata<ModelConfig>
+    options?: PromptMetadata<ModelConfig>,
   ): Promise<RenderedPrompt<ModelConfig>>;
   prompt: ParsedPrompt<ModelConfig>;
 }
@@ -209,7 +209,7 @@ export interface PromptFunction<ModelConfig = Record<string, any>> {
 export interface PromptRefFunction<ModelConfig = Record<string, any>> {
   (
     data: DataArgument,
-    options?: PromptMetadata<ModelConfig>
+    options?: PromptMetadata<ModelConfig>,
   ): Promise<RenderedPrompt<ModelConfig>>;
   promptRef: PromptRef;
 }
@@ -336,9 +336,9 @@ export interface PromptStore {
   /** Return a list of partial names available in this store. */
   listPartials(options?: ListPartialsOptions): Promise<PaginatedPartials>;
   /** Retrieve a prompt from the store.  */
-  load(name: string, options?: LoadOptions): Promise<PromptData>;
+  load(name: string, options?: LoadPromptOptions): Promise<PromptData>;
   /** Retrieve a partial from the store. */
-  loadPartial(name: string, options?: LoadOptions): Promise<PromptData>;
+  loadPartial(name: string, options?: LoadPartialOptions): Promise<PromptData>;
 }
 
 /**
