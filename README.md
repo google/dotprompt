@@ -51,9 +51,10 @@ input:
     text: string
 output:
   format: json
-    schema: name?: string, the full name of the person
-    age?: number, the age of the person
-    occupation?: string, the person's occupation
+    schema:
+      name?: string, the full name of the person
+      age?: number, the age of the person
+      occupation?: string, the person's occupation
 ---
 
 Extract the requested information from the given text. If a piece of information
