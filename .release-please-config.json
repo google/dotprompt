@@ -1,4 +1,16 @@
 {
+  "always-update": true,
+  "bootstrap-sha": "main",
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": true,
+  "draft": false,
+  "pull-request-title-pattern": "chore${scope}: release ${component}-${version}",
+  "include-component-in-tag": true,
+  "prerelease": false,
+  "separate-pull-requests": true,
+  "skip-github-release": false,
+  "include-v-in-tag": false,
+  "plugins": ["node-workspace"],
   "packages": {
     "js": {
       "release-type": "node",
