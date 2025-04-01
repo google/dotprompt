@@ -19,7 +19,8 @@
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
-      "prerelease": false
+      "prerelease": false,
+      "path": "js/**"
     },
     "python/dotpromptz": {
       "release-type": "python",
@@ -29,6 +30,7 @@
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
       "prerelease": false,
+      "path": "python/dotpromptz/**",
       "extra-files": [
         {
           "type": "toml",
@@ -45,6 +47,7 @@
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
       "prerelease": false,
+      "path": "python/handlebarrz/**",
       "extra-files": [
         {
           "type": "toml",
@@ -60,7 +63,8 @@
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
-      "prerelease": false
+      "prerelease": false,
+      "path": "go/**"
     }
   },
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
