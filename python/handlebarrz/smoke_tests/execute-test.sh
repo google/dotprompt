@@ -16,17 +16,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-. /venv/bin/activate
-echo "building for python version $1"
+echo "Executing for python version $1"
+ldd --version
 
 # linux
-echo "building with maturin for linux"
-for i in $(seq 40 -1 24); do
-    maturin build --release --target aarch64-unknown-linux-gnu -i "$1" --compatibility manylinux_2_$i --auditwheel=skip
-done
-maturin build --release --target aarch64-unknown-linux-gnu -i $1
-
-# macos
-echo "building with maturin for macos"
-maturin build --target aarch64-apple-darwin -i $1 --zig
+uv python install $1
+uv run --python $1 handlebarrz_test.py
 

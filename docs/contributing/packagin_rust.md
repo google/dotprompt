@@ -54,6 +54,8 @@ Those are the target platforms added with rustup for cross compilation:
 
   * `aarch64-apple-darwin` (macOS)
 
+  * `aarch64-unknown-linux-gnu-msl` (alpine)
+
 * **x86\_64**:
 
   * `x86_64-unknown-linux-gnu`
@@ -61,6 +63,7 @@ Those are the target platforms added with rustup for cross compilation:
   * `x86_64-pc-windows-msvc` (Windows)
 
   * `x86_64-apple-darwin` (macOS)
+
 
 ## **Required Packages & Libraries**
 
@@ -118,10 +121,5 @@ Here, `manylinux_2_28` specifies the glibc version. If you need compatibility wi
 maturin build --release --target x86_64-unknown-linux-gnu -i python3.12 --compatibility manylinux_2_40 --auditwheel=skip
 ```
 
-## **Next Steps**
-
-To facilitate Rust cross-compiling, you can explore the [cross](https://github.com/cross-rs/cross) package. While it has GitHub Actions for building, it may not yet be fully integrated with PyO3 for Rust-Python package cross-compilation.
-
-Additionally, Linux `arm64` might implement something similar to glibc, so testing compatibility in those environments is essential for ensuring the wheels work correctly across platforms.
 
 

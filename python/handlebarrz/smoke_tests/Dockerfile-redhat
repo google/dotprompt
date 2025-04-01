@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-FROM --platform=linux/arm64 registry.access.redhat.com/ubi8/ubi
+FROM registry.access.redhat.com/ubi9/ubi
 
 RUN yum install -y python3 python3-pip && \
     yum clean all

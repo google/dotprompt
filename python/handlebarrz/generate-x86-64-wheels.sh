@@ -21,13 +21,10 @@ echo "building for python version $1"
 
 # linux
 echo "building with maturin for linux"
+for i in $(seq 40 -1 24); do
+    maturin build --release --target x86_64-unknown-linux-gnu -i "$1" --compatibility manylinux_2_$i --auditwheel=skip
+done
 maturin build --release --target x86_64-unknown-linux-gnu -i $1
-maturin build --release --target x86_64-unknown-linux-gnu -i $1 --compatibility manylinux_2_40 --auditwheel=skip
-maturin build --release --target x86_64-unknown-linux-gnu -i $1 --compatibility manylinux_2_39 --auditwheel=skip
-maturin build --release --target x86_64-unknown-linux-gnu -i $1 --compatibility manylinux_2_38 --auditwheel=skip
-maturin build --release --target x86_64-unknown-linux-gnu -i $1 --compatibility manylinux_2_28 --auditwheel=skip
-
-maturin build --release --target x86_64-unknown-linux-musl -i $1
 
 # for glibc > 2.28
 # maturin build --release --target x86_64-unknown-linux-gnu -i python3.12 --compatibility manylinux_2_40 --auditwheel=skip

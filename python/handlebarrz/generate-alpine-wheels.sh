@@ -20,13 +20,6 @@
 echo "building for python version $1"
 
 # linux
-echo "building with maturin for linux"
-for i in $(seq 40 -1 24); do
-    maturin build --release --target aarch64-unknown-linux-gnu -i "$1" --compatibility manylinux_2_$i --auditwheel=skip
-done
-maturin build --release --target aarch64-unknown-linux-gnu -i $1
-
-# macos
-echo "building with maturin for macos"
-maturin build --target aarch64-apple-darwin -i $1 --zig
+echo "building with maturin for linux alpine"
+maturin build --release --target aarch64-unknown-linux-musl -i $1
 

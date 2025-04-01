@@ -1,0 +1,111 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Test Rust-Python Package
+
+on:
+  workflow_dispatch:
+
+
+jobs:
+  smoke_test_arm64: 
+    name: Test for arm64 arch
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python_version:
+          - "3.12"
+          - "3.13"
+        linux_platform:
+          - "debian"
+          - "fedora"
+          - "redhat"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU for Multi-Arch support
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build container
+        run: |
+          cd python/handlebarrz/smoke_tests
+          docker build --platform linux/arm64 \
+          -t test-${{ matrix.linux_platform }}-arm64 \
+          -f Dockerfile-${{ matrix.linux_platform }}-arm64 .
+
+      - name: Run container
+        run: |
+          docker run test-${{ matrix.linux_platform }}-arm64:latest sh ./execute-test.sh "${{ matrix.python_version }}"
+    continue-on-error: true
+
+  smoke_test_alpine: 
+    name: Test for alpine arm64 arch
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python_version:
+          - "3.12"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU for Multi-Arch support
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build container
+        run: |
+          cd python/handlebarrz/smoke_tests
+          docker build --platform linux/arm64 \
+          -t test-alpine \
+          -f Dockerfile-alpine .
+
+      - name: Run container
+        run: |
+          docker run test-alpine:latest sh ./execute-test.sh "${{ matrix.python_version }}"
+    continue-on-error: true
+
+  smoke_test_x86_64: 
+    name: Test for x86_64 arch
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python_version:
+          - "3.12"
+          - "3.13"
+        linux_platform:
+          - "debian"
+          - "fedora"
+          - "redhat"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build container
+        run: |
+          cd python/handlebarrz/smoke_tests
+          docker build \
+          -t test-${{ matrix.linux_platform }} \
+          -f Dockerfile-${{ matrix.linux_platform }} .
+
+      - name: Run container
+        run: |
+          docker run test-${{ matrix.linux_platform }}:latest sh ./execute-test.sh "${{ matrix.python_version }}"
+    continue-on-error: true
+

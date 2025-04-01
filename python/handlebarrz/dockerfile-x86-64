@@ -16,7 +16,7 @@
 FROM ubuntu:latest
 
 RUN apt-get update && apt-get install -y python3 \
-    python3-pip curl bash musl-tools clang llvm
+    python3-pip curl bash 
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 
@@ -25,13 +25,8 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
     && rustup target add x86_64-unknown-linux-gnu \
     && rustup target add x86_64-pc-windows-msvc \
     && rustup target add x86_64-apple-darwin \
-    && rustup target add x86_64-unknown-linux-musl \
     && rustup component add llvm-tools
 
-ENV CC_aarch64_unknown_linux_musl=clang
-ENV AR_aarch64_unknown_linux_musl=llvm-ar
-ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Clink-self-contained=yes -Clinker=rust-lld"
-    
 WORKDIR /project
 COPY pyproject.toml /project/
 
