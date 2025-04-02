@@ -135,8 +135,10 @@ func (dp *Dotprompt) RegisterHelpers(tpl *raymond.Template) error {
 		}
 	}
 	for name, helper := range templateHelpers {
-		if err := dp.DefineHelper(name, helper, tpl); err != nil {
-			return err
+		if !dp.knownHelpers[name] {
+			if err := dp.DefineHelper(name, helper, tpl); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
