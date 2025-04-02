@@ -306,9 +306,7 @@ class Template:
             })
             raise
 
-    def register_templates_directory(
-        self, dir_path: str | Path, extension: str = '.hbs'
-    ) -> None:
+    def register_templates_directory(self, dir_path: str | Path, extension: str = '.hbs') -> None:
         """Register all templates in a directory.
 
         Recursively finds all files with the specified extension in the
@@ -441,9 +439,7 @@ class Template:
             })
             raise
 
-    def render_template(
-        self, template_string: str, data: dict[str, Any]
-    ) -> str:
+    def render_template(self, template_string: str, data: dict[str, Any]) -> str:
         """Render a template string directly without registering it.
 
         Parses and renders the template string in one step. This is useful for
@@ -462,9 +458,7 @@ class Template:
                 rendering error.
         """
         try:
-            result = self._template.render_template(
-                template_string, json.dumps(data)
-            )
+            result = self._template.render_template(template_string, json.dumps(data))
             logger.debug({'event': 'template_string_rendered'})
             return result
         except ValueError as e:

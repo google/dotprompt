@@ -87,24 +87,12 @@ class Dotprompt:
 
         self._known_helpers: dict[str, bool] = {}
         self._default_model: str | None = self._options.get('default_model')
-        self._model_configs: dict[str, Any] | None = self._options.get(
-            'model_configs', {}
-        )
-        self._tools: dict[str, ToolDefinition] = (
-            self._options.get('tools', {}) or {}
-        )
-        self._tool_resolver: ToolResolver | None = self._options.get(
-            'tool_resolver'
-        )
-        self._schemas: dict[str, JsonSchema] | None = self._options.get(
-            'schemas', {}
-        )
-        self._schema_resolver: SchemaResolver | None = self._options.get(
-            'schema_resolver'
-        )
-        self._partial_resolver: PartialResolver | None = self._options.get(
-            'partial_resolver'
-        )
+        self._model_configs: dict[str, Any] | None = self._options.get('model_configs', {})
+        self._tools: dict[str, ToolDefinition] = self._options.get('tools', {}) or {}
+        self._tool_resolver: ToolResolver | None = self._options.get('tool_resolver')
+        self._schemas: dict[str, JsonSchema] | None = self._options.get('schemas', {})
+        self._schema_resolver: SchemaResolver | None = self._options.get('schema_resolver')
+        self._partial_resolver: PartialResolver | None = self._options.get('partial_resolver')
         self._store: PromptStore | None = None
 
         self._register_initial_helpers()

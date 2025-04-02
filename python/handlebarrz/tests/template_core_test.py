@@ -96,9 +96,7 @@ class TemplateCoreTest(unittest.TestCase):
         import tempfile
 
         # Create a temporary template file
-        with tempfile.NamedTemporaryFile(
-            suffix='.hbs', delete=False
-        ) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix='.hbs', delete=False) as temp_file:
             temp_file.write(b'Hello {{name}}!')
             temp_path = temp_file.name
 
@@ -216,9 +214,7 @@ class TemplateCoreTest(unittest.TestCase):
         self.assertEqual(result, expected)
 
         # Test with @last conditional
-        template_str = (
-            """{{#each items}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}"""
-        )
+        template_str = """{{#each items}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}"""
         template.register_template('each-last', template_str)
 
         result = template.render('each-last', data)
@@ -230,9 +226,7 @@ class TemplateCoreTest(unittest.TestCase):
         template = Template()
 
         # Register a template that handles null values
-        template_str = (
-            """{{#if value}}Value: {{value}}{{else}}No value{{/if}}"""
-        )
+        template_str = """{{#if value}}Value: {{value}}{{else}}No value{{/if}}"""
         template.register_template('null-test', template_str)
 
         # Test with null value

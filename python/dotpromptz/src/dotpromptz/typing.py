@@ -178,9 +178,7 @@ class PromptMetadata[ModelConfigT](HasMetadata):
     description: str | None = None
     model: str | None = None
     tools: list[str] | None = None
-    tool_defs: list[ToolDefinition] | None = Field(
-        default=None, alias='toolDefs'
-    )
+    tool_defs: list[ToolDefinition] | None = Field(default=None, alias='toolDefs')
     config: ModelConfigT | None = None
     input: PromptInputConfig | None = None
     output: PromptOutputConfig | None = None
@@ -288,9 +286,7 @@ class ToolResponsePart[OutputT](HasMetadata):
         tool_response: A `ToolResponseContent` object with response details.
     """
 
-    tool_response: ToolResponseContent[OutputT] = Field(
-        ..., alias='toolResponse'
-    )
+    tool_response: ToolResponseContent[OutputT] = Field(..., alias='toolResponse')
     model_config = ConfigDict(populate_by_name=True)
 
 
@@ -348,14 +344,7 @@ class PendingPart(HasMetadata):
         super().__init__(**data)
 
 
-type Part = (
-    TextPart
-    | DataPart
-    | MediaPart
-    | ToolRequestPart[Any]
-    | ToolResponsePart[Any]
-    | PendingPart
-)
+type Part = TextPart | DataPart | MediaPart | ToolRequestPart[Any] | ToolResponsePart[Any] | PendingPart
 """Type alias for any valid content part in a `Message` or `Document`."""
 
 
@@ -414,14 +403,10 @@ class DataArgument[VariablesT](BaseModel):
     context: dict[str, Any] | None = None
 
 
-type SchemaResolver = Callable[
-    [str], JsonSchema | None | Awaitable[JsonSchema | None]
-]
+type SchemaResolver = Callable[[str], JsonSchema | None | Awaitable[JsonSchema | None]]
 """Type alias for a function resolving a schema name to a JSON schema."""
 
-type ToolResolver = Callable[
-    [str], ToolDefinition | None | Awaitable[ToolDefinition | None]
-]
+type ToolResolver = Callable[[str], ToolDefinition | None | Awaitable[ToolDefinition | None]]
 """Type alias for a function resolving a tool name to a ToolDefinition."""
 
 type PartialResolver = Callable[[str], str | None | Awaitable[str | None]]
@@ -616,9 +601,7 @@ class PromptStore(Protocol):
     Abstract base for different asynchronous storage implementations.
     """
 
-    async def list(
-        self, options: ListPromptsOptions | None = None
-    ) -> PaginatedPrompts:
+    async def list(self, options: ListPromptsOptions | None = None) -> PaginatedPrompts:
         """Asynchronously retrieves a paginated list of prompts.
 
         Args:
@@ -629,9 +612,7 @@ class PromptStore(Protocol):
         """
         ...
 
-    async def list_partials(
-        self, options: ListPartialsOptions | None = None
-    ) -> PaginatedPartials:
+    async def list_partials(self, options: ListPartialsOptions | None = None) -> PaginatedPartials:
         """Asynchronously retrieves a paginated list of partials.
 
         Args:
@@ -642,9 +623,7 @@ class PromptStore(Protocol):
         """
         ...
 
-    async def load(
-        self, name: str, options: LoadPromptOptions | None = None
-    ) -> PromptData:
+    async def load(self, name: str, options: LoadPromptOptions | None = None) -> PromptData:
         """Asynchronously loads the data for a specific prompt.
 
         Args:
@@ -659,9 +638,7 @@ class PromptStore(Protocol):
         """
         ...
 
-    async def load_partial(
-        self, name: str, options: LoadPartialOptions | None = None
-    ) -> PartialData:
+    async def load_partial(self, name: str, options: LoadPartialOptions | None = None) -> PartialData:
         """Asynchronously loads the data for a specific partial.
 
         Args:
@@ -694,9 +671,7 @@ class PromptStoreWritable(PromptStore, Protocol):
         """
         ...
 
-    async def delete(
-        self, name: str, options: DeletePromptOrPartialOptions | None = None
-    ) -> None:
+    async def delete(self, name: str, options: DeletePromptOrPartialOptions | None = None) -> None:
         """Asynchronously deletes a prompt from the store.
 
         Args:
@@ -715,9 +690,7 @@ class PromptStoreSync(Protocol):
     Abstract base for different synchronous storage implementations.
     """
 
-    def list(
-        self, options: ListPromptsOptions | None = None
-    ) -> PaginatedPrompts:
+    def list(self, options: ListPromptsOptions | None = None) -> PaginatedPrompts:
         """Synchronously retrieves a paginated list of prompts.
 
         Args:
@@ -728,9 +701,7 @@ class PromptStoreSync(Protocol):
         """
         ...
 
-    def list_partials(
-        self, options: ListPartialsOptions | None = None
-    ) -> PaginatedPartials:
+    def list_partials(self, options: ListPartialsOptions | None = None) -> PaginatedPartials:
         """Synchronously retrieves a paginated list of partials.
 
         Args:
@@ -741,9 +712,7 @@ class PromptStoreSync(Protocol):
         """
         ...
 
-    def load(
-        self, name: str, options: LoadPromptOptions | None = None
-    ) -> PromptData:
+    def load(self, name: str, options: LoadPromptOptions | None = None) -> PromptData:
         """Synchronously loads the data for a specific prompt.
 
         Args:
@@ -758,9 +727,7 @@ class PromptStoreSync(Protocol):
         """
         ...
 
-    def load_partial(
-        self, name: str, options: LoadPartialOptions | None = None
-    ) -> PartialData:
+    def load_partial(self, name: str, options: LoadPartialOptions | None = None) -> PartialData:
         """Synchronously loads the data for a specific partial.
 
         Args:
@@ -793,9 +760,7 @@ class PromptStoreWritableSync(PromptStoreSync, Protocol):
         """
         ...
 
-    def delete(
-        self, name: str, options: DeletePromptOrPartialOptions | None = None
-    ) -> None:
+    def delete(self, name: str, options: DeletePromptOrPartialOptions | None = None) -> None:
         """Synchronously deletes a prompt from the store.
 
         Args:

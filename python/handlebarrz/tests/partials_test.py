@@ -47,10 +47,7 @@ class PartialsTest(unittest.TestCase):
         template.register_partial('person', '{{name}} ({{occupation}})')
 
         # Register a template that uses the partial with a different context.
-        template_str = (
-            '{{#each people}}{{> person}}{{#unless @last}}, {{/unless}}'
-            '{{/each}}'
-        )
+        template_str = '{{#each people}}{{> person}}{{#unless @last}}, {{/unless}}{{/each}}'
         template.register_template('people-list', template_str)
 
         # Data to render
@@ -64,9 +61,7 @@ class PartialsTest(unittest.TestCase):
 
         # Render the template
         result = template.render('people-list', data)
-        self.assertEqual(
-            result, 'John (Developer), Jane (Designer), Bob (Manager)'
-        )
+        self.assertEqual(result, 'John (Developer), Jane (Designer), Bob (Manager)')
 
     def test_partial_with_parameter(self) -> None:
         """Test partial with parameters."""

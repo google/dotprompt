@@ -60,9 +60,7 @@ class TestIfEqualsHelper(unittest.TestCase):
             'if_equals_test',
             '{{#ifEquals arg1 arg2}}yes{{else}}no{{/ifEquals}}',
         )
-        result = self.template.render(
-            'if_equals_test', {'arg1': 'test', 'arg2': 'test'}
-        )
+        result = self.template.render('if_equals_test', {'arg1': 'test', 'arg2': 'test'})
         self.assertEqual(result, 'yes')
 
     def test_if_equals_helper_string_unequal_values(self) -> None:
@@ -71,9 +69,7 @@ class TestIfEqualsHelper(unittest.TestCase):
             'if_equals_test',
             '{{#ifEquals arg1 arg2}}yes{{else}}no{{/ifEquals}}',
         )
-        result = self.template.render(
-            'if_equals_test', {'arg1': 'test', 'arg2': 'diff'}
-        )
+        result = self.template.render('if_equals_test', {'arg1': 'test', 'arg2': 'diff'})
         self.assertEqual(result, 'no')
 
 
@@ -95,9 +91,7 @@ class TestUnlessEqualsHelper(unittest.TestCase):
             'unless_equals_test',
             '{{#unlessEquals arg1 arg2}}yes{{else}}no{{/unlessEquals}}',
         )
-        result = self.template.render(
-            'unless_equals_test', {'arg1': 1, 'arg2': 2}
-        )
+        result = self.template.render('unless_equals_test', {'arg1': 1, 'arg2': 2})
         self.assertEqual(result, 'yes')
 
     def test_unless_equals_helper_equal_values(self) -> None:
@@ -106,9 +100,7 @@ class TestUnlessEqualsHelper(unittest.TestCase):
             'unless_equals_test',
             '{{#unlessEquals arg1 arg2}}yes{{else}}no{{/unlessEquals}}',
         )
-        result = self.template.render(
-            'unless_equals_test', {'arg1': 1, 'arg2': 1}
-        )
+        result = self.template.render('unless_equals_test', {'arg1': 1, 'arg2': 1})
         self.assertEqual(result, 'no')
 
     def test_unless_equals_helper_string_unequal_values(self) -> None:
@@ -117,9 +109,7 @@ class TestUnlessEqualsHelper(unittest.TestCase):
             'unless_equals_test',
             '{{#unlessEquals arg1 arg2}}yes{{else}}no{{/unlessEquals}}',
         )
-        result = self.template.render(
-            'unless_equals_test', {'arg1': 'test', 'arg2': 'diff'}
-        )
+        result = self.template.render('unless_equals_test', {'arg1': 'test', 'arg2': 'diff'})
         self.assertEqual(result, 'yes')
 
     def test_unless_equals_helper_string_equal_values(self) -> None:
@@ -128,9 +118,7 @@ class TestUnlessEqualsHelper(unittest.TestCase):
             'unless_equals_test',
             '{{#unlessEquals arg1 arg2}}yes{{else}}no{{/unlessEquals}}',
         )
-        result = self.template.render(
-            'unless_equals_test', {'arg1': 'test', 'arg2': 'test'}
-        )
+        result = self.template.render('unless_equals_test', {'arg1': 'test', 'arg2': 'test'})
         self.assertEqual(result, 'no')
 
 
