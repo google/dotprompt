@@ -61,23 +61,45 @@ type Dotprompt struct {
 
 // NewDotprompt creates a new Dotprompt instance with the given options.
 func NewDotprompt(options *DotpromptOptions) *Dotprompt {
+	// Always initialize maps
 	dp := &Dotprompt{
-		knownHelpers: make(map[string]bool),
+		knownHelpers:  make(map[string]bool),
+		knownPartials: make(map[string]bool),
 	}
+
 	if options != nil {
-		dp = &Dotprompt{
-			knownHelpers:    make(map[string]bool),
-			modelConfigs:    options.ModelConfigs,
-			defaultModel:    options.DefaultModel,
-			tools:           options.Tools,
-			toolResolver:    options.ToolResolver,
-			schemas:         options.Schemas,
-			schemaResolver:  options.SchemaResolver,
-			partialResolver: options.PartialResolver,
-			knownPartials:   make(map[string]bool),
-			Helpers:         options.Helpers,
-			Partials:        options.Partials,
+		dp.modelConfigs = options.ModelConfigs
+		dp.defaultModel = options.DefaultModel
+		dp.tools = options.Tools
+		dp.toolResolver = options.ToolResolver
+		dp.schemas = options.Schemas
+		dp.schemaResolver = options.SchemaResolver
+		dp.partialResolver = options.PartialResolver
+		dp.Helpers = options.Helpers
+		dp.Partials = options.Partials
+
+		if dp.tools == nil {
+			dp.tools = make(map[string]ToolDefinition)
 		}
+		if dp.schemas == nil {
+			dp.schemas = make(map[string]*jsonschema.Schema)
+		}
+		if dp.Helpers == nil {
+			dp.Helpers = make(map[string]any)
+		}
+		if dp.Partials == nil {
+			dp.Partials = make(map[string]string)
+		}
+		if dp.modelConfigs == nil {
+			dp.modelConfigs = make(map[string]any)
+		}
+	} else {
+		// Ensure maps are initialized even if options are nil.
+		dp.tools = make(map[string]ToolDefinition)
+		dp.schemas = make(map[string]*jsonschema.Schema)
+		dp.Helpers = make(map[string]any)
+		dp.Partials = make(map[string]string)
+		dp.modelConfigs = make(map[string]any)
 	}
 
 	return dp
@@ -162,7 +184,6 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata) 
 	}
 	dp.Template = renderTpl
 
-	// RegisterHelpers()
 	dp.RegisterHelpers(dp.Template)
 	err = dp.RegisterPartials(dp.Template, parsedPrompt.Template)
 	if err != nil {
