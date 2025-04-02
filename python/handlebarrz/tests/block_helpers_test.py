@@ -63,9 +63,7 @@ class BlockHelpersTest(unittest.TestCase):
         template = Template()
 
         # Register a template with an if block helper that has an else
-        template_str = (
-            """{{#if condition}}True condition{{else}}False condition{{/if}}"""
-        )
+        template_str = """{{#if condition}}True condition{{else}}False condition{{/if}}"""
         template.register_template('if-else-test', template_str)
 
         # Test true condition

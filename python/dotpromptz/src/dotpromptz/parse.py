@@ -62,9 +62,7 @@ SECTION_MARKER_PREFIX = '<<<dotprompt:section'
 
 # Regular expression to match YAML frontmatter delineated by `---` markers at
 # the start of a .prompt content block.
-FRONTMATTER_AND_BODY_REGEX = re.compile(
-    r'^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$'
-)
+FRONTMATTER_AND_BODY_REGEX = re.compile(r'^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$')
 
 # Regular expression to match <<<dotprompt:role:xxx>>> and
 # <<<dotprompt:history>>> markers in the template.
@@ -75,9 +73,7 @@ FRONTMATTER_AND_BODY_REGEX = re.compile(
 # - <<<dotprompt:history>>>
 #
 # Note: Only lowercase letters are allowed after 'role:'.
-ROLE_AND_HISTORY_MARKER_REGEX = re.compile(
-    r'(<<<dotprompt:(?:role:[a-z]+|history))>>>'
-)
+ROLE_AND_HISTORY_MARKER_REGEX = re.compile(r'(<<<dotprompt:(?:role:[a-z]+|history))>>>')
 
 # Regular expression to match <<<dotprompt:media:url>>> and
 # <<<dotprompt:section>>> markers in the template.
@@ -85,9 +81,7 @@ ROLE_AND_HISTORY_MARKER_REGEX = re.compile(
 # Examples of matching patterns:
 # - <<<dotprompt:media:url>>>
 # - <<<dotprompt:section>>>
-MEDIA_AND_SECTION_MARKER_REGEX = re.compile(
-    r'(<<<dotprompt:(?:media:url|section).*?)>>>'
-)
+MEDIA_AND_SECTION_MARKER_REGEX = re.compile(r'(<<<dotprompt:(?:media:url|section).*?)>>>')
 
 # List of reserved keywords that are handled specially in the metadata of a
 # .prompt file. These keys are processed differently from extension metadata.
@@ -269,9 +263,7 @@ def parse_document(source: str) -> ParsedPrompt[T]:
             )
 
     # No frontmatter, return a basic ParsedPrompt with just the template
-    return ParsedPrompt(
-        ext={}, config=None, metadata={}, toolDefs=None, template=source
-    )
+    return ParsedPrompt(ext={}, config=None, metadata={}, toolDefs=None, template=source)
 
 
 def to_messages(
@@ -349,11 +341,7 @@ def message_sources_to_messages(
         if m.content or m.source:
             message = Message(
                 role=m.role,
-                content=(
-                    m.content
-                    if m.content is not None
-                    else to_parts(m.source or '')
-                ),
+                content=(m.content if m.content is not None else to_parts(m.source or '')),
             )
 
             if m.metadata:
@@ -394,10 +382,7 @@ def messages_have_history(messages: list[Message]) -> bool:
     Returns:
         True if the messages have history metadata, False otherwise
     """
-    return any(
-        msg.metadata and msg.metadata.get('purpose') == 'history'
-        for msg in messages
-    )
+    return any(msg.metadata and msg.metadata.get('purpose') == 'history' for msg in messages)
 
 
 def insert_history(
@@ -452,10 +437,7 @@ def to_parts(source: str) -> list[Part]:
     Returns:
         Array of structured parts (text, media, or metadata)
     """
-    return [
-        parse_part(piece)
-        for piece in split_by_media_and_section_markers(source)
-    ]
+    return [parse_part(piece) for piece in split_by_media_and_section_markers(source)]
 
 
 def parse_part(piece: str) -> Part:
@@ -488,10 +470,7 @@ def parse_media_part(piece: str) -> MediaPart:
         ValueError: If the media piece is invalid
     """
     if not piece.startswith(MEDIA_MARKER_PREFIX):
-        raise ValueError(
-            f'Invalid media piece: {piece}; '
-            f'expected prefix {MEDIA_MARKER_PREFIX}'
-        )
+        raise ValueError(f'Invalid media piece: {piece}; expected prefix {MEDIA_MARKER_PREFIX}')
 
     fields = piece.split(' ')
     n = len(fields)
@@ -501,15 +480,11 @@ def parse_media_part(piece: str) -> MediaPart:
         _, url = fields
         content_type = None
     else:
-        raise ValueError(
-            f'Invalid media piece: {piece}; expected 2 or 3 fields, found {n}'
-        )
+        raise ValueError(f'Invalid media piece: {piece}; expected 2 or 3 fields, found {n}')
 
     media_content = MediaContent(
         url=url,
-        contentType=(
-            content_type if content_type and content_type.strip() else None
-        ),
+        contentType=(content_type if content_type and content_type.strip() else None),
     )
     return MediaPart(media=media_content)
 
@@ -527,19 +502,13 @@ def parse_section_part(piece: str) -> PendingPart:
         ValueError: If the section piece is invalid
     """
     if not piece.startswith(SECTION_MARKER_PREFIX):
-        raise ValueError(
-            f'Invalid section piece: {piece}; '
-            f'expected prefix {SECTION_MARKER_PREFIX}'
-        )
+        raise ValueError(f'Invalid section piece: {piece}; expected prefix {SECTION_MARKER_PREFIX}')
 
     fields = piece.split(' ')
     if len(fields) == 2:
         section_type = fields[1]
     else:
-        raise ValueError(
-            f'Invalid section piece: {piece}; '
-            f'expected 2 fields, found {len(fields)}'
-        )
+        raise ValueError(f'Invalid section piece: {piece}; expected 2 fields, found {len(fields)}')
 
     # Use the helper method to set purpose
     pending_metadata = PendingMetadata.with_purpose(section_type)

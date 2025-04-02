@@ -58,9 +58,7 @@ from dotpromptz.typing import (
 )
 
 
-async def _create_test_file_async(
-    directory: Path, name: str, content: str = 'test source'
-) -> Path:
+async def _create_test_file_async(directory: Path, name: str, content: str = 'test source') -> Path:
     """Asynchronously create a test file."""
     file_path = directory / name
     os.makedirs(file_path.parent, exist_ok=True)
@@ -78,9 +76,7 @@ async def temp_dir() -> AsyncGenerator[Path, None]:
     # Use asyncio-compatible removal if needed, though shutil might be okay
     # for cleanup if blocking is acceptable here.
     loop = asyncio.get_running_loop()
-    await loop.run_in_executor(
-        None, lambda: shutil.rmtree(temp_path, ignore_errors=True)
-    )
+    await loop.run_in_executor(None, lambda: shutil.rmtree(temp_path, ignore_errors=True))
 
 
 @pytest_asyncio.fixture
@@ -188,18 +184,14 @@ async def test_load_prompt(async_store: DirStore, temp_dir: Path) -> None:
     assert result_nested.version == version
 
     # Load variant
-    result_variant = await async_store.load(
-        'variant', LoadPromptOptions(variant='v1')
-    )
+    result_variant = await async_store.load('variant', LoadPromptOptions(variant='v1'))
     assert result_variant.name == 'variant'
     assert result_variant.variant == 'v1'
     assert result_variant.source == source
     assert result_variant.version == version
 
     # Load with specific version
-    result_version = await async_store.load(
-        'test', LoadPromptOptions(version=version)
-    )
+    result_version = await async_store.load('test', LoadPromptOptions(version=version))
     assert result_version.version == version
 
     # Load non-existent prompt
@@ -208,9 +200,7 @@ async def test_load_prompt(async_store: DirStore, temp_dir: Path) -> None:
 
     # Load with wrong version
     with pytest.raises(ValueError, match='Version mismatch'):
-        await async_store.load(
-            'test', LoadPromptOptions(version='wrongversion')
-        )
+        await async_store.load('test', LoadPromptOptions(version='wrongversion'))
 
 
 @pytest.mark.asyncio
@@ -237,18 +227,14 @@ async def test_load_partial(async_store: DirStore, temp_dir: Path) -> None:
     assert result_nested.version == version
 
     # Load variant partial
-    result_variant = await async_store.load_partial(
-        'variant', LoadPartialOptions(variant='v1')
-    )
+    result_variant = await async_store.load_partial('variant', LoadPartialOptions(variant='v1'))
     assert result_variant.name == 'variant'
     assert result_variant.variant == 'v1'
     assert result_variant.source == source
     assert result_variant.version == version
 
     # Load with specific version
-    result_version = await async_store.load_partial(
-        'test', LoadPartialOptions(version=version)
-    )
+    result_version = await async_store.load_partial('test', LoadPartialOptions(version=version))
     assert result_version.version == version
 
     # Load non-existent partial
@@ -257,9 +243,7 @@ async def test_load_partial(async_store: DirStore, temp_dir: Path) -> None:
 
     # Load with wrong version
     with pytest.raises(ValueError, match='Version mismatch'):
-        await async_store.load_partial(
-            'test', LoadPartialOptions(version='wrongversion')
-        )
+        await async_store.load_partial('test', LoadPartialOptions(version='wrongversion'))
 
 
 @pytest.mark.asyncio
@@ -283,15 +267,11 @@ async def test_save_prompt(async_store: DirStore, temp_dir: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_save_prompt_variant(
-    async_store: DirStore, temp_dir: Path
-) -> None:
+async def test_save_prompt_variant(async_store: DirStore, temp_dir: Path) -> None:
     """Test saving prompt variants asynchronously."""
     source = 'new variant source'
     version = calculate_version(source)
-    prompt = PromptData(
-        name='new_prompt', variant='beta', source=source, version=version
-    )
+    prompt = PromptData(name='new_prompt', variant='beta', source=source, version=version)
 
     await async_store.save(prompt)
 
@@ -301,22 +281,16 @@ async def test_save_prompt_variant(
         saved_content = await f.read()
     assert saved_content == source
 
-    loaded = await async_store.load(
-        'new_prompt', LoadPromptOptions(variant='beta')
-    )
+    loaded = await async_store.load('new_prompt', LoadPromptOptions(variant='beta'))
     assert loaded.version == version
 
 
 @pytest.mark.asyncio
-async def test_save_prompt_subdir(
-    async_store: DirStore, temp_dir: Path
-) -> None:
+async def test_save_prompt_subdir(async_store: DirStore, temp_dir: Path) -> None:
     """Test saving prompts in subdirectories asynchronously."""
     source = 'new subdir source'
     version = calculate_version(source)
-    prompt = PromptData(
-        name='subdir/new_prompt', source=source, version=version
-    )
+    prompt = PromptData(name='subdir/new_prompt', source=source, version=version)
 
     await async_store.save(prompt)
 
@@ -367,9 +341,7 @@ async def test_delete_prompt(async_store: DirStore, temp_dir: Path) -> None:
     assert not (temp_dir / 'subdir' / 'nested_delete.prompt').exists()
 
     # Delete variant
-    await async_store.delete(
-        'variant_delete', DeletePromptOrPartialOptions(variant='v1')
-    )
+    await async_store.delete('variant_delete', DeletePromptOrPartialOptions(variant='v1'))
     assert not (temp_dir / 'variant_delete.v1.prompt').exists()
 
     # Delete non-existent
@@ -388,16 +360,12 @@ async def test_delete_partial(async_store: DirStore, temp_dir: Path) -> None:
     assert not (temp_dir / '_test_delete_partial.prompt').exists()
 
     # Delete variant partial (using name without '_')
-    await async_store.delete(
-        'variant_delete_partial', DeletePromptOrPartialOptions(variant='v1')
-    )
+    await async_store.delete('variant_delete_partial', DeletePromptOrPartialOptions(variant='v1'))
     assert not (temp_dir / '_variant_delete_partial.v1.prompt').exists()
 
 
 @pytest.mark.asyncio
-async def test_delete_prioritizes_prompt_over_partial(
-    async_store: DirStore, temp_dir: Path
-) -> None:
+async def test_delete_prioritizes_prompt_over_partial(async_store: DirStore, temp_dir: Path) -> None:
     """Test that delete removes prompt if both prompt and partial exist."""
     await _create_test_file_async(temp_dir, 'conflict.prompt', 'prompt')
     await _create_test_file_async(temp_dir, '_conflict.prompt', 'partial')

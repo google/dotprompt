@@ -144,13 +144,9 @@ class DirStore(PromptStoreWritable):
         # Ensure the base directory exists.
         # Although async, this check can be sync during init.
         os.makedirs(self._directory, exist_ok=True)
-        logger.debug(
-            'Async DirStore initialized', directory=str(self._directory)
-        )
+        logger.debug('Async DirStore initialized', directory=str(self._directory))
 
-    async def list(
-        self, options: ListPromptsOptions | None = None
-    ) -> PaginatedPrompts:
+    async def list(self, options: ListPromptsOptions | None = None) -> PaginatedPrompts:
         """Asynchronously lists available prompts (excluding partials).
 
         Note: Pagination options are ignored as this implementation returns all
@@ -173,9 +169,7 @@ class DirStore(PromptStoreWritable):
                     parsed = parse_prompt_filename(base_name)
                     dir_path = os.path.dirname(file_rel_path)
                     if dir_path and dir_path != '.':
-                        full_name = (
-                            f'{dir_path.replace(os.sep, "/")}/{parsed.name}'
-                        )
+                        full_name = f'{dir_path.replace(os.sep, "/")}/{parsed.name}'
                     else:
                         full_name = parsed.name
 
@@ -212,9 +206,7 @@ class DirStore(PromptStoreWritable):
         await logger.ainfo('Finished listing prompts', count=len(prompts))
         return PaginatedPrompts(prompts=prompts)
 
-    async def list_partials(
-        self, options: ListPartialsOptions | None = None
-    ) -> PaginatedPartials:
+    async def list_partials(self, options: ListPartialsOptions | None = None) -> PaginatedPartials:
         """Asynchronously lists available partials.
 
         Note: Pagination options are ignored.
@@ -237,9 +229,7 @@ class DirStore(PromptStoreWritable):
                     parsed = parse_prompt_filename(actual_filename)
                     dir_path = os.path.dirname(file_rel_path)
                     if dir_path and dir_path != '.':
-                        full_name = (
-                            f'{dir_path.replace(os.sep, "/")}/{parsed.name}'
-                        )
+                        full_name = f'{dir_path.replace(os.sep, "/")}/{parsed.name}'
                     else:
                         full_name = parsed.name
 
@@ -276,9 +266,7 @@ class DirStore(PromptStoreWritable):
         await logger.ainfo('Finished listing partials', count=len(partials))
         return PaginatedPartials(partials=partials)
 
-    async def load(
-        self, name: str, options: LoadPromptOptions | None = None
-    ) -> PromptData:
+    async def load(self, name: str, options: LoadPromptOptions | None = None) -> PromptData:
         """Asynchronously loads a specific prompt from the store.
 
         Args:
@@ -297,20 +285,10 @@ class DirStore(PromptStoreWritable):
         version_opt = options.version if options else None
         dir_name = os.path.dirname(name)
         base_name = os.path.basename(name)
-        file_name = (
-            f'{base_name}.{variant}.prompt'
-            if variant
-            else f'{base_name}.prompt'
-        )
-        file_path = (
-            self._directory / dir_name / file_name
-            if dir_name
-            else self._directory / file_name
-        )
+        file_name = f'{base_name}.{variant}.prompt' if variant else f'{base_name}.prompt'
+        file_path = self._directory / dir_name / file_name if dir_name else self._directory / file_name
 
-        await logger.adebug(
-            'Loading prompt', name=name, variant=variant, path=str(file_path)
-        )
+        await logger.adebug('Loading prompt', name=name, variant=variant, path=str(file_path))
 
         try:
             source = await read_prompt_file_async(file_path)
@@ -331,9 +309,7 @@ class DirStore(PromptStoreWritable):
                 variant=variant,
                 version=version,
             )
-            return PromptData(
-                name=name, variant=variant, version=version, source=source
-            )
+            return PromptData(name=name, variant=variant, version=version, source=source)
         except FileNotFoundError:
             err_msg = f"Prompt '{name}' not found at {file_path}"
             await logger.aerror(err_msg)
@@ -349,9 +325,7 @@ class DirStore(PromptStoreWritable):
             await logger.aerror(err_msg)
             raise RuntimeError(err_msg) from e
 
-    async def load_partial(
-        self, name: str, options: LoadPartialOptions | None = None
-    ) -> PartialData:
+    async def load_partial(self, name: str, options: LoadPartialOptions | None = None) -> PartialData:
         """Asynchronously loads a specific partial from the store.
 
         Args:
@@ -371,20 +345,10 @@ class DirStore(PromptStoreWritable):
         dir_name = os.path.dirname(name)
         base_name = os.path.basename(name)
         # Partials have leading underscore
-        file_name = (
-            f'_{base_name}.{variant}.prompt'
-            if variant
-            else f'_{base_name}.prompt'
-        )
-        file_path = (
-            self._directory / dir_name / file_name
-            if dir_name
-            else self._directory / file_name
-        )
+        file_name = f'_{base_name}.{variant}.prompt' if variant else f'_{base_name}.prompt'
+        file_path = self._directory / dir_name / file_name if dir_name else self._directory / file_name
 
-        await logger.adebug(
-            'Loading partial', name=name, variant=variant, path=str(file_path)
-        )
+        await logger.adebug('Loading partial', name=name, variant=variant, path=str(file_path))
 
         try:
             source = await read_prompt_file_async(file_path)
@@ -405,9 +369,7 @@ class DirStore(PromptStoreWritable):
                 variant=variant,
                 version=version,
             )
-            return PartialData(
-                name=name, variant=variant, version=version, source=source
-            )
+            return PartialData(name=name, variant=variant, version=version, source=source)
         except FileNotFoundError:
             err_msg = f"Partial '{name}' not found at {file_path}"
             await logger.aerror(err_msg)
@@ -445,16 +407,8 @@ class DirStore(PromptStoreWritable):
 
         dir_name = os.path.dirname(prompt.name)
         base_name = os.path.basename(prompt.name)
-        file_name = (
-            f'{base_name}.{prompt.variant}.prompt'
-            if prompt.variant
-            else f'{base_name}.prompt'
-        )
-        file_path = (
-            self._directory / dir_name / file_name
-            if dir_name
-            else self._directory / file_name
-        )
+        file_name = f'{base_name}.{prompt.variant}.prompt' if prompt.variant else f'{base_name}.prompt'
+        file_path = self._directory / dir_name / file_name if dir_name else self._directory / file_name
         file_dir = file_path.parent
 
         await logger.adebug(
@@ -469,36 +423,22 @@ class DirStore(PromptStoreWritable):
                 # os.makedirs is potentially blocking so run in a worker thread
                 # and await the result.
                 loop = asyncio.get_running_loop()
-                await loop.run_in_executor(
-                    None, lambda: os.makedirs(file_dir, exist_ok=True)
-                )
-                await logger.adebug(
-                    'Created directory', directory=str(file_dir)
-                )
+                await loop.run_in_executor(None, lambda: os.makedirs(file_dir, exist_ok=True))
+                await logger.adebug('Created directory', directory=str(file_dir))
 
-            async with aiofiles.open(
-                file_path, mode='w', encoding='utf-8'
-            ) as f:
+            async with aiofiles.open(file_path, mode='w', encoding='utf-8') as f:
                 await f.write(prompt.source)
             await logger.ainfo('Prompt saved successfully', path=str(file_path))
         except OSError as e:
-            err_msg = (
-                f"Failed to save prompt '{prompt.name}' to {file_path} "
-                f'due to OS error: {e}'
-            )
+            err_msg = f"Failed to save prompt '{prompt.name}' to {file_path} due to OS error: {e}"
             await logger.aerror(err_msg)
             raise OSError(err_msg) from e
         except Exception as e:
-            err_msg = (
-                f"Unexpected error saving prompt '{prompt.name}' "
-                f'to {file_path}: {e}'
-            )
+            err_msg = f"Unexpected error saving prompt '{prompt.name}' to {file_path}: {e}"
             await logger.aerror(err_msg)
             raise RuntimeError(err_msg) from e
 
-    async def delete(
-        self, name: str, options: DeletePromptOrPartialOptions | None = None
-    ) -> None:
+    async def delete(self, name: str, options: DeletePromptOrPartialOptions | None = None) -> None:
         """Asynchronously deletes a prompt or partial file.
 
         Tries deleting the prompt file first, then the partial file if the
@@ -516,26 +456,14 @@ class DirStore(PromptStoreWritable):
         dir_name = os.path.dirname(name)
         base_name = os.path.basename(name)
 
-        prompt_file_name = (
-            f'{base_name}.{variant}.prompt'
-            if variant
-            else f'{base_name}.prompt'
-        )
+        prompt_file_name = f'{base_name}.{variant}.prompt' if variant else f'{base_name}.prompt'
         prompt_file_path = (
-            self._directory / dir_name / prompt_file_name
-            if dir_name
-            else self._directory / prompt_file_name
+            self._directory / dir_name / prompt_file_name if dir_name else self._directory / prompt_file_name
         )
 
-        partial_file_name = (
-            f'_{base_name}.{variant}.prompt'
-            if variant
-            else f'_{base_name}.prompt'
-        )
+        partial_file_name = f'_{base_name}.{variant}.prompt' if variant else f'_{base_name}.prompt'
         partial_file_path = (
-            self._directory / dir_name / partial_file_name
-            if dir_name
-            else self._directory / partial_file_name
+            self._directory / dir_name / partial_file_name if dir_name else self._directory / partial_file_name
         )
 
         file_to_delete: Path | None = None
@@ -552,16 +480,12 @@ class DirStore(PromptStoreWritable):
         loop = asyncio.get_running_loop()
 
         try:
-            prompt_exists = await loop.run_in_executor(
-                None, prompt_file_path.exists
-            )
+            prompt_exists = await loop.run_in_executor(None, prompt_file_path.exists)
             if prompt_exists:
                 file_to_delete = prompt_file_path
                 item_type = 'prompt'
             else:
-                partial_exists = await loop.run_in_executor(
-                    None, partial_file_path.exists
-                )
+                partial_exists = await loop.run_in_executor(None, partial_file_path.exists)
                 if partial_exists:
                     file_to_delete = partial_file_path
                     item_type = 'partial'
@@ -573,8 +497,7 @@ class DirStore(PromptStoreWritable):
                 error=str(e),
             )
             raise OSError(
-                f"OS Error checking existence for '{name}'"
-                f'{f" (variant: {variant})" if variant else ""}: {e}'
+                f"OS Error checking existence for '{name}'{f' (variant: {variant})' if variant else ''}: {e}"
             ) from e
         except Exception as e:
             await logger.aerror(
@@ -584,8 +507,7 @@ class DirStore(PromptStoreWritable):
                 error=str(e),
             )
             raise RuntimeError(
-                f"Unexpected error checking existence for '{name}'"
-                f'{f" (variant: {variant})" if variant else ""}: {e}'
+                f"Unexpected error checking existence for '{name}'{f' (variant: {variant})' if variant else ''}: {e}"
             ) from e
 
         if file_to_delete:

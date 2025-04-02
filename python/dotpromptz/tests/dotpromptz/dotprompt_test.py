@@ -56,9 +56,7 @@ def mock_register_all_helpers() -> Generator[Mock, None, None]:
         yield mock
 
 
-def test_init_default(
-    mock_handlebars: Mock, mock_register_all_helpers: Mock
-) -> None:
+def test_init_default(mock_handlebars: Mock, mock_register_all_helpers: Mock) -> None:
     """Test initializing Dotprompt with default options."""
     dotprompt = Dotprompt()
 
@@ -77,14 +75,10 @@ def test_init_default(
     assert dotprompt._store is None
 
 
-def test_init_with_options(
-    mock_handlebars: Mock, mock_register_all_helpers: Mock
-) -> None:
+def test_init_with_options(mock_handlebars: Mock, mock_register_all_helpers: Mock) -> None:
     """Test initializing Dotprompt with custom options."""
 
-    def helper_fn(
-        params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]
-    ) -> str:
+    def helper_fn(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
         return 'test_helper'
 
     helpers: dict[str, HelperFn] = {'helper1': helper_fn}
@@ -97,30 +91,22 @@ def test_init_with_options(
 
     _ = Dotprompt(options)
 
-    mock_handlebars.register_helper.assert_called_with(
-        'helper1', helpers['helper1']
-    )
-    mock_handlebars.register_partial.assert_called_with(
-        'partial1', partials['partial1']
-    )
+    mock_handlebars.register_helper.assert_called_with('helper1', helpers['helper1'])
+    mock_handlebars.register_partial.assert_called_with('partial1', partials['partial1'])
 
 
 def test_define_helper(mock_handlebars: Mock) -> None:
     """Test defining a helper function."""
 
     # This should match the signature of HelperFn.
-    def helper_fn(
-        params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]
-    ) -> str:
+    def helper_fn(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
         return 'test_helper'
 
     dotprompt = Dotprompt()
     mock_handlebars.register_helper.reset_mock()
     result = dotprompt.define_helper('test_helper', helper_fn)
 
-    mock_handlebars.register_helper.assert_called_once_with(
-        'test_helper', helper_fn
-    )
+    mock_handlebars.register_helper.assert_called_once_with('test_helper', helper_fn)
     assert dotprompt._known_helpers.get('test_helper') is True
 
     # Ensure chaining works.
@@ -134,9 +120,7 @@ def test_define_partial(mock_handlebars: Mock) -> None:
 
     result = dotprompt.define_partial('test_partial', 'partial content')
 
-    mock_handlebars.register_partial.assert_called_once_with(
-        'test_partial', 'partial content'
-    )
+    mock_handlebars.register_partial.assert_called_once_with('test_partial', 'partial content')
 
     # Ensure chaining works.
     assert result == dotprompt
@@ -165,9 +149,7 @@ def test_define_tool(mock_handlebars: Mock) -> None:
 @patch('dotpromptz.dotprompt.parse_document')
 def test_parse(mock_parse_document: Mock, mock_handlebars: Mock) -> None:
     """Test parsing a prompt."""
-    mock_parse_document.return_value = ParsedPrompt(
-        template='Hello {{name}}', toolDefs=None
-    )
+    mock_parse_document.return_value = ParsedPrompt(template='Hello {{name}}', toolDefs=None)
 
     dotprompt = Dotprompt()
     result: ParsedPrompt[dict[str, Any]] = dotprompt.parse('source string')
@@ -193,9 +175,7 @@ def test_chainable_interface(mock_handlebars: Mock) -> None:
         },
     )
 
-    def helper_fn(
-        params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]
-    ) -> str:
+    def helper_fn(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
         return 'helper1'
 
     result = (

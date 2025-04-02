@@ -93,9 +93,7 @@ def file_digest(filepath: Path, length: int = -1) -> str:
     if length < 0:
         return digest
     if length > len(digest):
-        raise ValueError(
-            f'Length {length} is greater than the digest length {len(digest)}'
-        )
+        raise ValueError(f'Length {length} is greater than the digest length {len(digest)}')
     return digest[:length]
 
 
@@ -280,19 +278,14 @@ def all_spec_suites() -> list[SpecSuite]:
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     """Generate tests dynamically from spec files."""
-    if (
-        'spec_suite' in metafunc.fixturenames
-        and 'spec_test' in metafunc.fixturenames
-    ):
+    if 'spec_suite' in metafunc.fixturenames and 'spec_test' in metafunc.fixturenames:
         suites = create_spec_suites(SPECS_DIR, filter=is_allowed_spec_file)
         tests = [(suite, test) for suite in suites for test in suite['tests']]
         metafunc.parametrize('spec_suite, spec_test', tests)
 
 
 @pytest.mark.asyncio
-async def test_spec_test_case(
-    spec_suite: SpecSuite, spec_test: SpecTest
-) -> None:
+async def test_spec_test_case(spec_suite: SpecSuite, spec_test: SpecTest) -> None:
     """Dynamically generated test case."""
     module_id = spec_suite.get('module_id', 'unknown_module')
     suite_id = spec_suite.get('suite_id', 'unknown_suite')

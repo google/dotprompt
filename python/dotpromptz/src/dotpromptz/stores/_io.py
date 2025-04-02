@@ -66,9 +66,7 @@ def read_prompt_file_sync(file_path: Path) -> str:
         logger.error('File not found (sync)', path=str(file_path))
         raise
     except OSError as e:
-        logger.error(
-            'Error reading file (sync)', path=str(file_path), error=str(e)
-        )
+        logger.error('Error reading file (sync)', path=str(file_path), error=str(e))
         raise
 
 
@@ -95,9 +93,7 @@ async def read_prompt_file_async(file_path: Path) -> str:
         await logger.aerror('File not found', path=str(file_path))
         raise
     except OSError as e:
-        await logger.aerror(
-            'Error reading file', path=str(file_path), error=str(e)
-        )
+        await logger.aerror('Error reading file', path=str(file_path), error=str(e))
         raise
 
 
@@ -188,9 +184,7 @@ def parse_prompt_filename(filename: str) -> ParsedPromptInfo:
         raise ValueError(f'Invalid prompt filename format: {filename}')
 
 
-async def scan_directory(
-    base_dir: Path, dir_path: str = '', results: list[str] | None = None
-) -> list[str]:
+async def scan_directory(base_dir: Path, dir_path: str = '', results: list[str] | None = None) -> list[str]:
     """Asynchronously scan a directory for prompt files.
 
     Recursively searches for .prompt files in the given directory and its
@@ -217,11 +211,7 @@ async def scan_directory(
     await logger.adebug('Scanning directory', path=str(full_path))
 
     try:
-        entries = [
-            entry
-            for entry in os.scandir(full_path)
-            if not entry.name.startswith('.')
-        ]
+        entries = [entry for entry in os.scandir(full_path) if not entry.name.startswith('.')]
 
         await logger.adebug(
             'Found entries',
@@ -240,16 +230,12 @@ async def scan_directory(
                 results.append(relative_path)
                 await logger.adebug('Found prompt file', file=relative_path)
     except Exception as e:
-        await logger.aerror(
-            'Error scanning directory', path=str(full_path), error=str(e)
-        )
+        await logger.aerror('Error scanning directory', path=str(full_path), error=str(e))
 
     return results
 
 
-def scan_directory_sync(
-    base_dir: Path, dir_path: str = '', results: list[str] | None = None
-) -> list[str]:
+def scan_directory_sync(base_dir: Path, dir_path: str = '', results: list[str] | None = None) -> list[str]:
     """Synchronously scan a directory for prompt files.
 
     Recursively searches for .prompt files in the given directory and its
@@ -275,11 +261,7 @@ def scan_directory_sync(
     full_path = base_dir / dir_path if dir_path else base_dir
 
     try:
-        entries = [
-            entry
-            for entry in os.scandir(full_path)
-            if not entry.name.startswith('.')
-        ]
+        entries = [entry for entry in os.scandir(full_path) if not entry.name.startswith('.')]
 
         for entry in entries:
             relative_path = os.path.join(dir_path, entry.name)
@@ -291,8 +273,6 @@ def scan_directory_sync(
                 # Add matching files to results.
                 results.append(relative_path)
     except Exception as e:
-        logger.error(
-            'Error scanning directory (sync)', path=str(full_path), error=str(e)
-        )
+        logger.error('Error scanning directory (sync)', path=str(full_path), error=str(e))
 
     return results

@@ -50,9 +50,7 @@ class PicoschemaOptions(BaseModel):
     schema_resolver: SchemaResolver | None = Field(default=None)
 
 
-def picoschema(
-    schema: Any, options: PicoschemaOptions | None = None
-) -> JsonSchema | None:
+def picoschema(schema: Any, options: PicoschemaOptions | None = None) -> JsonSchema | None:
     return PicoschemaParser(options).parse(schema)
 
 
@@ -62,15 +60,11 @@ class PicoschemaParser:
 
     def must_resolve_schema(self, schema_name: str) -> JsonSchema:
         if not self.schema_resolver:
-            raise ValueError(
-                f"Picoschema: unsupported scalar type '{schema_name}'."
-            )
+            raise ValueError(f"Picoschema: unsupported scalar type '{schema_name}'.")
 
         val = self.schema_resolver(schema_name)
         if not val:
-            raise ValueError(
-                f"Picoschema: could not find schema with name '{schema_name}'"
-            )
+            raise ValueError(f"Picoschema: could not find schema with name '{schema_name}'")
         return val
 
     def parse(self, schema: Any) -> JsonSchema | None:
@@ -85,27 +79,18 @@ class PicoschemaParser:
                     out['description'] = description
                 return out
             resolved_schema = self.must_resolve_schema(type_name)
-            return (
-                {**resolved_schema, 'description': description}
-                if description
-                else resolved_schema
-            )
+            return {**resolved_schema, 'description': description} if description else resolved_schema
 
         if isinstance(schema, dict):
             maybe_type_name = schema.get('type')
             if (
                 maybe_type_name
                 and isinstance(maybe_type_name, str)
-                and (
-                    maybe_type_name in JSON_SCHEMA_SCALAR_TYPES
-                    or maybe_type_name in ['object', 'array']
-                )
+                and (maybe_type_name in JSON_SCHEMA_SCALAR_TYPES or maybe_type_name in ['object', 'array'])
             ):
                 return cast(JsonSchema, schema)
 
-        if isinstance(schema, dict) and isinstance(
-            schema.get('properties'), dict
-        ):
+        if isinstance(schema, dict) and isinstance(schema.get('properties'), dict):
             return {**cast(JsonSchema, schema), 'type': 'object'}
 
         return self.parse_pico(schema)
@@ -118,24 +103,14 @@ class PicoschemaParser:
             type_name, description = extract_description(obj)
             if type_name not in JSON_SCHEMA_SCALAR_TYPES:
                 resolved_schema = self.must_resolve_schema(type_name)
-                return (
-                    {**resolved_schema, 'description': description}
-                    if description
-                    else resolved_schema
-                )
+                return {**resolved_schema, 'description': description} if description else resolved_schema
 
             if type_name == 'any':
                 return {'description': description} if description else {}
 
-            return (
-                {'type': type_name, 'description': description}
-                if description
-                else {'type': type_name}
-            )
+            return {'type': type_name, 'description': description} if description else {'type': type_name}
         elif not isinstance(obj, dict):
-            raise ValueError(
-                f'Picoschema: only consists of objects and strings. Got: {obj}'
-            )
+            raise ValueError(f'Picoschema: only consists of objects and strings. Got: {obj}')
 
         schema: JsonSchema = {
             'type': 'object',
@@ -146,9 +121,7 @@ class PicoschemaParser:
 
         for key, value in obj.items():
             if key == WILDCARD_PROPERTY_NAME:
-                schema['additionalProperties'] = self.parse_pico(
-                    value, [*path, key]
-                )
+                schema['additionalProperties'] = self.parse_pico(value, [*path, key])
                 continue
 
             parts = key.split('(')
@@ -185,10 +158,7 @@ class PicoschemaParser:
                     prop['enum'].append(None)
                 schema['properties'][property_name] = prop
             else:
-                raise ValueError(
-                    "Picoschema: parenthetical types must be 'object' or "
-                    f"'array', got: {type_name}"
-                )
+                raise ValueError(f"Picoschema: parenthetical types must be 'object' or 'array', got: {type_name}")
 
             if description:
                 schema['properties'][property_name]['description'] = description

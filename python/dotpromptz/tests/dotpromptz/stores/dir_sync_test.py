@@ -212,18 +212,14 @@ def test_load_partial(sync_store: DirStoreSync, temp_dir: Path) -> None:
     assert result_nested.version == version
 
     # Load variant partial
-    result_variant = sync_store.load_partial(
-        'variant', LoadPartialOptions(variant='v1')
-    )
+    result_variant = sync_store.load_partial('variant', LoadPartialOptions(variant='v1'))
     assert result_variant.name == 'variant'
     assert result_variant.variant == 'v1'
     assert result_variant.source == source
     assert result_variant.version == version
 
     # Load with specific version
-    result_version = sync_store.load_partial(
-        'test', LoadPartialOptions(version=version)
-    )
+    result_version = sync_store.load_partial('test', LoadPartialOptions(version=version))
     assert result_version.version == version
 
     # Load non-existent partial
@@ -232,9 +228,7 @@ def test_load_partial(sync_store: DirStoreSync, temp_dir: Path) -> None:
 
     # Load with wrong version
     with pytest.raises(ValueError, match='Version mismatch'):
-        sync_store.load_partial(
-            'test', LoadPartialOptions(version='wrongversion')
-        )
+        sync_store.load_partial('test', LoadPartialOptions(version='wrongversion'))
 
 
 def test_save_prompt(sync_store: DirStoreSync, temp_dir: Path) -> None:
@@ -260,9 +254,7 @@ def test_save_prompt_variant(sync_store: DirStoreSync, temp_dir: Path) -> None:
     """Test saving prompt variants synchronously."""
     source = 'new variant source'
     version = calculate_version(source)
-    prompt = PromptData(
-        name='new_prompt', variant='beta', source=source, version=version
-    )
+    prompt = PromptData(name='new_prompt', variant='beta', source=source, version=version)
 
     sync_store.save(prompt)
 
@@ -280,9 +272,7 @@ def test_save_prompt_subdir(sync_store: DirStoreSync, temp_dir: Path) -> None:
     """Test saving prompts in subdirectories synchronously."""
     source = 'new subdir source'
     version = calculate_version(source)
-    prompt = PromptData(
-        name='subdir/new_prompt', source=source, version=version
-    )
+    prompt = PromptData(name='subdir/new_prompt', source=source, version=version)
 
     sync_store.save(prompt)
 
@@ -301,9 +291,7 @@ def test_save_partial(sync_store: DirStoreSync, temp_dir: Path) -> None:
     # Note: `save` uses the name directly, including '_'.
     source = 'new partial content'
     version = calculate_version(source)
-    partial = PromptData(
-        name='_new_partial', source=source, version=version
-    )  # Name includes '_' for saving
+    partial = PromptData(name='_new_partial', source=source, version=version)  # Name includes '_' for saving
 
     sync_store.save(partial)
 
@@ -334,9 +322,7 @@ def test_delete_prompt(sync_store: DirStoreSync, temp_dir: Path) -> None:
     assert not (temp_dir / 'subdir' / 'nested_delete.prompt').exists()
 
     # Delete variant
-    sync_store.delete(
-        'variant_delete', DeletePromptOrPartialOptions(variant='v1')
-    )
+    sync_store.delete('variant_delete', DeletePromptOrPartialOptions(variant='v1'))
     assert not (temp_dir / 'variant_delete.v1.prompt').exists()
 
     # Delete non-existent
@@ -354,20 +340,14 @@ def test_delete_partial(sync_store: DirStoreSync, temp_dir: Path) -> None:
     assert not (temp_dir / '_test_delete_partial.prompt').exists()
 
     # Delete variant partial (using name without '_')
-    sync_store.delete(
-        'variant_delete_partial', DeletePromptOrPartialOptions(variant='v1')
-    )
+    sync_store.delete('variant_delete_partial', DeletePromptOrPartialOptions(variant='v1'))
     assert not (temp_dir / '_variant_delete_partial.v1.prompt').exists()
 
 
-def test_delete_prioritizes_prompt_over_partial(
-    sync_store: DirStoreSync, temp_dir: Path
-) -> None:
+def test_delete_prioritizes_prompt_over_partial(sync_store: DirStoreSync, temp_dir: Path) -> None:
     """Test that delete removes prompt if both prompt and partial exist."""
     create_test_prompt_sync(temp_dir, 'conflict.prompt', 'prompt')
-    create_test_partial_sync(
-        temp_dir, 'conflict.prompt', 'partial'
-    )  # Creates _conflict.prompt
+    create_test_partial_sync(temp_dir, 'conflict.prompt', 'partial')  # Creates _conflict.prompt
 
     sync_store.delete('conflict')
 

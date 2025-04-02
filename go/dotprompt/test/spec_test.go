@@ -238,8 +238,8 @@ func pruneResult(t *testing.T, result PromptMetadata) map[string]any {
 		}
 		pruned["output"] = outputMap
 	}
-	if len(result.HasMetadata.Metadata) > 0 {
-		pruned["metadata"] = result.HasMetadata.Metadata
+	if len(result.Metadata) > 0 {
+		pruned["metadata"] = result.Metadata
 	}
 	return pruned
 }
@@ -276,8 +276,8 @@ func pruneMessages(messages []Message) []map[string]any {
 		if len(message.Content) > 0 {
 			prunedMessage["content"] = pruneContent(message.Content)
 		}
-		if len(message.HasMetadata.Metadata) > 0 {
-			prunedMessage["metadata"] = message.HasMetadata.Metadata
+		if len(message.Metadata) > 0 {
+			prunedMessage["metadata"] = message.Metadata
 		}
 		if len(message.Role) > 0 {
 			prunedMessage["role"] = message.Role

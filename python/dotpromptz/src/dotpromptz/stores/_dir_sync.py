@@ -141,13 +141,9 @@ class DirStoreSync(PromptStoreWritableSync):
         self._directory = options.directory
         # Ensure the base directory exists.
         os.makedirs(self._directory, exist_ok=True)
-        logger.debug(
-            'Sync DirStore initialized', directory=str(self._directory)
-        )
+        logger.debug('Sync DirStore initialized', directory=str(self._directory))
 
-    def list(
-        self, options: ListPromptsOptions | None = None
-    ) -> PaginatedPrompts:
+    def list(self, options: ListPromptsOptions | None = None) -> PaginatedPrompts:
         """Synchronously lists available prompts (excluding partials).
 
         Note: Pagination options are ignored.
@@ -170,9 +166,7 @@ class DirStoreSync(PromptStoreWritableSync):
                     dir_path = os.path.dirname(file_rel_path)
                     # Corrected name construction
                     if dir_path and dir_path != '.':
-                        full_name = (
-                            f'{dir_path.replace(os.sep, "/")}/{parsed.name}'
-                        )
+                        full_name = f'{dir_path.replace(os.sep, "/")}/{parsed.name}'
                     else:
                         full_name = parsed.name
 
@@ -208,9 +202,7 @@ class DirStoreSync(PromptStoreWritableSync):
         logger.info('Finished listing prompts (sync)', count=len(prompts))
         return PaginatedPrompts(prompts=prompts)
 
-    def list_partials(
-        self, options: ListPartialsOptions | None = None
-    ) -> PaginatedPartials:
+    def list_partials(self, options: ListPartialsOptions | None = None) -> PaginatedPartials:
         """Synchronously lists available partials.
 
         Note: Pagination options are ignored.
@@ -234,9 +226,7 @@ class DirStoreSync(PromptStoreWritableSync):
                     dir_path = os.path.dirname(file_rel_path)
                     # Corrected name construction
                     if dir_path and dir_path != '.':
-                        full_name = (
-                            f'{dir_path.replace(os.sep, "/")}/{parsed.name}'
-                        )
+                        full_name = f'{dir_path.replace(os.sep, "/")}/{parsed.name}'
                     else:
                         full_name = parsed.name
 
@@ -272,9 +262,7 @@ class DirStoreSync(PromptStoreWritableSync):
         logger.info('Finished listing partials (sync)', count=len(partials))
         return PaginatedPartials(partials=partials)
 
-    def load(
-        self, name: str, options: LoadPromptOptions | None = None
-    ) -> PromptData:
+    def load(self, name: str, options: LoadPromptOptions | None = None) -> PromptData:
         """Synchronously loads a specific prompt from the store.
 
         Args:
@@ -293,16 +281,8 @@ class DirStoreSync(PromptStoreWritableSync):
         version_opt = options.version if options else None
         dir_name = os.path.dirname(name)
         base_name = os.path.basename(name)
-        file_name = (
-            f'{base_name}.{variant}.prompt'
-            if variant
-            else f'{base_name}.prompt'
-        )
-        file_path = (
-            self._directory / dir_name / file_name
-            if dir_name
-            else self._directory / file_name
-        )
+        file_name = f'{base_name}.{variant}.prompt' if variant else f'{base_name}.prompt'
+        file_path = self._directory / dir_name / file_name if dir_name else self._directory / file_name
 
         logger.debug(
             'Loading prompt (sync)',
@@ -330,9 +310,7 @@ class DirStoreSync(PromptStoreWritableSync):
                 variant=variant,
                 version=version,
             )
-            return PromptData(
-                name=name, variant=variant, version=version, source=source
-            )
+            return PromptData(name=name, variant=variant, version=version, source=source)
         except FileNotFoundError:
             err_msg = f"Prompt '{name}' not found at {file_path}"
             logger.error(err_msg)
@@ -348,9 +326,7 @@ class DirStoreSync(PromptStoreWritableSync):
             logger.error(err_msg)
             raise RuntimeError(err_msg) from e
 
-    def load_partial(
-        self, name: str, options: LoadPartialOptions | None = None
-    ) -> PartialData:
+    def load_partial(self, name: str, options: LoadPartialOptions | None = None) -> PartialData:
         """Synchronously loads a specific partial from the store.
 
         Args:
@@ -369,16 +345,8 @@ class DirStoreSync(PromptStoreWritableSync):
         version_opt = options.version if options else None
         dir_name = os.path.dirname(name)
         base_name = os.path.basename(name)
-        file_name = (
-            f'_{base_name}.{variant}.prompt'
-            if variant
-            else f'_{base_name}.prompt'
-        )
-        file_path = (
-            self._directory / dir_name / file_name
-            if dir_name
-            else self._directory / file_name
-        )
+        file_name = f'_{base_name}.{variant}.prompt' if variant else f'_{base_name}.prompt'
+        file_path = self._directory / dir_name / file_name if dir_name else self._directory / file_name
 
         logger.debug(
             'Loading partial (sync)',
@@ -406,9 +374,7 @@ class DirStoreSync(PromptStoreWritableSync):
                 variant=variant,
                 version=version,
             )
-            return PartialData(
-                name=name, variant=variant, version=version, source=source
-            )
+            return PartialData(name=name, variant=variant, version=version, source=source)
         except FileNotFoundError:
             err_msg = f"Partial '{name}' not found at {file_path}"
             logger.error(err_msg)
@@ -443,16 +409,8 @@ class DirStoreSync(PromptStoreWritableSync):
 
         dir_name = os.path.dirname(prompt.name)
         base_name = os.path.basename(prompt.name)
-        file_name = (
-            f'{base_name}.{prompt.variant}.prompt'
-            if prompt.variant
-            else f'{base_name}.prompt'
-        )
-        file_path = (
-            self._directory / dir_name / file_name
-            if dir_name
-            else self._directory / file_name
-        )
+        file_name = f'{base_name}.{prompt.variant}.prompt' if prompt.variant else f'{base_name}.prompt'
+        file_path = self._directory / dir_name / file_name if dir_name else self._directory / file_name
         file_dir = file_path.parent
 
         logger.debug(
@@ -465,32 +423,22 @@ class DirStoreSync(PromptStoreWritableSync):
         try:
             # Ensure the target directory exists.
             os.makedirs(file_dir, exist_ok=True)
-            logger.debug(
-                'Ensured directory exists (sync)', directory=str(file_dir)
-            )
+            logger.debug('Ensured directory exists (sync)', directory=str(file_dir))
 
             # Write the prompt source content synchronously.
             with open(file_path, mode='w', encoding='utf-8') as f:
                 f.write(prompt.source)
             logger.info('Prompt saved successfully (sync)', path=str(file_path))
         except OSError as e:
-            err_msg = (
-                f"Failed to save prompt '{prompt.name}' to {file_path} "
-                f'due to OS error: {e}'
-            )
+            err_msg = f"Failed to save prompt '{prompt.name}' to {file_path} due to OS error: {e}"
             logger.error(err_msg)
             raise OSError(err_msg) from e
         except Exception as e:
-            err_msg = (
-                f"Unexpected error saving prompt '{prompt.name}' "
-                f'to {file_path}: {e}'
-            )
+            err_msg = f"Unexpected error saving prompt '{prompt.name}' to {file_path}: {e}"
             logger.error(err_msg)
             raise RuntimeError(err_msg) from e
 
-    def delete(
-        self, name: str, options: DeletePromptOrPartialOptions | None = None
-    ) -> None:
+    def delete(self, name: str, options: DeletePromptOrPartialOptions | None = None) -> None:
         """Synchronously deletes a prompt or partial file.
 
         Args:
@@ -505,26 +453,14 @@ class DirStoreSync(PromptStoreWritableSync):
         dir_name = os.path.dirname(name)
         base_name = os.path.basename(name)
 
-        prompt_file_name = (
-            f'{base_name}.{variant}.prompt'
-            if variant
-            else f'{base_name}.prompt'
-        )
+        prompt_file_name = f'{base_name}.{variant}.prompt' if variant else f'{base_name}.prompt'
         prompt_file_path = (
-            self._directory / dir_name / prompt_file_name
-            if dir_name
-            else self._directory / prompt_file_name
+            self._directory / dir_name / prompt_file_name if dir_name else self._directory / prompt_file_name
         )
 
-        partial_file_name = (
-            f'_{base_name}.{variant}.prompt'
-            if variant
-            else f'_{base_name}.prompt'
-        )
+        partial_file_name = f'_{base_name}.{variant}.prompt' if variant else f'_{base_name}.prompt'
         partial_file_path = (
-            self._directory / dir_name / partial_file_name
-            if dir_name
-            else self._directory / partial_file_name
+            self._directory / dir_name / partial_file_name if dir_name else self._directory / partial_file_name
         )
 
         file_to_delete: Path | None = None
@@ -553,8 +489,7 @@ class DirStoreSync(PromptStoreWritableSync):
                 error=str(e),
             )
             raise OSError(
-                f"OS Error checking existence for '{name}'"
-                f'{f" (variant: {variant})" if variant else ""}: {e}'
+                f"OS Error checking existence for '{name}'{f' (variant: {variant})' if variant else ''}: {e}"
             ) from e
         except Exception as e:
             logger.error(
@@ -564,8 +499,7 @@ class DirStoreSync(PromptStoreWritableSync):
                 error=str(e),
             )
             raise RuntimeError(
-                f"Unexpected error checking existence for '{name}'"
-                f'{f" (variant: {variant})" if variant else ""}: {e}'
+                f"Unexpected error checking existence for '{name}'{f' (variant: {variant})' if variant else ''}: {e}"
             ) from e
 
         if file_to_delete:

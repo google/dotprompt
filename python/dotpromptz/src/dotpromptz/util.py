@@ -38,9 +38,7 @@ def remove_undefined_fields(obj: Any) -> Any:
 
     # Lists.
     if isinstance(obj, list):
-        return [
-            remove_undefined_fields(item) for item in obj if item is not None
-        ]
+        return [remove_undefined_fields(item) for item in obj if item is not None]
 
     # Dicts.
     result = {}
