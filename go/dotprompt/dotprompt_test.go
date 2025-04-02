@@ -37,7 +37,9 @@ func TestDefineHelper(t *testing.T) {
 	helperName := "upperCase"
 
 	// Initial call.
-	dp.DefineHelper(helperName, upperCaseHelperFunc, tpl)
+	if err = dp.DefineHelper(helperName, upperCaseHelperFunc, tpl); err != nil {
+		t.Fatalf("Failed to define helper: %v", err)
+	}
 
 	if !dp.knownHelpers[helperName] {
 		t.Errorf("Expected helper '%s' to be marked as known, but it wasn't", helperName)
@@ -55,7 +57,9 @@ func TestDefineHelper(t *testing.T) {
 	}
 
 	// Call again with the same name; should be a no-op.
-	dp.DefineHelper(helperName, upperCaseHelperFunc, tpl)
+	if err = dp.DefineHelper(helperName, upperCaseHelperFunc, tpl); err == nil {
+		t.Fatalf("Expected DefineHelper to return an error when redefining a helper, but it didn't")
+	}
 	if !dp.knownHelpers[helperName] {
 		t.Errorf("Expected helper '%s' to still be marked as known after second call", helperName)
 	}
@@ -76,7 +80,9 @@ func TestDefinePartial(t *testing.T) {
 	partialSource := "Partial Content"
 
 	// Initial call.
-	dp.DefinePartial(partialName, partialSource, tpl)
+	if err = dp.DefinePartial(partialName, partialSource, tpl); err != nil {
+		t.Fatalf("Failed to define partial: %v", err)
+	}
 
 	if !dp.knownPartials[partialName] {
 		t.Errorf("Expected partial '%s' to be marked as known, but it wasn't", partialName)
@@ -95,7 +101,9 @@ func TestDefinePartial(t *testing.T) {
 	}
 
 	// Call again with the same name; should be a no-op.
-	dp.DefinePartial(partialName, partialSource, tpl)
+	if err = dp.DefinePartial(partialName, partialSource, tpl); err == nil {
+		t.Fatalf("Expected DefinePartial to return an error when redefining a partial, but it didn't")
+	}
 	if !dp.knownPartials[partialName] {
 		t.Errorf("Expected partial '%s' to still be marked as known after second call", partialName)
 	}
@@ -121,7 +129,9 @@ func TestRegisterHelpers(t *testing.T) {
 		t.Fatalf("Failed to parse template: %v", err)
 	}
 
-	dp.RegisterHelpers(tpl)
+	if err = dp.RegisterHelpers(tpl); err != nil {
+		t.Fatalf("RegisterHelpers failed: %v", err)
+	}
 
 	// Check knownHelpers map.
 	if !dp.knownHelpers[optionHelperName] {
