@@ -248,8 +248,7 @@ func (dp *Dotprompt) resolvePartials(template string, tpl *raymond.Template) err
 				return err
 			}
 			if content != "" {
-				err = dp.DefinePartial(partial, content, tpl)
-				if err != nil {
+				if err = dp.DefinePartial(partial, content, tpl); err != nil {
 					return err
 				}
 				err = dp.resolvePartials(content, tpl)
