@@ -26,9 +26,7 @@ class TestPicoschemaParser(unittest.TestCase):
     """Picoshema parser functionality tests."""
 
     def setUp(self) -> None:
-        self.parser = picoschema.PicoschemaParser(
-            picoschema.PicoschemaOptions()
-        )
+        self.parser = picoschema.PicoschemaParser(picoschema.PicoschemaOptions())
 
     def test_must_resolve_schema_success(self) -> None:
         def mock_resolver(name: str) -> JsonSchema | None:
@@ -36,9 +34,7 @@ class TestPicoschemaParser(unittest.TestCase):
                 return {'type': 'object'}
             return None
 
-        parser = picoschema.PicoschemaParser(
-            picoschema.PicoschemaOptions(schema_resolver=mock_resolver)
-        )
+        parser = picoschema.PicoschemaParser(picoschema.PicoschemaOptions(schema_resolver=mock_resolver))
         result = parser.must_resolve_schema('MySchema')
         self.assertEqual(result, {'type': 'object'})
 
@@ -46,9 +42,7 @@ class TestPicoschemaParser(unittest.TestCase):
         def mock_resolver(name: str) -> JsonSchema | None:
             return None
 
-        parser = picoschema.PicoschemaParser(
-            picoschema.PicoschemaOptions(schema_resolver=mock_resolver)
-        )
+        parser = picoschema.PicoschemaParser(picoschema.PicoschemaOptions(schema_resolver=mock_resolver))
         with self.assertRaises(ValueError) as context:
             parser.must_resolve_schema('NonExistentSchema')
         self.assertEqual(
@@ -94,9 +88,7 @@ class TestPicoschemaParser(unittest.TestCase):
                 }
             return None
 
-        parser = picoschema.PicoschemaParser(
-            picoschema.PicoschemaOptions(schema_resolver=mock_resolver)
-        )
+        parser = picoschema.PicoschemaParser(picoschema.PicoschemaOptions(schema_resolver=mock_resolver))
         result = parser.parse('MySchema')
         self.assertEqual(
             result,
@@ -112,9 +104,7 @@ class TestPicoschemaParser(unittest.TestCase):
                 }
             return None
 
-        parser = picoschema.PicoschemaParser(
-            picoschema.PicoschemaOptions(schema_resolver=mock_resolver)
-        )
+        parser = picoschema.PicoschemaParser(picoschema.PicoschemaOptions(schema_resolver=mock_resolver))
         result = parser.parse('MySchema, a schema')
         self.assertEqual(
             result,
@@ -159,9 +149,7 @@ class TestPicoschemaParser(unittest.TestCase):
         schema = {'names(array)': 'string'}
         expected = {
             'type': 'object',
-            'properties': {
-                'names': {'type': 'array', 'items': {'type': 'string'}}
-            },
+            'properties': {'names': {'type': 'array', 'items': {'type': 'string'}}},
             'required': ['names'],
             'additionalProperties': False,
         }
@@ -304,15 +292,11 @@ class TestPicoschemaParser(unittest.TestCase):
                 return {'type': 'string'}
             return None
 
-        parser = picoschema.PicoschemaParser(
-            picoschema.PicoschemaOptions(schema_resolver=mock_resolver)
-        )
+        parser = picoschema.PicoschemaParser(picoschema.PicoschemaOptions(schema_resolver=mock_resolver))
         schema = {'field': 'CustomType, a custom type'}
         expected = {
             'type': 'object',
-            'properties': {
-                'field': {'type': 'string', 'description': 'a custom type'}
-            },
+            'properties': {'field': {'type': 'string', 'description': 'a custom type'}},
             'required': ['field'],
             'additionalProperties': False,
         }

@@ -400,6 +400,7 @@ export class Dotprompt {
       {
         knownHelpers: this.knownHelpers,
         knownHelpersOnly: true,
+        noEscape: true,
       }
     );
 

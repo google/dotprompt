@@ -82,9 +82,7 @@ class TestAdvancedFeatures(unittest.TestCase):
         result = template.render('test2', {'name': 'world'})
         self.assertEqual(result, '<i>world</i>')
 
-        template.register_template(
-            'test3', '{{format name bold=true italic=true}}'
-        )
+        template.register_template('test3', '{{format name bold=true italic=true}}')
         result = template.render('test3', {'name': 'world'})
         self.assertEqual(result, '<i><b>world</b></i>')
 
@@ -115,14 +113,10 @@ class TestAdvancedFeatures(unittest.TestCase):
         # Test with different contexts.
         template.register_template('test', '{{greeting}}')
 
-        result = template.render(
-            'test', {'name': 'world', 'time_of_day': 'morning'}
-        )
+        result = template.render('test', {'name': 'world', 'time_of_day': 'morning'})
         self.assertEqual(result, 'Good morning, world!')
 
-        result = template.render(
-            'test', {'name': 'world', 'time_of_day': 'evening'}
-        )
+        result = template.render('test', {'name': 'world', 'time_of_day': 'evening'})
         self.assertEqual(result, 'Good evening, world!')
 
         result = template.render('test', {'name': 'world'})
@@ -388,12 +382,8 @@ class TestAdvancedFeatures(unittest.TestCase):
         template.register_helper('format_number', number_helper)
 
         # Test with different formats
-        template.register_template(
-            'test1', '{{format_number price format="currency"}}'
-        )
-        template.register_template(
-            'test2', '{{format_number rate format="percentage"}}'
-        )
+        template.register_template('test1', '{{format_number price format="currency"}}')
+        template.register_template('test2', '{{format_number rate format="percentage"}}')
         template.register_template('test3', '{{format_number value}}')
 
         data = {'price': 123.456, 'rate': 0.456, 'value': 789.012}

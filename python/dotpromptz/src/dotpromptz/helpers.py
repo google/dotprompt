@@ -42,9 +42,7 @@ from typing import Any
 from handlebarrz import Handlebars
 
 
-def json_helper(
-    params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]
-) -> str:
+def json_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
     """Convert a value to a JSON string.
 
     Args:
@@ -73,9 +71,7 @@ def json_helper(
         return '{}'
 
 
-def role_helper(
-    params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]
-) -> str:
+def role_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
     """Create a dotprompt role marker.
 
     Example:
@@ -99,9 +95,7 @@ def role_helper(
     return f'<<<dotprompt:role:{role_name}>>>'
 
 
-def history_helper(
-    params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]
-) -> str:
+def history_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
     """Create a dotprompt history marker.
 
     Example:
@@ -121,9 +115,7 @@ def history_helper(
     return '<<<dotprompt:history>>>'
 
 
-def section_helper(
-    params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]
-) -> str:
+def section_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
     """Create a dotprompt section marker.
 
     Example:
@@ -147,9 +139,7 @@ def section_helper(
     return f'<<<dotprompt:section {section_name}>>>'
 
 
-def media_helper(
-    params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]
-) -> str:
+def media_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
     """Create a dotprompt media marker.
 
     Example:
@@ -177,9 +167,7 @@ def media_helper(
         return f'<<<dotprompt:media:url {url}>>>'
 
 
-def if_equals_helper(
-    params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]
-) -> str:
+def if_equals_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
     """ifEquals compares two values and returns appropriate content.
 
     Example:
@@ -213,9 +201,7 @@ def if_equals_helper(
     return ''
 
 
-def unless_equals_helper(
-    params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]
-) -> str:
+def unless_equals_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
     """unlessEquals compares two values and returns appropriate content.
 
     Example:

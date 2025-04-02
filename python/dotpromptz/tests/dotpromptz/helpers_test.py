@@ -30,6 +30,8 @@ from handlebarrz import Handlebars
 
 
 class TestJsonHelper(unittest.TestCase):
+    """Tests for the JSON helper function."""
+
     def test_json_helper_direct(self) -> None:
         """Test the JSON helper function directly."""
         # Basic object
@@ -59,24 +61,18 @@ class TestJsonHelper(unittest.TestCase):
 
         # Basic usage
         handlebars.register_template('test1', '{{json data}}')
-        result = handlebars.render(
-            'test1', {'data': {'name': 'John', 'age': 30}}
-        )
+        result = handlebars.render('test1', {'data': {'name': 'John', 'age': 30}})
         expected = {'name': 'John', 'age': 30}
         self.assertEqual(json.loads(result), expected)
 
         # With indent
         handlebars.register_template('test2', '{{json data indent=2}}')
-        result = handlebars.render(
-            'test2', {'data': {'name': 'John', 'age': 30}}
-        )
+        result = handlebars.render('test2', {'data': {'name': 'John', 'age': 30}})
         self.assertEqual(json.loads(result), expected)
 
         # With string indent (should convert to int)
         handlebars.register_template('test3', '{{json data indent="4"}}')
-        result = handlebars.render(
-            'test3', {'data': {'name': 'John', 'age': 30}}
-        )
+        result = handlebars.render('test3', {'data': {'name': 'John', 'age': 30}})
         self.assertEqual(json.loads(result), expected)
 
         # Array.
@@ -86,6 +82,8 @@ class TestJsonHelper(unittest.TestCase):
 
 
 class TestRoleHelper(unittest.TestCase):
+    """Tests for the role helper function."""
+
     def test_role_helper_direct(self) -> None:
         """Test role helper function directly."""
         result = role_helper(['system'], {}, {})
@@ -100,6 +98,8 @@ class TestRoleHelper(unittest.TestCase):
 
 
 class TestHistoryHelper(unittest.TestCase):
+    """Tests for the history helper function."""
+
     def test_history_helper_direct(self) -> None:
         """Test history helper function directly."""
         result = history_helper([], {}, {})
@@ -107,6 +107,8 @@ class TestHistoryHelper(unittest.TestCase):
 
 
 class TestSectionHelper(unittest.TestCase):
+    """Tests for the section helper function."""
+
     def test_section_helper_direct(self) -> None:
         """Test section helper function directly."""
         result = section_helper(['test'], {}, {})
@@ -119,13 +121,13 @@ class TestSectionHelper(unittest.TestCase):
 
 
 class TestMediaHelper(unittest.TestCase):
+    """Tests for the media helper function."""
+
     def test_media_helper_direct(self) -> None:
         """Test media helper function directly."""
         # With URL only.
         result = media_helper([], {'url': 'https://example.com/image.png'}, {})
-        self.assertEqual(
-            result, '<<<dotprompt:media:url https://example.com/image.png>>>'
-        )
+        self.assertEqual(result, '<<<dotprompt:media:url https://example.com/image.png>>>')
 
         # With URL and content type.
         result = media_helper(
@@ -136,9 +138,7 @@ class TestMediaHelper(unittest.TestCase):
             },
             {},
         )
-        expected = (
-            '<<<dotprompt:media:url https://example.com/image.png image/png>>>'
-        )
+        expected = '<<<dotprompt:media:url https://example.com/image.png image/png>>>'
         self.assertEqual(result, expected)
 
         # Missing URL.
@@ -147,6 +147,8 @@ class TestMediaHelper(unittest.TestCase):
 
 
 class TestDotpromptHelpers(unittest.TestCase):
+    """Tests for the dotprompt helpers."""
+
     def test_dotprompt_helpers_in_template(self) -> None:
         """Test dotprompt helpers in templates."""
         handlebars = Handlebars()
@@ -174,25 +176,21 @@ class TestDotpromptHelpers(unittest.TestCase):
         template = '{{media url="https://example.com/img.png"}}'
         handlebars.register_template('media_test1', template)
         result = handlebars.render('media_test1', {})
-        self.assertEqual(
-            result, '<<<dotprompt:media:url https://example.com/img.png>>>'
-        )
+        self.assertEqual(result, '<<<dotprompt:media:url https://example.com/img.png>>>')
 
         # Media helper with content type.
-        template = (
-            '{{media url="https://example.com/img.png"'
-            ' contentType="image/png"}}'
-        )
+        template = '{{media url="https://example.com/img.png" contentType="image/png"}}'
         handlebars.register_template('media_test2', template)
         result = handlebars.render('media_test2', {})
-        expected = (
-            '<<<dotprompt:media:url https://example.com/img.png image/png>>>'
-        )
+        expected = '<<<dotprompt:media:url https://example.com/img.png image/png>>>'
         self.assertEqual(result, expected)
 
 
 class TestIfEqualsHelper(unittest.TestCase):
+    """Tests for the ifEquals helper function."""
+
     def setUp(self) -> None:
+        """Set up the test environment."""
         self.handlebars = Handlebars()
         self.handlebars.register_extra_helpers()
 
@@ -202,9 +200,7 @@ class TestIfEqualsHelper(unittest.TestCase):
             'if_equals_test',
             '{{#ifEquals arg1 arg2}}yes{{else}}no{{/ifEquals}}',
         )
-        result = self.handlebars.render(
-            'if_equals_test', {'arg1': 1, 'arg2': 1}
-        )
+        result = self.handlebars.render('if_equals_test', {'arg1': 1, 'arg2': 1})
         self.assertEqual(result, 'yes')
 
     def test_if_equals_helper_unequal_values(self) -> None:
@@ -213,9 +209,7 @@ class TestIfEqualsHelper(unittest.TestCase):
             'if_equals_test',
             '{{#ifEquals arg1 arg2}}yes{{else}}no{{/ifEquals}}',
         )
-        result = self.handlebars.render(
-            'if_equals_test', {'arg1': 1, 'arg2': 2}
-        )
+        result = self.handlebars.render('if_equals_test', {'arg1': 1, 'arg2': 2})
         self.assertEqual(result, 'no')
 
     def test_if_equals_helper_string_equal_values(self) -> None:
@@ -224,9 +218,7 @@ class TestIfEqualsHelper(unittest.TestCase):
             'if_equals_test',
             '{{#ifEquals arg1 arg2}}yes{{else}}no{{/ifEquals}}',
         )
-        result = self.handlebars.render(
-            'if_equals_test', {'arg1': 'test', 'arg2': 'test'}
-        )
+        result = self.handlebars.render('if_equals_test', {'arg1': 'test', 'arg2': 'test'})
         self.assertEqual(result, 'yes')
 
     def test_if_equals_helper_string_unequal_values(self) -> None:
@@ -235,14 +227,15 @@ class TestIfEqualsHelper(unittest.TestCase):
             'if_equals_test',
             '{{#ifEquals arg1 arg2}}yes{{else}}no{{/ifEquals}}',
         )
-        result = self.handlebars.render(
-            'if_equals_test', {'arg1': 'test', 'arg2': 'diff'}
-        )
+        result = self.handlebars.render('if_equals_test', {'arg1': 'test', 'arg2': 'diff'})
         self.assertEqual(result, 'no')
 
 
 class TestUnlessEqualsHelper(unittest.TestCase):
+    """Tests for the unlessEquals helper function."""
+
     def setUp(self) -> None:
+        """Set up the test environment."""
         self.handlebars = Handlebars()
         self.handlebars.register_extra_helpers()
 
@@ -252,9 +245,7 @@ class TestUnlessEqualsHelper(unittest.TestCase):
             'unless_equals_test',
             '{{#unlessEquals arg1 arg2}}yes{{else}}no{{/unlessEquals}}',
         )
-        result = self.handlebars.render(
-            'unless_equals_test', {'arg1': 1, 'arg2': 2}
-        )
+        result = self.handlebars.render('unless_equals_test', {'arg1': 1, 'arg2': 2})
         self.assertEqual(result, 'yes')
 
     def test_unless_equals_helper_equal_values(self) -> None:
@@ -263,9 +254,7 @@ class TestUnlessEqualsHelper(unittest.TestCase):
             'unless_equals_test',
             '{{#unlessEquals arg1 arg2}}yes{{else}}no{{/unlessEquals}}',
         )
-        result = self.handlebars.render(
-            'unless_equals_test', {'arg1': 1, 'arg2': 1}
-        )
+        result = self.handlebars.render('unless_equals_test', {'arg1': 1, 'arg2': 1})
         self.assertEqual(result, 'no')
 
     def test_unless_equals_helper_string_unequal_values(self) -> None:
@@ -274,9 +263,7 @@ class TestUnlessEqualsHelper(unittest.TestCase):
             'unless_equals_test',
             '{{#unlessEquals arg1 arg2}}yes{{else}}no{{/unlessEquals}}',
         )
-        result = self.handlebars.render(
-            'unless_equals_test', {'arg1': 'test', 'arg2': 'diff'}
-        )
+        result = self.handlebars.render('unless_equals_test', {'arg1': 'test', 'arg2': 'diff'})
         self.assertEqual(result, 'yes')
 
     def test_unless_equals_helper_string_equal_values(self) -> None:
@@ -285,7 +272,9 @@ class TestUnlessEqualsHelper(unittest.TestCase):
             'unless_equals_test',
             '{{#unlessEquals arg1 arg2}}yes{{else}}no{{/unlessEquals}}',
         )
-        result = self.handlebars.render(
-            'unless_equals_test', {'arg1': 'test', 'arg2': 'test'}
-        )
+        result = self.handlebars.render('unless_equals_test', {'arg1': 'test', 'arg2': 'test'})
         self.assertEqual(result, 'no')
+
+
+if __name__ == '__main__':
+    unittest.main()

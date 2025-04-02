@@ -14,83 +14,93 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Data models and interfaces type definitions using Pydantic v2."""
+"""Pydantic V2 models mirroring the TypeScript types for Dotprompt.
+
+This module provides Python equivalents of the core TypeScript types used in the
+Dotprompt TS reference implementation.
+
+A key difference from the TS implementation is that the PromptStore has 2
+protocols: one for async and one for sync.
+"""
 
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
-from enum import StrEnum
-from typing import Any, Generic, Protocol, TypeVar, runtime_checkable
+from enum import Enum
+from typing import (
+    Any,
+    Literal,
+    Protocol,
+    TypeVar,
+)
 
 from pydantic import BaseModel, ConfigDict, Field
 
-T = TypeVar('T')
-
 type Schema = dict[str, Any]
-type ToolArgument = str | ToolDefinition
-type JsonSchema = dict[str, Any]
-type SchemaResolver = Callable[[str], JsonSchema | None]
-type PartialResolver = Callable[[str], str | Awaitable[str | None] | None]
-type ModelConfig = dict[str, Any]
-type Part = (
-    TextPart
-    | DataPart
-    | MediaPart
-    | ToolRequestPart[Any]
-    | ToolResponsePart[Any]
-    | PendingPart
-)
+"""Type alias for a generic schema, represented as a dictionary."""
 
+type JsonSchema = Any
+"""Type alias for a JSON schema definition. 'Any' allows flexibility."""
 
-class Role(StrEnum):
-    """The role of a message in a conversation."""
+ModelConfigT = TypeVar('ModelConfigT')
+"""Generic TypeVar for model configuration within prompts."""
 
-    ASSISTANT = 'assistant'
-    MODEL = 'model'
-    SYSTEM = 'system'
-    TOOL = 'tool'
-    USER = 'user'
+InputT = TypeVar('InputT')
+"""Generic TypeVar for input types, typically used in ToolRequestPart."""
 
+OutputT = TypeVar('OutputT')
+"""Generic TypeVar for output types, typically used in ToolResponsePart."""
 
-class ToolDefinition(BaseModel):
-    """A tool definition."""
-
-    model_config = ConfigDict(
-        populate_by_name=True,
-        extra='forbid',
-    )
-
-    name: str
-    description: str | None = None
-    input_schema: dict[str, Any] = Field(
-        default_factory=dict, alias='inputSchema'
-    )
-    output_schema: dict[str, Any] | None = Field(None, alias='outputSchema')
+VariablesT = TypeVar('VariablesT')
+"""Generic TypeVar for prompt input variables within DataArgument."""
 
 
 class HasMetadata(BaseModel):
-    """Whether contains metadata.
+    """Base model for types that can include arbitrary metadata.
 
     Attributes:
-        metadata: Arbitrary metadata to be used by tooling or for informational
-            purposes.
+        metadata: Arbitrary dictionary for tooling or informational
+                  purposes.
     """
 
-    model_config = ConfigDict(
-        populate_by_name=True,
-        extra='forbid',
-    )
-
     metadata: dict[str, Any] | None = None
+    model_config = ConfigDict(extra='allow')
+
+
+class ToolDefinition(BaseModel):
+    """Defines the structure and schemas for a tool callable by a model.
+
+    Attributes:
+        name: The unique identifier for the tool.
+        description: A human-readable explanation of the tool's purpose
+                     and function.
+        input_schema: A schema definition for the expected input
+                      parameters of the tool.
+        output_schema: An optional schema definition for the structure of
+                       the tool's output.
+    """
+
+    name: str
+    description: str | None = None
+    input_schema: Schema = Field(..., alias='inputSchema')
+    output_schema: Schema | None = Field(default=None, alias='outputSchema')
+    model_config = ConfigDict(populate_by_name=True)
+
+
+type ToolArgument = str | ToolDefinition
+"""Type alias representing either a tool name or a full ToolDefinition."""
 
 
 class PromptRef(BaseModel):
-    """A reference to a prompt in a store."""
+    """A reference to identify a specific prompt.
 
-    model_config = ConfigDict(
-        populate_by_name=True,
-        extra='forbid',
-    )
+    Attributes:
+        name: The base name identifying the prompt.
+        variant: An optional identifier for a specific variation of the
+                 prompt.
+        version: An optional specific version hash or identifier of the
+                 prompt content.
+    """
 
     name: str
     variant: str | None = None
@@ -98,41 +108,69 @@ class PromptRef(BaseModel):
 
 
 class PromptData(PromptRef):
-    """A prompt in a store."""
+    """Represents the complete data of a prompt.
+
+    Attributes:
+        source: The raw source content (template string) of the prompt.
+    """
 
     source: str
 
 
-class PromptMetadata(HasMetadata, Generic[T]):
-    """Prompt metadata.
+class PromptInputConfig(BaseModel):
+    """Configuration settings related to the input variables of a prompt.
 
     Attributes:
-        name: The name of the prompt.
-        variant: The variant name for the prompt.
-        version: The version of the prompt.
-        description: A description of the prompt.
-        model: The name of the model to use for this prompt, e.g.
-            `vertexai/gemini-1.0-pro`.
-        tools: Names of tools (registered separately) to allow use of in this
-            prompt.
-        tool_defs: Definitions of tools to allow use of in this prompt.
-        config: Model configuration. Not all models support all options.
-        input: Configuration for input variables.
-        output: Defines the expected model output format.
-        raw: This field will contain the raw frontmatter as parsed with no
-            additional processing or substitutions. If your implementation
-            requires custom fields they will be available here.
-        ext: Fields that contain a period will be considered "extension fields"
-            in the frontmatter and will be gathered by namespace. For example,
-            `myext.foo: 123` would be available at `parsedPrompt.ext.myext.foo`.
-            Nested namespaces will be flattened, so `myext.foo.bar: 123` would
-            be available at `parsedPrompt.ext["myext.foo"].bar`.
+        default: A dictionary providing default values for input variables
+                 if not supplied at runtime.
+        schema_: A schema definition constraining the expected input
+                 variables. Aliased as 'schema'. Using `schema_` avoids
+                 collision with Pydantic methods.
     """
 
-    model_config = ConfigDict(
-        populate_by_name=True,
-        extra='forbid',
-    )
+    default: dict[str, Any] | None = None
+    schema_: Schema | None = Field(default=None, alias='schema')
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class PromptOutputConfig(BaseModel):
+    """Configuration settings related to the expected output of a prompt.
+
+    Attributes:
+        format: Specifies the desired output format.
+        schema_: A schema definition constraining the structure of the
+                 expected output. Aliased as 'schema'.
+    """
+
+    format: Literal['json', 'text'] | str | None = None
+    schema_: Schema | None = Field(default=None, alias='schema')
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class PromptMetadata[ModelConfigT](HasMetadata):
+    """Metadata associated with a prompt, including configuration.
+
+    This is a generic model, allowing the `config` field to hold
+    different types of model-specific configurations specified by
+    `ModelConfigT`.
+
+    Attributes:
+        name: Optional name override within the metadata itself.
+        variant: Optional variant override within the metadata.
+        version: Optional version override within the metadata.
+        description: A human-readable description of the prompt's purpose.
+        model: The identifier of the language model to be used.
+        tools: A list of names referring to tools available to the model.
+        tool_defs: A list of inline `ToolDefinition` objects available to
+                   the model.
+        config: Model-specific configuration parameters.
+        input: Configuration specific to the prompt's input variables.
+        output: Configuration specific to the prompt's expected output.
+        raw: A dictionary holding the raw, unprocessed frontmatter parsed
+             from the source.
+        ext: A nested dictionary holding extension fields from the
+             frontmatter, organized by namespace.
+    """
 
     name: str | None = None
     variant: str | None = None
@@ -140,174 +178,324 @@ class PromptMetadata(HasMetadata, Generic[T]):
     description: str | None = None
     model: str | None = None
     tools: list[str] | None = None
-    tool_defs: list[ToolDefinition] | None = Field(None, alias='toolDefs')
-    config: T | None = None
-    input: dict[str, Any] | None = None
-    output: dict[str, Any] | None = None
+    tool_defs: list[ToolDefinition] | None = Field(default=None, alias='toolDefs')
+    config: ModelConfigT | None = None
+    input: PromptInputConfig | None = None
+    output: PromptOutputConfig | None = None
     raw: dict[str, Any] | None = None
     ext: dict[str, dict[str, Any]] | None = None
+    model_config = ConfigDict(populate_by_name=True)
 
 
-class ParsedPrompt(PromptMetadata[T], Generic[T]):
-    """A parsed prompt."""
+class ParsedPrompt[ModelConfigT](PromptMetadata[ModelConfigT]):
+    """Represents a prompt after parsing its metadata and template.
+
+    Attributes:
+        template: The core template string, with frontmatter removed.
+    """
 
     template: str
 
 
-class EmptyPart(HasMetadata):
-    """An empty part in a conversation."""
+class TextPart(HasMetadata):
+    """A content part containing a plain text string.
 
-    pass
-
-
-class TextPart(EmptyPart):
-    """A text part in a conversation."""
+    Attributes:
+        text: The textual content of this part.
+    """
 
     text: str
 
 
-class DataPart(EmptyPart):
-    """A data part in a conversation."""
+class DataPart(HasMetadata):
+    """A content part containing arbitrary structured data.
+
+    Attributes:
+        data: A dictionary representing the structured data content.
+    """
 
     data: dict[str, Any]
 
 
-class MediaPart(EmptyPart):
-    """A media part in a conversation."""
+class MediaContent(BaseModel):
+    """Describes the content details within a `MediaPart`.
 
-    media: dict[str, str | None]
+    Attributes:
+        url: The URL where the media resource can be accessed.
+        content_type: The MIME type of the media.
+    """
 
-
-class ToolRequestPart(EmptyPart, Generic[T]):
-    """A tool request part in a conversation."""
-
-    tool_request: dict[str, T | None] = Field(alias='toolRequest')
-
-
-class ToolResponsePart(EmptyPart, Generic[T]):
-    """A tool response part in a conversation."""
-
-    tool_response: dict[str, T | None] = Field(alias='toolResponse')
+    url: str
+    content_type: str | None = Field(default=None, alias='contentType')
+    model_config = ConfigDict(populate_by_name=True)
 
 
-class PendingPart(EmptyPart):
-    """A pending part in a conversation."""
+class MediaPart(HasMetadata):
+    """A content part representing media, like an image, audio, or video.
 
-    metadata: dict[str, Any] = Field(default_factory=lambda: {'pending': True})
+    Attributes:
+        media: A `MediaContent` object with URL and type of the media.
+    """
+
+    media: MediaContent
+
+
+class ToolRequestContent[InputT](BaseModel):
+    """Describes the details of a tool request within a `ToolRequestPart`.
+
+    Attributes:
+        name: The name of the tool being requested.
+        input: The input parameters for the tool request.
+        ref: An optional reference identifier for tracking this request.
+    """
+
+    name: str
+    input: InputT | None = None
+    ref: str | None = None
+
+
+class ToolRequestPart[InputT](HasMetadata):
+    """A content part representing a request to invoke a tool.
+
+    Attributes:
+        tool_request: A `ToolRequestContent` object with request details.
+    """
+
+    tool_request: ToolRequestContent[InputT] = Field(..., alias='toolRequest')
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class ToolResponseContent[OutputT](BaseModel):
+    """Describes the details of a tool response within a `ToolResponsePart`.
+
+    Attributes:
+        name: The name of the tool that produced this response.
+        output: The output data returned by the tool.
+        ref: An optional reference identifier matching the request.
+    """
+
+    name: str
+    output: OutputT | None = None
+    ref: str | None = None
+
+
+class ToolResponsePart[OutputT](HasMetadata):
+    """A content part representing the result from a tool execution.
+
+    Attributes:
+        tool_response: A `ToolResponseContent` object with response details.
+    """
+
+    tool_response: ToolResponseContent[OutputT] = Field(..., alias='toolResponse')
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class PendingMetadata(BaseModel):
+    """Defines the required metadata structure for a `PendingPart`.
+
+    Attributes:
+        pending: A literal boolean True, indicating the pending state.
+    """
+
+    pending: Literal[True]
+    model_config = ConfigDict(extra='allow')
+
+    @classmethod
+    def with_purpose(cls, purpose: str) -> PendingMetadata:
+        """Create a PendingMetadata with a purpose field.
+
+        Args:
+            purpose: The purpose of the pending part
+
+        Returns:
+            A new PendingMetadata instance with the purpose set
+        """
+        instance = cls(pending=True)
+        # Set purpose as an extra field
+        object.__setattr__(instance, 'purpose', purpose)
+        return instance
+
+
+class PendingPart(HasMetadata):
+    """A content part indicating content is pending or awaited.
+
+    Attributes:
+        metadata: Metadata object confirming the pending state.
+    """
+
+    metadata: dict[str, Any] | None = None
+
+    model_config = ConfigDict(
+        extra='allow',
+        populate_by_name=True,
+    )
+
+    def __init__(self, **data: Any) -> None:
+        """Initialize a PendingPart.
+
+        Args:
+            **data: Data for the model, including a PendingMetadata object
+                   under the 'metadata' key
+        """
+        if 'metadata' in data and isinstance(data['metadata'], PendingMetadata):
+            # Convert PendingMetadata to dict for HasMetadata compatibility
+            metadata_dict = data['metadata'].model_dump()
+            data['metadata'] = metadata_dict
+        super().__init__(**data)
+
+
+type Part = TextPart | DataPart | MediaPart | ToolRequestPart[Any] | ToolResponsePart[Any] | PendingPart
+"""Type alias for any valid content part in a `Message` or `Document`."""
+
+
+# Define Role as a proper enum to work with Pydantic models
+class Role(str, Enum):
+    """Defines the role of a participant in a conversation."""
+
+    USER = 'user'
+    MODEL = 'model'
+    TOOL = 'tool'
+    SYSTEM = 'system'
+
+
+# Role constants with ROLE_ prefix for explicit imports
+ROLE_USER = Role.USER
+ROLE_MODEL = Role.MODEL
+ROLE_TOOL = Role.TOOL
+ROLE_SYSTEM = Role.SYSTEM
 
 
 class Message(HasMetadata):
-    """A message in a conversation."""
+    """Represents a single turn or message in a conversation history.
+
+    Attributes:
+        role: The role of the originator of this message.
+        content: A list of `Part` objects making up the message content.
+    """
 
     role: Role
     content: list[Part]
 
 
 class Document(HasMetadata):
-    """A document in a conversation."""
+    """Represents an external document, often used for context.
+
+    Attributes:
+        content: A list of `Part` objects making up the document content.
+    """
 
     content: list[Part]
 
 
-class DataArgument(BaseModel, Generic[T]):
-    """Provides all information necessary to render a template at runtime.
+class DataArgument[VariablesT](BaseModel):
+    """Encapsulates runtime information needed to render a prompt template.
 
     Attributes:
-        input: Input variables for the prompt template.
-        docs: Relevant documents.
-        messages: Previous messages in the history of a multi-turn conversation.
-        context: Items in the context argument are exposed as `@` variables,
-            e.g. `context: {state: {...}}` is exposed as `@state`.
+        input: Values for input variables required by the template.
+        docs: List of relevant `Document` objects.
+        messages: List of preceding `Message` objects in the history.
+        context: Arbitrary dictionary of additional context items.
     """
 
-    model_config = ConfigDict(
-        populate_by_name=True,
-        extra='forbid',
-    )
-
-    input: T | None = None
+    input: VariablesT | None = None
     docs: list[Document] | None = None
     messages: list[Message] | None = None
     context: dict[str, Any] | None = None
 
 
-@runtime_checkable
-class ToolResolver(Protocol):
-    """Resolves a provided tool name to an underlying ToolDefinition.
+type SchemaResolver = Callable[[str], JsonSchema | None | Awaitable[JsonSchema | None]]
+"""Type alias for a function resolving a schema name to a JSON schema."""
 
-    Utilized for shorthand to a tool registry provided by an external library.
-    """
+type ToolResolver = Callable[[str], ToolDefinition | None | Awaitable[ToolDefinition | None]]
+"""Type alias for a function resolving a tool name to a ToolDefinition."""
 
-    def __call__(self, tool_name: str) -> ToolDefinition | None:
-        """Resolves a provided tool name to an underlying ToolDefinition."""
-        ...
+type PartialResolver = Callable[[str], str | None | Awaitable[str | None]]
+"""Type alias for a function resolving a partial name to a template string."""
 
 
-class RenderedPrompt(PromptMetadata[T], Generic[T]):
-    """The final result of rendering a Dotprompt template.
-
-    It includes all of the prompt metadata as well as a set of `messages` to be
-    sent to the model.
+class RenderedPrompt[ModelConfigT](PromptMetadata[ModelConfigT]):
+    """The final output after a prompt template is rendered.
 
     Attributes:
-        messages: The rendered messages of the prompt.
+        messages: The list of `Message` objects resulting from rendering.
     """
 
     messages: list[Message]
 
 
-@runtime_checkable
-class PromptFunction(Protocol, Generic[T]):
-    """Takes runtime data/context and returns a rendered prompt result."""
+class PromptFunction(Protocol[ModelConfigT]):
+    """Protocol defining the interface for a callable async prompt function.
 
-    prompt: ParsedPrompt[T]
-
-    def __call__(
-        self,
-        data: DataArgument[Any],
-        options: PromptMetadata[T] | None = None,
-    ) -> RenderedPrompt[T]:
-        """Takes runtime data/context and returns a rendered prompt result."""
-        ...
-
-
-@runtime_checkable
-class PromptRefFunction(Protocol, Generic[T]):
-    """Takes runtime data / context and returns a rendered prompt result.
-
-    The difference in comparison to PromptFunction is that a prompt is loaded
-    via reference.
+    Implementations are async callables taking runtime data and optional
+    metadata overrides, returning a `RenderedPrompt`. They must also
+    expose the parsed prompt structure via the `prompt` attribute.
     """
 
-    def __call__(
+    prompt: ParsedPrompt[ModelConfigT]
+    """The parsed prompt structure associated with this function."""
+
+    async def __call__(
         self,
         data: DataArgument[Any],
-        options: PromptMetadata[T] | None = None,
-    ) -> RenderedPrompt[T]:
-        """Takes runtime data / context and returns a rendered prompt result."""
+        options: PromptMetadata[ModelConfigT] | None = None,
+    ) -> RenderedPrompt[ModelConfigT]:
+        """Asynchronously renders the prompt.
+
+        Args:
+            data: The runtime `DataArgument`.
+            options: Optional `PromptMetadata` to merge/override.
+
+        Returns:
+            A `RenderedPrompt` object.
+        """
         ...
 
-    prompt_ref: PromptRef
+
+class PromptRefFunction(Protocol[ModelConfigT]):
+    """Protocol for a callable async prompt function loaded by reference.
+
+    Implementations load the prompt based on `prompt_ref` before
+    rendering.
+    """
+
+    model_config: ConfigDict = ConfigDict(populate_by_name=True)
+    prompt_ref: PromptRef = Field(..., alias='promptRef')
+
+    async def __call__(
+        self,
+        data: DataArgument[Any],
+        options: PromptMetadata[ModelConfigT] | None = None,
+    ) -> RenderedPrompt[ModelConfigT]:
+        """Asynchronously loads and renders the referenced prompt.
+
+        Args:
+            data: The runtime `DataArgument`.
+            options: Optional `PromptMetadata` to merge/override.
+
+        Returns:
+            A `RenderedPrompt` containing the rendered prompt.
+        """
+        ...
 
 
 class PaginatedResponse(BaseModel):
-    """A paginated response."""
+    """Base model for responses supporting pagination via a cursor.
 
-    model_config = ConfigDict(
-        populate_by_name=True,
-        extra='forbid',
-    )
+    Attributes:
+        cursor: Optional token for requesting the next page of results.
+    """
 
     cursor: str | None = None
 
 
 class PartialRef(BaseModel):
-    """A partial reference."""
+    """A reference to identify a specific partial template.
 
-    model_config = ConfigDict(
-        populate_by_name=True,
-        extra='forbid',
-    )
+    Attributes:
+        name: The base name identifying the partial.
+        variant: Optional identifier for a specific variation.
+        version: Optional specific version hash or identifier.
+    """
 
     name: str
     variant: str | None = None
@@ -315,64 +503,283 @@ class PartialRef(BaseModel):
 
 
 class PartialData(PartialRef):
-    """A partial in a store."""
+    """Represents the complete data of a partial template.
+
+    Attributes:
+        source: The raw source content (template string) of the partial.
+    """
 
     source: str
 
 
-class PromptBundle(BaseModel):
-    """A bundle of prompts and partials."""
+class ListPromptsOptions(BaseModel):
+    """Options to control the listing of prompts (pagination).
 
-    model_config = ConfigDict(
-        populate_by_name=True,
-        extra='forbid',
-    )
+    Attributes:
+        cursor: The pagination cursor from a previous response.
+        limit: The maximum number of references to return per page.
+    """
+
+    cursor: str | None = None
+    limit: int | None = None
+
+
+class ListPartialsOptions(BaseModel):
+    """Options to control the listing of partials (pagination).
+
+    Attributes:
+        cursor: The pagination cursor from a previous response.
+        limit: The maximum number of references to return per page.
+    """
+
+    cursor: str | None = None
+    limit: int | None = None
+
+
+class LoadPromptOptions(BaseModel):
+    """Options for specifying which prompt version/variant to load.
+
+    Attributes:
+        variant: The specific variant identifier to retrieve.
+        version: A specific version hash to load for validation.
+    """
+
+    variant: str | None = None
+    version: str | None = None
+
+
+class LoadPartialOptions(BaseModel):
+    """Options for specifying which partial version/variant to load.
+
+    Attributes:
+        variant: The specific variant identifier to retrieve.
+        version: A specific version hash to load for validation.
+    """
+
+    variant: str | None = None
+    version: str | None = None
+
+
+type LoadOptions = LoadPromptOptions | LoadPartialOptions
+"""Type alias for options when loading a prompt or a partial."""
+
+
+class DeletePromptOrPartialOptions(BaseModel):
+    """Options for specifying which variant to delete.
+
+    Attributes:
+        variant: The specific variant identifier to delete. Targets
+                 default if omitted.
+    """
+
+    variant: str | None = None
+
+
+class PaginatedPrompts(PaginatedResponse):
+    """Represents a single page of results when listing prompts.
+
+    Attributes:
+        prompts: A list of `PromptRef` objects in this page.
+    """
+
+    prompts: list[PromptRef]
+
+
+class PaginatedPartials(PaginatedResponse):
+    """Represents a single page of results when listing partials.
+
+    Attributes:
+        partials: A list of `PartialRef` objects in this page.
+    """
+
+    partials: list[PartialRef]
+
+
+class PromptStore(Protocol):
+    """Protocol defining the standard async interface for reading prompts.
+
+    Abstract base for different asynchronous storage implementations.
+    """
+
+    async def list(self, options: ListPromptsOptions | None = None) -> PaginatedPrompts:
+        """Asynchronously retrieves a paginated list of prompts.
+
+        Args:
+            options: Optional parameters for pagination.
+
+        Returns:
+            A `PaginatedPrompts` object.
+        """
+        ...
+
+    async def list_partials(self, options: ListPartialsOptions | None = None) -> PaginatedPartials:
+        """Asynchronously retrieves a paginated list of partials.
+
+        Args:
+            options: Optional parameters for pagination.
+
+        Returns:
+            A `PaginatedPartials` object.
+        """
+        ...
+
+    async def load(self, name: str, options: LoadPromptOptions | None = None) -> PromptData:
+        """Asynchronously loads the data for a specific prompt.
+
+        Args:
+            name: The name of the prompt to load.
+            options: Optional parameters for variant or version.
+
+        Returns:
+            A `PromptData` object.
+
+        Raises:
+            Exception: If the prompt is not found or cannot be loaded.
+        """
+        ...
+
+    async def load_partial(self, name: str, options: LoadPartialOptions | None = None) -> PartialData:
+        """Asynchronously loads the data for a specific partial.
+
+        Args:
+            name: The name of the partial to load.
+            options: Optional parameters for variant or version.
+
+        Returns:
+            A `PartialData` object.
+
+        Raises:
+            Exception: If the partial is not found or cannot be loaded.
+        """
+        ...
+
+
+class PromptStoreWritable(PromptStore, Protocol):
+    """Protocol extending `PromptStore` with async write methods.
+
+    Implementations supporting asynchronous writes should conform.
+    """
+
+    async def save(self, prompt: PromptData) -> None:
+        """Asynchronously saves a prompt to the store.
+
+        Args:
+            prompt: The `PromptData` object to save.
+
+        Returns:
+            None. Should raise errors on failure.
+        """
+        ...
+
+    async def delete(self, name: str, options: DeletePromptOrPartialOptions | None = None) -> None:
+        """Asynchronously deletes a prompt from the store.
+
+        Args:
+            name: The name of the prompt to delete.
+            options: Optional parameters to specify a `variant`.
+
+        Returns:
+            None. Should raise errors on failure.
+        """
+        ...
+
+
+class PromptStoreSync(Protocol):
+    """Protocol defining the standard sync interface for reading prompts.
+
+    Abstract base for different synchronous storage implementations.
+    """
+
+    def list(self, options: ListPromptsOptions | None = None) -> PaginatedPrompts:
+        """Synchronously retrieves a paginated list of prompts.
+
+        Args:
+            options: Optional parameters for pagination.
+
+        Returns:
+            A `PaginatedPrompts` object.
+        """
+        ...
+
+    def list_partials(self, options: ListPartialsOptions | None = None) -> PaginatedPartials:
+        """Synchronously retrieves a paginated list of partials.
+
+        Args:
+            options: Optional parameters for pagination.
+
+        Returns:
+            A `PaginatedPartials` object.
+        """
+        ...
+
+    def load(self, name: str, options: LoadPromptOptions | None = None) -> PromptData:
+        """Synchronously loads the data for a specific prompt.
+
+        Args:
+            name: The name of the prompt to load.
+            options: Optional parameters for variant or version.
+
+        Returns:
+            A `PromptData` object.
+
+        Raises:
+            Exception: If the prompt is not found or cannot be loaded.
+        """
+        ...
+
+    def load_partial(self, name: str, options: LoadPartialOptions | None = None) -> PartialData:
+        """Synchronously loads the data for a specific partial.
+
+        Args:
+            name: The name of the partial to load.
+            options: Optional parameters for variant or version.
+
+        Returns:
+            A `PartialData` object.
+
+        Raises:
+            Exception: If the partial is not found or cannot be loaded.
+        """
+        ...
+
+
+class PromptStoreWritableSync(PromptStoreSync, Protocol):
+    """Protocol extending `PromptStoreSync` with sync write methods.
+
+    Implementations supporting synchronous writes should conform.
+    """
+
+    def save(self, prompt: PromptData) -> None:
+        """Synchronously saves a prompt to the store.
+
+        Args:
+            prompt: The `PromptData` object to save.
+
+        Returns:
+            None. Should raise errors on failure.
+        """
+        ...
+
+    def delete(self, name: str, options: DeletePromptOrPartialOptions | None = None) -> None:
+        """Synchronously deletes a prompt from the store.
+
+        Args:
+            name: The name of the prompt to delete.
+            options: Optional parameters to specify a `variant`.
+
+        Returns:
+            None. Should raise errors on failure.
+        """
+        ...
+
+
+class PromptBundle(BaseModel):
+    """A container for packaging multiple prompts and partials.
+
+    Attributes:
+        partials: A list of `PartialData` objects.
+        prompts: A list of `PromptData` objects.
+    """
 
     partials: list[PartialData]
     prompts: list[PromptData]
-
-
-@runtime_checkable
-class PromptStore(Protocol):
-    """PromptStore is a common interface that provides for."""
-
-    def list(self, options: dict[str, Any] | None = None) -> dict[str, Any]:
-        """Return a list of all prompts in the store (optionally paginated).
-
-        Be aware that some store providers may return limited metadata.
-        """
-        ...
-
-    def list_partials(
-        self, options: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
-        """Return a list of partial names available in this store."""
-        ...
-
-    def load(
-        self, name: str, options: dict[str, Any] | None = None
-    ) -> PromptData:
-        """Retrieve a prompt from the store."""
-        ...
-
-    def load_partial(
-        self, name: str, options: dict[str, Any] | None = None
-    ) -> PromptData:
-        """Retrieve a partial from the store."""
-        ...
-
-
-@runtime_checkable
-class PromptStoreWritable(PromptStore, Protocol):
-    """PromptStore that also has built-in methods for writing prompts."""
-
-    def save(self, prompt: PromptData) -> None:
-        """Save a prompt in the store.
-
-        May be destructive for prompt stores without versioning.
-        """
-        ...
-
-    def delete(self, name: str, options: dict[str, Any] | None = None) -> None:
-        """Delete a prompt from the store."""
-        ...

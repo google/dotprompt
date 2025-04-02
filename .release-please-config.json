@@ -1,0 +1,71 @@
+{
+  "always-update": true,
+  "bootstrap-sha": "main",
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": true,
+  "draft": false,
+  "pull-request-title-pattern": "chore${scope}: release ${component}-${version}",
+  "include-component-in-tag": true,
+  "prerelease": false,
+  "separate-pull-requests": true,
+  "skip-github-release": false,
+  "include-v-in-tag": false,
+  "plugins": ["node-workspace"],
+  "packages": {
+    "js": {
+      "release-type": "node",
+      "package-name": "dotprompt",
+      "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "draft": false,
+      "prerelease": false,
+      "path": "js/**"
+    },
+    "python/dotpromptz": {
+      "release-type": "python",
+      "package-name": "dotpromptz",
+      "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "draft": false,
+      "prerelease": false,
+      "path": "python/dotpromptz/**",
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "pyproject.toml",
+          "jsonpath": "$.project.version"
+        }
+      ]
+    },
+    "python/handlebarrz": {
+      "release-type": "python",
+      "package-name": "handlebarrz",
+      "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "draft": false,
+      "prerelease": false,
+      "path": "python/handlebarrz/**",
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "pyproject.toml",
+          "jsonpath": "$.project.version"
+        }
+      ]
+    },
+    "go": {
+      "release-type": "go",
+      "package-name": "dotprompt-go",
+      "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "draft": false,
+      "prerelease": false,
+      "path": "go/**"
+    }
+  },
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+}

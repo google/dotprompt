@@ -73,7 +73,6 @@ export const FRONTMATTER_AND_BODY_REGEX =
  *
  * Examples of matching patterns:
  * - <<<dotprompt:role:user>>>
- * - <<<dotprompt:role:assistant>>>
  * - <<<dotprompt:role:system>>>
  * - <<<dotprompt:history>>>
  *

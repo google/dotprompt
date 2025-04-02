@@ -224,11 +224,10 @@ type Role string
 
 // Predefined roles.
 const (
-	RoleAssistant Role = "assistant"
-	RoleModel     Role = "model"
-	RoleSystem    Role = "system"
-	RoleTool      Role = "tool"
-	RoleUser      Role = "user"
+	RoleModel  Role = "model"
+	RoleSystem Role = "system"
+	RoleTool   Role = "tool"
+	RoleUser   Role = "user"
 )
 
 // Message represents a message in a conversation.

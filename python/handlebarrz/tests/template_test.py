@@ -46,9 +46,7 @@ class TestTemplate(unittest.TestCase):
     def test_template_with_helpers(self) -> None:
         """Test that a template with built-in helpers renders correctly."""
         template = Template()
-        template.register_template(
-            'conditional', '{{#if condition}}Yes{{else}}No{{/if}}'
-        )
+        template.register_template('conditional', '{{#if condition}}Yes{{else}}No{{/if}}')
 
         result_true = template.render('conditional', {'condition': True})
         result_false = template.render('conditional', {'condition': False})
@@ -59,13 +57,9 @@ class TestTemplate(unittest.TestCase):
     def test_template_with_nested_context(self) -> None:
         """Test that a template with nested context renders correctly."""
         template = Template()
-        template.register_template(
-            'nested', '{{person.name}} is {{person.age}} years old'
-        )
+        template.register_template('nested', '{{person.name}} is {{person.age}} years old')
 
-        result = template.render(
-            'nested', {'person': {'name': 'Alice', 'age': 30}}
-        )
+        result = template.render('nested', {'person': {'name': 'Alice', 'age': 30}})
 
         self.assertEqual(result, 'Alice is 30 years old')
 
@@ -77,9 +71,7 @@ class TestTemplate(unittest.TestCase):
             '{{#each items}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}',
         )
 
-        result = template.render(
-            'list', {'items': ['apple', 'banana', 'cherry']}
-        )
+        result = template.render('list', {'items': ['apple', 'banana', 'cherry']})
 
         self.assertEqual(result, 'apple, banana, cherry')
 
@@ -87,9 +79,7 @@ class TestTemplate(unittest.TestCase):
         """Test that partials work correctly."""
         template = Template()
         template.register_partial('person_details', '{{name}} ({{age}})')
-        template.register_template(
-            'partial_example', 'Person: {{> person_details}}'
-        )
+        template.register_template('partial_example', 'Person: {{> person_details}}')
 
         result = template.render('partial_example', {'name': 'Bob', 'age': 25})
 
@@ -158,9 +148,7 @@ class TestTemplate(unittest.TestCase):
 
             return helper
 
-        def format_list(
-            params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]
-        ) -> str:
+        def format_list(params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]) -> str:
             """Format a list with custom separator."""
             # Access the items from the context instead of params.
             items: list[Any] = ctx.get('items', [])
@@ -174,13 +162,9 @@ class TestTemplate(unittest.TestCase):
 
         template = Template()
         template.register_helper('formatList', create_helper(format_list))
-        template.register_template(
-            'custom_helper', "Items: {{formatList separator=' | '}}"
-        )
+        template.register_template('custom_helper', "Items: {{formatList separator=' | '}}")
 
-        result = template.render(
-            'custom_helper', {'items': ['one', 'two', 'three']}
-        )
+        result = template.render('custom_helper', {'items': ['one', 'two', 'three']})
 
         self.assertEqual(result, 'Items: one | two | three')
 
@@ -246,9 +230,7 @@ class TestHandlebarsAlias(unittest.TestCase):
         """Test that all features work with the Handlebars alias."""
         handlebars = Handlebars()
         handlebars.register_partial('name_partial', '{{name}}')
-        handlebars.register_template(
-            'with_partial', 'Hello {{> name_partial}}!'
-        )
+        handlebars.register_template('with_partial', 'Hello {{> name_partial}}!')
         result = handlebars.render('with_partial', {'name': 'Universe'})
         self.assertEqual(result, 'Hello Universe!')
 
@@ -256,9 +238,7 @@ class TestHandlebarsAlias(unittest.TestCase):
         """Test that custom helpers work with the Handlebars alias."""
         handlebars = Handlebars()
 
-        def upper_helper(
-            params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]
-        ) -> str:
+        def upper_helper(params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]) -> str:
             return str(params[0]).upper()
 
         handlebars.register_helper('upper', upper_helper)

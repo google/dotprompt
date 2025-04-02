@@ -66,7 +66,6 @@ var (
 	//
 	// Examples of matching patterns:
 	// - <<<dotprompt:role:user>>>
-	// - <<<dotprompt:role:assistant>>>
 	// - <<<dotprompt:role:system>>>
 	// - <<<dotprompt:history>>>
 	RoleAndHistoryMarkerRegex = regexp.MustCompile(
@@ -594,11 +593,12 @@ func parseMediaPart(piece string) (*MediaPart, error) {
 	n := len(fields)
 
 	var url, contentType string
-	if n == 3 {
+	switch n {
+	case 3:
 		url, contentType = fields[1], fields[2]
-	} else if n == 2 {
+	case 2:
 		url = fields[1]
-	} else {
+	default:
 		return nil, fmt.Errorf(
 			"invalid media piece: %s; expected 2 or 3 fields, found %d",
 			piece, n)

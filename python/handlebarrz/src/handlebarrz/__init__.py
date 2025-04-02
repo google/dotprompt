@@ -136,9 +136,24 @@ class Template:
             auto-reloading.
     """
 
-    def __init__(self) -> None:
-        """Create a new Handlebars template engine."""
+    def __init__(
+        self,
+        escape_fn: EscapeFunction = EscapeFunction.HTML_ESCAPE,
+        strict_mode: bool = False,
+        dev_mode: bool = False,
+    ) -> None:
+        """Create a new Handlebars template engine.
+
+        Args:
+            escape_fn: The escape function to use for HTML escaping.
+            strict_mode: Whether to raise errors for missing fields in templates.
+            dev_mode: Whether to enable development mode features for
+                auto-reloading.
+        """
         self._template: HandlebarrzTemplate = HandlebarrzTemplate()
+        self._template.set_escape_fn(escape_fn)
+        self._template.set_strict_mode(strict_mode)
+        self._template.set_dev_mode(dev_mode)
 
     @property
     def strict_mode(self) -> bool:
@@ -291,9 +306,7 @@ class Template:
             })
             raise
 
-    def register_templates_directory(
-        self, dir_path: str | Path, extension: str = '.hbs'
-    ) -> None:
+    def register_templates_directory(self, dir_path: str | Path, extension: str = '.hbs') -> None:
         """Register all templates in a directory.
 
         Recursively finds all files with the specified extension in the
@@ -426,9 +439,7 @@ class Template:
             })
             raise
 
-    def render_template(
-        self, template_string: str, data: dict[str, Any]
-    ) -> str:
+    def render_template(self, template_string: str, data: dict[str, Any]) -> str:
         """Render a template string directly without registering it.
 
         Parses and renders the template string in one step. This is useful for
@@ -447,9 +458,7 @@ class Template:
                 rendering error.
         """
         try:
-            result = self._template.render_template(
-                template_string, json.dumps(data)
-            )
+            result = self._template.render_template(template_string, json.dumps(data))
             logger.debug({'event': 'template_string_rendered'})
             return result
         except ValueError as e:

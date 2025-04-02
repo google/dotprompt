@@ -36,9 +36,7 @@ class EscapeTest(unittest.TestCase):
         result = template.render('escape-test', data)
 
         # HTML should be escaped by default
-        self.assertIn(
-            '&lt;script&gt;alert(&#x27;XSS&#x27;);&lt;/script&gt;', result
-        )
+        self.assertIn('&lt;script&gt;alert(&#x27;XSS&#x27;);&lt;/script&gt;', result)
         self.assertNotIn('<script>', result)
 
     def test_triple_stache_no_escape(self) -> None:

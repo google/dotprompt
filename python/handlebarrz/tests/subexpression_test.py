@@ -34,9 +34,7 @@ class SubexpressionTest(unittest.TestCase):
             if len(params) < 2:
                 return 'false'
             try:
-                return (
-                    'true' if float(params[0]) > float(params[1]) else 'false'
-                )
+                return 'true' if float(params[0]) > float(params[1]) else 'false'
             except (ValueError, TypeError):
                 return 'false'
 
@@ -62,15 +60,9 @@ class SubexpressionTest(unittest.TestCase):
         template.register_helper('not', not_helper)
 
         # Register test templates
-        template.register_template(
-            'gt-test', '{{#if (gt a b)}}Success{{else}}Failed{{/if}}'
-        )
-        template.register_template(
-            'not-test', '{{#if (not (gt a c))}}Success{{else}}Failed{{/if}}'
-        )
-        template.register_template(
-            'literal-test', '{{#if (not true)}}Success{{else}}Failed{{/if}}'
-        )
+        template.register_template('gt-test', '{{#if (gt a b)}}Success{{else}}Failed{{/if}}')
+        template.register_template('not-test', '{{#if (not (gt a c))}}Success{{else}}Failed{{/if}}')
+        template.register_template('literal-test', '{{#if (not true)}}Success{{else}}Failed{{/if}}')
 
         # Data to render
         data = {'a': 1, 'b': 0, 'c': 2}
@@ -100,16 +92,8 @@ class SubexpressionTest(unittest.TestCase):
             if len(params) >= 2:
                 try:
                     # Convert numeric inputs to floats for calculation
-                    num1 = (
-                        float(params[0])
-                        if isinstance(params[0], str)
-                        else params[0]
-                    )
-                    num2 = (
-                        float(params[1])
-                        if isinstance(params[1], str)
-                        else params[1]
-                    )
+                    num1 = float(params[0]) if isinstance(params[0], str) else params[0]
+                    num2 = float(params[1]) if isinstance(params[1], str) else params[1]
                     # Return result as string
                     return str(num1 + num2)
                 except (TypeError, ValueError):
@@ -124,16 +108,8 @@ class SubexpressionTest(unittest.TestCase):
             if len(params) >= 2:
                 try:
                     # Convert numeric inputs to floats for calculation
-                    num1 = (
-                        float(params[0])
-                        if isinstance(params[0], str)
-                        else params[0]
-                    )
-                    num2 = (
-                        float(params[1])
-                        if isinstance(params[1], str)
-                        else params[1]
-                    )
+                    num1 = float(params[0]) if isinstance(params[0], str) else params[0]
+                    num2 = float(params[1]) if isinstance(params[1], str) else params[1]
                     # Return result as string
                     return str(num1 * num2)
                 except (TypeError, ValueError):
@@ -148,16 +124,8 @@ class SubexpressionTest(unittest.TestCase):
             if len(params) >= 2:
                 try:
                     # Convert numeric inputs to floats for calculation
-                    num1 = (
-                        float(params[0])
-                        if isinstance(params[0], str)
-                        else params[0]
-                    )
-                    num2 = (
-                        float(params[1])
-                        if isinstance(params[1], str)
-                        else params[1]
-                    )
+                    num1 = float(params[0]) if isinstance(params[0], str) else params[0]
+                    num2 = float(params[1]) if isinstance(params[1], str) else params[1]
                     if num2 != 0:
                         # Return result as string
                         return str(num1 / num2)
@@ -215,10 +183,7 @@ class SubexpressionTest(unittest.TestCase):
         template.register_helper('select', select_helper)
 
         # Register a template with subexpression in hash args
-        template_str = (
-            '{{select condition=(eq value 10)'
-            ' if_true="Equal" if_false="Not Equal"}}'
-        )
+        template_str = '{{select condition=(eq value 10) if_true="Equal" if_false="Not Equal"}}'
         template.register_template('hash-subexpr', template_str)
 
         # Test with equal value
@@ -287,9 +252,7 @@ class SubexpressionTest(unittest.TestCase):
 
         # Register templates to test helper call count
         template.register_template('single-call', '{{count}}')
-        template.register_template(
-            'if-with-subexpr', '{{#if (count)}}Called{{/if}}'
-        )
+        template.register_template('if-with-subexpr', '{{#if (count)}}Called{{/if}}')
 
         # Reset counter
         call_count = 0

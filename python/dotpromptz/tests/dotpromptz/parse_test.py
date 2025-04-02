@@ -43,10 +43,12 @@ from dotpromptz.parse import (
     transform_messages_to_history,
 )
 from dotpromptz.typing import (
+    MediaContent,
     MediaPart,
     Message,
     ParsedPrompt,
     Part,
+    PendingMetadata,
     PendingPart,
     Role,
     TextPart,
@@ -253,9 +255,7 @@ class TestSplitByRoleAndHistoryMarkers(unittest.TestCase):
 
     def test_split_by_role_and_history_markers_multiple_markers(self) -> None:
         """Test string with multiple markers interleaved with text."""
-        input_str = (
-            'Start <<<dotprompt:role:user>>> middle <<<dotprompt:history>>> end'
-        )
+        input_str = 'Start <<<dotprompt:role:user>>> middle <<<dotprompt:history>>> end'
         output = split_by_role_and_history_markers(input_str)
         assert output == [
             'Start ',
@@ -288,9 +288,7 @@ class TestConvertNamespacedEntryToNestedObject(unittest.TestCase):
                 'bar': 'hello',
             },
         }
-        result = convert_namespaced_entry_to_nested_object(
-            'foo.baz', 'world', existing
-        )
+        result = convert_namespaced_entry_to_nested_object('foo.baz', 'world', existing)
         self.assertEqual(
             result,
             {
@@ -304,9 +302,7 @@ class TestConvertNamespacedEntryToNestedObject(unittest.TestCase):
     def test_handling_multiple_namespaces(self) -> None:
         """Test handling multiple namespaces."""
         result = convert_namespaced_entry_to_nested_object('foo.bar', 'hello')
-        final_result = convert_namespaced_entry_to_nested_object(
-            'baz.qux', 'world', result
-        )
+        final_result = convert_namespaced_entry_to_nested_object('baz.qux', 'world', result)
         self.assertEqual(
             final_result,
             {
@@ -409,23 +405,15 @@ class TestMessageSourcesToMessages(unittest.TestCase):
         assert message_sources_to_messages(message_sources) == expected
 
     def test_should_convert_a_single_message_source(self) -> None:
-        message_sources: list[MessageSource] = [
-            MessageSource(role=Role.USER, source='Hello')
-        ]
-        expected: list[Message] = [
-            Message(role=Role.USER, content=[TextPart(text='Hello')])
-        ]
+        message_sources: list[MessageSource] = [MessageSource(role=Role.USER, source='Hello')]
+        expected: list[Message] = [Message(role=Role.USER, content=[TextPart(text='Hello')])]
         assert message_sources_to_messages(message_sources) == expected
 
     def test_should_handle_message_source_with_content(self) -> None:
         message_sources: list[MessageSource] = [
-            MessageSource(
-                role=Role.USER, content=[TextPart(text='Existing content')]
-            )
+            MessageSource(role=Role.USER, content=[TextPart(text='Existing content')])
         ]
-        expected: list[Message] = [
-            Message(role=Role.USER, content=[TextPart(text='Existing content')])
-        ]
+        expected: list[Message] = [Message(role=Role.USER, content=[TextPart(text='Existing content')])]
         assert message_sources_to_messages(message_sources) == expected
 
     def test_should_handle_message_source_with_metadata(self) -> None:
@@ -490,9 +478,7 @@ class TestMessagesHaveHistory(unittest.TestCase):
     def test_should_return_false_if_messages_do_not_have_history_metadata(
         self,
     ) -> None:
-        messages: list[Message] = [
-            Message(role=Role.USER, content=[TextPart(text='Hello')])
-        ]
+        messages: list[Message] = [Message(role=Role.USER, content=[TextPart(text='Hello')])]
 
         result = messages_have_history(messages)
 
@@ -503,9 +489,7 @@ class TestInsertHistory(unittest.TestCase):
     def test_should_return_original_messages_if_history_is_undefined(
         self,
     ) -> None:
-        messages: list[Message] = [
-            Message(role=Role.USER, content=[TextPart(text='Hello')])
-        ]
+        messages: list[Message] = [Message(role=Role.USER, content=[TextPart(text='Hello')])]
 
         result = insert_history(messages, [])
 
@@ -537,9 +521,7 @@ class TestInsertHistory(unittest.TestCase):
     def test_should_insert_history_before_the_last_user_message(self) -> None:
         messages: list[Message] = [
             Message(role=Role.SYSTEM, content=[TextPart(text='System prompt')]),
-            Message(
-                role=Role.USER, content=[TextPart(text='Current question')]
-            ),
+            Message(role=Role.USER, content=[TextPart(text='Current question')]),
         ]
 
         history: list[Message] = [
@@ -560,9 +542,7 @@ class TestInsertHistory(unittest.TestCase):
                 content=[TextPart(text='Previous')],
                 metadata={'purpose': 'history'},
             ),
-            Message(
-                role=Role.USER, content=[TextPart(text='Current question')]
-            ),
+            Message(role=Role.USER, content=[TextPart(text='Current question')]),
         ]
 
     def test_should_append_history_at_the_end_if_no_user_message_is_last(
@@ -604,19 +584,18 @@ class TestInsertHistory(unittest.TestCase):
         (
             '<<<dotprompt:media:url>>> https://example.com/image.jpg',
             MediaPart(
-                media=dict(
+                media=MediaContent(
                     url='https://example.com/image.jpg',
                 )
             ),
         ),
         (
-            '<<<dotprompt:media:url>>> https://example.com/image.jpg'
-            + ' image/jpeg',
+            '<<<dotprompt:media:url>>> https://example.com/image.jpg' + ' image/jpeg',
             MediaPart(
-                media={
-                    'url': 'https://example.com/image.jpg',
-                    'contentType': 'image/jpeg',
-                },
+                media=MediaContent(
+                    url='https://example.com/image.jpg',
+                    contentType='image/jpeg',
+                ),
             ),
         ),
         (
@@ -625,19 +604,13 @@ class TestInsertHistory(unittest.TestCase):
         ),
         (
             '<<<dotprompt:section>>> code',
-            PendingPart(metadata=dict(purpose='code', pending=True)),
+            PendingPart(
+                metadata=PendingMetadata.with_purpose('code'),
+            ),
         ),
         (
-            (
-                'Text before <<<dotprompt:media:url>>>'
-                + ' https://example.com/image.jpg Text after'
-            ),
-            TextPart(
-                text=(
-                    'Text before <<<dotprompt:media:url>>> '
-                    + 'https://example.com/image.jpg Text after'
-                )
-            ),
+            ('Text before <<<dotprompt:media:url>>>' + ' https://example.com/image.jpg Text after'),
+            TextPart(text=('Text before <<<dotprompt:media:url>>> ' + 'https://example.com/image.jpg Text after')),
         ),
     ],
 )
@@ -651,7 +624,7 @@ def test_parse_media_piece() -> None:
     """Test parsing media pieces."""
     piece = '<<<dotprompt:media:url>>> https://example.com/image.jpg'
     result = parse_media_part(piece)
-    assert result == MediaPart(media={'url': 'https://example.com/image.jpg'})
+    assert result == MediaPart(media=MediaContent(url='https://example.com/image.jpg'))
 
 
 def test_parse_media_piece_invalid() -> None:
@@ -664,8 +637,9 @@ def test_parse_media_piece_invalid() -> None:
 def test_parse_section_piece() -> None:
     """Test parsing section pieces."""
     piece = '<<<dotprompt:section>>> code'
+    pending_metadata = PendingMetadata.with_purpose('code')
     result = parse_section_part(piece)
-    assert result == PendingPart(metadata={'purpose': 'code', 'pending': True})
+    assert result == PendingPart(metadata=pending_metadata)
 
 
 def test_parse_section_piece_invalid() -> None:
@@ -771,9 +745,7 @@ Template content"""
                 continue
             frontmatter_parts.append(f'{keyword}: value-{keyword}')
 
-        source = (
-            '---\n' + '\n'.join(frontmatter_parts) + '\n---\nTemplate content'
-        )
+        source = '---\n' + '\n'.join(frontmatter_parts) + '\n---\nTemplate content'
 
         result: ParsedPrompt[dict[str, str]] = parse_document(source)
 

@@ -55,68 +55,102 @@ type Dotprompt struct {
 	partialResolver PartialResolver
 	knownPartials   map[string]bool
 	Template        *raymond.Template
+	Helpers         map[string]any
+	Partials        map[string]string
 }
 
 // NewDotprompt creates a new Dotprompt instance with the given options.
 func NewDotprompt(options *DotpromptOptions) *Dotprompt {
+	// Always initialize maps
 	dp := &Dotprompt{
-		knownHelpers: make(map[string]bool),
+		knownHelpers:  make(map[string]bool),
+		knownPartials: make(map[string]bool),
 	}
+
 	if options != nil {
-		dp = &Dotprompt{
-			knownHelpers:    make(map[string]bool),
-			modelConfigs:    options.ModelConfigs,
-			defaultModel:    options.DefaultModel,
-			tools:           options.Tools,
-			toolResolver:    options.ToolResolver,
-			schemas:         options.Schemas,
-			schemaResolver:  options.SchemaResolver,
-			partialResolver: options.PartialResolver,
-			knownPartials:   make(map[string]bool),
+		dp.modelConfigs = options.ModelConfigs
+		dp.defaultModel = options.DefaultModel
+		dp.tools = options.Tools
+		dp.toolResolver = options.ToolResolver
+		dp.schemas = options.Schemas
+		dp.schemaResolver = options.SchemaResolver
+		dp.partialResolver = options.PartialResolver
+		dp.Helpers = options.Helpers
+		dp.Partials = options.Partials
+
+		if dp.tools == nil {
+			dp.tools = make(map[string]ToolDefinition)
 		}
+		if dp.schemas == nil {
+			dp.schemas = make(map[string]*jsonschema.Schema)
+		}
+		if dp.Helpers == nil {
+			dp.Helpers = make(map[string]any)
+		}
+		if dp.Partials == nil {
+			dp.Partials = make(map[string]string)
+		}
+		if dp.modelConfigs == nil {
+			dp.modelConfigs = make(map[string]any)
+		}
+	} else {
+		// Ensure maps are initialized even if options are nil.
+		dp.tools = make(map[string]ToolDefinition)
+		dp.schemas = make(map[string]*jsonschema.Schema)
+		dp.Helpers = make(map[string]any)
+		dp.Partials = make(map[string]string)
+		dp.modelConfigs = make(map[string]any)
 	}
 
 	return dp
 }
 
 // DefineHelper registers a helper function.
-func (dp *Dotprompt) DefineHelper(name string, helper any, tpl *raymond.Template) {
+func (dp *Dotprompt) DefineHelper(name string, helper any, tpl *raymond.Template) error {
 	if dp.knownHelpers[name] {
-		return
+		return fmt.Errorf("the helper is already registered: %s", name)
 	}
 	tpl.RegisterHelper(name, helper)
 	dp.knownHelpers[name] = true
+	return nil
 }
 
 // DefinePartial registers a partial template.
-func (dp *Dotprompt) DefinePartial(name string, source string, tpl *raymond.Template) {
+func (dp *Dotprompt) DefinePartial(name string, source string, tpl *raymond.Template) error {
 	if dp.knownPartials[name] {
-		return
+		return fmt.Errorf("the partial is already registered: %s", name)
 	}
 	tpl.RegisterPartial(name, source)
 	dp.knownPartials[name] = true
+	return nil
 }
 
 // TODO: Add register helpers
-func (dp *Dotprompt) RegisterHelpers(options *DotpromptOptions, tpl *raymond.Template) {
-	if options != nil && options.Helpers != nil {
-		for key, helper := range options.Helpers {
-			dp.DefineHelper(key, helper, tpl)
+func (dp *Dotprompt) RegisterHelpers(tpl *raymond.Template) error {
+	if dp.Helpers != nil {
+		for key, helper := range dp.Helpers {
+			if err := dp.DefineHelper(key, helper, tpl); err != nil {
+				return err
+			}
 		}
 	}
 	for name, helper := range templateHelpers {
-		dp.DefineHelper(name, helper, tpl)
-	}
-}
-
-func (dp *Dotprompt) RegisterPartials(options *DotpromptOptions, tpl *raymond.Template, template string) error {
-	if options.Partials != nil {
-		for key, partial := range options.Partials {
-			dp.DefinePartial(key, partial, tpl)
+		if err := dp.DefineHelper(name, helper, tpl); err != nil {
+			return err
 		}
 	}
-	err := dp.resolvePartials(template, tpl)
-	if err != nil {
+	return nil
+}
+
+func (dp *Dotprompt) RegisterPartials(tpl *raymond.Template, template string) error {
+	if dp.Partials != nil {
+		for key, partial := range dp.Partials {
+			if err := dp.DefinePartial(key, partial, tpl); err != nil {
+				return err
+			}
+		}
+	}
+	if err := dp.resolvePartials(template, tpl); err != nil {
 		return err
 	}
 	return nil
@@ -134,8 +168,8 @@ func (dp *Dotprompt) Parse(source string) (ParsedPrompt, error) {
 }
 
 // Render renders the source string with the given data and options.
-func (dp *Dotprompt) Render(source string, data *DataArgument, options *PromptMetadata, dotpromptOptions *DotpromptOptions) (RenderedPrompt, error) {
-	renderer, err := dp.Compile(source, options, dotpromptOptions)
+func (dp *Dotprompt) Render(source string, data *DataArgument, options *PromptMetadata) (RenderedPrompt, error) {
+	renderer, err := dp.Compile(source, options)
 	if err != nil {
 		return RenderedPrompt{}, err
 	}
@@ -143,7 +177,7 @@ func (dp *Dotprompt) Render(source string, data *DataArgument, options *PromptMe
 }
 
 // Compile compiles the source string into a PromptFunction.
-func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata, dotpromptOptions *DotpromptOptions) (PromptFunction, error) {
+func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata) (PromptFunction, error) {
 	parsedPrompt, err := dp.Parse(source)
 	if err != nil {
 		return nil, err
@@ -159,9 +193,10 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata, 
 	dp.Template = renderTpl
 
 	// RegisterHelpers()
-	dp.RegisterHelpers(dotpromptOptions, dp.Template)
-	err = dp.RegisterPartials(dotpromptOptions, dp.Template, parsedPrompt.Template)
-	if err != nil {
+	if err = dp.RegisterHelpers(dp.Template); err != nil {
+		return nil, err
+	}
+	if err = dp.RegisterPartials(dp.Template, parsedPrompt.Template); err != nil {
 		return nil, err
 	}
 
@@ -234,7 +269,9 @@ func (dp *Dotprompt) resolvePartials(template string, tpl *raymond.Template) err
 				return err
 			}
 			if content != "" {
-				dp.DefinePartial(partial, content, tpl)
+				if err = dp.DefinePartial(partial, content, tpl); err != nil {
+					return err
+				}
 				err = dp.resolvePartials(content, tpl)
 				if err != nil {
 					return err
@@ -249,10 +286,10 @@ func (dp *Dotprompt) resolvePartials(template string, tpl *raymond.Template) err
 func mergeMetadata(parsedPrompt ParsedPrompt, additionalMetadata *PromptMetadata) ParsedPrompt {
 	if additionalMetadata != nil {
 		if additionalMetadata.Model != "" {
-			parsedPrompt.PromptMetadata.Model = additionalMetadata.Model
+			parsedPrompt.Model = additionalMetadata.Model
 		}
 		if additionalMetadata.Config != nil {
-			parsedPrompt.PromptMetadata.Config = additionalMetadata.Config
+			parsedPrompt.Config = additionalMetadata.Config
 		}
 	}
 	return parsedPrompt
@@ -279,7 +316,7 @@ func (dp *Dotprompt) RenderMetadata(source any, additionalMetadata *PromptMetada
 	}
 	selectedModel := additionalMetadata.Model
 	if selectedModel == "" {
-		selectedModel = parsedSource.PromptMetadata.Model
+		selectedModel = parsedSource.Model
 	}
 	if selectedModel == "" {
 		selectedModel = dp.defaultModel

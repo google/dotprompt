@@ -53,7 +53,7 @@ describe('Dotprompt', () => {
       });
 
       const template = '{{customHelper "test"}}';
-      const compiled = Handlebars.compile(template);
+      const compiled = Handlebars.compile(template, { noEscape: true });
       const result = compiled({ customHelper });
 
       expect(result).toBe('HELPER: test');

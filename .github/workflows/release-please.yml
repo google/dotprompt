@@ -14,16 +14,24 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name: "Pull Request Labeler"
+name: Release Please
 
 on:
-- pull_request_target
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  labeler:
-    permissions:
-      contents: read
-      pull-requests: write
+  release-please:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/labeler@v5
+      - uses: google-github-actions/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: .release-please-config.json
+          manifest-file: .release-please-manifest.json

@@ -105,10 +105,7 @@ class TestWhitespace(unittest.TestCase):
         # Render the template
         result = template.render('block-ws', data)
 
-        expected = (
-            '<div>\n<span>Item1</span><span>Item2</span><span>Item3</span>'
-            '    </div>'
-        )
+        expected = '<div>\n<span>Item1</span><span>Item2</span><span>Item3</span>    </div>'
         self.assertEqual(result, expected)
 
     def test_whitespace_in_comments(self) -> None:
@@ -146,12 +143,8 @@ class TestWhitespace(unittest.TestCase):
         template.register_partial('my-partial', partial_str)
 
         # Register templates using the partial with whitespace control
-        template.register_template(
-            'partial-normal', '{{> my-partial content=value }}'
-        )
-        template.register_template(
-            'partial-ws', '{{~> my-partial content=value ~}}'
-        )
+        template.register_template('partial-normal', '{{> my-partial content=value }}')
+        template.register_template('partial-ws', '{{~> my-partial content=value ~}}')
 
         # Data to render
         data = {'value': 'Hello World'}

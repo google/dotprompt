@@ -14,16 +14,33 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name: "Pull Request Labeler"
+# We follow conventional commit format for our commit messages.
+# See: https://www.conventionalcommits.org/en/v1.0.0/
+# See: https://github.com/googleapis/release-please#how-should-i-write-my-commits
 
-on:
-- pull_request_target
+handlePrefix: true
+primaryBranch: main
+plugins:
+  - "@type": node
+    applyVersionLabel: false
 
-jobs:
-  labeler:
-    permissions:
-      contents: read
-      pull-requests: write
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/labeler@v5
+types:
+  - feat
+  - fix
+  - docs
+  - style
+  - refactor
+  - perf
+  - test
+  - build
+  - ci
+  - chore
+  - revert
+
+scopes:
+  - js
+  - py
+  - go
+  - py/dotpromptz
+  - py/handlebarrz
+  - deps
