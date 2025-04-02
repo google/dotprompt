@@ -274,10 +274,10 @@ func (dp *Dotprompt) resolvePartials(template string, tpl *raymond.Template) err
 func mergeMetadata(parsedPrompt ParsedPrompt, additionalMetadata *PromptMetadata) ParsedPrompt {
 	if additionalMetadata != nil {
 		if additionalMetadata.Model != "" {
-			parsedPrompt.PromptMetadata.Model = additionalMetadata.Model
+			parsedPrompt.Model = additionalMetadata.Model
 		}
 		if additionalMetadata.Config != nil {
-			parsedPrompt.PromptMetadata.Config = additionalMetadata.Config
+			parsedPrompt.Config = additionalMetadata.Config
 		}
 	}
 	return parsedPrompt
@@ -304,7 +304,7 @@ func (dp *Dotprompt) RenderMetadata(source any, additionalMetadata *PromptMetada
 	}
 	selectedModel := additionalMetadata.Model
 	if selectedModel == "" {
-		selectedModel = parsedSource.PromptMetadata.Model
+		selectedModel = parsedSource.Model
 	}
 	if selectedModel == "" {
 		selectedModel = dp.defaultModel

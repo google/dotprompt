@@ -973,7 +973,7 @@ func TestInsertHistory(t *testing.T) {
 		assert.Equal(t, len(expected), len(result))
 		for i := range expected {
 			assert.Equal(t, expected[i].Role, result[i].Role)
-			assert.Equal(t, expected[i].HasMetadata.Metadata, result[i].HasMetadata.Metadata)
+			assert.Equal(t, expected[i].Metadata, result[i].Metadata)
 
 			assert.Equal(t, len(expected[i].Content), len(result[i].Content))
 			for j := range expected[i].Content {
@@ -1051,7 +1051,7 @@ func TestInsertHistory(t *testing.T) {
 		assert.Equal(t, len(expected), len(result))
 		for i := range expected {
 			assert.Equal(t, expected[i].Role, result[i].Role)
-			assert.Equal(t, expected[i].HasMetadata.Metadata, result[i].HasMetadata.Metadata)
+			assert.Equal(t, expected[i].Metadata, result[i].Metadata)
 
 			assert.Equal(t, len(expected[i].Content), len(result[i].Content))
 			for j := range expected[i].Content {
