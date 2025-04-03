@@ -25,7 +25,7 @@ description = "Dotpromptz is a language-neutral executable prompt template file 
 license = { text = "Apache-2.0" }
 name = "dotpromptz"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 version = "0.1.0"
 
 [build-system]

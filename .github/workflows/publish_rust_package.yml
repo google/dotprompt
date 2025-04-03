@@ -27,6 +27,7 @@ jobs:
     strategy:
       matrix:
         python_version:
+          - "3.11"
           - "3.12"
           - "3.13"
     steps:
@@ -52,13 +53,14 @@ jobs:
         with:
           name: wheels-arm64-${{ matrix.python_version }}
           path: python/handlebarrz/target/wheels
-  
+
   build_alpine:
     name: Build for alpine arm64 arch
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python_version:
+          - "3.11"
           - "3.12"
           - "3.13"
     steps:
@@ -84,13 +86,14 @@ jobs:
         with:
           name: wheels-alpine-${{ matrix.python_version }}
           path: python/handlebarrz/target/wheels
-  
+
   build_x86_64:
     name: Build for x86_64 arch
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python_version:
+          - "3.11"
           - "3.12"
           - "3.13"
 
@@ -119,6 +122,7 @@ jobs:
     strategy:
       matrix:
         python_version:
+          - "3.11"
           - "3.12"
           - "3.13"
     environment:
@@ -153,13 +157,14 @@ jobs:
       - name: Sleep for pypi server to load
         run: sleep 180
 
-  smoke_test_arm64: 
+  smoke_test_arm64:
     name: Test for arm64 arch
     needs: [pypi_publish]
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python_version:
+          - "3.11"
           - "3.12"
           - "3.13"
         linux_platform:
@@ -187,14 +192,16 @@ jobs:
           docker run test-${{ matrix.linux_platform }}-arm64:latest sh ./execute-test.sh "${{ matrix.python_version }}"
     continue-on-error: true
 
-  smoke_test_alpine: 
+  smoke_test_alpine:
     name: Test for alpine arm64 arch
     needs: [pypi_publish]
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python_version:
+          - "3.11"
           - "3.12"
+          - "3.13"
     steps:
       - uses: actions/checkout@v4
 
@@ -216,13 +223,14 @@ jobs:
           docker run test-alpine:latest sh ./execute-test.sh "${{ matrix.python_version }}"
     continue-on-error: true
 
-  smoke_test_x86_64: 
+  smoke_test_x86_64:
     name: Test for x86_64 arch
     needs: [pypi_publish]
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python_version:
+          - "3.11"
           - "3.12"
           - "3.13"
         linux_platform:
