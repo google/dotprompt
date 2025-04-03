@@ -122,8 +122,7 @@ jobs:
           - "3.12"
           - "3.13"
     environment:
-      # change to publish or similar in productive CI
-      name: publish-testpypi
+      name: pypi_github_publishing
     permissions:
       id-token: write
     steps:
@@ -148,8 +147,6 @@ jobs:
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          # remove this custom repository-url in productive CI
-          repository-url: https://test.pypi.org/legacy/
           verbose: true
           packages-dir: dist-${{ matrix.python_version }}/
 
