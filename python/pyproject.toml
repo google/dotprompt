@@ -4,7 +4,7 @@ description     = "Workspace for Dotprompt packages"
 license         = { text = "Apache-2.0" }
 name            = "dotprompt-workspace"
 readme          = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 version         = "0.1.0"
 
 [dependency-groups]
