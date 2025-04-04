@@ -130,6 +130,14 @@ jobs:
           merge-multiple: true
           path: dist/
 
+      - name: Delete unsupported wheels
+        run: |
+          FILES=$(find dist/ -type f -name "*linux_aarch64*")
+          if [[ -n "$FILES" ]]; then 
+            echo "removing local wheel"
+            rm -f $FILES
+          fi
+
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
