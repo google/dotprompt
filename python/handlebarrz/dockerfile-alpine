@@ -18,7 +18,8 @@ FROM --platform=linux/arm64 alpine:latest
 RUN apk add --no-cache python3 py3-pip \
     build-base gcc musl-dev curl bash
 
-ENV PATH="/root/.cargo/bin:${PATH}"
+ENV PATH="/root/.cargo/bin:$PATH"
+ENV PATH="/root/.local/bin/:$PATH"
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
     && source "$HOME/.cargo/env" \
@@ -28,10 +29,5 @@ WORKDIR /project
 COPY pyproject.toml /project/
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && source $HOME/.local/bin/env \
-    && uv venv /venv \
-    && source /venv/bin/activate \
-    && uv pip install -r pyproject.toml \
-    && uv pip install -r pyproject.toml --group dev \
-    && uv pip install maturin[patchelf]
+    && source $HOME/.local/bin/env 
 

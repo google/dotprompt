@@ -68,12 +68,17 @@ result = handlebars.render('formatted', {'name': 'World'})  # "Hello WORLD!"
 """
 
 import json
+import sys  # noqa
 from collections.abc import Callable
-from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
 import structlog
+
+if sys.version_info < (3, 11):  # noqa
+    from strenum import StrEnum  # noqa
+else:  # noqa
+    from enum import StrEnum  # noqa
 
 from ._native import (
     HandlebarrzTemplate,
@@ -84,8 +89,8 @@ from ._native import (
 logger = structlog.get_logger(__name__)
 
 
-type HelperFn = Callable[[list[Any], dict[str, Any], dict[str, Any]], str]
-type NativeHelperFn = Callable[[str, str, str], str]
+HelperFn = Callable[[list[Any], dict[str, Any], dict[str, Any]], str]
+NativeHelperFn = Callable[[str, str, str], str]
 
 
 class EscapeFunction(StrEnum):

@@ -3,17 +3,23 @@ authors = [{ name = "Yesudeep Mangalapilly", email = "yesudeep@google.com" }]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Programming Language :: Rust",
   "Topic :: Text Processing :: Markup",
   "License :: OSI Approved :: Apache Software License",
 ]
-dependencies = ["structlog>=25.2.0"]
+dependencies = [
+  "strenum>=0.4.15 ; python_version < '3.11'",
+  "structlog>=25.2.0",
+]
 description = "Handlebars library for Python based on handlebars-rust."
 name = "handlebarrz"
 readme = "README.md"
-requires-python = ">=3.12"
-version = "0.1.0"
+requires-python = ">=3.10"
+version = "0.1.9"
 
 [build-system]
 build-backend = "maturin"
@@ -25,4 +31,9 @@ module-name   = "handlebarrz._native"
 python-source = "src"
 
 [dependency-groups]
-dev = ["pytest>=8.3.5", "pytest-cov>=6.0.0", "maturin>=1.8.3"]
+dev = [
+  "pytest>=8.3.5",
+  "pytest-cov>=6.0.0",
+  "maturin[patchelf]>=1.8.3",
+  "ziglang>=0.14.0",
+]

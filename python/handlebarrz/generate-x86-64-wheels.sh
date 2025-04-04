@@ -15,25 +15,32 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+export UV_LINK_MODE=copy
 
-. /venv/bin/activate
-echo "building for python version $1"
+PYTHON_VERSION="python$1"
+
+echo "building for python version $PYTHON_VERSION"
 
 # linux
 echo "building with maturin for linux"
 for i in $(seq 40 -1 24); do
-    maturin build --release --target x86_64-unknown-linux-gnu -i "$1" --compatibility manylinux_2_$i --auditwheel=skip
+    uv run --python $1 maturin build --release --target x86_64-unknown-linux-gnu -i "$PYTHON_VERSION" --compatibility manylinux_2_$i --auditwheel=skip
 done
-maturin build --release --target x86_64-unknown-linux-gnu -i $1
-
-# for glibc > 2.28
-# maturin build --release --target x86_64-unknown-linux-gnu -i python3.12 --compatibility manylinux_2_40 --auditwheel=skip
+uv run --python $1 maturin build --release --target x86_64-unknown-linux-gnu -i $PYTHON_VERSION
 
 # windows 
 echo "building with maturin for windows"
-maturin  build --target x86_64-pc-windows-msvc -i $1
+uv run --python $1 maturin  build --target x86_64-pc-windows-msvc -i $1
 
 # macos
 echo "building with maturin for macos"
-maturin build --target x86_64-apple-darwin -i $1 --zig
+uv run --python $1 maturin build --target x86_64-apple-darwin -i $1 --zig
+
+DIRECTORY="target/wheels/"
+
+FILES=$(find "$DIRECTORY" -type f -name "*linux_x86_64*")
+if [ -n "$FILES" ]; then 
+    echo "removing local wheel"
+    rm -f $FILES
+fi
 

@@ -16,12 +16,18 @@
 
 """Data models and interfaces type definitions using Pydantic v2."""
 
-from enum import StrEnum
+import sys  # noqa
+
 from typing import Any, Literal
 
 from pydantic import BaseModel
 
 from dotpromptz.typing import Role
+
+if sys.version_info < (3, 11):  # noqa
+    from strenum import StrEnum  # noqa
+else:  # noqa
+    from enum import StrEnum  # noqa
 
 
 class DetailKind(StrEnum):
@@ -34,7 +40,7 @@ class DetailKind(StrEnum):
 
 # Define TypedDicts to represent the interfaces
 class ImageURLDetail(BaseModel):
-    """Image URL Detail"""
+    """Image URL Detail."""
 
     url: str
     detail: DetailKind | None = None
@@ -48,7 +54,7 @@ class ContentItemType(StrEnum):
 
 
 class ContentItem(BaseModel):
-    """Content Item: can be text or image"""
+    """Content Item: can be text or image."""
 
     type: ContentItemType
     text: str | None = None
@@ -117,7 +123,7 @@ class ResponseFormat(BaseModel):
     type: ResponseFormatType
 
 
-type ToolChoiceOptions = Literal['none', 'auto']
+ToolChoiceOptions = Literal['none', 'auto']
 
 
 class OpenAIRequest(BaseModel):

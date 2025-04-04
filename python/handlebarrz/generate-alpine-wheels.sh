@@ -15,11 +15,21 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+export UV_LINK_MODE=copy
 
-. /venv/bin/activate
-echo "building for python version $1"
+PYTHON_VERSION="python$1"
+
+echo "building for python version $PYTHON_VERSION"
 
 # linux
 echo "building with maturin for linux alpine"
-maturin build --release --target aarch64-unknown-linux-musl -i $1
+uv run --python $1 maturin build --release --target aarch64-unknown-linux-musl -i $PYTHON_VERSION
+
+DIRECTORY="target/wheels/"
+
+FILES=$(find "$DIRECTORY" -type f -name "*linux_aarch64*")
+if [[ -n "$FILES" ]]; then 
+    echo "removing local wheel"
+    rm -f $FILES
+fi
 

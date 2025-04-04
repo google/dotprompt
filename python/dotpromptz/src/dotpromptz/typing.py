@@ -29,6 +29,7 @@ from collections.abc import Awaitable, Callable
 from enum import Enum
 from typing import (
     Any,
+    Generic,
     Literal,
     Protocol,
     TypeVar,
@@ -36,10 +37,10 @@ from typing import (
 
 from pydantic import BaseModel, ConfigDict, Field
 
-type Schema = dict[str, Any]
+Schema = dict[str, Any]
 """Type alias for a generic schema, represented as a dictionary."""
 
-type JsonSchema = Any
+JsonSchema = Any
 """Type alias for a JSON schema definition. 'Any' allows flexibility."""
 
 ModelConfigT = TypeVar('ModelConfigT')
@@ -87,7 +88,7 @@ class ToolDefinition(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
-type ToolArgument = str | ToolDefinition
+ToolArgument = str | ToolDefinition
 """Type alias representing either a tool name or a full ToolDefinition."""
 
 
@@ -147,7 +148,7 @@ class PromptOutputConfig(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class PromptMetadata[ModelConfigT](HasMetadata):
+class PromptMetadata(Generic[ModelConfigT], HasMetadata):
     """Metadata associated with a prompt, including configuration.
 
     This is a generic model, allowing the `config` field to hold
@@ -187,7 +188,7 @@ class PromptMetadata[ModelConfigT](HasMetadata):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class ParsedPrompt[ModelConfigT](PromptMetadata[ModelConfigT]):
+class ParsedPrompt(Generic[ModelConfigT], PromptMetadata[ModelConfigT]):
     """Represents a prompt after parsing its metadata and template.
 
     Attributes:
@@ -240,7 +241,7 @@ class MediaPart(HasMetadata):
     media: MediaContent
 
 
-class ToolRequestContent[InputT](BaseModel):
+class ToolRequestContent(Generic[InputT], BaseModel):
     """Describes the details of a tool request within a `ToolRequestPart`.
 
     Attributes:
@@ -254,7 +255,7 @@ class ToolRequestContent[InputT](BaseModel):
     ref: str | None = None
 
 
-class ToolRequestPart[InputT](HasMetadata):
+class ToolRequestPart(Generic[InputT], HasMetadata):
     """A content part representing a request to invoke a tool.
 
     Attributes:
@@ -265,7 +266,7 @@ class ToolRequestPart[InputT](HasMetadata):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class ToolResponseContent[OutputT](BaseModel):
+class ToolResponseContent(Generic[OutputT], BaseModel):
     """Describes the details of a tool response within a `ToolResponsePart`.
 
     Attributes:
@@ -279,7 +280,7 @@ class ToolResponseContent[OutputT](BaseModel):
     ref: str | None = None
 
 
-class ToolResponsePart[OutputT](HasMetadata):
+class ToolResponsePart(Generic[OutputT], HasMetadata):
     """A content part representing the result from a tool execution.
 
     Attributes:
@@ -344,7 +345,7 @@ class PendingPart(HasMetadata):
         super().__init__(**data)
 
 
-type Part = TextPart | DataPart | MediaPart | ToolRequestPart[Any] | ToolResponsePart[Any] | PendingPart
+Part = TextPart | DataPart | MediaPart | ToolRequestPart[Any] | ToolResponsePart[Any] | PendingPart
 """Type alias for any valid content part in a `Message` or `Document`."""
 
 
@@ -387,7 +388,7 @@ class Document(HasMetadata):
     content: list[Part]
 
 
-class DataArgument[VariablesT](BaseModel):
+class DataArgument(Generic[VariablesT], BaseModel):
     """Encapsulates runtime information needed to render a prompt template.
 
     Attributes:
@@ -403,17 +404,17 @@ class DataArgument[VariablesT](BaseModel):
     context: dict[str, Any] | None = None
 
 
-type SchemaResolver = Callable[[str], JsonSchema | None | Awaitable[JsonSchema | None]]
+SchemaResolver = Callable[[str], JsonSchema | None | Awaitable[JsonSchema | None]]
 """Type alias for a function resolving a schema name to a JSON schema."""
 
-type ToolResolver = Callable[[str], ToolDefinition | None | Awaitable[ToolDefinition | None]]
+ToolResolver = Callable[[str], ToolDefinition | None | Awaitable[ToolDefinition | None]]
 """Type alias for a function resolving a tool name to a ToolDefinition."""
 
-type PartialResolver = Callable[[str], str | None | Awaitable[str | None]]
+PartialResolver = Callable[[str], str | None | Awaitable[str | None]]
 """Type alias for a function resolving a partial name to a template string."""
 
 
-class RenderedPrompt[ModelConfigT](PromptMetadata[ModelConfigT]):
+class RenderedPrompt(Generic[ModelConfigT], PromptMetadata[ModelConfigT]):
     """The final output after a prompt template is rendered.
 
     Attributes:
@@ -560,7 +561,7 @@ class LoadPartialOptions(BaseModel):
     version: str | None = None
 
 
-type LoadOptions = LoadPromptOptions | LoadPartialOptions
+LoadOptions = LoadPromptOptions | LoadPartialOptions
 """Type alias for options when loading a prompt or a partial."""
 
 
