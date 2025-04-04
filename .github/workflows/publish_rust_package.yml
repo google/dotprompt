@@ -47,7 +47,7 @@ jobs:
 
       - name: Run container
         run: |
-          docker run -v "$PWD/python/handlebarrz":/project linux-arm64:latest sh ./generate-arm-wheels.sh "python${{ matrix.python_version }}"
+          docker run -v "$PWD/python/handlebarrz":/project linux-arm64:latest sh ./generate-arm-wheels.sh "${{ matrix.python_version }}"
 
       - name: Upload build packages
         uses: actions/upload-artifact@v4
@@ -61,10 +61,7 @@ jobs:
     strategy:
       matrix:
         python_version:
-          - "3.10"
-          - "3.11"
           - "3.12"
-          - "3.13"
     steps:
       - uses: actions/checkout@v4
 
@@ -81,7 +78,7 @@ jobs:
 
       - name: Run container
         run: |
-          docker run -v "$PWD/python/handlebarrz":/project linux-alpine:latest sh ./generate-alpine-wheels.sh "python${{ matrix.python_version }}"
+          docker run -v "$PWD/python/handlebarrz":/project linux-alpine:latest sh ./generate-alpine-wheels.sh "${{ matrix.python_version }}"
 
       - name: Upload build packages
         uses: actions/upload-artifact@v4
@@ -110,7 +107,7 @@ jobs:
 
       - name: Run container
         run: |
-          docker run -v "$PWD/python/handlebarrz":/project linux-x86-64:latest sh ./generate-x86-64-wheels.sh "python${{ matrix.python_version }}"
+          docker run -v "$PWD/python/handlebarrz":/project linux-x86-64:latest sh ./generate-x86-64-wheels.sh "${{ matrix.python_version }}"
 
       - name: Upload build packages
         uses: actions/upload-artifact@v4
@@ -122,35 +119,16 @@ jobs:
     name: Upload to PyPI by python version
     needs: [build_arm64,build_x86_64,build_alpine]
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
     environment:
       name: publish-testpypi
     permissions:
       id-token: write
     steps:
-      - name: Download wheels arm64
+      - name: Download wheels
         uses: actions/download-artifact@v4
         with:
-          name: wheels-arm64-${{ matrix.python_version }}
-          path: dist-${{ matrix.python_version }}/
-
-      - name: Download wheels alpine
-        uses: actions/download-artifact@v4
-        with:
-          name: wheels-alpine-${{ matrix.python_version }}
-          path: dist-${{ matrix.python_version }}/
-
-      - name: Download wheels x86-64
-        uses: actions/download-artifact@v4
-        with:
-          name: wheels-x86-64-${{ matrix.python_version }}
-          path: dist-${{ matrix.python_version }}/
+          merge-multiple: true
+          path: dist/
 
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -158,7 +136,7 @@ jobs:
           # remove this custom repository-url in productive CI
           repository-url: https://test.pypi.org/legacy/
           verbose: true
-          packages-dir: dist-${{ matrix.python_version }}/
+          packages-dir: dist/
 
       - name: Sleep for pypi server to load
         run: sleep 180
@@ -206,8 +184,6 @@ jobs:
     strategy:
       matrix:
         python_version:
-          - "3.10"
-          - "3.11"
           - "3.12"
     steps:
       - uses: actions/checkout@v4

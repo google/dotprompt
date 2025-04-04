@@ -18,7 +18,8 @@ FROM ubuntu:latest
 RUN apt-get update && apt-get install -y python3 \
     python3-pip curl bash 
 
-ENV PATH="/root/.cargo/bin:${PATH}"
+ENV PATH="/root/.cargo/bin:$PATH"
+ENV PATH="/root/.local/bin/:$PATH"
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
     && . "$HOME/.cargo/env" \
@@ -31,10 +32,5 @@ WORKDIR /project
 COPY pyproject.toml /project/
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && . $HOME/.local/bin/env \
-    && uv venv /venv \
-    && . /venv/bin/activate \
-    && uv pip install -r pyproject.toml \
-    && uv pip install -r pyproject.toml --group dev \
-    && uv pip install ziglang maturin[patchelf]
+    && . $HOME/.local/bin/env 
 

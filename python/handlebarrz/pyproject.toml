@@ -31,4 +31,9 @@ module-name   = "handlebarrz._native"
 python-source = "src"
 
 [dependency-groups]
-dev = ["pytest>=8.3.5", "pytest-cov>=6.0.0", "maturin>=1.8.3"]
+dev = [
+  "pytest>=8.3.5",
+  "pytest-cov>=6.0.0",
+  "maturin[patchelf]>=1.8.3",
+  "ziglang>=0.14.0",
+]
