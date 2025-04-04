@@ -22,6 +22,7 @@ dependencies = [
   "pydantic[email]>=2.10.6",
   "structlog>=25.2.0",
   "types-aiofiles>=24.1.0.20250326",
+  "strenum>=0.4.15 ; python_version < '3.11'",
 ]
 description = "Dotpromptz is a language-neutral executable prompt template file format for Generative AI."
 license = { text = "Apache-2.0" }
