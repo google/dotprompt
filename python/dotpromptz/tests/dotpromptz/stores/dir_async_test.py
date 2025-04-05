@@ -67,16 +67,11 @@ async def _create_test_file_async(directory: Path, name: str, content: str = 'te
     return file_path
 
 
-@pytest_asyncio.fixture
-async def temp_dir() -> AsyncGenerator[Path, None]:
-    """Creates a temporary directory for tests."""
-    temp_path = Path('./test-prompts-async')
-    os.makedirs(temp_path, exist_ok=True)
-    yield temp_path
-    # Use asyncio-compatible removal if needed, though shutil might be okay
-    # for cleanup if blocking is acceptable here.
-    loop = asyncio.get_running_loop()
-    await loop.run_in_executor(None, lambda: shutil.rmtree(temp_path, ignore_errors=True))
+@pytest.fixture
+def temp_dir(tmp_path: Path) -> Path:
+    """Pytest fixture to provide a temporary directory for tests."""
+    # tmp_path is automatically created and cleaned up by pytest
+    return tmp_path
 
 
 @pytest_asyncio.fixture

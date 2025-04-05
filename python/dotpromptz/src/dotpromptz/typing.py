@@ -253,6 +253,7 @@ class ToolRequestContent(Generic[InputT], BaseModel):
     name: str
     input: InputT | None = None
     ref: str | None = None
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class ToolRequestPart(Generic[InputT], HasMetadata):
@@ -263,7 +264,10 @@ class ToolRequestPart(Generic[InputT], HasMetadata):
     """
 
     tool_request: ToolRequestContent[InputT] = Field(..., alias='toolRequest')
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+    )
 
 
 class ToolResponseContent(Generic[OutputT], BaseModel):
@@ -278,6 +282,7 @@ class ToolResponseContent(Generic[OutputT], BaseModel):
     name: str
     output: OutputT | None = None
     ref: str | None = None
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class ToolResponsePart(Generic[OutputT], HasMetadata):
@@ -288,7 +293,10 @@ class ToolResponsePart(Generic[OutputT], HasMetadata):
     """
 
     tool_response: ToolResponseContent[OutputT] = Field(..., alias='toolResponse')
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+    )
 
 
 class PendingMetadata(BaseModel):
@@ -376,6 +384,7 @@ class Message(HasMetadata):
 
     role: Role
     content: list[Part]
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class Document(HasMetadata):
@@ -386,6 +395,7 @@ class Document(HasMetadata):
     """
 
     content: list[Part]
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class DataArgument(Generic[VariablesT], BaseModel):

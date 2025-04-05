@@ -17,6 +17,8 @@ dev = [
   "pytest-cov>=6.0.0",
   "pytest-watcher>=0.4.3",
   "types-pyyaml>=6.0.12.20241230",
+  "tox>=4.25.0",
+  "tox-uv>=1.25.0",
 ]
 lint = ["mypy>=1.14.1", "ruff>=0.9.2"]
 
@@ -27,17 +29,15 @@ packages = []
 py-modules = []
 
 # Pytest for unit testing and coverage.
-[tool.pytest]
-asyncio_default_fixture_loop_scope = "function"
-asyncio_mode                       = "strict"
-python_files                       = ["**/*_test.py"]
-
 [tool.pytest.ini_options]
-addopts             = ["--cov", "-v", "--no-header"]
-log_cli             = true
-log_cli_date_format = "%Y-%m-%d %H:%M:%S"
-log_cli_format      = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
-log_cli_level       = "DEBUG"
+addopts                            = ["--cov", "-v", "--no-header"]
+asyncio_default_fixture_loop_scope = "session"
+asyncio_mode                       = "strict"
+log_cli                            = true
+log_cli_date_format                = "%Y-%m-%d %H:%M:%S"
+log_cli_format                     = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+log_cli_level                      = "DEBUG"
+python_files                       = ["**/*_test.py"]
 
 verbosity = 2
 

@@ -20,6 +20,8 @@ set -euo pipefail
 TOP_DIR=$(git rev-parse --show-toplevel)
 PYTHON_DIR="${TOP_DIR}/python"
 PYTHON_VERSIONS=(
+  "python3.10"
+  "python3.11"
   "python3.12"
   "python3.13"
   # TODO: Wait for https://github.com/PyO3/pyo3/issues/5000 to be fixed.

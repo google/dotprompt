@@ -59,12 +59,10 @@ from dotpromptz.typing import (
 
 
 @pytest.fixture
-def temp_dir() -> Generator[Path, None, None]:
-    """Creates a temporary directory for sync tests."""
-    temp_path = Path('./test-prompts-sync')
-    os.makedirs(temp_path, exist_ok=True)
-    yield temp_path
-    shutil.rmtree(temp_path, ignore_errors=True)
+def temp_dir(tmp_path: Path) -> Path:
+    """Pytest fixture to provide a temporary directory for sync tests."""
+    # tmp_path is automatically created and cleaned up by pytest
+    return tmp_path
 
 
 @pytest.fixture
