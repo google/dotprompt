@@ -19,7 +19,7 @@ description = "Handlebars library for Python based on handlebars-rust."
 name = "handlebarrz"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "0.1.10"
+version = "0.1.11"
 
 [build-system]
 build-backend = "maturin"
