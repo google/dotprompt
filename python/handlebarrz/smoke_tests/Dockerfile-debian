@@ -24,7 +24,7 @@ COPY . /project/
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
     && . $HOME/.local/bin/env \
-    && uv sync 
+    && uv sync --index-strategy unsafe-best-match
     
 ENV PATH="/root/.local/bin/:$PATH"
 
