@@ -46,7 +46,6 @@ class Options(TypedDict, total=False):
     """Options for dotprompt."""
 
 
-
 class Dotprompt:
     """Dotprompt extends a Handlebars template for use with Gen AI prompts."""
 

@@ -85,7 +85,7 @@ def test_init_with_options(mock_handlebars: Mock, mock_register_all_helpers: Moc
     partials: dict[str, str] = {'partial1': 'partial template'}
 
     _ = Dotprompt(
-        helpers= helpers,
+        helpers=helpers,
         partials=partials,
     )
 
