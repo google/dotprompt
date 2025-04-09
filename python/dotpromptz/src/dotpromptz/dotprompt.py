@@ -80,12 +80,12 @@ class Dotprompt:
 
         self._known_helpers: dict[str, bool] = {}
         self._default_model: str | None = default_model
-        self._model_configs: dict[str, Any] | None = model_configs or {}
-        self._helpers: dict[str, HelperFn] | None = helpers or {}
-        self._partials: dict[str, str] | None = partials or {}
+        self._model_configs: dict[str, Any] = model_configs or {}
+        self._helpers: dict[str, HelperFn] = helpers or {}
+        self._partials: dict[str, str] = partials or {}
         self._tools: dict[str, ToolDefinition] = tools or {}
         self._tool_resolver: ToolResolver | None = tool_resolver
-        self._schemas: dict[str, JsonSchema] | None = schemas or {}
+        self._schemas: dict[str, JsonSchema] = schemas or {}
         self._schema_resolver: SchemaResolver | None = schema_resolver
         self._partial_resolver: PartialResolver | None = partial_resolver
         self._store: PromptStore | None = None
