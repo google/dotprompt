@@ -81,7 +81,7 @@ The remainder of this getting started guide will use the reference Dotprompt
 implementation included as part of the [Firebase
 Genkit](https://github.com/firebase/genkit) GenAI SDK. To use other
 implementations of Dotprompt, see the [list of
-Implementations](/implementations).
+Implementations](third_party/docsite/src/content/docs/implementations.mdx).
 
 First, install the necessary packages using NPM. Here we'll be using the [Gemini
 API](https://ai.google.dev/gemini-api) from Google as our model implementation:
