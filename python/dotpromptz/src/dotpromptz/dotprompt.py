@@ -45,28 +45,6 @@ _PARTIAL_PATTERN = re.compile(r'{{\s*>\s*([a-zA-Z0-9_.-]+)\s*}}')
 class Options(TypedDict, total=False):
     """Options for dotprompt."""
 
-    # The default model to use for the prompt when not specified in the
-    # template.
-    default_model: str | None
-    # Assign a set of default configuration options to be used with a particular
-    # model.
-    model_configs: dict[str, Any] | None
-    # Helpers to pre-register.
-    helpers: dict[str, HelperFn] | None
-    # Partials to pre-register.
-    partials: dict[str, str] | None
-    # Provide a static mapping of tool definitions that should be used when
-    # resolving tool names.
-    tools: dict[str, ToolDefinition] | None
-    # Provide a lookup implementation to resolve tool names to definitions.
-    tool_resolver: ToolResolver | None
-    # Provide a static mapping of schema names to their JSON schema definitions.
-    schemas: dict[str, JsonSchema] | None
-    # Provide a lookup implementation to resolve schema names to JSON schema
-    # definitions.
-    schema_resolver: SchemaResolver | None
-    # Provide a lookup implementation to resolve partial names to their content.
-    partial_resolver: PartialResolver | None
 
 
 class Dotprompt:
@@ -74,25 +52,43 @@ class Dotprompt:
 
     def __init__(
         self,
-        options: Options | None = None,
+        default_model: str | None = None,
+        model_configs: dict[str, Any] | None = None,
+        helpers: dict[str, HelperFn] | None = None,
+        partials: dict[str, str] | None = None,
+        tools: dict[str, ToolDefinition] | None = None,
+        tool_resolver: ToolResolver | None = None,
+        schemas: dict[str, JsonSchema] | None = None,
+        schema_resolver: SchemaResolver | None = None,
+        partial_resolver: PartialResolver | None = None,
         escape_fn: EscapeFunction = EscapeFunction.NO_ESCAPE,
     ) -> None:
         """Initialize Dotprompt with a Handlebars template.
 
         Args:
-            options: Options for Dotprompt.
+            default_model: The default model to use for the prompt when not specified in the template.
+            model_configs: Assign a set of default configuration options to be used with a particular model.
+            helpers: Helpers to pre-register.
+            partials: Partials to pre-register.
+            tools: Provide a static mapping of tool definitions that should be used when resolving tool names.
+            tool_resolver: Provide a lookup implementation to resolve tool names to definitions.
+            schemas: Provide a static mapping of schema names to their JSON schema definitions.
+            schema_resolver: resolver for schema names to JSON schema definitions.
+            partial_resolver: resolver for partial names to their content.
+            escape_fn: ecape function
         """
-        self._options: Options = options or {}
         self._handlebars: Handlebars = Handlebars(escape_fn=escape_fn)
 
         self._known_helpers: dict[str, bool] = {}
-        self._default_model: str | None = self._options.get('default_model')
-        self._model_configs: dict[str, Any] | None = self._options.get('model_configs', {})
-        self._tools: dict[str, ToolDefinition] = self._options.get('tools', {}) or {}
-        self._tool_resolver: ToolResolver | None = self._options.get('tool_resolver')
-        self._schemas: dict[str, JsonSchema] | None = self._options.get('schemas', {})
-        self._schema_resolver: SchemaResolver | None = self._options.get('schema_resolver')
-        self._partial_resolver: PartialResolver | None = self._options.get('partial_resolver')
+        self._default_model: str | None = default_model
+        self._model_configs: dict[str, Any] | None = model_configs or {}
+        self._helpers: dict[str, HelperFn] | None = helpers or {}
+        self._partials: dict[str, str] | None = partials or {}
+        self._tools: dict[str, ToolDefinition] = tools or {}
+        self._tool_resolver: ToolResolver | None = tool_resolver
+        self._schemas: dict[str, JsonSchema] | None = schemas or {}
+        self._schema_resolver: SchemaResolver | None = schema_resolver
+        self._partial_resolver: PartialResolver | None = partial_resolver
         self._store: PromptStore | None = None
 
         self._register_initial_helpers()
@@ -101,12 +97,12 @@ class Dotprompt:
     def _register_initial_helpers(self) -> None:
         """Register the initial helpers."""
         register_all_helpers(self._handlebars)
-        for name, fn in (self._options.get('helpers') or {}).items():
+        for name, fn in self._helpers.items():
             self._handlebars.register_helper(name, fn)
 
     def _register_initial_partials(self) -> None:
         """Register the initial partials."""
-        for name, source in (self._options.get('partials') or {}).items():
+        for name, source in self._partials.items():
             self._handlebars.register_partial(name, source)
 
     def define_helper(self, name: str, fn: HelperFn) -> Dotprompt:

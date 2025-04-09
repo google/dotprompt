@@ -16,7 +16,12 @@
 
 """Dotpromptz implements the .prompt templates for Python."""
 
+from .dotprompt import Dotprompt
 
 def package_name() -> str:
     """Stub function to test imports."""
     return 'dotpromptz'
+
+__all__ = [
+    Dotprompt.__name__,
+]

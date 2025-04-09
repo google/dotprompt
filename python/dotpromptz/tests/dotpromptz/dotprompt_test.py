@@ -84,12 +84,10 @@ def test_init_with_options(mock_handlebars: Mock, mock_register_all_helpers: Moc
     helpers: dict[str, HelperFn] = {'helper1': helper_fn}
     partials: dict[str, str] = {'partial1': 'partial template'}
 
-    options: Options = {
-        'helpers': helpers,
-        'partials': partials,
-    }
-
-    _ = Dotprompt(options)
+    _ = Dotprompt(
+        helpers= helpers,
+        partials=partials,
+    )
 
     mock_handlebars.register_helper.assert_called_with('helper1', helpers['helper1'])
     mock_handlebars.register_partial.assert_called_with('partial1', partials['partial1'])
