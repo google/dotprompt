@@ -120,7 +120,7 @@ jobs:
     needs: [build_arm64,build_x86_64,build_alpine]
     runs-on: ubuntu-latest
     environment:
-      name: publish-testpypi
+      name: pypi_github_publishing
     permissions:
       id-token: write
     steps:
@@ -141,8 +141,6 @@ jobs:
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          # remove this custom repository-url in productive CI
-          repository-url: https://test.pypi.org/legacy/
           verbose: true
           packages-dir: dist/
 

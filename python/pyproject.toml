@@ -1,5 +1,5 @@
 [project]
-dependencies    = ["dotpromptz", "handlebarrz"]
+dependencies    = ["dotpromptz", "dotprompt-handlebars"]
 description     = "Workspace for Dotprompt packages"
 license         = { text = "Apache-2.0" }
 name            = "dotprompt-workspace"
@@ -50,7 +50,7 @@ default-groups = ["dev", "lint"]
 
 [tool.uv.sources]
 dotpromptz  = { workspace = true }
-handlebarrz = { workspace = true }
+dotprompt-handlebars = { workspace = true }
 
 [tool.uv.workspace]
 members = ["dotpromptz", "handlebarrz", "tests/*"]
@@ -108,7 +108,7 @@ select = [
 [tool.ruff.lint.isort]
 combine-as-imports = true
 force-single-line = false
-known-first-party = ["dotpromptz", "aioia", "handlebarrz"]
+known-first-party = ["dotpromptz", "aioia", "dotprompt-handlebars"]
 section-order = [
   "future",
   "standard-library",
