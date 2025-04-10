@@ -79,6 +79,68 @@ protocols: one for async and one for sync.
 |                 | `PartialResolver`         | function resolving a partial name to a template string.               |
 |                 | `Schema`                  | generic schema, represented as a dictionary.                          |
 |                 | `SchemaResolver`          | function resolving a schema name to a JSON schema.                    |
+
+## Type Relationships
+
+### Prompt Structure
+
+```
++-------------------+
+|     BaseModel     |
++-------------------+
+        |
+        +------------------- PromptRef (name, variant, version)
+        |                        |
+        |                        +-- PromptData (+ source)
+        |
++-------------------+
+|    HasMetadata    |
++-------------------+
+        |
+        +------------------- PromptMetadata (+ model, tools, config, input, output, ...)
+                                |
+                                +-- ParsedPrompt (+ template)
+                                |
+                                +-- RenderedPrompt (+ messages: list[Message])
+```
+
+### Message/Content Structure
+
+```
++-------------------+
+|    HasMetadata    |
++-------------------+
+        |
+        +------------------- Message (role, content)
+        |
+        +------------------- Document (content)
+                                |
+                                +---> content: list[Part]
+
+Part = Union[
+    TextPart, DataPart, MediaPart,
+    ToolRequestPart, ToolResponsePart, PendingPart
+]
+
+ToolRequestPart ---contains---> ToolRequestContent (name, input, ref)
+ToolResponsePart --contains---> ToolResponseContent (name, output, ref)
+MediaPart --------contains---> MediaContent (url, content_type)
+PendingPart ------contains---> PendingMetadata (pending=True)
+```
+
+### Storage Protocols
+
+```
+PromptStore (async read)
+    |
+    +-----> PromptStoreWritable (+ async write)
+
+PromptStoreSync (sync read)
+    |
+    +-----> PromptStoreWritableSync (+ sync write)
+
+(Both use types like PromptData, PartialData, PaginatedPrompts, etc.)
+```
 """
 
 from __future__ import annotations
