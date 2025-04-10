@@ -21,6 +21,64 @@ Dotprompt TS reference implementation.
 
 A key difference from the TS implementation is that the PromptStore has 2
 protocols: one for async and one for sync.
+
+## Key Types
+
+| Group           | Type                      | Description                                                           |
+|-----------------|---------------------------|-----------------------------------------------------------------------|
+| Core Prompt     | `ParsedPrompt`            | Prompt after parsing metadata and template body.                      |
+|                 | `PartialData`             | Complete partial template data including source.                      |
+|                 | `PartialRef`              | Basic reference to a partial template.                                |
+|                 | `PromptData`              | Complete prompt data including source content.                        |
+|                 | `PromptInputConfig`       | Configuration settings related to the input variables of a prompt.    |
+|                 | `PromptMetadata`          | Metadata extracted from prompt frontmatter (config, tools, etc.).     |
+|                 | `PromptOutputConfig`      | Configuration settings related to the expected output of a prompt.    |
+|                 | `PromptRef`               | Basic reference to a prompt (name, optional variant/version).         |
+|                 | `RenderedPrompt`          | Final output after rendering a prompt template.                       |
+|-----------------|---------------------------|-----------------------------------------------------------------------|
+| Message/Content | `DataPart`                | Content part containing structured data.                              |
+|                 | `Document`                | Represents an external document used for context.                     |
+|                 | `MediaContent`            | Describes the content details within a `MediaPart`.                   |
+|                 | `MediaPart`               | Content part representing media (image, audio, video).                |
+|                 | `Message`                 | Represents a single message in a conversation history.                |
+|                 | `Part`                    | Union of parts (Text, Data, Media, Tool, Pending).                    |
+|                 | `PendingMetadata`         | Defines the required metadata structure for a `PendingPart`.          |
+|                 | `PendingPart`             | Content part indicating pending or awaited content.                   |
+|                 | `Role`                    | Enum defining roles in a conversation (USER, MODEL, TOOL, SYSTEM).    |
+|                 | `TextPart`                | Content part containing plain text.                                   |
+|                 | `ToolRequestContent`      | Describes the details of a tool request within a `ToolRequestPart`.   |
+|                 | `ToolRequestPart`         | Content part representing a request to invoke a tool.                 |
+|                 | `ToolResponseContent`     | Describes the details of a tool response within a `ToolResponsePart`. |
+|                 | `ToolResponsePart`        | Content part representing the result from a tool execution.           |
+|-----------------|---------------------------|-----------------------------------------------------------------------|
+| Tooling         | `ToolArgument`            | Type alias representing either a tool name or a full ToolDefinition.  |
+|                 | `ToolDefinition`          | Defines a tool that can be called by a model.                         |
+|                 | `ToolResolver`            | Type alias for a function resolving a tool name to a ToolDefinition.  |
+|-----------------|---------------------------|-----------------------------------------------------------------------|
+| Runtime         | `DataArgument`            | Runtime data (input variables, history, context) for rendering.       |
+|                 | `PromptFunction`          | Protocol defining the interface for a callable async prompt function. |
+|                 | `PromptRefFunction`       | Protocol for a callable async prompt function loaded by reference.    |
+|-----------------|---------------------------|-----------------------------------------------------------------------|
+| Storage         | `DeletePromptOrPartialOptions` | Options for specifying which variant to delete.                  |
+|                 | `ListPartialsOptions`     | Options to control the listing of partials (pagination).              |
+|                 | `ListPromptsOptions`      | Options to control the listing of prompts (pagination).               |
+|                 | `LoadOptions`             | Type alias for options when loading a prompt or a partial.            |
+|                 | `LoadPartialOptions`      | Options for specifying which partial version/variant to load.         |
+|                 | `LoadPromptOptions`       | Options for specifying which prompt version/variant to load.          |
+|                 | `PaginatedPartials`       | Represents a single page of results when listing partials.            |
+|                 | `PaginatedPrompts`        | Represents a single page of results when listing prompts.             |
+|                 | `PaginatedResponse`       | Base model for responses supporting pagination via a cursor.          |
+|                 | `PromptBundle`            | Container for packaging multiple prompts and partials.                |
+|                 | `PromptStore`             | Protocol for asynchronous prompt storage/retrieval.                   |
+|                 | `PromptStoreSync`         | Protocol for synchronous prompt storage/retrieval.                    |
+|                 | `PromptStoreWritable`     | Extension of `PromptStore` with asynchronous write methods.           |
+|                 | `PromptStoreWritableSync` | Extension of `PromptStoreSync` with synchronous write methods.        |
+|-----------------|---------------------------|-----------------------------------------------------------------------|
+| Utility/Schema  | `HasMetadata`             | Base model for types that can include arbitrary metadata.             |
+|                 | `JsonSchema`              | JSON schema definition. 'Any' allows flexibility.                     |
+|                 | `PartialResolver`         | function resolving a partial name to a template string.               |
+|                 | `Schema`                  | generic schema, represented as a dictionary.                          |
+|                 | `SchemaResolver`          | function resolving a schema name to a JSON schema.                    |
 """
 
 from __future__ import annotations
@@ -148,7 +206,7 @@ class PromptOutputConfig(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class PromptMetadata(Generic[ModelConfigT], HasMetadata):
+class PromptMetadata(HasMetadata, Generic[ModelConfigT]):
     """Metadata associated with a prompt, including configuration.
 
     This is a generic model, allowing the `config` field to hold
@@ -188,7 +246,7 @@ class PromptMetadata(Generic[ModelConfigT], HasMetadata):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class ParsedPrompt(Generic[ModelConfigT], PromptMetadata[ModelConfigT]):
+class ParsedPrompt(PromptMetadata[ModelConfigT], Generic[ModelConfigT]):
     """Represents a prompt after parsing its metadata and template.
 
     Attributes:
@@ -241,7 +299,7 @@ class MediaPart(HasMetadata):
     media: MediaContent
 
 
-class ToolRequestContent(Generic[InputT], BaseModel):
+class ToolRequestContent(BaseModel, Generic[InputT]):
     """Describes the details of a tool request within a `ToolRequestPart`.
 
     Attributes:
@@ -256,7 +314,7 @@ class ToolRequestContent(Generic[InputT], BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-class ToolRequestPart(Generic[InputT], HasMetadata):
+class ToolRequestPart(HasMetadata, Generic[InputT]):
     """A content part representing a request to invoke a tool.
 
     Attributes:
@@ -270,7 +328,7 @@ class ToolRequestPart(Generic[InputT], HasMetadata):
     )
 
 
-class ToolResponseContent(Generic[OutputT], BaseModel):
+class ToolResponseContent(BaseModel, Generic[OutputT]):
     """Describes the details of a tool response within a `ToolResponsePart`.
 
     Attributes:
@@ -285,7 +343,7 @@ class ToolResponseContent(Generic[OutputT], BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-class ToolResponsePart(Generic[OutputT], HasMetadata):
+class ToolResponsePart(HasMetadata, Generic[OutputT]):
     """A content part representing the result from a tool execution.
 
     Attributes:
@@ -398,7 +456,7 @@ class Document(HasMetadata):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-class DataArgument(Generic[VariablesT], BaseModel):
+class DataArgument(BaseModel, Generic[VariablesT]):
     """Encapsulates runtime information needed to render a prompt template.
 
     Attributes:
@@ -424,7 +482,7 @@ PartialResolver = Callable[[str], str | None | Awaitable[str | None]]
 """Type alias for a function resolving a partial name to a template string."""
 
 
-class RenderedPrompt(Generic[ModelConfigT], PromptMetadata[ModelConfigT]):
+class RenderedPrompt(PromptMetadata[ModelConfigT], Generic[ModelConfigT]):
     """The final output after a prompt template is rendered.
 
     Attributes:

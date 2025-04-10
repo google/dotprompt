@@ -29,17 +29,17 @@ packages = []
 py-modules = []
 
 # Pytest for unit testing and coverage.
+[tool.pytest]
+
 [tool.pytest.ini_options]
 addopts                            = ["--cov", "-v", "--no-header"]
-asyncio_default_fixture_loop_scope = "session"
+asyncio_default_fixture_loop_scope = "function"
 asyncio_mode                       = "strict"
 log_cli                            = true
 log_cli_date_format                = "%Y-%m-%d %H:%M:%S"
 log_cli_format                     = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
 log_cli_level                      = "DEBUG"
 python_files                       = ["**/*_test.py"]
-
-verbosity = 2
 
 [tool.coverage.report]
 fail_under = 85
