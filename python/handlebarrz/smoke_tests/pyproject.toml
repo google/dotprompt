@@ -1,6 +1,6 @@
 [project]
 authors         = [{ name = "Abraham Lazaro", email = "lazaromartinez@google.com" }]
-dependencies    = ["handlebarrz>=0.1.11"]
+dependencies    = ["dotprompt-handlebars>=0.0.1.dev1"]
 name            = "handlebarrz-smoke-tests"
 readme          = "README.md"
 requires-python = ">=3.10"
