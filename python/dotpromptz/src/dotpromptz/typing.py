@@ -194,8 +194,8 @@ class ParsedPrompt(Generic[ModelConfigT], PromptMetadata[ModelConfigT]):
     Attributes:
         template: The core template string, with frontmatter removed.
     """
-
     template: str
+    prompt_metadata: PromptMetadata
 
 
 class TextPart(HasMetadata):

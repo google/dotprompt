@@ -19,9 +19,11 @@
 from __future__ import annotations
 
 import re
-from typing import Any, TypedDict
+from collections.abc import Awaitable
+from typing import Any, TypedDict, Callable
+from inspect import iscoroutinefunction
 
-from dotpromptz.helpers import register_all_helpers
+from dotpromptz.srchelpers import register_all_helpers
 from dotpromptz.parse import parse_document
 from dotpromptz.typing import (
     JsonSchema,
@@ -31,7 +33,11 @@ from dotpromptz.typing import (
     SchemaResolver,
     ToolDefinition,
     ToolResolver,
+    PromptMetadata,
+    DataArgument,
+    RenderedPrompt,
 )
+from dotpromptz.picoschema import picoschema, PicoschemaOptions
 from handlebarrz import EscapeFunction, Handlebars, HelperFn
 
 # Pre-compiled regex for finding partial references in handlebars templates
@@ -145,7 +151,7 @@ class Dotprompt:
         self._tools[name] = definition
         return self
 
-    def parse(self, source: str) -> ParsedPrompt[Any]:
+    def parse(self, source: str) -> ParsedPrompt[Any] | None:
         """Parse a prompt from a string.
 
         Args:
@@ -167,3 +173,129 @@ class Dotprompt:
         """
         partials = set(_PARTIAL_PATTERN.findall(template))
         return partials
+
+    def render_metadata(self, source: str | ParsedPrompt, additional_metadata: PromptMetadata | None = None) -> PromptMetadata:
+
+        match source:
+            case str():
+                parsed_source = self.parse(source)
+                if parsed_source is None:
+                    return PromptMetadata()
+            case ParsedPrompt():
+                parsed_source = source
+            case _:
+                return PromptMetadata()
+
+        if additional_metadata is None:
+            additional_metadata = ParsedPrompt(
+                    ext={},
+                    config=None,
+                    metadata={},
+                    toolDefs=None,
+                    template=source
+                )
+
+        if additional_metadata is None:
+            additional_metadata = PromptMetadata()
+
+        selected_model = additional_metadata.model
+
+        if selected_model is None:
+            selected_model = parsed_source.model
+        if selected_model is None:
+            selected_model = self._default_model
+
+        model_config = self._model_configs.get(selected_model, {})
+
+        metadata = [
+            parsed_source.prompt_metadata,
+            additional_metadata
+        ]
+        self._resolve_metadata
+
+    def _resolver_metadata(self, base: PromptMetadata, merges: list[PromptMetadata]) -> PromptMetadata:
+        out = base
+        for merge in merges:
+            out = PromptMetadata(**{**out.model_dump(), **merge.model_dump()})
+
+        out = self._resolve_tools(out)
+
+        if out is None:
+            return PromptMetadata()
+
+        return self._render_pico_schema(out)
+
+
+    def _render_pico_schema(self, meta: PromptMetadata) -> PromptMetadata:
+
+        if meta.output.schema_ is None and meta.input.schema_ is None:
+            return meta
+
+        new_meta = meta
+
+        if meta.input.schema_:
+
+
+
+            schema = picoschema(
+                meta.input.schema_,
+                PicoschemaOptions(
+                    schema_resolver=self._wrapped_schema_resolver()
+                )
+            )
+
+    def _wrapped_schema_resolver(self) -> Callable[[str], JsonSchema | None | Awaitable[JsonSchema | None]]:
+        def wrapper(name: str) -> JsonSchema | None | Awaitable[JsonSchema | None]:
+
+            if schema := self._schemas.get(name):
+                return schema
+
+            if self._schema_resolver:
+                return self._schema_resolver(name)
+
+            return None
+
+        return wrapper
+
+
+    async def _resolve_tools(self, base: PromptMetadata) -> PromptMetadata | None:
+        out = base
+        if not base.tools:
+            return out
+        if out.tool_defs is None:
+            out.tool_defs = []
+
+        out_tools = []
+        for tool_name in out.tools:
+
+            if tool := self._tools.get(tool_name):
+                out.tool_defs.append(tool)
+            elif not self._tool_resolver:
+                if iscoroutinefunction(self._tool_resolver):
+                    resolved_tool = await self._tool_resolver(tool_name)
+                else:
+                    resolved_tool = self._tool_resolver(tool_name)
+
+                if resolved_tool is None:
+                    return None
+                # there is some required field for ToolDefinition
+                elif resolved_tool == ToolDefinition():
+                    return None
+
+                out.tool_defs.append(resolved_tool)
+            else:
+                out_tools.append(tool_name)
+
+        out.tools = out_tools
+
+        return out
+
+
+
+    def compile(self, source: str, additional_metadata: PromptMetadata) -> Callable[[DataArgument, PromptMetadata], RenderedPrompt]:
+
+        def wrapper(data: DataArgument, options: PromptMetadata) -> RenderedPrompt:
+            pass
+
+        return wrapper
+

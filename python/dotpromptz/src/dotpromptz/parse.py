@@ -196,7 +196,7 @@ def extract_frontmatter_and_body(source: str) -> tuple[str, str]:
     return '', ''
 
 
-def parse_document(source: str) -> ParsedPrompt[T]:
+def parse_document(source: str) -> ParsedPrompt[T] | None:
     """Parses document containing YAML frontmatter and template content.
 
     The frontmatter contains metadata and configuration for the prompt.
@@ -208,62 +208,53 @@ def parse_document(source: str) -> ParsedPrompt[T]:
         Parsed prompt with metadata and template content
     """
     frontmatter, body = extract_frontmatter_and_body(source)
-    if frontmatter:
-        try:
-            parsed_metadata = yaml.safe_load(frontmatter)
-            if parsed_metadata is None:
-                parsed_metadata = {}
+    if not frontmatter:
+        return None
 
-            raw = dict(parsed_metadata)
-            pruned: dict[str, Any] = {'ext': {}, 'config': {}, 'metadata': {}}
-            ext: dict[str, dict[str, Any]] = {}
+    try:
+        parsed_metadata = yaml.safe_load(frontmatter)
+    except Exception as e:
+        # TODO: Should this be an error?
+        print(f'Dotprompt: Error parsing YAML frontmatter: {e}')
+        # Return a basic ParsedPrompt with just the template
+        return None
 
-            # Process each key in the raw metadata
-            for key, value in raw.items():
-                if key in RESERVED_METADATA_KEYWORDS:
-                    pruned[key] = value
-                elif '.' in key:
-                    convert_namespaced_entry_to_nested_object(key, value, ext)
+    if parsed_metadata is None:
+        parsed_metadata = {}
 
-            try:
-                return ParsedPrompt(
-                    name=raw.get('name'),
-                    description=raw.get('description'),
-                    variant=raw.get('variant'),
-                    version=raw.get('version'),
-                    input=raw.get('input'),
-                    output=raw.get('output'),
-                    toolDefs=raw.get('toolDefs'),
-                    tools=raw.get('tools'),
-                    ext=ext,
-                    config=pruned.get('config'),
-                    metadata=pruned.get('metadata', {}),
-                    raw=raw,
-                    template=body.strip(),
-                )
-            except Exception:
-                # Return a basic ParsedPrompt with just the template
-                return ParsedPrompt(
-                    ext={},
-                    config=None,
-                    metadata={},
-                    toolDefs=None,
-                    template=body.strip(),
-                )
-        except Exception as e:
-            # TODO: Should this be an error?
-            print(f'Dotprompt: Error parsing YAML frontmatter: {e}')
-            # Return a basic ParsedPrompt with just the template
-            return ParsedPrompt(
-                ext={},
-                config=None,
-                metadata={},
-                toolDefs=None,
-                template=source.strip(),
-            )
+    raw = dict(parsed_metadata)
+    pruned: dict[str, Any] = {'ext': {}, 'config': {}, 'metadata': {}}
+    ext: dict[str, dict[str, Any]] = {}
+
+    # Process each key in the raw metadata
+    for key, value in raw.items():
+        if key in RESERVED_METADATA_KEYWORDS:
+            pruned[key] = value
+        elif '.' in key:
+            convert_namespaced_entry_to_nested_object(key, value, ext)
+
+    try:
+        return ParsedPrompt(
+            name=raw.get('name'),
+            description=raw.get('description'),
+            variant=raw.get('variant'),
+            version=raw.get('version'),
+            input=raw.get('input'),
+            output=raw.get('output'),
+            toolDefs=raw.get('toolDefs'),
+            tools=raw.get('tools'),
+            ext=ext,
+            config=pruned.get('config'),
+            metadata=pruned.get('metadata', {}),
+            raw=raw,
+            template=body.strip(),
+        )
+    except Exception:
+        # Return a basic ParsedPrompt with just the template
+        return None
 
     # No frontmatter, return a basic ParsedPrompt with just the template
-    return ParsedPrompt(ext={}, config=None, metadata={}, toolDefs=None, template=source)
+
 
 
 def to_messages(
