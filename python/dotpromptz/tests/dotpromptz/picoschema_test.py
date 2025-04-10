@@ -27,7 +27,6 @@ class TestPicoschemaParser(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up the test case."""
-        # Initialize the parser directly, without PicoschemaOptions
         self.parser = picoschema.PicoschemaParser()
 
     def test_must_resolve_schema_success(self) -> None:
@@ -85,6 +84,7 @@ class TestPicoschemaParser(unittest.TestCase):
         self.assertEqual(result, expected_schema)
 
     def test_parse_invalid_schema_type(self) -> None:
+        """Test error on invalid schema type."""
         with self.assertRaises(ValueError):
             self.parser.parse(123)
 
@@ -138,6 +138,7 @@ class TestPicoschemaParser(unittest.TestCase):
         self.assertEqual(result, {'type': 'string'})
 
     def test_parse_pico_object_type(self) -> None:
+        """Test parsing a Picoschema object type."""
         schema = {'name': 'string'}
         expected = {
             'type': 'object',
@@ -161,6 +162,7 @@ class TestPicoschemaParser(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_parse_pico_enum_type(self) -> None:
+        """Test parsing a Picoschema enum type."""
         schema = {'status(enum)': ['active', 'inactive']}
         expected = {
             'type': 'object',
@@ -194,6 +196,7 @@ class TestPicoschemaParser(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_parse_pico_nested_object(self) -> None:
+        """Test parsing a Picoschema nested object."""
         schema = {'address(object)': {'street': 'string'}}
         expected = {
             'type': 'object',
@@ -212,6 +215,7 @@ class TestPicoschemaParser(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_parse_pico_nested_array(self) -> None:
+        """Test parsing a Picoschema nested array."""
         schema = {'items(array)': {'props(array)': 'string'}}
         expected = {
             'type': 'object',
@@ -240,6 +244,7 @@ class TestPicoschemaParser(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_parse_pico_enum_with_optional_and_null(self) -> None:
+        """Test parsing a Picoschema enum with optional and null values."""
         schema = {'status?(enum)': ['active', 'inactive']}
         expected = {
             'type': 'object',
@@ -279,6 +284,7 @@ class TestPicoschemaParser(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_parse_pico_escription_on_enum(self) -> None:
+        """Test parsing Picoschema description on an enum."""
         schema = {'status(enum, the status)': ['active', 'inactive']}
         expected = {
             'type': 'object',
@@ -322,12 +328,14 @@ class TestExtractDescription(unittest.TestCase):
     """Extract description tests."""
 
     def test_extract(self) -> None:
+        """Test extracting a description from a string."""
         input_str = 'string, a simple string'
         expected = ('string', 'a simple string')
         result = picoschema.extract_description(input_str)
         self.assertEqual(result, expected)
 
     def test_extract_no_description(self) -> None:
+        """Test extracting a description from a string with no description."""
         input_str = 'string'
         expected = ('string', None)
         result = picoschema.extract_description(input_str)
