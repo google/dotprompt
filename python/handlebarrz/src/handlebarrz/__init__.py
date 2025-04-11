@@ -473,6 +473,37 @@ class Template:
             })
             raise
 
+    def compile(self, template_string: str) -> Callable[[dict[str, Any]], str]:
+        """Compile a template string into a reusable function.
+
+        This method provides an interface similar to Handlebars.js's `compile`.
+        It takes a template string and returns a function that can be called
+        with different data contexts to render the template.
+
+        Note: Unlike the JS version which can bake options into the compiled
+        template, this implementation returns a function that uses the current
+        configuration (strict mode, escape function, registered helpers, etc.)
+        of the `Template` instance at the time the returned function is called.
+
+        Args:
+            template_string: The Handlebars template string to compile.
+
+        Returns:
+            A callable function that takes a data dictionary and returns the
+            rendered string.
+
+        Raises:
+            ValueError: If there is a syntax error during the initial parse
+            check performed by render_template (depending on Rust implementation
+            details).  Rendering errors will occur when the returned function is
+            called.
+        """
+
+        def compiled(data: dict[str, Any]) -> str:
+            return self.render_template(template_string, data)
+
+        return compiled
+
     def register_extra_helpers(self) -> None:
         """Registers extra helper functions.
 

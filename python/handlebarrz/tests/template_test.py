@@ -209,6 +209,54 @@ class TestTemplate(unittest.TestCase):
         finally:
             os.unlink(temp_path)
 
+    def test_compile_basic(self) -> None:
+        """Test basic template compilation and execution."""
+        template = Template()
+        compiled_func = template.compile('Hello {{name}}!')
+        result = compiled_func({'name': 'Compiled World'})
+        self.assertEqual(result, 'Hello Compiled World!')
+
+    def test_compile_with_data_changes(self) -> None:
+        """Test that the compiled function works with different data."""
+        template = Template()
+        compiled_func = template.compile('Value: {{val}}')
+        result1 = compiled_func({'val': 10})
+        result2 = compiled_func({'val': 'abc'})
+        self.assertEqual(result1, 'Value: 10')
+        self.assertEqual(result2, 'Value: abc')
+
+    def test_compile_uses_current_template_state(self) -> None:
+        """Test that compiled function uses the template state at call time."""
+        template = Template()
+        compiled_func = template.compile('Helper: {{my_helper val}}')
+
+        # Register the helper AFTER compiling.
+        def simple_upper(params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]) -> str:
+            return str(params[0]).upper()
+
+        template.register_helper('my_helper', simple_upper)
+
+        # Call again AFTER helper is registered.
+        result_after = compiled_func({'val': 'test'})
+        self.assertEqual(result_after, 'Helper: TEST')
+
+        # Change strict mode AFTER compiling.
+        template.strict_mode = True
+        compiled_strict = template.compile('{{missing}}')
+        with pytest.raises(ValueError, match=r'Failed to access variable.*missing.*'):
+            compiled_strict({})
+
+    def test_compile_invalid_syntax(self) -> None:
+        """Test that compiling invalid syntax raises ValueError when called."""
+        template = Template()
+
+        # Compile should succeed, but the returned function should fail.
+        compiled_func = template.compile('Hello {{name!')
+
+        # Expect ValueError when the compiled function is executed.
+        with pytest.raises(ValueError, match=r'Failed to parse template.*'):
+            compiled_func({})
+
 
 class TestHandlebarsAlias(unittest.TestCase):
     """Test that the Handlebars alias works like Template."""

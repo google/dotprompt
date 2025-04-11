@@ -49,8 +49,8 @@ fail_under = 85
 default-groups = ["dev", "lint"]
 
 [tool.uv.sources]
-dotpromptz  = { workspace = true }
 dotprompt-handlebars = { workspace = true }
+dotpromptz           = { workspace = true }
 
 [tool.uv.workspace]
 members = ["dotpromptz", "handlebarrz", "tests/*"]
