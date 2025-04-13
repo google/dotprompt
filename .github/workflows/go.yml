@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name: Go build, tests and other checks
+name: Go checks
 
 on:
   pull_request:
@@ -29,7 +29,7 @@ jobs:
     strategy:
       matrix:
         # Track only the latest 2 stable versions of Go.
-        go-version: ['1.23.x', '1.24.x']
+        go-version: ["1.23.x", "1.24.x"]
       fail-fast: false
 
     name: Go ${{ matrix.go-version }} Tests

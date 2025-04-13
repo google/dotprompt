@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name: "JS: Run Tests and Build"
+name: "JS checks"
 
 on:
   pull_request:
@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['20', '21', '22', '23']
+        node-version: ["20", "21", "22", "23"]
     steps:
       - uses: actions/checkout@v4
 
