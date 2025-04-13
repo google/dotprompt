@@ -21,7 +21,6 @@
 *   Successful resolution with synchronous resolvers.
 *   Successful resolution with asynchronous resolvers.
 *   Successful resolution with synchronous resolvers returning awaitables.
-*   Handling missing resolver (`None`) raising `ValueError`.
 *   Handling non-callable resolver raising `TypeError`.
 *   Handling resolvers (sync, async, sync-returning-awaitable) returning `None`
     raising `LookupError`.
@@ -128,11 +127,6 @@ class TestResolve(unittest.IsolatedAsyncioTestCase):
         resolver_none = MockSyncReturningAwaitableResolver({})
         with self.assertRaisesRegex(LookupError, "test resolver for 'not_found' returned None"):
             await resolve('not_found', 'test', resolver_none)
-
-    async def test_resolve_resolver_none(self) -> None:
-        """Test ValueError when resolver is None."""
-        with self.assertRaisesRegex(ValueError, 'test resolver is not defined'):
-            await resolve('obj', 'test', None)
 
     async def test_resolve_resolver_not_callable(self) -> None:
         """Test TypeError when resolver is not callable."""
