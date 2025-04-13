@@ -16,6 +16,7 @@ classifiers = [
   "Topic :: Software Development :: Libraries",
 ]
 dependencies = [
+  "anyio>=4.9.0",
   "dotpromptz",
   #"handlebars@git+https://github.com/Manurajbharath/handlebars-py.git",
   #"js2py@git+https://github.com/a-j-albert/Js2Py---supports-python-3.13.git",

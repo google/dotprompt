@@ -25,6 +25,8 @@ import inspect
 from collections.abc import Awaitable, Callable
 from typing import Any, TypeVar
 
+import anyio
+
 from dotpromptz.errors import ResolverFailedError
 from dotpromptz.typing import PartialResolver, ToolDefinition, ToolResolver
 
@@ -41,6 +43,9 @@ DefinitionT = TypeVar('DefinitionT')
 # ](name: str, kind: str, resolver: ResolverT | None) -> DefinitionT:
 async def resolve(name: str, kind: str, resolver: ResolverT | None) -> DefinitionT:
     """Resolves a single object using the provided resolver.
+
+    If the resolver is synchronous, it is run in a thread pool to avoid
+    blocking the event loop.
 
     Args:
         name: The name of the object to resolve.
@@ -64,17 +69,37 @@ async def resolve(name: str, kind: str, resolver: ResolverT | None) -> Definitio
     if not callable(resolver):
         raise TypeError(f"{kind} resolver for '{name}' is not callable")
 
-    maybe_fut = resolver(name)
-    if inspect.isawaitable(maybe_fut):
-        try:
-            obj = await maybe_fut
-        except Exception as e:
-            raise ResolverFailedError(name, kind, str(e)) from e
-    else:
-        obj = maybe_fut
+    try:
+        # We need to check if the callable itself is async first, or if it returns an awaitable.
+        if inspect.iscoroutinefunction(resolver) or inspect.isasyncgenfunction(resolver):
+            # If resolver is async, call it directly and await.
+            #
+            # NOTE(lint): Ignore type error: Static checker can't infer from the
+            # `inspect` check that `resolver` is guaranteed to be async here,
+            # but the runtime check ensures `resolver(name)` returns an
+            # awaitable in this branch.
+            obj = await resolver(name)  # type: ignore[misc]
+        else:
+            # If resolver is sync, run it in a thread pool and check the return
+            # type after calling, as we don't know it yet. It might still return
+            # an awaitable (e.g. sync function returning `asyncio.Future`) but
+            # calling it sync first is necessary to check.
+            result_or_awaitable = await anyio.to_thread.run_sync(resolver, name)
+            if inspect.isawaitable(result_or_awaitable):
+                obj = await result_or_awaitable
+            else:
+                obj = result_or_awaitable
+
+    except Exception as e:
+        # Catch errors from both await and sync execution in thread
+        raise ResolverFailedError(name, kind, str(e)) from e
 
     if obj is None:
         raise LookupError(f"{kind} resolver for '{name}' returned None")
+
+    # Runtime type check (optional, might need `expected_type` passed in)
+    # if not isinstance(obj, ...):
+    #     raise TypeError(...)
 
     return obj
 

@@ -23,6 +23,7 @@ dependencies = [
   "structlog>=25.2.0",
   "types-aiofiles>=24.1.0.20250326",
   "strenum>=0.4.15 ; python_version < '3.11'",
+  "anyio>=4.9.0",
 ]
 description = "Dotpromptz is a language-neutral executable prompt template file format for Generative AI."
 license = { text = "Apache-2.0" }
