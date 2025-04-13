@@ -90,6 +90,37 @@ async def resolve(name: str, kind: str, resolver: ResolverT) -> DefinitionT:
 
     try:
         # We need to check if the callable itself is async first, or if it returns an awaitable.
+        #
+        # ```ascii
+        #         +---------------------------+
+        #         | collections.abc.Awaitable |  (ABC: Can be `await`ed)
+        #         +---------------------------+
+        #            /|\             /|\
+        #             |               | (Implements/Is-a)
+        #     (Inherits/Is-a)         |
+        #             |               |
+        #     +----------------+  +---------------------+  <-+ (Returned by call to...)
+        #     | asyncio.Future |  | types.CoroutineType |    |
+        #     | (Low-level     |  | (Awaitable Object)  |    | +--------------------------+
+        #     |  Awaitable)    |  | (from `async def`)  |    +-| collections.abc.Callable |
+        #     +----------------+  +---------------------+      | (e.g. `async def` func)  |
+        #             /|\                 ^                    +--------------------------+
+        #              |                  | (Often wrapped by)
+        #     (Inherits/Is-a)             |
+        #              |                  |
+        #     +----------------+          |
+        #     |  asyncio.Task  |----------+
+        #     | (Runs Coroutine|
+        #     |  is a Future)  |
+        #     +----------------+
+        #                 ^
+        #                 | (Managed by)
+        #                 |
+        #     +-------------------+
+        #     | asyncio.TaskGroup |
+        #     | (Context Manager) |
+        #     +-------------------+
+        # ```
         if inspect.iscoroutinefunction(resolver) or inspect.isasyncgenfunction(resolver):
             # If resolver is async, call it directly and await.
             #
