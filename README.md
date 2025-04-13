@@ -1,3 +1,7 @@
+[![Go checks](https://github.com/google/dotprompt/actions/workflows/go.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/go.yml)
+[![Python checks](https://github.com/google/dotprompt/actions/workflows/python.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/python.yml)
+[![JS checks](https://github.com/google/dotprompt/actions/workflows/test.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/test.yml)
+
 # Dotprompt: Executable GenAI Prompt Templates
 
 **Dotprompt** is an executable prompt template file format for Generative AI. It
