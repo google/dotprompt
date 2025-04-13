@@ -42,10 +42,6 @@ from handlebarrz import EscapeFunction, Handlebars, HelperFn
 _PARTIAL_PATTERN = re.compile(r'{{\s*>\s*([a-zA-Z0-9_.-]+)\s*}}')
 
 
-class Options(TypedDict, total=False):
-    """Options for dotprompt."""
-
-
 class Dotprompt:
     """Dotprompt extends a Handlebars template for use with Gen AI prompts."""
 
@@ -74,7 +70,7 @@ class Dotprompt:
             schemas: Provide a static mapping of schema names to their JSON schema definitions.
             schema_resolver: resolver for schema names to JSON schema definitions.
             partial_resolver: resolver for partial names to their content.
-            escape_fn: ecape function
+            escape_fn: escape function to use for the template.
         """
         self._handlebars: Handlebars = Handlebars(escape_fn=escape_fn)
 

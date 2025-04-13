@@ -35,7 +35,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from dotpromptz.dotprompt import Dotprompt, Options
+from dotpromptz.dotprompt import Dotprompt
 from dotpromptz.typing import ParsedPrompt, ToolDefinition
 from handlebarrz import HelperFn
 
