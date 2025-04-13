@@ -26,10 +26,11 @@
     raising `LookupError`.
 *   Correctly wrapping exceptions from sync resolvers in `ResolverFailedError`.
 *   Correctly wrapping exceptions from async resolvers in `ResolverFailedError`.
+*   Handling synchronous resolvers returning an `asyncio.Future`.
 
-## `resolve_tool` & `resolve_partial`
+## `resolve_*` functions
 
-*   Successful resolution via the core `resolve` function.
+*   Successful resolution to the correct type via the core `resolve` function.
 *   Correct propagation of errors (e.g., `ResolverFailedError`, `LookupError`)
     from the core `resolve` function.
 """
@@ -40,8 +41,8 @@ from collections.abc import Awaitable
 from typing import Any
 
 from dotpromptz.errors import ResolverFailedError
-from dotpromptz.resolvers import resolve, resolve_partial, resolve_tool
-from dotpromptz.typing import ToolDefinition
+from dotpromptz.resolvers import resolve, resolve_json_schema, resolve_partial, resolve_tool
+from dotpromptz.typing import JsonSchema, ToolDefinition
 
 
 class MockSyncResolver:
@@ -81,6 +82,25 @@ class MockSyncReturningAwaitableResolver:
         return None
 
 
+class MockSyncReturningFutureResolver:
+    """Mock sync resolver that returns an asyncio.Future."""
+
+    def __init__(self, data: dict[str, Any], loop: asyncio.AbstractEventLoop) -> None:
+        """Initialize the mock resolver."""
+        self._data = data
+        self._loop = loop
+
+    def __call__(self, name: str) -> asyncio.Future[Any] | None:
+        """Return a future object if name is found."""
+        value = self._data.get(name)
+        if value is not None:
+            future: asyncio.Future[Any] = self._loop.create_future()
+            # Use call_soon_threadsafe to set the result in the event loop.
+            self._loop.call_soon_threadsafe(future.set_result, value)
+            return future
+        return None
+
+
 class MockAsyncResolver:
     """Mock async resolver callable."""
 
@@ -100,6 +120,7 @@ class MockAsyncResolver:
 
 mock_tool_def = ToolDefinition(name='test_tool', inputSchema={})
 mock_partial_content = 'This is a partial.'
+mock_json_schema: JsonSchema = {'type': 'string', 'description': 'A test schema'}
 
 
 class TestResolve(unittest.IsolatedAsyncioTestCase):
@@ -158,6 +179,22 @@ class TestResolve(unittest.IsolatedAsyncioTestCase):
             await resolve('obj', 'test', resolver)
         self.assertIs(cm.exception.__cause__, original_error)
 
+    async def test_resolve_sync_resolver_returns_future(self) -> None:
+        """Test successful resolution with a sync resolver returning a Future."""
+        loop = asyncio.get_running_loop()
+        resolver = MockSyncReturningFutureResolver({'obj_future': 'value_future'}, loop)
+        result: str = await resolve('obj_future', 'test', resolver)
+        self.assertEqual(result, 'value_future')
+
+    async def test_resolve_resolver_none(self) -> None:
+        """Test LookupError when resolver returns None."""
+        resolver_sync = MockSyncResolver({})
+        resolver_async = MockAsyncResolver({})
+        with self.assertRaisesRegex(LookupError, "test resolver for 'not_found' returned None"):
+            await resolve('not_found', 'test', resolver_sync)
+        with self.assertRaisesRegex(LookupError, "test resolver for 'not_found' returned None"):
+            await resolve('not_found', 'test', resolver_async)
+
 
 class TestResolveTool(unittest.IsolatedAsyncioTestCase):
     """Tests for tool resolver functions."""
@@ -188,6 +225,34 @@ class TestResolvePartial(unittest.IsolatedAsyncioTestCase):
         """Test failing partial resolution propagates error."""
         with self.assertRaisesRegex(LookupError, "partial resolver for 'missing_partial' returned None"):
             await resolve_partial('missing_partial', MockSyncResolver({}))
+
+
+class TestResolveJsonSchema(unittest.IsolatedAsyncioTestCase):
+    """Tests for JSON schema resolver function."""
+
+    async def test_resolve_json_schema_success_sync(self) -> None:
+        """Test successful schema resolution with sync resolver."""
+        resolver = MockSyncResolver({'MySchema': mock_json_schema})
+        result = await resolve_json_schema('MySchema', resolver)
+        self.assertEqual(result, mock_json_schema)
+
+    async def test_resolve_json_schema_success_async(self) -> None:
+        """Test successful schema resolution with async resolver."""
+        resolver = MockAsyncResolver({'MySchema': mock_json_schema})
+        result = await resolve_json_schema('MySchema', resolver)
+        self.assertEqual(result, mock_json_schema)
+
+    async def test_resolve_json_schema_fails_error(self) -> None:
+        """Test failing schema resolution propagates error."""
+        resolver = MockSyncResolver({}, error=TypeError('Schema Error'))
+        with self.assertRaisesRegex(ResolverFailedError, r'schema resolver failed for bad_schema; Schema Error'):
+            await resolve_json_schema('bad_schema', resolver)
+
+    async def test_resolve_json_schema_fails_none(self) -> None:
+        """Test failing schema resolution propagates error when None is returned."""
+        resolver = MockAsyncResolver({})
+        with self.assertRaisesRegex(LookupError, r"schema resolver for 'missing_schema' returned None"):
+            await resolve_json_schema('missing_schema', resolver)
 
 
 if __name__ == '__main__':

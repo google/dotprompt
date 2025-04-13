@@ -22,19 +22,20 @@ object.
 
 ## Key Operations
 
-| Function          | Description                                                                |
-|-------------------|----------------------------------------------------------------------------|
-| `resolve`         | Core async function to resolve a named object using a given resolver.      |
-|                   | Handles both sync/async resolvers and sync functions returning awaitables. |
-| `resolve_tool`    | Helper async function specifically for resolving tool names.               |
-| `resolve_partial` | Helper async function specifically for resolving partial names.            |
+| Function              | Description                                                                |
+|-----------------------|----------------------------------------------------------------------------|
+| `resolve`             | Core async function to resolve a named object using a given resolver.      |
+|                       | Handles both sync/async resolvers and sync functions returning awaitables. |
+| `resolve_tool`        | Helper async function specifically for resolving tool names.               |
+| `resolve_partial`     | Helper async function specifically for resolving partial names.            |
+| `resolve_json_schema` | Helper async function specifically for resolving JSON schemas.             |
 
 The `resolve` function handles both sync and async resolvers. If the resolver is
 sync, it is run in a thread pool to avoid blocking the event loop. If the
 resolver is async, it is awaited directly.
 
-The `resolve_tool` and `resolve_partial` functions are convenience wrappers around
-`resolve` that handle the specific types of resolvers for tools and partials.
+The `resolve_*` functions are convenience wrappers around `resolve` that handle
+the specific types of resolvers for tools, partials, and schemas.
 """
 
 import inspect
@@ -44,7 +45,13 @@ from typing import Any, TypeVar
 import anyio
 
 from dotpromptz.errors import ResolverFailedError
-from dotpromptz.typing import PartialResolver, ToolDefinition, ToolResolver
+from dotpromptz.typing import (
+    JsonSchema,
+    PartialResolver,
+    SchemaResolver,
+    ToolDefinition,
+    ToolResolver,
+)
 
 # For compatibility with Python 3.10.
 ResolverCallable = Callable[[str], Awaitable[Any] | Any]
@@ -147,3 +154,21 @@ async def resolve_partial(name: str, resolver: PartialResolver) -> str:
         TypeError: If the resolver is not callable or returns an invalid type.
     """
     return await resolve(name, 'partial', resolver)
+
+
+async def resolve_json_schema(name: str, resolver: SchemaResolver) -> JsonSchema:
+    """Resolve a JSON schema using the provided resolver.
+
+    Args:
+        name: The name of the JSON schema to resolve.
+        resolver: The JSON schema resolver callable.
+
+    Returns:
+        The resolved JSON schema.
+
+    Raises:
+        LookupError: If the resolver returns None for the schema.
+        ResolverFailedError: For exceptions raised by the resolver.
+        TypeError: If the resolver is not callable or returns an invalid type.
+    """
+    return await resolve(name, 'schema', resolver)
