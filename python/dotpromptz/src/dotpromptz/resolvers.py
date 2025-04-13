@@ -19,6 +19,22 @@
 A well-defined object resolver is a callable that takes a name and returns
 either an object or an awaitable (such as a future or coroutine) that returns an
 object.
+
+## Key Operations
+
+| Function          | Description                                                                |
+|-------------------|----------------------------------------------------------------------------|
+| `resolve`         | Core async function to resolve a named object using a given resolver.      |
+|                   | Handles both sync/async resolvers and sync functions returning awaitables. |
+| `resolve_tool`    | Helper async function specifically for resolving tool names.               |
+| `resolve_partial` | Helper async function specifically for resolving partial names.            |
+
+The `resolve` function handles both sync and async resolvers. If the resolver is
+sync, it is run in a thread pool to avoid blocking the event loop. If the
+resolver is async, it is awaited directly.
+
+The `resolve_tool` and `resolve_partial` functions are convenience wrappers around
+`resolve` that handle the specific types of resolvers for tools and partials.
 """
 
 import inspect
@@ -91,15 +107,12 @@ async def resolve(name: str, kind: str, resolver: ResolverT | None) -> Definitio
                 obj = result_or_awaitable
 
     except Exception as e:
-        # Catch errors from both await and sync execution in thread
+        # Catch errors from both await and sync execution in thread.
         raise ResolverFailedError(name, kind, str(e)) from e
 
+    # TODO: Should we raise a LookupError if the resolver returns None?
     if obj is None:
         raise LookupError(f"{kind} resolver for '{name}' returned None")
-
-    # Runtime type check (optional, might need `expected_type` passed in)
-    # if not isinstance(obj, ...):
-    #     raise TypeError(...)
 
     return obj
 

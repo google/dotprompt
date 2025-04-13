@@ -14,7 +14,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Unit tests for resolver utilities using unittest."""
+"""Unit tests for resolver utilities using unittest.
+
+## `resolve`
+
+*   Successful resolution with synchronous resolvers.
+*   Successful resolution with asynchronous resolvers.
+*   Successful resolution with synchronous resolvers returning awaitables.
+*   Handling missing resolver (`None`) raising `ValueError`.
+*   Handling non-callable resolver raising `TypeError`.
+*   Handling resolvers (sync, async, sync-returning-awaitable) returning `None`
+    raising `LookupError`.
+*   Correctly wrapping exceptions from sync resolvers in `ResolverFailedError`.
+*   Correctly wrapping exceptions from async resolvers in `ResolverFailedError`.
+
+## `resolve_tool` & `resolve_partial`
+
+*   Successful resolution via the core `resolve` function.
+*   Correct propagation of errors (e.g., `ResolverFailedError`, `LookupError`)
+    from the core `resolve` function.
+"""
 
 import asyncio
 import unittest
@@ -102,7 +121,6 @@ class TestResolve(unittest.IsolatedAsyncioTestCase):
     async def test_resolve_sync_resolver_returns_awaitable(self) -> None:
         """Test successful resolution with a sync resolver returning an awaitable."""
         resolver = MockSyncReturningAwaitableResolver({'obj_await': 'value_await'})
-        # Call resolve - it should handle the awaitable returned by the sync resolver
         result: Any = await resolve('obj_await', 'test', resolver)
         self.assertEqual(result, 'value_await')
 
