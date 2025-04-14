@@ -25,7 +25,7 @@ import anyio
 
 from dotpromptz.helpers import register_all_helpers
 from dotpromptz.parse import parse_document
-from dotpromptz.resolvers import resolve_tool
+from dotpromptz.resolvers import resolve_partial, resolve_tool
 from dotpromptz.typing import (
     JsonSchema,
     ModelConfigT,
@@ -158,7 +158,7 @@ class Dotprompt:
         return parse_document(source)
 
     def _identify_partials(self, template: str) -> set[str]:
-        """Identify all partial references in a template.
+        """Identify all unique partial references in a template.
 
         Args:
             template: The template to scan for partial references.
@@ -233,3 +233,50 @@ class Dotprompt:
 
         out.tools = unregistered_names
         return out
+
+    async def _resolve_partials(self, template: str) -> None:
+        """Resolve all partials in a template.
+
+        Args:
+            template: The template to resolve partials in.
+
+        Returns:
+            None
+        """
+        if self._partial_resolver is None and self._store is None:
+            return
+
+        names = self._identify_partials(template)
+        unregistered_names: list[str] = [name for name in names if not self._handlebars.has_partial(name)]
+
+        async def resolve_and_register(name: str) -> None:
+            """Resolve a partial from the resolver or store and register it.
+
+            The partial resolver is preferred, and the store is used as a
+            fallback. If neither is available, the partial is not registered.
+
+            Args:
+                name: The name of the partial to resolve.
+
+            Returns:
+                None.
+            """
+            content: str | None = None
+
+            if self._partial_resolver is not None:
+                content = await resolve_partial(name, self._partial_resolver)
+
+            if content is None and self._store is not None:
+                partial = await self._store.load_partial(name)
+                if partial is not None:
+                    content = partial.source
+
+            if content is not None:
+                self.define_partial(name, content)
+
+                # Recursively resolve partials in the content.
+                await self._resolve_partials(content)
+
+        async with anyio.create_task_group() as tg:
+            for name in unregistered_names:
+                tg.start_soon(resolve_and_register, name)

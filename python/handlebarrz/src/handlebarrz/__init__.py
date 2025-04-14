@@ -159,6 +159,7 @@ class Template:
         self._template.set_escape_fn(escape_fn)
         self._template.set_strict_mode(strict_mode)
         self._template.set_dev_mode(dev_mode)
+        self._known_partials: set[str] = set()
 
     @property
     def strict_mode(self) -> bool:
@@ -226,7 +227,7 @@ class Template:
                 'function': escape_fn,
             })
         except ValueError as e:
-            logger.error({'event': 'escape_function_error', 'error': str(e)})
+            logger.exception({'event': 'escape_function_error', 'error': str(e)})
             raise
 
     def register_template(self, name: str, template_string: str) -> None:
@@ -247,7 +248,7 @@ class Template:
             self._template.register_template(name, template_string)
             logger.debug({'event': 'template_registered', 'name': name})
         except ValueError as e:
-            logger.error({
+            logger.exception({
                 'event': 'template_registration_error',
                 'name': name,
                 'error': str(e),
@@ -270,14 +271,26 @@ class Template:
         """
         try:
             self._template.register_partial(name, template_string)
+            self._known_partials.add(name)
             logger.debug({'event': 'partial_registered', 'name': name})
-        except ValueError as e:
-            logger.error({
+        except Exception as e:
+            logger.exception({
                 'event': 'partial_registration_error',
                 'name': name,
                 'error': str(e),
             })
             raise
+
+    def has_partial(self, name: str) -> bool:
+        """Check if a partial is registered.
+
+        Args:
+            name: The name of the partial to check.
+
+        Returns:
+            True if the partial is registered, False otherwise.
+        """
+        return name in self._known_partials
 
     def register_template_file(self, name: str, file_path: str | Path) -> None:
         """Register a template from a file.
@@ -303,7 +316,7 @@ class Template:
                 'path': file_path_str,
             })
         except (FileNotFoundError, ValueError) as e:
-            logger.error({
+            logger.exception({
                 'event': 'template_file_registration_error',
                 'name': name,
                 'path': file_path_str,
@@ -335,7 +348,7 @@ class Template:
                 'extension': extension,
             })
         except (FileNotFoundError, ValueError) as e:
-            logger.error({
+            logger.exception({
                 'event': 'templates_directory_registration_error',
                 'path': dir_path_str,
                 'extension': extension,
@@ -385,7 +398,7 @@ class Template:
             self._template.register_helper(name, create_helper(helper_fn))  # type: ignore[arg-type]
             logger.debug({'event': 'helper_registered', 'name': name})
         except Exception as e:
-            logger.error({
+            logger.exception({
                 'event': 'helper_registration_error',
                 'name': name,
                 'error': str(e),
@@ -437,7 +450,7 @@ class Template:
             logger.debug({'event': 'template_rendered', 'name': name})
             return result
         except ValueError as e:
-            logger.error({
+            logger.exception({
                 'event': 'template_rendering_error',
                 'name': name,
                 'error': str(e),
@@ -467,7 +480,7 @@ class Template:
             logger.debug({'event': 'template_string_rendered'})
             return result
         except ValueError as e:
-            logger.error({
+            logger.exception({
                 'event': 'template_string_rendering_error',
                 'error': str(e),
             })
@@ -518,7 +531,7 @@ class Template:
             self._template.register_extra_helpers()
             logger.debug({'event': 'extra_helpers_registered'})
         except Exception as e:
-            logger.error({
+            logger.exception({
                 'event': 'extra_helpers_registration_error',
                 'error': str(e),
             })

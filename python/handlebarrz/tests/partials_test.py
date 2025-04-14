@@ -204,3 +204,18 @@ class PartialsTest(unittest.TestCase):
         }
         admin_result = template.render('dynamic-partial', admin_data)
         self.assertEqual(admin_result, 'Admin: Jane Smith (Super Admin)')
+
+    def test_has_partial_exists(self) -> None:
+        """Test has_partial returns True for an existing partial."""
+        template = Template()
+        template.register_partial('my_partial', 'Partial content')
+        self.assertTrue(template.has_partial('my_partial'))
+
+    def test_has_partial_not_exists(self) -> None:
+        """Test has_partial returns False for a non-existent partial."""
+        template = Template()
+        self.assertFalse(template.has_partial('non_existent_partial'))
+
+
+if __name__ == '__main__':
+    unittest.main()
