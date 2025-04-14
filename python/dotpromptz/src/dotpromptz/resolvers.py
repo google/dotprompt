@@ -125,14 +125,9 @@ async def resolve(name: str, kind: str, resolver: ResolverT | None) -> Definitio
         #     | (Context Manager) |
         #     +-------------------+
         # ```
-        if inspect.iscoroutinefunction(resolver) or inspect.isasyncgenfunction(resolver):
+        if inspect.iscoroutinefunction(resolver):
             # If resolver is async, call it directly and await.
-            #
-            # NOTE(lint): Ignore type error: Static checker can't infer from the
-            # `inspect` check that `resolver` is guaranteed to be async here,
-            # but the runtime check ensures `resolver(name)` returns an
-            # awaitable in this branch.
-            obj = await resolver(name)  # type: ignore[misc]
+            obj = await resolver(name)
         else:
             # If resolver is sync, run it in a thread pool and check the return
             # type after calling, as we don't know it yet. It might still return
