@@ -64,7 +64,7 @@ DefinitionT = TypeVar('DefinitionT')
 #     ResolverT: ResolverCallable,
 #     DefinitionT: Any,
 # ](name: str, kind: str, resolver: ResolverT) -> DefinitionT:
-async def resolve(name: str, kind: str, resolver: ResolverT) -> DefinitionT:
+async def resolve(name: str, kind: str, resolver: ResolverT | None) -> DefinitionT:
     """Resolves a single object using the provided resolver.
 
     If the resolver is synchronous, it is run in a thread pool to avoid
@@ -82,8 +82,12 @@ async def resolve(name: str, kind: str, resolver: ResolverT) -> DefinitionT:
         LookupError: If the resolver returns None for the object.
         ResolverFailedError: For exceptions raised by the resolver.
         TypeError: If the resolver is not callable or returns an invalid type.
+        ValueError: If the resolver is not defined.
     """
     obj: DefinitionT | None = None
+
+    if resolver is None:
+        raise ValueError(f'{kind} resolver is not defined')
 
     if not callable(resolver):
         raise TypeError(f"{kind} resolver for '{name}' is not callable")
@@ -151,7 +155,7 @@ async def resolve(name: str, kind: str, resolver: ResolverT) -> DefinitionT:
     return obj
 
 
-async def resolve_tool(name: str, resolver: ToolResolver) -> ToolDefinition:
+async def resolve_tool(name: str, resolver: ToolResolver | None) -> ToolDefinition:
     """Resolve a tool using the provided resolver.
 
     Args:
@@ -165,11 +169,12 @@ async def resolve_tool(name: str, resolver: ToolResolver) -> ToolDefinition:
         LookupError: If the resolver returns None for the tool.
         ResolverFailedError: For exceptions raised by the resolver.
         TypeError: If the resolver is not callable or returns an invalid type.
+        ValueError: If the resolver is not defined.
     """
     return await resolve(name, 'tool', resolver)
 
 
-async def resolve_partial(name: str, resolver: PartialResolver) -> str:
+async def resolve_partial(name: str, resolver: PartialResolver | None) -> str:
     """Resolve a partial using the provided resolver.
 
     Args:
@@ -183,11 +188,12 @@ async def resolve_partial(name: str, resolver: PartialResolver) -> str:
         LookupError: If the resolver returns None for the partial.
         ResolverFailedError: For exceptions raised by the resolver.
         TypeError: If the resolver is not callable or returns an invalid type.
+        ValueError: If the resolver is not defined.
     """
     return await resolve(name, 'partial', resolver)
 
 
-async def resolve_json_schema(name: str, resolver: SchemaResolver) -> JsonSchema:
+async def resolve_json_schema(name: str, resolver: SchemaResolver | None) -> JsonSchema:
     """Resolve a JSON schema using the provided resolver.
 
     Args:

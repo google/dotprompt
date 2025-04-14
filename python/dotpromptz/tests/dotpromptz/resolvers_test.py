@@ -27,6 +27,7 @@
 *   Correctly wrapping exceptions from sync resolvers in `ResolverFailedError`.
 *   Correctly wrapping exceptions from async resolvers in `ResolverFailedError`.
 *   Handling synchronous resolvers returning an `asyncio.Future`.
+*   Handling missing resolvers raising `ValueError`.
 
 ## `resolve_*` functions
 
@@ -126,6 +127,11 @@ mock_json_schema: JsonSchema = {'type': 'string', 'description': 'A test schema'
 class TestResolve(unittest.IsolatedAsyncioTestCase):
     """Tests for resolver functions."""
 
+    async def test_resolve_resolver_none(self) -> None:
+        """Test ValueError when resolver is None."""
+        with self.assertRaisesRegex(ValueError, 'test resolver is not defined'):
+            await resolve('obj', 'test', None)
+
     async def test_resolve_sync_success(self) -> None:
         """Test successful resolution with a sync resolver."""
         resolver = MockSyncResolver({'obj1': 'value1'})
@@ -185,15 +191,6 @@ class TestResolve(unittest.IsolatedAsyncioTestCase):
         resolver = MockSyncReturningFutureResolver({'obj_future': 'value_future'}, loop)
         result: str = await resolve('obj_future', 'test', resolver)
         self.assertEqual(result, 'value_future')
-
-    async def test_resolve_resolver_none(self) -> None:
-        """Test LookupError when resolver returns None."""
-        resolver_sync = MockSyncResolver({})
-        resolver_async = MockAsyncResolver({})
-        with self.assertRaisesRegex(LookupError, "test resolver for 'not_found' returned None"):
-            await resolve('not_found', 'test', resolver_sync)
-        with self.assertRaisesRegex(LookupError, "test resolver for 'not_found' returned None"):
-            await resolve('not_found', 'test', resolver_async)
 
 
 class TestResolveTool(unittest.IsolatedAsyncioTestCase):

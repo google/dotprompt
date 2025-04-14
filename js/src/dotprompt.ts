@@ -264,36 +264,41 @@ export class Dotprompt {
     base: PromptMetadata<ModelConfig>
   ): Promise<PromptMetadata<ModelConfig>> {
     const out = { ...base };
-    // Resolve tools that are already registered into toolDefs, leave
-    // unregistered tools alone..
-    if (out.tools) {
-      const outTools: string[] = [];
-      out.toolDefs = out.toolDefs || [];
-
-      await Promise.all(
-        out.tools.map(async (toolName) => {
-          if (this.tools[toolName]) {
-            if (out.toolDefs) {
-              out.toolDefs.push(this.tools[toolName]);
-            }
-          } else if (this.toolResolver) {
-            const resolvedTool = await this.toolResolver(toolName);
-            if (!resolvedTool) {
-              throw new Error(
-                `Dotprompt: Unable to resolve tool '${toolName}' to a recognized tool definition.`
-              );
-            }
-            if (out.toolDefs) {
-              out.toolDefs.push(resolvedTool);
-            }
-          } else {
-            outTools.push(toolName);
-          }
-        })
-      );
-
-      out.tools = outTools;
+    if (!out.tools) {
+      return out;
     }
+
+    // Resolve tools that are already registered into toolDefs, leave
+    // unregistered tools alone.
+    const unregisteredNames: string[] = [];
+    out.toolDefs = out.toolDefs || [];
+
+    await Promise.all(
+      out.tools.map(async (name) => {
+        if (this.tools[name]) {
+          // Found locally.
+          if (out.toolDefs) {
+            out.toolDefs.push(this.tools[name]);
+          }
+        } else if (this.toolResolver) {
+          // Resolve from the tool resolver.
+          const resolvedTool = await this.toolResolver(name);
+          if (!resolvedTool) {
+            throw new Error(
+              `Dotprompt: Unable to resolve tool '${name}' to a recognized tool definition.`
+            );
+          }
+          if (out.toolDefs) {
+            out.toolDefs.push(resolvedTool);
+          }
+        } else {
+          // Unregistered tool.
+          unregisteredNames.push(name);
+        }
+      })
+    );
+
+    out.tools = unregisteredNames;
     return out;
   }
 

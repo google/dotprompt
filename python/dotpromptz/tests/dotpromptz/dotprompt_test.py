@@ -209,5 +209,5 @@ def test_chainable_interface(mock_handlebars: Mock) -> None:
 def test_identify_partials(template: str, expected: set[str]) -> None:
     """Test the identify_partials method with various templates."""
     dotprompt = Dotprompt()
-    partials = dotprompt.identify_partials(template)
+    partials = dotprompt._identify_partials(template)
     assert partials == expected
