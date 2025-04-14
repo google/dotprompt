@@ -19,7 +19,7 @@ package dotprompt
 import (
 	"testing"
 
-	"github.com/aymerick/raymond"
+	"github.com/mbleigh/raymond"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -23,8 +23,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/aymerick/raymond"
 	"github.com/invopop/jsonschema"
+	"github.com/mbleigh/raymond"
 )
 
 // PartialResolver is a function to resolve partial names to their content.
@@ -216,9 +216,14 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata) 
 			}
 		}
 		inputContext = MergeMaps(defaultInput, data.Input)
-		inputContext = MergeMaps(inputContext, data.Context)
+		privDF := raymond.NewDataFrame()
+		for k, v := range data.Context {
+			privDF.Set(k, v)
+		}
 
-		renderedString, err := dp.Template.Exec(inputContext)
+		renderedString, err := dp.Template.ExecWith(inputContext, privDF, &raymond.ExecOptions{
+			NoEscape: true,
+		})
 
 		if err != nil {
 			return RenderedPrompt{}, err

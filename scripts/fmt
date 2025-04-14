@@ -23,6 +23,8 @@ if ((EUID == 0)); then
   exit
 fi
 
+GO_VERSION="1.23.8"
+
 TOP_DIR=$(git rev-parse --show-toplevel)
 
 # Add license header to all files that don't already have it.
@@ -42,7 +44,7 @@ if [[ $? -ne 0 ]]; then
 fi
 
 # Format all Go code.
-go mod -C "${TOP_DIR}/go" tidy
+go mod -C "${TOP_DIR}/go" tidy -go="${GO_VERSION}"
 go fmt -C "${TOP_DIR}/go" ./...
 if [[ $? -ne 0 ]]; then
   exit 1

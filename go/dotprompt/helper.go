@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/aymerick/raymond"
+	"github.com/mbleigh/raymond"
 )
 
 var templateHelpers = map[string]any{

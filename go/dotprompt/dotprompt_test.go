@@ -20,7 +20,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aymerick/raymond"
+	"github.com/mbleigh/raymond"
 )
 
 // TestDefineHelper tests the DefineHelper function.
