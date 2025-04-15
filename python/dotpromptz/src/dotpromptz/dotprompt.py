@@ -325,7 +325,7 @@ class Dotprompt:
 
     # NOTE: Equivalent to wrappedSchemaResolver in the TS implementation.
     async def _resolve_json_schema(self, name: str) -> JsonSchema | None:
-        """Resolve a schema from the resolver or store and register it.
+        """Resolve a schema from either instance local mapping or the resolver.
 
         Args:
             name: The name of the schema to resolve.
@@ -339,4 +339,5 @@ class Dotprompt:
         if self._schema_resolver is None:
             return None
 
+        # TODO: Should we cache the resolved schema in self._schemas?
         return await resolve_json_schema(name, self._schema_resolver)
