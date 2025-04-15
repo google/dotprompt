@@ -29,6 +29,7 @@ import {
   PromptRefFunction,
   type PromptStore,
   type RenderedPrompt,
+  type Schema,
   type SchemaResolver,
   type ToolDefinition,
   type ToolResolver,
@@ -186,23 +187,39 @@ export class Dotprompt {
       return meta;
     }
 
+    const resolveSchema = (schema: Schema): Promise<Schema> => {
+      return picoschema(schema, {
+        schemaResolver: this.wrappedSchemaResolver.bind(this),
+      });
+    };
+
     const newMeta = { ...meta };
+    let inputPromise: Promise<Schema | null> | null = null;
+    let outputPromise: Promise<Schema | null> | null = null;
+
+    // Collect all schemas to resolve.
     if (meta.input?.schema) {
-      newMeta.input = {
-        ...meta.input,
-        schema: await picoschema(meta.input.schema, {
-          schemaResolver: this.wrappedSchemaResolver.bind(this),
-        }),
-      };
+      newMeta.input = { ...meta.input };
+      inputPromise = resolveSchema(meta.input.schema);
     }
     if (meta.output?.schema) {
-      newMeta.output = {
-        ...meta.output,
-        schema: await picoschema(meta.output.schema, {
-          schemaResolver: this.wrappedSchemaResolver.bind(this),
-        }),
-      };
+      newMeta.output = { ...meta.output };
+      outputPromise = resolveSchema(meta.output.schema);
     }
+
+    // Resolve schemas concurrently.
+    const [inputSchema, outputSchema] = await Promise.all([
+      inputPromise ?? Promise.resolve(null),
+      outputPromise ?? Promise.resolve(null),
+    ]);
+
+    if (inputSchema && newMeta.input) {
+      newMeta.input.schema = inputSchema;
+    }
+    if (outputSchema && newMeta.output) {
+      newMeta.output.schema = outputSchema;
+    }
+
     return newMeta;
   }
 
