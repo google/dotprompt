@@ -29,98 +29,98 @@ class TestPicoschemaParser(unittest.TestCase):
         """Set up the test case."""
         self.parser = picoschema.PicoschemaParser()
 
-    def test_must_resolve_schema_success(self) -> None:
+    async def test_must_resolve_schema_success(self) -> None:
         """Test resolving a schema successfully."""
 
-        def mock_resolver(name: str) -> JsonSchema | None:
+        async def mock_resolver(name: str) -> JsonSchema | None:
             if name == 'MySchema':
                 return {'type': 'string', 'description': 'Resolved schema'}
             return None
 
         parser_with_resolver = picoschema.PicoschemaParser(schema_resolver=mock_resolver)
-        resolved = parser_with_resolver.must_resolve_schema('MySchema')
+        resolved = await parser_with_resolver.must_resolve_schema('MySchema')
         self.assertEqual(resolved, {'type': 'string', 'description': 'Resolved schema'})
 
-    def test_must_resolve_schema_not_found(self) -> None:
+    async def test_must_resolve_schema_not_found(self) -> None:
         """Test resolving a non-existent schema."""
 
-        def mock_resolver(name: str) -> JsonSchema | None:
+        async def mock_resolver(name: str) -> JsonSchema | None:
             return None
 
         parser = picoschema.PicoschemaParser(schema_resolver=mock_resolver)
         with self.assertRaises(ValueError) as context:
-            parser.must_resolve_schema('NonExistentSchema')
+            await parser.must_resolve_schema('NonExistentSchema')
         self.assertEqual(
             str(context.exception),
             "Picoschema: could not find schema with name 'NonExistentSchema'",
         )
 
-    def test_must_resolve_schema_no_resolver(self) -> None:
+    async def test_must_resolve_schema_no_resolver(self) -> None:
         """Test error when resolving without a resolver."""
         with self.assertRaises(ValueError) as context:
-            self.parser.must_resolve_schema('AnySchema')
+            await self.parser.must_resolve_schema('AnySchema')
         self.assertEqual(
             str(context.exception),
             "Picoschema: unsupported scalar type 'AnySchema'.",
         )
 
-    def test_parse_no_schema(self) -> None:
+    async def test_parse_no_schema(self) -> None:
         """Test parsing None returns None."""
-        self.assertIsNone(self.parser.parse(None))
+        self.assertIsNone(await self.parser.parse(None))
 
-    def test_parse_scalar_type_schema(self) -> None:
+    async def test_parse_scalar_type_schema(self) -> None:
         """Test parsing a scalar type string."""
-        result = self.parser.parse('string')
+        result = await self.parser.parse('string')
         self.assertEqual(result, {'type': 'string'})
 
-    def test_parse_object_schema(self) -> None:
+    async def test_parse_object_schema(self) -> None:
         """Test parsing a standard JSON object schema."""
         schema = {'type': 'object', 'properties': {'name': {'type': 'string'}}}
         expected_schema = {
             'type': 'object',
             'properties': {'name': {'type': 'string'}},
         }
-        result = self.parser.parse(schema)
+        result = await self.parser.parse(schema)
         self.assertEqual(result, expected_schema)
 
-    def test_parse_invalid_schema_type(self) -> None:
+    async def test_parse_invalid_schema_type(self) -> None:
         """Test error on invalid schema type."""
         with self.assertRaises(ValueError):
-            self.parser.parse(123)
+            await self.parser.parse(123)
 
-    def test_parse_named_schema(self) -> None:
+    async def test_parse_named_schema(self) -> None:
         """Test parsing a named schema reference."""
 
-        def mock_resolver(name: str) -> JsonSchema | None:
+        async def mock_resolver(name: str) -> JsonSchema | None:
             if name == 'CustomType':
                 return {'type': 'integer'}
             return None
 
         parser_with_resolver = picoschema.PicoschemaParser(schema_resolver=mock_resolver)
-        result = parser_with_resolver.parse('CustomType')
+        result = await parser_with_resolver.parse('CustomType')
         self.assertEqual(result, {'type': 'integer'})
 
-    def test_parse_named_schema_with_description(self) -> None:
+    async def test_parse_named_schema_with_description(self) -> None:
         """Test parsing a named schema reference with a description."""
 
-        def mock_resolver(name: str) -> JsonSchema | None:
+        async def mock_resolver(name: str) -> JsonSchema | None:
             if name == 'DescribedType':
                 return {'type': 'boolean'}
             return None
 
         parser_with_resolver = picoschema.PicoschemaParser(schema_resolver=mock_resolver)
-        result = parser_with_resolver.parse('DescribedType, this is a description')
+        result = await parser_with_resolver.parse('DescribedType, this is a description')
         self.assertEqual(
             result,
             {'type': 'boolean', 'description': 'this is a description'},
         )
 
-    def test_parse_scalar_type_schema_with_description(self) -> None:
+    async def test_parse_scalar_type_schema_with_description(self) -> None:
         """Test parsing a scalar type string with description."""
-        result = self.parser.parse('string, a string')
+        result = await self.parser.parse('string, a string')
         self.assertEqual(result, {'type': 'string', 'description': 'a string'})
 
-    def test_parse_properties_object_shorthand(self) -> None:
+    async def test_parse_properties_object_shorthand(self) -> None:
         """Test parsing an object schema using the properties shorthand."""
         schema = {'name': 'string'}
         expected = {
@@ -129,15 +129,15 @@ class TestPicoschemaParser(unittest.TestCase):
             'required': ['name'],
             'additionalProperties': False,
         }
-        result = self.parser.parse(schema)
+        result = await self.parser.parse(schema)
         self.assertEqual(result, expected)
 
-    def test_parse_pico_scalar_type(self) -> None:
+    async def test_parse_pico_scalar_type(self) -> None:
         """Test parsing a Picoschema object with scalar types."""
-        result = self.parser.parse_pico('string')
+        result = await self.parser.parse_pico('string')
         self.assertEqual(result, {'type': 'string'})
 
-    def test_parse_pico_object_type(self) -> None:
+    async def test_parse_pico_object_type(self) -> None:
         """Test parsing a Picoschema object type."""
         schema = {'name': 'string'}
         expected = {
@@ -146,10 +146,10 @@ class TestPicoschemaParser(unittest.TestCase):
             'required': ['name'],
             'additionalProperties': False,
         }
-        result = self.parser.parse_pico(schema)
+        result = await self.parser.parse_pico(schema)
         self.assertEqual(result, expected)
 
-    def test_parse_pico_array_type(self) -> None:
+    async def test_parse_pico_array_type(self) -> None:
         """Test parsing a Picoschema array type."""
         schema = {'names(array)': 'string'}
         expected = {
@@ -158,10 +158,10 @@ class TestPicoschemaParser(unittest.TestCase):
             'required': ['names'],
             'additionalProperties': False,
         }
-        result = self.parser.parse_pico(schema)
+        result = await self.parser.parse_pico(schema)
         self.assertEqual(result, expected)
 
-    def test_parse_pico_enum_type(self) -> None:
+    async def test_parse_pico_enum_type(self) -> None:
         """Test parsing a Picoschema enum type."""
         schema = {'status(enum)': ['active', 'inactive']}
         expected = {
@@ -170,10 +170,10 @@ class TestPicoschemaParser(unittest.TestCase):
             'required': ['status'],
             'additionalProperties': False,
         }
-        result = self.parser.parse_pico(schema)
+        result = await self.parser.parse_pico(schema)
         self.assertEqual(result, expected)
 
-    def test_parse_pico_optional_property(self) -> None:
+    async def test_parse_pico_optional_property(self) -> None:
         """Test parsing Picoschema with optional properties."""
         schema = {'name?': 'string'}
         expected = {
@@ -181,10 +181,10 @@ class TestPicoschemaParser(unittest.TestCase):
             'properties': {'name': {'type': ['string', 'null']}},
             'additionalProperties': False,
         }
-        result = self.parser.parse_pico(schema)
+        result = await self.parser.parse_pico(schema)
         self.assertEqual(result, expected)
 
-    def test_parse_pico_wildcard_property(self) -> None:
+    async def test_parse_pico_wildcard_property(self) -> None:
         """Test parsing Picoschema with wildcard properties."""
         schema = {'(*)': 'string'}
         expected = {
@@ -192,10 +192,10 @@ class TestPicoschemaParser(unittest.TestCase):
             'properties': {},
             'additionalProperties': {'type': 'string'},
         }
-        result = self.parser.parse_pico(schema)
+        result = await self.parser.parse_pico(schema)
         self.assertEqual(result, expected)
 
-    def test_parse_pico_nested_object(self) -> None:
+    async def test_parse_pico_nested_object(self) -> None:
         """Test parsing a Picoschema nested object."""
         schema = {'address(object)': {'street': 'string'}}
         expected = {
@@ -211,10 +211,10 @@ class TestPicoschemaParser(unittest.TestCase):
             'required': ['address'],
             'additionalProperties': False,
         }
-        result = self.parser.parse_pico(schema)
+        result = await self.parser.parse_pico(schema)
         self.assertEqual(result, expected)
 
-    def test_parse_pico_nested_array(self) -> None:
+    async def test_parse_pico_nested_array(self) -> None:
         """Test parsing a Picoschema nested array."""
         schema = {'items(array)': {'props(array)': 'string'}}
         expected = {
@@ -240,10 +240,10 @@ class TestPicoschemaParser(unittest.TestCase):
             'required': ['items'],
             'additionalProperties': False,
         }
-        result = self.parser.parse_pico(schema)
+        result = await self.parser.parse_pico(schema)
         self.assertEqual(result, expected)
 
-    def test_parse_pico_enum_with_optional_and_null(self) -> None:
+    async def test_parse_pico_enum_with_optional_and_null(self) -> None:
         """Test parsing a Picoschema enum with optional and null values."""
         schema = {'status?(enum)': ['active', 'inactive']}
         expected = {
@@ -251,10 +251,10 @@ class TestPicoschemaParser(unittest.TestCase):
             'properties': {'status': {'enum': ['active', 'inactive', None]}},
             'additionalProperties': False,
         }
-        result = self.parser.parse_pico(schema)
+        result = await self.parser.parse_pico(schema)
         self.assertEqual(result, expected)
 
-    def test_parse_pico_description_on_type(self) -> None:
+    async def test_parse_pico_description_on_type(self) -> None:
         """Test parsing Picoschema with descriptions on types."""
         schema = {'name': 'string, a name'}
         expected = {
@@ -263,10 +263,10 @@ class TestPicoschemaParser(unittest.TestCase):
             'required': ['name'],
             'additionalProperties': False,
         }
-        result = self.parser.parse_pico(schema)
+        result = await self.parser.parse_pico(schema)
         self.assertEqual(result, expected)
 
-    def test_parse_pico_description_on_optional_array(self) -> None:
+    async def test_parse_pico_description_on_optional_array(self) -> None:
         """Test parsing Picoschema description on optional array."""
         schema = {'items?(array, list of items)': 'string'}
         expected = {
@@ -280,10 +280,10 @@ class TestPicoschemaParser(unittest.TestCase):
             },
             'additionalProperties': False,
         }
-        result = self.parser.parse_pico(schema)
+        result = await self.parser.parse_pico(schema)
         self.assertEqual(result, expected)
 
-    def test_parse_pico_escription_on_enum(self) -> None:
+    async def test_parse_pico_description_on_enum(self) -> None:
         """Test parsing Picoschema description on an enum."""
         schema = {'status(enum, the status)': ['active', 'inactive']}
         expected = {
@@ -297,13 +297,13 @@ class TestPicoschemaParser(unittest.TestCase):
             'required': ['status'],
             'additionalProperties': False,
         }
-        result = self.parser.parse_pico(schema)
+        result = await self.parser.parse_pico(schema)
         self.assertEqual(result, expected)
 
-    def test_parse_pico_description_on_custom_schema(self) -> None:
+    async def test_parse_pico_description_on_custom_schema(self) -> None:
         """Test parsing Picoschema description on a custom schema type."""
 
-        def mock_resolver(name: str) -> JsonSchema | None:
+        async def mock_resolver(name: str) -> JsonSchema | None:
             if name == 'CustomSchema':
                 return {'type': 'string'}
             return None
@@ -316,12 +316,12 @@ class TestPicoschemaParser(unittest.TestCase):
             'required': ['field1'],
             'additionalProperties': False,
         }
-        self.assertEqual(parser_with_resolver.parse_pico(schema), expected)
+        self.assertEqual(await parser_with_resolver.parse_pico(schema), expected)
 
-    def test_invalid_input_type(self) -> None:
+    async def test_invalid_input_type(self) -> None:
         """Test error on invalid input type to parse."""
         with self.assertRaises(ValueError):
-            self.parser.parse_pico(123)
+            await self.parser.parse_pico(123)
 
 
 class TestExtractDescription(unittest.TestCase):

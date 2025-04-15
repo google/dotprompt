@@ -165,6 +165,7 @@ correctly translated to JSON Schema.
 import re
 from typing import Any, cast
 
+from dotpromptz.resolvers import resolve_json_schema
 from dotpromptz.typing import JsonSchema, SchemaResolver
 
 JSON_SCHEMA_SCALAR_TYPES = [
@@ -179,7 +180,7 @@ JSON_SCHEMA_SCALAR_TYPES = [
 WILDCARD_PROPERTY_NAME = '(*)'
 
 
-def picoschema(schema: Any, schema_resolver: SchemaResolver | None = None) -> JsonSchema | None:
+async def picoschema_to_json_schema(schema: Any, schema_resolver: SchemaResolver | None = None) -> JsonSchema | None:
     """Parses a Picoschema definition into a JSON Schema.
 
     Args:
@@ -189,7 +190,7 @@ def picoschema(schema: Any, schema_resolver: SchemaResolver | None = None) -> Js
     Returns:
         The equivalent JSON Schema, or None if the input schema is None.
     """
-    return PicoschemaParser(schema_resolver).parse(schema)
+    return await PicoschemaParser(schema_resolver).parse(schema)
 
 
 class PicoschemaParser:
@@ -205,9 +206,9 @@ class PicoschemaParser:
         Args:
             schema_resolver: Optional callable to resolve named schema references.
         """
-        self.schema_resolver = schema_resolver
+        self._schema_resolver = schema_resolver
 
-    def must_resolve_schema(self, schema_name: str) -> JsonSchema:
+    async def must_resolve_schema(self, schema_name: str) -> JsonSchema:
         """Resolves a named schema using the configured resolver.
 
         Args:
@@ -220,15 +221,15 @@ class PicoschemaParser:
             ValueError: If no schema resolver is configured or the schema
                         name is not found.
         """
-        if not self.schema_resolver:
+        if not self._schema_resolver:
             raise ValueError(f"Picoschema: unsupported scalar type '{schema_name}'.")
 
-        val = self.schema_resolver(schema_name)
+        val = await resolve_json_schema(schema_name, self._schema_resolver)
         if not val:
             raise ValueError(f"Picoschema: could not find schema with name '{schema_name}'")
         return val
 
-    def parse(self, schema: Any) -> JsonSchema | None:
+    async def parse(self, schema: Any) -> JsonSchema | None:
         """Parses a schema, detecting if it's Picoschema or JSON Schema.
 
         If the input looks like standard JSON Schema (contains top-level 'type'
@@ -251,7 +252,7 @@ class PicoschemaParser:
                 if description:
                     out['description'] = description
                 return out
-            resolved_schema = self.must_resolve_schema(type_name)
+            resolved_schema = await self.must_resolve_schema(type_name)
             return {**resolved_schema, 'description': description} if description else resolved_schema
 
         if isinstance(schema, dict):
@@ -266,9 +267,9 @@ class PicoschemaParser:
         if isinstance(schema, dict) and isinstance(schema.get('properties'), dict):
             return {**cast(JsonSchema, schema), 'type': 'object'}
 
-        return self.parse_pico(schema)
+        return await self.parse_pico(schema)
 
-    def parse_pico(self, obj: Any, path: list[str] | None = None) -> JsonSchema:
+    async def parse_pico(self, obj: Any, path: list[str] | None = None) -> JsonSchema:
         """Recursively parses a Picoschema object or string fragment.
 
         Args:
@@ -287,7 +288,7 @@ class PicoschemaParser:
         if isinstance(obj, str):
             type_name, description = extract_description(obj)
             if type_name not in JSON_SCHEMA_SCALAR_TYPES:
-                resolved_schema = self.must_resolve_schema(type_name)
+                resolved_schema = await self.must_resolve_schema(type_name)
                 return {**resolved_schema, 'description': description} if description else resolved_schema
 
             if type_name == 'any':
@@ -319,7 +320,7 @@ class PicoschemaParser:
                 schema['required'].append(property_name)
 
             if not type_info:
-                prop = self.parse_pico(value, [*path, key])
+                prop = await self.parse_pico(value, [*path, key])
                 if is_optional and isinstance(prop.get('type'), str):
                     prop['type'] = [prop['type'], 'null']
                 schema['properties'][property_name] = prop
@@ -327,13 +328,13 @@ class PicoschemaParser:
 
             type_name, description = extract_description(type_info)
             if type_name == 'array':
-                prop = self.parse_pico(value, [*path, key])
+                prop = await self.parse_pico(value, [*path, key])
                 schema['properties'][property_name] = {
                     'type': ['array', 'null'] if is_optional else 'array',
                     'items': prop,
                 }
             elif type_name == 'object':
-                prop = self.parse_pico(value, [*path, key])
+                prop = await self.parse_pico(value, [*path, key])
                 if is_optional:
                     prop['type'] = [prop['type'], 'null']
                 schema['properties'][property_name] = prop

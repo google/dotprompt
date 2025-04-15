@@ -183,7 +183,7 @@ class Dotprompt:
             TypeError: If a tool resolver returns an invalid type.
             ValueError: If a tool resolver is not defined.
         """
-        out: PromptMetadata[ModelConfigT] = metadata.copy()
+        out: PromptMetadata[ModelConfigT] = metadata.model_copy()
         if out.tools is None:
             return out
 
