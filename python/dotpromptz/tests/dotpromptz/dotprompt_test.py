@@ -30,7 +30,7 @@ The tests cover:
 from __future__ import annotations
 
 from collections.abc import Generator
-from typing import Any, cast
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -127,16 +127,13 @@ def test_define_partial(mock_handlebars: Mock) -> None:
 def test_define_tool(mock_handlebars: Mock) -> None:
     """Test defining a tool."""
     dotprompt = Dotprompt()
-    tool_def = cast(
-        ToolDefinition,
-        {
-            'name': 'test_tool',
-            'description': 'A test tool',
-            'input_schema': {'type': 'object'},
-        },
+    tool_def = ToolDefinition(
+        name='test_tool',
+        description='A test tool',
+        inputSchema={'type': 'object'},
     )
 
-    result = dotprompt.define_tool('test_tool', tool_def)
+    result = dotprompt.define_tool(tool_def)
 
     assert dotprompt._tools['test_tool'] == tool_def
 
@@ -164,23 +161,16 @@ def test_chainable_interface(mock_handlebars: Mock) -> None:
     mock_handlebars.register_helper.reset_mock()
     mock_handlebars.register_partial.reset_mock()
 
-    tool_def = cast(
-        ToolDefinition,
-        {
-            'name': 'tool1',
-            'description': 'Tool 1',
-            'input_schema': {'type': 'object'},
-        },
+    tool_def = ToolDefinition(
+        name='tool1',
+        description='Tool 1',
+        inputSchema={'type': 'object'},
     )
 
     def helper_fn(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
         return 'helper1'
 
-    result = (
-        dotprompt.define_helper('helper1', helper_fn)
-        .define_partial('partial1', 'content')
-        .define_tool('tool1', tool_def)
-    )
+    result = dotprompt.define_helper('helper1', helper_fn).define_partial('partial1', 'content').define_tool(tool_def)
 
     mock_handlebars.register_helper.assert_called_once()
     mock_handlebars.register_partial.assert_called_once()
