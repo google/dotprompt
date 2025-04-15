@@ -25,7 +25,7 @@ import anyio
 
 from dotpromptz.helpers import register_all_helpers
 from dotpromptz.parse import parse_document
-from dotpromptz.resolvers import resolve_partial, resolve_tool
+from dotpromptz.resolvers import resolve_json_schema, resolve_partial, resolve_tool
 from dotpromptz.typing import (
     JsonSchema,
     ModelConfigT,
@@ -280,3 +280,21 @@ class Dotprompt:
         async with anyio.create_task_group() as tg:
             for name in unregistered_names:
                 tg.start_soon(resolve_and_register, name)
+
+    # NOTE: Equivalent to wrappedSchemaResolver in the TS implementation.
+    async def _resolve_json_schema(self, name: str) -> JsonSchema | None:
+        """Resolve a schema from the resolver or store and register it.
+
+        Args:
+            name: The name of the schema to resolve.
+
+        Returns:
+            The resolved schema or None if it is not found.
+        """
+        if name in self._schemas:
+            return self._schemas[name]
+
+        if self._schema_resolver is None:
+            return None
+
+        return await resolve_json_schema(name, self._schema_resolver)
