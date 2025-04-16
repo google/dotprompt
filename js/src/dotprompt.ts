@@ -255,12 +255,21 @@ export class Dotprompt {
     let out = { ...base };
 
     for (let i = 0; i < merges.length; i++) {
-      if (!merges[i]) continue;
-      const config = out.config || ({} as ModelConfig);
+      if (!merges[i]) {
+        continue;
+      }
+
+      // Keep a reference to the original config.
+      const originalConfig = out.config || ({} as ModelConfig);
+
+      // Merge the new metadata.
       out = { ...out, ...merges[i] };
-      out.config = { ...config, ...(merges[i]?.config || {}) };
+
+      // Merge the configs.
+      out.config = { ...originalConfig, ...(merges[i]?.config || {}) };
     }
 
+    // Remove the template attribute if it exists.
     const { template: _, ...outWithoutTemplate } =
       out as PromptMetadata<ModelConfig> & { template?: string };
     out = outWithoutTemplate as PromptMetadata<ModelConfig>;
@@ -268,6 +277,7 @@ export class Dotprompt {
     out = removeUndefinedFields(out);
     out = await this.resolveTools(out);
     out = await this.renderPicoschema(out);
+
     return out;
   }
 

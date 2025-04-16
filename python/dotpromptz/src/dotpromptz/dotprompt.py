@@ -38,6 +38,7 @@ from dotpromptz.typing import (
     ToolDefinition,
     ToolResolver,
 )
+from dotpromptz.util import remove_undefined_fields
 from handlebarrz import EscapeFunction, Handlebars, HelperFn
 
 # Pre-compiled regex for finding partial references in handlebars templates
@@ -156,6 +157,65 @@ class Dotprompt:
             The parsed prompt.
         """
         return parse_document(source)
+
+    async def _resolve_metadata(
+        self, base: PromptMetadata[ModelConfigT], *merges: PromptMetadata[ModelConfigT]
+    ) -> PromptMetadata[ModelConfigT]:
+        """Merges multiple metadata objects together, resolving tools and schemas.
+
+        Later metadata objects override earlier ones.
+
+        Args:
+            base: The base metadata object.
+            merges: Additional metadata objects to merge into base.
+
+        Returns:
+            Merged metadata.
+        """
+        out = base.model_copy(deep=True)
+
+        for merge in (m for m in merges if m is not None):
+            out = self._merge_metadata(out, merge)
+
+        # Remove the template attribute if it exists (TS does this).
+        if hasattr(out, 'template'):
+            delattr(out, 'template')
+
+        out = remove_undefined_fields(out)
+        out = await self._resolve_tools(out)
+        out = await self._render_picoschema(out)
+        return out
+
+    def _merge_metadata(
+        self,
+        current: PromptMetadata[ModelConfigT],
+        merge: PromptMetadata[ModelConfigT],
+    ) -> PromptMetadata[ModelConfigT]:
+        """Merges a single metadata object into the current one.
+
+        Args:
+            current: The current metadata object.
+            merge: The metadata object to merge into the current one.
+
+        Returns:
+            The merged metadata object.
+        """
+        # Convert Pydantic models to raw dicts by alias first. Skip None values.
+        merge_dict = merge.model_dump(exclude_none=True, by_alias=True)
+        current_dict = current.model_dump(exclude_none=True, by_alias=True)
+
+        # Keep a reference to the original config.
+        original_config = current_dict.get('config', {})
+        new_config = merge_dict.get('config', {})
+
+        # Merge the new metadata.
+        current_dict.update(merge_dict)
+
+        # Merge the configs and set the resulting config.
+        current_dict['config'] = {**original_config, **new_config}
+
+        # Recreate the Pydantic model from the merged dict and validate it.
+        return PromptMetadata[ModelConfigT].model_validate(current_dict)
 
     async def _render_picoschema(self, meta: PromptMetadata[ModelConfigT]) -> PromptMetadata[ModelConfigT]:
         """Render a Picoschema prompt.
