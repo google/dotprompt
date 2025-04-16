@@ -158,8 +158,41 @@ class Dotprompt:
         """
         return parse_document(source)
 
+    async def render_metadata(
+        self,
+        source: str | ParsedPrompt[ModelConfigT],
+        additional_metadata: PromptMetadata[ModelConfigT] | None = None,
+    ) -> PromptMetadata[ModelConfigT]:
+        """Render metadata for a prompt.
+
+        Args:
+            source: The source code for the prompt or a parsed prompt.
+            additional_metadata: Additional metadata to be used to render the prompt.
+
+        Returns:
+            The rendered metadata.
+        """
+        prompt = self.parse(source) if isinstance(source, str) else source
+
+        default_model = prompt.model or self._default_model
+        model = additional_metadata.model if additional_metadata else default_model
+
+        config: ModelConfigT | None = None
+        if model is not None and self._model_configs.get(model) is not None:
+            config = self._model_configs.get(model)
+
+        return await self._resolve_metadata(
+            PromptMetadata[ModelConfigT](
+                config=config,
+            )
+            if config is not None
+            else PromptMetadata[ModelConfigT](),
+            prompt,
+            additional_metadata,
+        )
+
     async def _resolve_metadata(
-        self, base: PromptMetadata[ModelConfigT], *merges: PromptMetadata[ModelConfigT]
+        self, base: PromptMetadata[ModelConfigT], *merges: PromptMetadata[ModelConfigT] | None
     ) -> PromptMetadata[ModelConfigT]:
         """Merges multiple metadata objects together, resolving tools and schemas.
 
@@ -182,6 +215,7 @@ class Dotprompt:
             delattr(out, 'template')
 
         out = remove_undefined_fields(out)
+        # TODO: can this be done concurrently?
         out = await self._resolve_tools(out)
         out = await self._render_picoschema(out)
         return out

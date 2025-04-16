@@ -275,6 +275,7 @@ export class Dotprompt {
     out = outWithoutTemplate as PromptMetadata<ModelConfig>;
 
     out = removeUndefinedFields(out);
+    // TODO: Can this be done concurrently?
     out = await this.resolveTools(out);
     out = await this.renderPicoschema(out);
 
@@ -485,12 +486,12 @@ export class Dotprompt {
       parsedSource = source;
     }
 
-    const selectedModel =
+    const model =
       additionalMetadata?.model || parsedSource.model || this.defaultModel;
 
     let modelConfig: ModelConfig | undefined;
-    if (selectedModel && this.modelConfigs[selectedModel]) {
-      modelConfig = this.modelConfigs[selectedModel] as ModelConfig;
+    if (model && this.modelConfigs[model]) {
+      modelConfig = this.modelConfigs[model] as ModelConfig;
     }
 
     return this.resolveMetadata<ModelConfig>(
