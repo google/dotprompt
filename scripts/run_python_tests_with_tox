@@ -27,6 +27,7 @@ echo "Running Python tests via tox..."
 # Erase any previous coverage data to prevent errors during combine
 echo "Erasing previous coverage data..."
 uv run --active --directory "$PY_DIR" coverage erase || echo "Coverage erase failed (maybe no data existed?), continuing..."
+rm -rf "${PY_DIR}"/.coverage*
 
 # Use uv run to execute tox, passing the --parallel flag to tox
 # The '-p auto' flag tells tox to use available CPU cores for parallelism.
