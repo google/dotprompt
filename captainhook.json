@@ -40,7 +40,7 @@
           "run": "scripts/check_license"
         },
         {
-          "run": "scripts/run_lint"
+          "run": "scripts/lint"
         },
         {
           "run": "scripts/run_rust_tests"
@@ -92,7 +92,7 @@
           "run": "scripts/check_license"
         },
         {
-          "run": "scripts/run_lint"
+          "run": "scripts/lint"
         },
         {
           "run": "scripts/run_rust_tests --verbose"
