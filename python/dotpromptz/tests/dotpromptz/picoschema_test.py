@@ -17,12 +17,13 @@
 """Tests for picoschema functionality."""
 
 import unittest
+from unittest import IsolatedAsyncioTestCase
 
 from dotpromptz import picoschema
 from dotpromptz.typing import JsonSchema
 
 
-class TestPicoschemaParser(unittest.TestCase):
+class TestPicoschemaParser(IsolatedAsyncioTestCase):
     """Picoshema parser functionality tests."""
 
     def setUp(self) -> None:
@@ -48,12 +49,9 @@ class TestPicoschemaParser(unittest.TestCase):
             return None
 
         parser = picoschema.PicoschemaParser(schema_resolver=mock_resolver)
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(LookupError) as context:
             await parser.must_resolve_schema('NonExistentSchema')
-        self.assertEqual(
-            str(context.exception),
-            "Picoschema: could not find schema with name 'NonExistentSchema'",
-        )
+        self.assertEqual(str(context.exception), "schema resolver for 'NonExistentSchema' returned None")
 
     async def test_must_resolve_schema_no_resolver(self) -> None:
         """Test error when resolving without a resolver."""

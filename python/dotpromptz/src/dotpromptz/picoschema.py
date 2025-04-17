@@ -307,7 +307,7 @@ class PicoschemaParser:
 
         for key, value in obj.items():
             if key == WILDCARD_PROPERTY_NAME:
-                schema['additionalProperties'] = self.parse_pico(value, [*path, key])
+                schema['additionalProperties'] = await self.parse_pico(value, [*path, key])
                 continue
 
             parts = key.split('(')
