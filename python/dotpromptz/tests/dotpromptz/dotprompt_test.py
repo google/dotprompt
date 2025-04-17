@@ -206,8 +206,10 @@ def test_identify_partials(template: str, expected: set[str]) -> None:
 
 
 class TestResolveTools(unittest.TestCase):
+    """Test the resolve_tools method."""
+
     def test_resolve_returns_correct_tool_when_registered(self) -> None:
-        """should resolve registered tools"""
+        """Should resolve registered tools."""
         dotprompt = Dotprompt()
 
         tool_def = ToolDefinition.model_validate({
@@ -234,7 +236,7 @@ class TestResolveTools(unittest.TestCase):
         assert result.tools == ['unknownTool']
 
     def test_resolve_raises_error_for_unregistered_tool(self) -> None:
-        """should use the tool resolver for unregistered tools"""
+        """Should raise an error for unregistered tools."""
         tool_def = ToolDefinition.model_validate({
             'name': 'resolvedTool',
             'description': 'A test tool',
@@ -258,12 +260,14 @@ class TestResolveTools(unittest.TestCase):
 
 
 class TestRenderPicoSchema(unittest.TestCase):
+    """Test the render_picoschema method."""
+
     @patch(
         'dotpromptz.dotprompt.picoschema_to_json_schema',
         return_value={'type': 'object', 'properties': {'expanded': True}},
     )
     def test_process_valid_picoschema_definition(self, _: Mock) -> None:
-        """should process picoschema definitions"""
+        """Should process picoschema definitions."""
         dotprompt = Dotprompt()
 
         metadata: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate({
@@ -295,15 +299,15 @@ class TestRenderPicoSchema(unittest.TestCase):
             },
             'model': 'gemini-1.5-pro',
         })
-        values_assert = {'type': 'object', 'properties': {'expanded': True}}
-        # Now call the function that uses picoschema.picoschema internally
         result: PromptMetadata[dict[str, Any]] = asyncio.run(dotprompt._render_picoschema(metadata))
         assert result == metadata
 
 
-class TestwrappedSchemaResolver(unittest.TestCase):
+class TestWrappedSchemaResolver(unittest.TestCase):
+    """Test the wrapped schema resolver."""
+
     def test_resolves_schemas_from_registered_schemas(self) -> None:
-        """should resolve schemas from the registered schemas."""
+        """Should resolve schemas from the registered schemas."""
         schemas: dict[str, dict[str, str | dict[str, dict[str, str]]]] = {
             'test-schema': {
                 'type': 'object',
@@ -320,7 +324,7 @@ class TestwrappedSchemaResolver(unittest.TestCase):
         self.assertEqual(result, schemas['test-schema'])
 
     def test_uses_schema_resolver_for_unregistered_schemas(self) -> None:
-        """should use the schema resolver for unregistered schemas"""
+        """Should use the schema resolver for unregistered schemas."""
         schema_resolver_mock = AsyncMock(
             return_value={'type': 'object', 'properties': {'resolved': {'type': 'boolean'}}}
         )
@@ -333,7 +337,7 @@ class TestwrappedSchemaResolver(unittest.TestCase):
         self.assertEqual(result, {'type': 'object', 'properties': {'resolved': {'type': 'boolean'}}})
 
     def test_returns_none_if_schema_not_found_and_no_resolver(self) -> None:
-        """should return null if schema not found and no resolver"""
+        """Should return None if schema not found and no resolver."""
         dotprompt = Dotprompt()
 
         result = asyncio.run(dotprompt._wrapped_schema_resolver('non-existent-schema'))
@@ -341,8 +345,10 @@ class TestwrappedSchemaResolver(unittest.TestCase):
 
 
 class TestResolveMetaData(unittest.TestCase):
+    """Test the resolve_metadata method."""
+
     def test_merge_multiple_metadata(self) -> None:
-        """should merge multiple metadata objects"""
+        """Should merge multiple metadata objects."""
         dotprompt = Dotprompt()
 
         base: PromptMetadata[dict[str, Any]] = PromptMetadata.model_validate({
@@ -387,8 +393,7 @@ class TestResolveMetaData(unittest.TestCase):
             resolve_tools_mock.assert_called()
 
     def test_handle_undefined_merges(self) -> None:
-        """should handle undefined merges"""
-
+        """Should handle undefined merges."""
         dotprompt = Dotprompt()
 
         base: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate({
@@ -417,6 +422,7 @@ class TestResolveMetaData(unittest.TestCase):
 
 
 def test_render_metadata() -> None:
+    """Test the render_metadata method."""
     dotprompt = Dotprompt()
 
     parsed_source: ParsedPrompt[dict[str, Any]] = ParsedPrompt[dict[str, Any]](
@@ -443,7 +449,7 @@ def test_render_metadata() -> None:
 
 
 def test_default_model_when_null() -> None:
-    """should use the default model when no model is specified"""
+    """Should use the default model when no model is specified."""
     dotprompt = Dotprompt()
 
     parsed_source: ParsedPrompt[dict[str, Any]] = ParsedPrompt[dict[str, Any]](
@@ -465,8 +471,7 @@ def test_default_model_when_null() -> None:
 
 
 def test_use_available_model_config() -> None:
-    """should use model configs when available"""
-
+    """Should use model configs when available."""
     model_configs = {
         'gemini-1.5-pro': {'temperature': 0.7},
     }
