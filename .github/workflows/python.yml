@@ -65,13 +65,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Format check
-        run: uv run --directory python ruff format --check --preview .
+        run: uv run --active --directory python ruff format --check --preview .
 
       - name: Lint with ruff
-        run: uv run --directory python ruff check --select I .
+        run: uv run --active --directory python ruff check --select I .
 
       - name: Static type check
-        run: uv run --directory python mypy .
+        run: uv run --active --directory python mypy .
 
       - name: Check licenses
         run: ./scripts/check_license
