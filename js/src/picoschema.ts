@@ -19,31 +19,60 @@
 import type { JSONSchema, SchemaResolver } from './types.js';
 
 const JSON_SCHEMA_SCALAR_TYPES = [
-  'string',
+  'any',
   'boolean',
+  'integer',
   'null',
   'number',
-  'integer',
-  'any',
+  'string',
 ];
 
 const WILDCARD_PROPERTY_NAME = '(*)';
 
+/** Options for the Picoschema parser. */
 export interface PicoschemaOptions {
+  /** The schema resolver to use. */
   schemaResolver?: SchemaResolver;
 }
 
+/**
+ * Parses Picoschema definitions into JSON Schema.
+ *
+ * Handles basic types, optional fields, descriptions, arrays, objects,
+ * enums, wildcards, and named schema resolution.
+ *
+ * @param schema The schema definition to parse.
+ * @param options The options for the parser.
+ * @return The resulting JSON Schema, or null if the input is null.
+ */
 export async function picoschema(schema: unknown, options?: PicoschemaOptions) {
   return new PicoschemaParser(options).parse(schema);
 }
 
+/**
+ * Parses Picoschema definitions into JSON Schema.
+ *
+ * Handles basic types, optional fields, descriptions, arrays, objects,
+ * enums, wildcards, and named schema resolution.
+ */
 export class PicoschemaParser {
   schemaResolver?: SchemaResolver;
 
+  /**
+   * Constructs a new PicoschemaParser.
+   *
+   * @param options The options for the parser.
+   */
   constructor(options?: PicoschemaOptions) {
     this.schemaResolver = options?.schemaResolver;
   }
 
+  /**
+   * Resolves a named schema using the configured resolver.
+   *
+   * @param schemaName The name of the schema to resolve.
+   * @return The resolved JSON Schema.
+   */
   private async mustResolveSchema(schemaName: string): Promise<JSONSchema> {
     if (!this.schemaResolver) {
       throw new Error(`Picoschema: unsupported scalar type '${schemaName}'.`);
@@ -58,22 +87,32 @@ export class PicoschemaParser {
     return val;
   }
 
+  /**
+   * Parses a schema, detecting if it's Picoschema or JSON Schema.
+   *
+   * @param schema The schema definition to parse.
+   * @return The resulting JSON Schema, or null if the input is null.
+   */
   async parse(schema: unknown): Promise<JSONSchema | null> {
-    if (!schema) return null;
+    if (!schema) {
+      return null;
+    }
 
     // Allow for top-level named schemas
     if (typeof schema === 'string') {
       const [type, description] = extractDescription(schema);
       if (JSON_SCHEMA_SCALAR_TYPES.includes(type)) {
         let out: JSONSchema = { type };
-        if (description) out = { ...out, description };
+        if (description) {
+          out = { ...out, description };
+        }
         return out;
       }
       const resolvedSchema = await this.mustResolveSchema(type);
       return description ? { ...resolvedSchema, description } : resolvedSchema;
     }
 
-    // if there's a JSON schema-ish type at the top level, treat as JSON schema
+    // If there's a JSON schema-ish type at the top level, treat as JSON schema.
     if (
       [...JSON_SCHEMA_SCALAR_TYPES, 'object', 'array'].includes(
         (schema as any)?.type
@@ -89,6 +128,13 @@ export class PicoschemaParser {
     return this.parsePico(schema);
   }
 
+  /**
+   * Parses a Picoschema object or string fragment.
+   *
+   * @param obj The object or string fragment to parse.
+   * @param path The current path within the schema structure.
+   * @return The parsed JSON Schema.
+   */
   private async parsePico(obj: any, path: string[] = []): Promise<JSONSchema> {
     if (typeof obj === 'string') {
       const [type, description] = extractDescription(obj);
@@ -105,8 +151,7 @@ export class PicoschemaParser {
       return description ? { type, description } : { type };
     } else if (typeof obj !== 'object') {
       throw new Error(
-        'Picoschema: only consists of objects and strings. Got: ' +
-          JSON.stringify(obj)
+        `Picoschema: only consists of objects and strings. Got: ${JSON.stringify(obj)}`
       );
     }
 
@@ -163,8 +208,7 @@ export class PicoschemaParser {
         schema.properties[propertyName] = prop;
       } else {
         throw new Error(
-          "Picoschema: parenthetical types must be 'object' or 'array', got: " +
-            type
+          `Picoschema: parenthetical types must be 'object' or 'array', got: ${type}`
         );
       }
       if (description) {
@@ -172,14 +216,28 @@ export class PicoschemaParser {
       }
     }
 
-    if (!schema.required.length) delete schema.required;
+    if (!schema.required.length) {
+      delete schema.required;
+    }
     return schema;
   }
 }
 
+/**
+ * Extracts the type name and description from a string.
+ *
+ * @param input - The input string to extract from.
+ * @return A tuple containing the type name and description.
+ */
 function extractDescription(input: string): [string, string | null] {
-  if (!input.includes(',')) return [input, null];
+  if (!input.includes(',')) {
+    return [input, null];
+  }
 
   const match = input.match(/(.*?), *(.*)$/);
-  return [match![1], match![2]];
+  if (!match) {
+    return [input, null];
+  }
+
+  return [match[1], match[2]];
 }
