@@ -169,15 +169,32 @@ from dotpromptz.resolvers import resolve_json_schema
 from dotpromptz.typing import JsonSchema, SchemaResolver
 
 JSON_SCHEMA_SCALAR_TYPES = [
-    'string',
+    'any',
     'boolean',
+    'integer',
     'null',
     'number',
-    'integer',
-    'any',
+    'string',
 ]
 
 WILDCARD_PROPERTY_NAME = '(*)'
+
+
+def _is_json_schema(schema: dict[str, Any]) -> bool:
+    """Checks if a schema is already in JSON Schema format.
+
+    Args:
+        schema: The schema to check.
+
+    Returns:
+        True if the schema is already in JSON Schema format, False otherwise.
+    """
+    types = JSON_SCHEMA_SCALAR_TYPES + ['object', 'array']
+    return (
+        isinstance(schema, dict)  # force format
+        and isinstance(schema.get('type'), str)  # force format
+        and schema['type'] in types  # force format
+    )
 
 
 async def picoschema_to_json_schema(schema: Any, schema_resolver: SchemaResolver | None = None) -> JsonSchema | None:
@@ -255,18 +272,13 @@ class PicoschemaParser:
             resolved_schema = await self.must_resolve_schema(type_name)
             return {**resolved_schema, 'description': description} if description else resolved_schema
 
-        if isinstance(schema, dict):
-            maybe_type_name = schema.get('type')
-            if (
-                maybe_type_name
-                and isinstance(maybe_type_name, str)
-                and (maybe_type_name in JSON_SCHEMA_SCALAR_TYPES or maybe_type_name in ['object', 'array'])
-            ):
-                return cast(JsonSchema, schema)
+        if isinstance(schema, dict) and _is_json_schema(schema):
+            return cast(JsonSchema, schema)
 
         if isinstance(schema, dict) and isinstance(schema.get('properties'), dict):
             return {**cast(JsonSchema, schema), 'type': 'object'}
 
+        # If the schema is not a JSON Schema, parse it as Picoschema.
         return await self.parse_pico(schema)
 
     async def parse_pico(self, obj: Any, path: list[str] | None = None) -> JsonSchema:
