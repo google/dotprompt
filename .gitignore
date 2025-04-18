@@ -6,7 +6,9 @@
 /js/dist
 /third_party/docsite/src/content/refdocs
 bazel-*
-node_modules
-site/
 go/coverage.out
+node_modules
+python/.nox
+python/.tox
 python/handlebarrz/target
+site/

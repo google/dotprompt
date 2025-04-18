@@ -46,7 +46,7 @@
           "run": "scripts/run_rust_tests"
         },
         {
-          "run": "uv run --active --directory python nox -s tests"
+          "run": "scripts/run_python_tests_with_nox -s tests"
         },
         {
           "run": "scripts/run_js_tests"
@@ -98,7 +98,7 @@
           "run": "scripts/run_rust_tests --verbose"
         },
         {
-          "run": "uv run --active --directory python nox -s tests"
+          "run": "scripts/run_python_tests_with_nox -s tests"
         },
         {
           "run": "scripts/run_js_tests"
