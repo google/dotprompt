@@ -49,6 +49,49 @@ from handlebarrz import EscapeFunction, Handlebars, HelperFn
 _PARTIAL_PATTERN = re.compile(r'{{\s*>\s*([a-zA-Z0-9_.-]+)\s*}}')
 
 
+def _merge_metadata(
+    current: PromptMetadata[ModelConfigT],
+    merge: PromptMetadata[ModelConfigT],
+) -> PromptMetadata[ModelConfigT]:
+    """Merges a single metadata object into the current one.
+
+    Args:
+        current: The current metadata object.
+        merge: The metadata object to merge into the current one.
+
+    Returns:
+        The merged metadata object.
+    """
+    # Convert Pydantic models to raw dicts by alias first. Skip None values.
+    merge_dict = merge.model_dump(exclude_none=True, by_alias=True)
+    current_dict = current.model_dump(exclude_none=True, by_alias=True)
+
+    # Keep a reference to the original config.
+    original_config = current_dict.get('config', {})
+    new_config = merge_dict.get('config', {})
+
+    # Merge the new metadata.
+    current_dict.update(merge_dict)
+
+    # Merge the configs and set the resulting config.
+    current_dict['config'] = {**original_config, **new_config}
+
+    # Recreate the Pydantic model from the merged dict and validate it.
+    return PromptMetadata[ModelConfigT].model_validate(current_dict)
+
+
+def _identify_partials(template: str) -> set[str]:
+    """Identify all unique partial references in a template.
+
+    Args:
+        template: The template to scan for partial references.
+
+    Returns:
+        A set of partial names referenced in the template.
+    """
+    return set(_PARTIAL_PATTERN.findall(template))
+
+
 class Dotprompt:
     """Dotprompt extends a Handlebars template for use with Gen AI prompts."""
 
@@ -194,7 +237,7 @@ class Dotprompt:
     async def _resolve_metadata(
         self, base: PromptMetadata[ModelConfigT], *merges: PromptMetadata[ModelConfigT] | None
     ) -> PromptMetadata[ModelConfigT]:
-        """Merges multiple metadata objects together, resolving tools and schemas.
+        """Merges multiple metadata objects, resolving tools and schemas.
 
         Later metadata objects override earlier ones.
 
@@ -209,7 +252,7 @@ class Dotprompt:
 
         for merge in merges:
             if merge is not None:
-                out = self._merge_metadata(out, merge)
+                out = _merge_metadata(out, merge)
 
         # Remove the template attribute if it exists (TS does this).
         if hasattr(out, 'template'):
@@ -220,37 +263,6 @@ class Dotprompt:
         out = await self._resolve_tools(out)
         out = await self._render_picoschema(out)
         return out
-
-    def _merge_metadata(
-        self,
-        current: PromptMetadata[ModelConfigT],
-        merge: PromptMetadata[ModelConfigT],
-    ) -> PromptMetadata[ModelConfigT]:
-        """Merges a single metadata object into the current one.
-
-        Args:
-            current: The current metadata object.
-            merge: The metadata object to merge into the current one.
-
-        Returns:
-            The merged metadata object.
-        """
-        # Convert Pydantic models to raw dicts by alias first. Skip None values.
-        merge_dict = merge.model_dump(exclude_none=True, by_alias=True)
-        current_dict = current.model_dump(exclude_none=True, by_alias=True)
-
-        # Keep a reference to the original config.
-        original_config = current_dict.get('config', {})
-        new_config = merge_dict.get('config', {})
-
-        # Merge the new metadata.
-        current_dict.update(merge_dict)
-
-        # Merge the configs and set the resulting config.
-        current_dict['config'] = {**original_config, **new_config}
-
-        # Recreate the Pydantic model from the merged dict and validate it.
-        return PromptMetadata[ModelConfigT].model_validate(current_dict)
 
     async def _render_picoschema(self, meta: PromptMetadata[ModelConfigT]) -> PromptMetadata[ModelConfigT]:
         """Render a Picoschema prompt.
@@ -293,17 +305,6 @@ class Dotprompt:
 
         return new_meta
 
-    def _identify_partials(self, template: str) -> set[str]:
-        """Identify all unique partial references in a template.
-
-        Args:
-            template: The template to scan for partial references.
-
-        Returns:
-            A set of partial names referenced in the template.
-        """
-        return set(_PARTIAL_PATTERN.findall(template))
-
     async def _resolve_tools(self, metadata: PromptMetadata[ModelConfigT]) -> PromptMetadata[ModelConfigT]:
         """Resolve all tools in a prompt.
 
@@ -329,7 +330,7 @@ class Dotprompt:
         out.tool_defs = out.tool_defs or []
 
         # Collect all the tools:
-        # 1. Already registered go into toolDefs.
+        # 1. Already registered tools go into toolDefs.
         # 2. If we have a tool resolver, add the names to the list to resolve.
         # 3. Otherwise, add the names to the list of unregistered tools.
         to_resolve: list[str] = []
@@ -347,11 +348,11 @@ class Dotprompt:
 
         if to_resolve:
 
-            async def resolve_and_append(name: str) -> None:
+            async def resolve_and_append(tool_name: str) -> None:
                 """Resolve a tool and append it to the list of tools.
 
                 Args:
-                    name: The name of the tool to resolve.
+                    tool_name: The name of the tool to resolve.
 
                 Raises:
                     ToolNotFoundError: If a tool is not found in the resolver or store.
@@ -359,7 +360,7 @@ class Dotprompt:
                     TypeError: If a tool resolver returns an invalid type.
                     ValueError: If a tool resolver is not defined.
                 """
-                tool = await resolve_tool(name, self._tool_resolver)
+                tool = await resolve_tool(tool_name, self._tool_resolver)
                 if out.tool_defs is not None:
                     out.tool_defs.append(tool)
 
@@ -382,7 +383,7 @@ class Dotprompt:
         if self._partial_resolver is None and self._store is None:
             return
 
-        names = self._identify_partials(template)
+        names = _identify_partials(template)
         unregistered_names: list[str] = [name for name in names if not self._handlebars.has_partial(name)]
 
         async def resolve_and_register(name: str) -> None:

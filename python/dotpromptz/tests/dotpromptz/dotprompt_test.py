@@ -33,11 +33,12 @@ import asyncio
 import unittest
 from collections.abc import Generator
 from typing import Any
+from unittest import IsolatedAsyncioTestCase
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from dotpromptz.dotprompt import Dotprompt
+from dotpromptz.dotprompt import Dotprompt, _identify_partials
 from dotpromptz.typing import ModelConfigT, ParsedPrompt, PromptMetadata, ToolDefinition
 from handlebarrz import HelperFn
 
@@ -199,16 +200,77 @@ def test_chainable_interface(mock_handlebars: Mock) -> None:
     ],
 )
 def test_identify_partials(template: str, expected: set[str]) -> None:
-    """Test the identify_partials method with various templates."""
-    dotprompt = Dotprompt()
-    partials = dotprompt._identify_partials(template)
-    assert partials == expected
+    """Test that the identify_partials function works correctly."""
+    assert _identify_partials(template) == expected
 
 
-class TestResolveTools(unittest.TestCase):
+class TestMergeMetadata(IsolatedAsyncioTestCase):
+    """Tests for the _merge_metadata function."""
+
+    async def test_merge_config_base_only(self) -> None:
+        """Test merging config when only base has it."""
+        base = PromptMetadata[dict[str, Any]](config={'temp': 0.5})
+        merge = PromptMetadata[dict[str, Any]]()
+        dotprompt = Dotprompt()
+        result = await dotprompt._resolve_metadata(base, merge)
+        self.assertEqual(result.config, {'temp': 0.5})
+
+    async def test_merge_config_merge_only(self) -> None:
+        """Test merging config when only merge has it."""
+        base = PromptMetadata[dict[str, Any]]()
+        merge = PromptMetadata[dict[str, Any]](config={'temp': 0.7})
+        dotprompt = Dotprompt()
+        result = await dotprompt._resolve_metadata(base, merge)
+        self.assertEqual(result.config, {'temp': 0.7})
+
+    async def test_merge_config_no_overlap(self) -> None:
+        """Test merging config with no overlapping keys."""
+        base = PromptMetadata[dict[str, Any]](config={'temp': 0.5})
+        merge = PromptMetadata[dict[str, Any]](config={'top_k': 10})
+        dotprompt = Dotprompt()
+        result = await dotprompt._resolve_metadata(base, merge)
+        self.assertEqual(result.config, {'temp': 0.5, 'top_k': 10})
+
+    async def test_merge_config_overlap(self) -> None:
+        """Test merging config with overlapping keys (merge overrides)."""
+        base = PromptMetadata[dict[str, Any]](config={'temp': 0.5, 'top_k': 5})
+        merge = PromptMetadata[dict[str, Any]](config={'temp': 0.8, 'top_p': 0.9})
+        dotprompt = Dotprompt()
+        result = await dotprompt._resolve_metadata(base, merge)
+        # merge overrides temp, adds top_p, keeps top_k from base
+        self.assertEqual(result.config, {'temp': 0.8, 'top_k': 5, 'top_p': 0.9})
+
+    async def test_merge_lists_replace(self) -> None:
+        """Test that lists like tools are replaced, not appended."""
+        base = PromptMetadata[dict[str, Any]](tools=['tool_a'])
+        merge = PromptMetadata[dict[str, Any]](tools=['tool_b', 'tool_c'])
+        dotprompt = Dotprompt()
+        result = await dotprompt._resolve_metadata(base, merge)
+        self.assertEqual(result.tools, ['tool_b', 'tool_c'])
+
+    async def test_merge_removes_none_fields(self) -> None:
+        """Test that None fields in merge override existing fields."""
+        base = PromptMetadata[dict[str, Any]](model='model-a', description='desc')
+        # Pydantic V2: exclude_none=True in model_dump means None fields
+        # in the merge object won't be present in merge_dict, so they
+        # won't overwrite existing values in base.
+        # To explicitly overwrite with None, it needs to be included.
+        merge = PromptMetadata[dict[str, Any]](model='model-b', description=None)
+        dotprompt = Dotprompt()
+        result = await dotprompt._resolve_metadata(base, merge)
+
+        # model gets updated, description from base remains
+        expected = PromptMetadata[dict[str, Any]](model='model-b', description='desc')
+        self.assertEqual(result.model, expected.model)
+
+        # Description should NOT be None because merge.model_dump excludes None
+        self.assertEqual(result.description, expected.description)
+
+
+class TestResolveTools(IsolatedAsyncioTestCase):
     """Test the resolve_tools method."""
 
-    def test_resolve_returns_correct_tool_when_registered(self) -> None:
+    async def test_resolve_returns_correct_tool_when_registered(self) -> None:
         """Should resolve registered tools."""
         dotprompt = Dotprompt()
 
@@ -228,14 +290,14 @@ class TestResolveTools(unittest.TestCase):
             'tools': ['testTool', 'unknownTool']
         })
 
-        result = asyncio.run(dotprompt._resolve_tools(metadata))
+        result = await dotprompt._resolve_tools(metadata)
 
         assert result.tool_defs is not None
         assert len(result.tool_defs) == 1
         assert result.tool_defs[0] == tool_def
         assert result.tools == ['unknownTool']
 
-    def test_resolve_raises_error_for_unregistered_tool(self) -> None:
+    async def test_resolve_raises_error_for_unregistered_tool(self) -> None:
         """Should raise an error for unregistered tools."""
         tool_def = ToolDefinition.model_validate({
             'name': 'resolvedTool',
@@ -251,7 +313,7 @@ class TestResolveTools(unittest.TestCase):
         resolve_metadata_mock = AsyncMock(return_value=tool_def)
         dotprompt = Dotprompt(tool_resolver=resolve_metadata_mock)
         metadata: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]](tools=['resolvedTool'])
-        result = asyncio.run(dotprompt._resolve_tools(metadata))
+        result = await dotprompt._resolve_tools(metadata)
         resolve_metadata_mock.assert_called_with('resolvedTool')
         assert result.tool_defs is not None
         assert len(result.tool_defs) == 1
@@ -259,14 +321,14 @@ class TestResolveTools(unittest.TestCase):
         assert result.tools == []
 
 
-class TestRenderPicoSchema(unittest.TestCase):
+class TestRenderPicoSchema(IsolatedAsyncioTestCase):
     """Test the render_picoschema method."""
 
     @patch(
         'dotpromptz.dotprompt.picoschema_to_json_schema',
         return_value={'type': 'object', 'properties': {'expanded': True}},
     )
-    def test_process_valid_picoschema_definition(self, _: Mock) -> None:
+    async def test_process_valid_picoschema_definition(self, _: Mock) -> None:
         """Should process picoschema definitions."""
         dotprompt = Dotprompt()
 
@@ -280,13 +342,13 @@ class TestRenderPicoSchema(unittest.TestCase):
         })
         values_assert = {'type': 'object', 'properties': {'expanded': True}}
         # Now call the function that uses picoschema.picoschema internally
-        result: PromptMetadata[dict[str, Any]] = asyncio.run(dotprompt._render_picoschema(metadata))
+        result: PromptMetadata[dict[str, Any]] = await dotprompt._render_picoschema(metadata)
         assert result.input is not None
         assert result.input.schema_ == values_assert
         assert result.output is not None
         assert result.output.schema_ == values_assert
 
-    def test_returns_original_metadata_when_no_schemas_present(self) -> None:
+    async def test_returns_original_metadata_when_no_schemas_present(self) -> None:
         """Test that the original metadata is returned unchanged when no schemas are present."""
         dotprompt = Dotprompt()
 
@@ -299,14 +361,14 @@ class TestRenderPicoSchema(unittest.TestCase):
             },
             'model': 'gemini-1.5-pro',
         })
-        result: PromptMetadata[dict[str, Any]] = asyncio.run(dotprompt._render_picoschema(metadata))
+        result: PromptMetadata[dict[str, Any]] = await dotprompt._render_picoschema(metadata)
         assert result == metadata
 
 
-class TestWrappedSchemaResolver(unittest.TestCase):
+class TestWrappedSchemaResolver(IsolatedAsyncioTestCase):
     """Test the wrapped schema resolver."""
 
-    def test_resolves_schemas_from_registered_schemas(self) -> None:
+    async def test_resolves_schemas_from_registered_schemas(self) -> None:
         """Should resolve schemas from the registered schemas."""
         schemas: dict[str, dict[str, str | dict[str, dict[str, str]]]] = {
             'test-schema': {
@@ -319,11 +381,11 @@ class TestWrappedSchemaResolver(unittest.TestCase):
 
         dotprompt = Dotprompt(schemas=schemas)
 
-        result = asyncio.run(dotprompt._wrapped_schema_resolver('test-schema'))
+        result = await dotprompt._wrapped_schema_resolver('test-schema')
 
         self.assertEqual(result, schemas['test-schema'])
 
-    def test_uses_schema_resolver_for_unregistered_schemas(self) -> None:
+    async def test_uses_schema_resolver_for_unregistered_schemas(self) -> None:
         """Should use the schema resolver for unregistered schemas."""
         schema_resolver_mock = AsyncMock(
             return_value={'type': 'object', 'properties': {'resolved': {'type': 'boolean'}}}
@@ -331,23 +393,23 @@ class TestWrappedSchemaResolver(unittest.TestCase):
 
         dotprompt = Dotprompt(schema_resolver=schema_resolver_mock)
 
-        result = asyncio.run(dotprompt._wrapped_schema_resolver('external-schema'))
+        result = await dotprompt._wrapped_schema_resolver('external-schema')
         schema_resolver_mock.assert_called_with('external-schema')
 
         self.assertEqual(result, {'type': 'object', 'properties': {'resolved': {'type': 'boolean'}}})
 
-    def test_returns_none_if_schema_not_found_and_no_resolver(self) -> None:
+    async def test_returns_none_if_schema_not_found_and_no_resolver(self) -> None:
         """Should return None if schema not found and no resolver."""
         dotprompt = Dotprompt()
 
-        result = asyncio.run(dotprompt._wrapped_schema_resolver('non-existent-schema'))
+        result = await dotprompt._wrapped_schema_resolver('non-existent-schema')
         self.assertIsNone(result)
 
 
-class TestResolveMetaData(unittest.TestCase):
+class TestResolveMetaData(IsolatedAsyncioTestCase):
     """Test the resolve_metadata method."""
 
-    def test_merge_multiple_metadata(self) -> None:
+    async def test_merge_multiple_metadata(self) -> None:
         """Should merge multiple metadata objects."""
         dotprompt = Dotprompt()
 
@@ -377,7 +439,7 @@ class TestResolveMetaData(unittest.TestCase):
             patch.object(dotprompt, '_resolve_tools', resolve_tools_mock),
             patch.object(dotprompt, '_render_picoschema', render_pico_mock),
         ):
-            result = asyncio.run(dotprompt._resolve_metadata(base, merge1, merge2))
+            result = await dotprompt._resolve_metadata(base, merge1, merge2)
             self.assertEqual(result.model, 'gemini-2.0-flash')
             self.assertEqual(
                 result.config,
@@ -392,7 +454,7 @@ class TestResolveMetaData(unittest.TestCase):
             render_pico_mock.assert_called()
             resolve_tools_mock.assert_called()
 
-    def test_handle_undefined_merges(self) -> None:
+    async def test_handle_undefined_merges(self) -> None:
         """Should handle undefined merges."""
         dotprompt = Dotprompt()
 
@@ -410,7 +472,7 @@ class TestResolveMetaData(unittest.TestCase):
             patch.object(dotprompt, '_resolve_tools', resolve_tools_mock),
             patch.object(dotprompt, '_render_picoschema', render_pico_mock),
         ):
-            result = asyncio.run(dotprompt._resolve_metadata(base))
+            result = await dotprompt._resolve_metadata(base)
 
             self.assertEqual(result.model, 'gemini-1.5-pro')
             self.assertEqual(
