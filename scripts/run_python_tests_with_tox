@@ -29,6 +29,9 @@ echo "Erasing previous coverage data..."
 uv run --active --directory "$PY_DIR" coverage erase || echo "Coverage erase failed (maybe no data existed?), continuing..."
 rm -rf "${PY_DIR}"/.coverage*
 
+# Build the handlebarrz package.
+uv run --active --directory "$PY_DIR/handlebarrz" maturin develop
+
 # Use uv run to execute tox, passing the --parallel flag to tox
 # The '-p auto' flag tells tox to use available CPU cores for parallelism.
 # Any arguments passed to this script ($@) are forwarded to tox (and then pytest)
