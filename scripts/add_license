@@ -42,9 +42,11 @@ $HOME/go/bin/addlicense \
   -ignore '**/.idea/**/*' \
   -ignore '**/.mypy_cache/**/*' \
   -ignore '**/.next/**/*' \
+  -ignore '**/.nox/**/*' \
   -ignore '**/.output/**/*' \
   -ignore '**/.pytest_cache/**/*' \
   -ignore '**/.ruff_cache/**/*' \
+  -ignore '**/.tox/**/*' \
   -ignore '**/.venv/**/*' \
   -ignore '**/.wxt/**/*' \
   -ignore '**/__pycache__/**/*' \
