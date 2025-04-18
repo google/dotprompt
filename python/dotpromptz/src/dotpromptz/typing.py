@@ -172,7 +172,7 @@ InputT = TypeVar('InputT')
 OutputT = TypeVar('OutputT')
 """Generic TypeVar for output types, typically used in ToolResponsePart."""
 
-VariablesT = TypeVar('VariablesT')
+VariablesT = TypeVar('VariablesT', bound=dict[str, Any])
 """Generic TypeVar for prompt input variables within DataArgument."""
 
 
