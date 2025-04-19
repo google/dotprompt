@@ -18,8 +18,10 @@
 set -euo pipefail
 
 TOP_DIR=$(git rev-parse --show-toplevel)
-PYTHON_DIR="${TOP_DIR}/python"
+PY_DIR="${TOP_DIR}/python"
 PYTHON_VERSIONS=(
+  "pypy3.10"
+  "pypy3.11"
   "python3.10"
   "python3.11"
   "python3.12"
@@ -30,7 +32,7 @@ PYTHON_VERSIONS=(
 
 echo "=== Running Python tests ==="
 echo "Project root: ${TOP_DIR}"
-echo "Python directory: ${PYTHON_DIR}"
+echo "Python directory: ${PY_DIR}"
 echo ""
 
 # WORKAROUND:
@@ -44,18 +46,24 @@ echo ""
 #  build anyway using the stable ABI
 export PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1
 
-pushd "${PYTHON_DIR}"
+PYTEST_ARGS=(
+  "-v"
+  #"-vv"
+  #"--log-level=DEBUG"
+)
+pushd "${PY_DIR}"
 for VERSION in "${PYTHON_VERSIONS[@]}"; do
   # NOTE: Build the Rust extension for a specific Python version in an isolated
   # virtual environment; otherwise we see weird missing import errors.
   echo "Creating virtual environment for ${VERSION}..."
   uv venv --python "${VERSION}"
-  uv run --python "${VERSION}" --active --directory handlebarrz maturin develop
+  uv run --python "${VERSION}" --active --isolated --directory handlebarrz maturin develop
   echo "Running tests with Python ${VERSION}..."
   uv run \
     --python "${VERSION}" \
     --active \
-    pytest -vv --log-level=DEBUG .
+    --isolated \
+    pytest "${PYTEST_ARGS[@]}" .
   echo "Cleaning up virtual environment for ${VERSION}..."
   rm -rf .venv
 done

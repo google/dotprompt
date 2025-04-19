@@ -14,12 +14,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""This file is used to run the test suite for the project using nox."""
+
 import nox
 
 # See: https://github.com/astral-sh/uv/issues/6579
 nox.options.default_venv_backend = 'uv|virtualenv'
 
 PYTHON_VERSIONS = [
+    'pypy-3.10',
+    'pypy-3.11',
     '3.10',
     '3.11',
     '3.12',
@@ -41,7 +45,10 @@ def tests(session: nox.Session) -> None:
     session.run(
         'uv',
         'run',
+        '--python',
+        f'{session.python}',
         '--active',
+        '--isolated',
         '--directory',
         'handlebarrz',
         'maturin',
@@ -51,9 +58,14 @@ def tests(session: nox.Session) -> None:
     session.run(
         'uv',
         'run',
+        '--python',
+        f'{session.python}',
         '--active',
+        '--isolated',
         'pytest',
         '-v',
+        #'-vv',
+        #'--log-level=DEBUG',
         '.',
         *session.posargs,
         external=True,

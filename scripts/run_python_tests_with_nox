@@ -22,6 +22,11 @@ set -euo pipefail
 TOP_DIR=$(git rev-parse --show-toplevel)
 PY_DIR="$TOP_DIR/python"
 
-echo "Running Python tests via nox..."
+echo "=== Running Python tests (nox) ==="
+echo "Project root: ${TOP_DIR}"
+echo "Python directory: ${PY_DIR}"
+echo ""
 
 uv run --active --directory "$PY_DIR" nox "$@"
+
+echo "=== Python tests completed ==="

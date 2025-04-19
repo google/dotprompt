@@ -34,6 +34,8 @@ jobs:
           - "3.11"
           - "3.12"
           - "3.13"
+          - "pypy-3.10"
+          - "pypy-3.11"
           #- "3.14" # This still fails.
       fail-fast: false
 
@@ -77,19 +79,18 @@ jobs:
       - name: Check licenses
         run: ./scripts/check_license
 
+      - name: Run Rust tests for handlebarrz
+        run: ./scripts/run_rust_tests
+
       - name: Build Rust extension for Python ${{ matrix.python-version }}
         working-directory: ./python
         run: |
-          uv venv --python python${{ matrix.python-version }}
-          uv run --active --directory handlebarrz maturin develop
+          uv run --python ${{ matrix.python-version }} --active --isolated --directory handlebarrz maturin develop
 
       - name: Run Python tests for Python ${{ matrix.python-version }}
         working-directory: ./python
         run: |
-          uv run --active pytest -xvvs --log-level=DEBUG .
-
-      - name: Run Rust tests for handlebarrz
-        run: ./scripts/run_rust_tests
+          uv run --python ${{ matrix.python-version }} --active --isolated pytest -xvvs --log-level=DEBUG .
 
       - name: Build distributions
         run: ./scripts/build_dists

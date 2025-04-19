@@ -20,7 +20,7 @@ set -euo pipefail
 
 TOP_DIR=$(git rev-parse --show-toplevel)
 
-PYTHON_DIR="${TOP_DIR}/python"
+PY_DIR="${TOP_DIR}/python"
 HANDLEBARRZ_DIR="${TOP_DIR}/python/handlebarrz"
 GO_DIR="${TOP_DIR}/go"
 JS_DIR="${TOP_DIR}"
@@ -38,6 +38,6 @@ pushd "${HANDLEBARRZ_DIR}"
 cargo update
 popd
 
-pushd "${PYTHON_DIR}"
+pushd "${PY_DIR}"
 uv lock --upgrade
 popd
