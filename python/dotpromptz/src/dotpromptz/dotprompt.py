@@ -14,7 +14,28 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Dotpromptz is a library for generating prompts using Handlebars templates."""
+"""Dotpromptz is a library for generating prompts using Handlebars templates.
+
+This module provides the core Dotprompt class, which extends the Handlebars
+template engine for use with generative AI prompts. It supports parsing
+templates, rendering metadata, resolving tools and partials, and managing
+schemas.
+
+Key features include:
+
+| Feature              | Description                                                                             |
+|----------------------|-----------------------------------------------------------------------------------------|
+| Template Parsing     | Parsing of templates with YAML frontmatter for metadata.                                |
+| Metadata Rendering   | Rendering of prompt metadata, including merging and resolving tools and schemas.        |
+| Tool Resolution      | Resolving tool names to tool definitions using a resolver or a static mapping.          |
+| Partial Resolution   | Resolving partial template names to their content using a resolver or a static mapping. |
+| Schema Management    | Handling of JSON schemas, including Picoschema conversion.                              |
+| Helper Functions     | Registration and management of custom helper functions.                                 |
+| Partial Templates    | Registration and management of partial templates.                                       |
+| Model Configuration  | Support for default models and model-specific configurations.                           |
+| Prompt Store         | Integration with a prompt store for loading prompts and partials.                       |
+| Extensibility        | Designed to be extensible with custom helpers, resolvers, and stores.                   |
+"""
 
 from __future__ import annotations
 

@@ -14,7 +14,24 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Parse dotprompt templates and extract metadata."""
+"""Parses dotprompt templates and extracts metadata.
+
+This module is responsible for parsing dotprompt templates. It handles extracting
+metadata from YAML frontmatter and converting the template content into a
+structured format, specifically a list of messages and their parts (text,
+media, or metadata).
+
+Key functionalities include:
+
+- Extracting YAML frontmatter and the main template body.
+- Parsing the YAML frontmatter into a structured metadata object, handling
+  reserved keywords and namespaced entries.
+- Splitting the template body into message sources based on role and history
+  markers.
+- Converting message sources into structured messages, processing media and
+  section markers within the content.
+- Handling the insertion of historical messages into the conversation flow.
+"""
 
 import re
 from dataclasses import dataclass, field

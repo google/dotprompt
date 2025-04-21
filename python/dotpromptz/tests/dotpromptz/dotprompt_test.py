@@ -556,3 +556,7 @@ def test_use_available_model_config() -> None:
         resolve_metadata_mock.assert_called_with(PromptMetadata(config={'temperature': 0.7}), parsed_source, None)
 
         assert result.config == {'temperature': 0.7}
+
+
+if __name__ == '__main__':
+    unittest.main()
