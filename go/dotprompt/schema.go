@@ -76,7 +76,7 @@ func (dp *Dotprompt) LookupSchemaFromAnySource(name string) any {
 		return schema
 	}
 
-	if dp.ExternalSchemaLookups != nil && len(dp.ExternalSchemaLookups) > 0 {
+	if len(dp.ExternalSchemaLookups) > 0 {
 		for _, lookup := range dp.ExternalSchemaLookups {
 			if schema := lookup(name); schema != nil {
 				if dp.Schemas == nil {
