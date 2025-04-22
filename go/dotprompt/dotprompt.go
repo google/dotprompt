@@ -45,26 +45,28 @@ type DotpromptOptions struct {
 
 // Dotprompt is the main struct for the Dotprompt instance.
 type Dotprompt struct {
-	knownHelpers    map[string]bool
-	defaultModel    string
-	modelConfigs    map[string]any
-	tools           map[string]ToolDefinition
-	toolResolver    ToolResolver
-	schemas         map[string]*jsonschema.Schema
-	schemaResolver  SchemaResolver
-	partialResolver PartialResolver
-	knownPartials   map[string]bool
-	Template        *raymond.Template
-	Helpers         map[string]any
-	Partials        map[string]string
+	knownHelpers          map[string]bool
+	defaultModel          string
+	modelConfigs          map[string]any
+	tools                 map[string]ToolDefinition
+	toolResolver          ToolResolver
+	schemaResolver        SchemaResolver
+	partialResolver       PartialResolver
+	knownPartials         map[string]bool
+	Template              *raymond.Template
+	Helpers               map[string]any
+	Partials              map[string]string
+	Schemas               map[string]*jsonschema.Schema
+	ExternalSchemaLookups []func(string) any
 }
 
 // NewDotprompt creates a new Dotprompt instance with the given options.
 func NewDotprompt(options *DotpromptOptions) *Dotprompt {
 	// Always initialize maps
 	dp := &Dotprompt{
-		knownHelpers:  make(map[string]bool),
-		knownPartials: make(map[string]bool),
+		knownHelpers:          make(map[string]bool),
+		knownPartials:         make(map[string]bool),
+		ExternalSchemaLookups: make([]func(string) any, 0),
 	}
 
 	if options != nil {
@@ -72,7 +74,7 @@ func NewDotprompt(options *DotpromptOptions) *Dotprompt {
 		dp.defaultModel = options.DefaultModel
 		dp.tools = options.Tools
 		dp.toolResolver = options.ToolResolver
-		dp.schemas = options.Schemas
+		dp.Schemas = options.Schemas
 		dp.schemaResolver = options.SchemaResolver
 		dp.partialResolver = options.PartialResolver
 		dp.Helpers = options.Helpers
@@ -81,8 +83,8 @@ func NewDotprompt(options *DotpromptOptions) *Dotprompt {
 		if dp.tools == nil {
 			dp.tools = make(map[string]ToolDefinition)
 		}
-		if dp.schemas == nil {
-			dp.schemas = make(map[string]*jsonschema.Schema)
+		if dp.Schemas == nil {
+			dp.Schemas = make(map[string]*jsonschema.Schema)
 		}
 		if dp.Helpers == nil {
 			dp.Helpers = make(map[string]any)
@@ -96,7 +98,7 @@ func NewDotprompt(options *DotpromptOptions) *Dotprompt {
 	} else {
 		// Ensure maps are initialized even if options are nil.
 		dp.tools = make(map[string]ToolDefinition)
-		dp.schemas = make(map[string]*jsonschema.Schema)
+		dp.Schemas = make(map[string]*jsonschema.Schema)
 		dp.Helpers = make(map[string]any)
 		dp.Partials = make(map[string]string)
 		dp.modelConfigs = make(map[string]any)
@@ -435,9 +437,9 @@ func (dp *Dotprompt) RenderPicoschema(meta PromptMetadata) (PromptMetadata, erro
 	return newMeta, nil
 }
 
-// WrappedSchemaResolver resolves schemas.
+// WrappedSchemaResolver resolves Schema.
 func (dp *Dotprompt) WrappedSchemaResolver(name string) (*jsonschema.Schema, error) {
-	if schema, exists := dp.schemas[name]; exists {
+	if schema, exists := dp.Schemas[name]; exists {
 		return schema, nil
 	}
 	if dp.schemaResolver != nil {
