@@ -45,19 +45,23 @@ from typing import Any
 import anyio
 
 from dotpromptz.helpers import register_all_helpers
-from dotpromptz.parse import parse_document
+from dotpromptz.parse import parse_document, to_messages
 from dotpromptz.picoschema import picoschema_to_json_schema
 from dotpromptz.resolvers import resolve_json_schema, resolve_partial, resolve_tool
 from dotpromptz.typing import (
+    DataArgument,
     JsonSchema,
     ModelConfigT,
     ParsedPrompt,
     PartialResolver,
+    PromptFunction,
     PromptMetadata,
     PromptStore,
+    RenderedPrompt,
     SchemaResolver,
     ToolDefinition,
     ToolResolver,
+    VariablesT,
 )
 from dotpromptz.util import remove_undefined_fields
 from handlebarrz import EscapeFunction, Handlebars, HelperFn
@@ -111,6 +115,45 @@ def _identify_partials(template: str) -> set[str]:
         A set of partial names referenced in the template.
     """
     return set(_PARTIAL_PATTERN.findall(template))
+
+
+class CompiledRenderer(PromptFunction[ModelConfigT]):
+    """A compiled prompt function with the prompt as a property.
+
+    This is the Python equivalent of the renderFunc nested function
+    within the compile method of the Dotprompt class in TypeScript.
+
+    It exposes the prompt property to the user.
+    """
+
+    def __init__(self, dotprompt: Dotprompt, handlebars: Handlebars, prompt: ParsedPrompt[ModelConfigT]):
+        """Initialize the renderer.
+
+        Args:
+            dotprompt: The Dotprompt instance.
+            handlebars: The Handlebars instance.
+            prompt: The parsed prompt.
+        """
+        self._dotprompt = dotprompt
+        self._handlebars = handlebars
+
+        self.prompt = prompt
+
+    async def __call__(
+        self, data: DataArgument[VariablesT], options: PromptMetadata[ModelConfigT] | None = None
+    ) -> RenderedPrompt[ModelConfigT]:
+        """Render the prompt.
+
+        Args:
+            data: The data to be used to render the prompt.
+            options: Additional options for the prompt.
+
+        Returns:
+            The rendered prompt.
+        """
+        # Construct and return the final RenderedPrompt.
+        # TODO: Stub
+        return RenderedPrompt[ModelConfigT](messages=[])
 
 
 class Dotprompt:
@@ -221,6 +264,45 @@ class Dotprompt:
             The parsed prompt.
         """
         return parse_document(source)
+
+    async def render(
+        self, source: str, data: DataArgument[VariablesT], options: PromptMetadata[ModelConfigT] | None = None
+    ) -> RenderedPrompt[ModelConfigT]:
+        """Render a prompt.
+
+        Args:
+            source: The source code for the prompt.
+            data: The data to be used to render the prompt.
+            options: Additional options for the prompt.
+
+        Returns:
+            The rendered prompt.
+        """
+        renderer: PromptFunction[ModelConfigT] = await self.compile(source)
+        return await renderer(data, options)
+
+    async def compile(
+        self, source: str, additional_metadata: PromptMetadata[ModelConfigT] | None = None
+    ) -> PromptFunction[ModelConfigT]:
+        """Compile a prompt.
+
+        Args:
+            source: The source code for the prompt.
+            additional_metadata: Additional metadata to be used to render the prompt.
+
+        Returns:
+            A function that can be used to render the prompt.
+        """
+        prompt = self.parse(source) if isinstance(source, str) else source
+        if additional_metadata is not None:
+            prompt = prompt.model_copy(
+                deep=True,
+                update=additional_metadata.model_dump(exclude_none=True, by_alias=True),
+            )
+
+        # Resolve partials before compiling.
+        await self._resolve_partials(prompt.template)
+        return CompiledRenderer(self, self._handlebars, prompt)
 
     async def render_metadata(
         self,
