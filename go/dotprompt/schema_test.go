@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/invopop/jsonschema"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDefineSchema(t *testing.T) {
@@ -28,22 +27,50 @@ func TestDefineSchema(t *testing.T) {
 
 	testSchema := &jsonschema.Schema{Type: "string"}
 	result := dp.DefineSchema("Person", testSchema)
-	assert.Equal(t, testSchema, result)
+	if result != testSchema {
+		t.Errorf("Expected dp.DefineSchema to return the same schema, got %v, want %v", result, testSchema)
+	}
 
 	schema, exists := dp.LookupSchema("Person")
-	assert.True(t, exists)
-	assert.Equal(t, testSchema, schema)
+	if !exists {
+		t.Error("Expected schema to exist after defining it")
+	}
+	if schema != testSchema {
+		t.Errorf("Expected lookup to return the same schema, got %v, want %v", schema, testSchema)
+	}
 
 	newSchema := &jsonschema.Schema{Type: "object"}
 	result = dp.DefineSchema("Person", newSchema)
-	assert.Equal(t, newSchema, result)
+	if result != newSchema {
+		t.Errorf("Expected dp.DefineSchema to return the same schema, got %v, want %v", result, newSchema)
+	}
 
 	schema, exists = dp.LookupSchema("Person")
-	assert.True(t, exists)
-	assert.Equal(t, newSchema, schema)
+	if !exists {
+		t.Error("Expected schema to exist after redefining it")
+	}
+	if schema != newSchema {
+		t.Errorf("Expected lookup to return the redefined schema, got %v, want %v", schema, newSchema)
+	}
 
-	assert.Panics(t, func() { dp.DefineSchema("", testSchema) })
-	assert.Panics(t, func() { dp.DefineSchema("Test", nil) })
+	// Testing panic scenarios
+	func() {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("Expected panic with empty name, but it didn't happen")
+			}
+		}()
+		dp.DefineSchema("", testSchema)
+	}()
+
+	func() {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("Expected panic with nil schema, but it didn't happen")
+			}
+		}()
+		dp.DefineSchema("Test", nil)
+	}()
 }
 
 func TestExternalSchemaLookup(t *testing.T) {
@@ -58,10 +85,14 @@ func TestExternalSchemaLookup(t *testing.T) {
 	})
 
 	schema := dp.LookupSchemaFromAnySource("ExternalSchema")
-	assert.Equal(t, testSchema, schema)
+	if schema != testSchema {
+		t.Errorf("Expected external lookup to return the test schema, got %v, want %v", schema, testSchema)
+	}
 
 	schema = dp.LookupSchemaFromAnySource("NonExistentSchema")
-	assert.Nil(t, schema)
+	if schema != nil {
+		t.Errorf("Expected nil for non-existent schema, got %v", schema)
+	}
 }
 
 func TestResolveSchemaReferences(t *testing.T) {
@@ -76,9 +107,14 @@ func TestResolveSchemaReferences(t *testing.T) {
 		},
 	}
 	err := dp.ResolveSchemaReferences(metadata)
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
 	inputSection := metadata["input"].(map[string]any)
-	assert.Equal(t, testSchema, inputSection["schema"])
+	if inputSection["schema"] != testSchema {
+		t.Errorf("Expected schema reference to be resolved, got %v, want %v", inputSection["schema"], testSchema)
+	}
 
 	metadata = map[string]any{
 		"output": map[string]any{
@@ -86,9 +122,14 @@ func TestResolveSchemaReferences(t *testing.T) {
 		},
 	}
 	err = dp.ResolveSchemaReferences(metadata)
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
 	outputSection := metadata["output"].(map[string]any)
-	assert.Equal(t, testSchema, outputSection["schema"])
+	if outputSection["schema"] != testSchema {
+		t.Errorf("Expected schema reference to be resolved, got %v, want %v", outputSection["schema"], testSchema)
+	}
 
 	metadata = map[string]any{
 		"input": map[string]any{
@@ -96,5 +137,7 @@ func TestResolveSchemaReferences(t *testing.T) {
 		},
 	}
 	err = dp.ResolveSchemaReferences(metadata)
-	assert.Error(t, err)
+	if err == nil {
+		t.Error("Expected error for non-existent schema, got nil")
+	}
 }

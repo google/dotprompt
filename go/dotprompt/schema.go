@@ -76,25 +76,20 @@ func (dp *Dotprompt) LookupSchemaFromAnySource(name string) any {
 		return schema
 	}
 
-	if len(dp.ExternalSchemaLookups) > 0 {
-		for _, lookup := range dp.ExternalSchemaLookups {
-			if schema := lookup(name); schema != nil {
-				if dp.Schemas == nil {
-					dp.Schemas = make(map[string]*jsonschema.Schema)
-				}
-
-				var jsSchema *jsonschema.Schema
-				switch s := schema.(type) {
-				case *jsonschema.Schema:
-					jsSchema = s
-				default:
-					reflector := jsonschema.Reflector{}
-					jsSchema = reflector.Reflect(schema)
-				}
-
-				dp.Schemas[name] = jsSchema
-				return jsSchema
+	for _, lookup := range dp.ExternalSchemaLookups {
+		if schema := lookup(name); schema != nil {
+			if dp.Schemas == nil {
+				dp.Schemas = make(map[string]*jsonschema.Schema)
 			}
+
+			jsSchema, ok := schema.(*jsonschema.Schema)
+			if !ok {
+				reflector := jsonschema.Reflector{}
+				jsSchema = reflector.Reflect(schema)
+			}
+
+			dp.Schemas[name] = jsSchema
+			return jsSchema
 		}
 	}
 
