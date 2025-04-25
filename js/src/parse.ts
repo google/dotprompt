@@ -65,7 +65,7 @@ export const SECTION_MARKER_PREFIX = '<<<dotprompt:section';
  * the start of a .prompt content block.
  */
 export const FRONTMATTER_AND_BODY_REGEX =
-  /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
+  /^---\s*(?:\r\n|\r|\n)([\s\S]*?)(?:\r\n|\r|\n)---\s*(?:\r\n|\r|\n)([\s\S]*)$/;
 
 /**
  * Regular expression to match <<<dotprompt:role:xxx>>> and

@@ -17,6 +17,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { Dotprompt } from './dotprompt';
+import type { MessageSource } from './parse';
 import {
   FRONTMATTER_AND_BODY_REGEX,
   MEDIA_AND_SECTION_MARKER_REGEX,
@@ -38,7 +40,6 @@ import {
   toMessages,
   transformMessagesToHistory,
 } from './parse';
-import type { MessageSource } from './parse';
 import type { DataArgument, Message } from './types';
 
 describe('ROLE_AND_HISTORY_MARKER_REGEX', () => {
@@ -865,5 +866,26 @@ Template content`;
       ext: {},
       template: 'Template content',
     });
+  });
+});
+
+describe('parseDocumentWithCRLF', () => {
+  it('should parse document with CRLF line separators', async () => {
+    const source =
+      '---\r\ninput:\r\n  schema:\r\n    scope: string\r\noutput:\r\n  schema:\r\n    result: string\r\n---\r\n';
+    const prompt = new Dotprompt();
+    await expect(prompt.render(source)).resolves.toEqual(expect.anything());
+  });
+  it('should parse document with LF line separators', async () => {
+    const source =
+      '---\ninput:\n  schema:\n    scope: string\noutput:\n  schema:\n    result: string\n---\n';
+    const prompt = new Dotprompt();
+    await expect(prompt.render(source)).resolves.toEqual(expect.anything());
+  });
+  it('should parse document with CR line separators', async () => {
+    const source =
+      '---\rinput:\r  schema:\r    scope: string\routput:\r  schema:\r    result: string\r---\r';
+    const prompt = new Dotprompt();
+    await expect(prompt.render(source)).resolves.toEqual(expect.anything());
   });
 });
