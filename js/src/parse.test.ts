@@ -868,24 +868,3 @@ Template content`;
     });
   });
 });
-
-describe('parseDocumentWithCRLF', () => {
-  it('should parse document with CRLF line separators', async () => {
-    const source =
-      '---\r\ninput:\r\n  schema:\r\n    scope: string\r\noutput:\r\n  schema:\r\n    result: string\r\n---\r\n';
-    const prompt = new Dotprompt();
-    await expect(prompt.render(source)).resolves.toEqual(expect.anything());
-  });
-  it('should parse document with LF line separators', async () => {
-    const source =
-      '---\ninput:\n  schema:\n    scope: string\noutput:\n  schema:\n    result: string\n---\n';
-    const prompt = new Dotprompt();
-    await expect(prompt.render(source)).resolves.toEqual(expect.anything());
-  });
-  it('should parse document with CR line separators', async () => {
-    const source =
-      '---\rinput:\r  schema:\r    scope: string\routput:\r  schema:\r    result: string\r---\r';
-    const prompt = new Dotprompt();
-    await expect(prompt.render(source)).resolves.toEqual(expect.anything());
-  });
-});

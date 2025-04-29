@@ -405,3 +405,15 @@
               foo2:
                 type: [number, "null"]
                 description: this one is optional
+
+# Tests that the schema supports CRLF line-ending
+- name: line_endings_crlf
+  template: "---\r\ninput:\r\n  schema: string\r\noutput:\r\n  schema: string\r\n---\r\n"
+  tests:
+    - desc: returns as expected
+      expect:
+        messages: []
+        input:
+          schema: { type: string }
+        output:
+          schema: { type: string }
