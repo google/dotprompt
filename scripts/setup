@@ -221,6 +221,10 @@ function dotpromptz::install_go_cli_tools_eng() {
 # that the user has already installed rust and cargo.
 function dotpromptz::install_cargo_cli_tools_eng() {
   cargo install --locked \
+    cargo-expand \
+    cargo-fuzz \
+    cargo-tree \
+    cargo-watch \
     convco \
     pylyzer \
     rust-parallel \
