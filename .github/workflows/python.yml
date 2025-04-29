@@ -76,6 +76,10 @@ jobs:
       - name: Static type check
         run: uv run --active --directory python mypy .
 
+      # TODO: Move this to a rust workflow once we have one.
+      - name: Run rust lint
+        run: pushd python/handlebarrz && cargo clippy --all-targets --all-features -- -D warnings && popd
+
       - name: Check licenses
         run: ./scripts/check_license
 

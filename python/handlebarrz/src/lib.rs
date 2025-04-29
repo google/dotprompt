@@ -108,7 +108,7 @@ impl HelperDef for PyHelperDef {
                 Ok(json) => json,
                 Err(e) => {
                     let desc = format!("Failed to serialize params: {}", e);
-                    return Err(RenderError::from(RenderErrorReason::Other(desc.into())));
+                    return Err(RenderError::from(RenderErrorReason::Other(desc)));
                 }
             };
 
@@ -122,7 +122,7 @@ impl HelperDef for PyHelperDef {
                 Ok(json) => json,
                 Err(e) => {
                     let desc = format!("Failed to serialize hash: {}", e);
-                    return Err(RenderError::from(RenderErrorReason::Other(desc.into())));
+                    return Err(RenderError::from(RenderErrorReason::Other(desc)));
                 }
             };
 
@@ -131,7 +131,7 @@ impl HelperDef for PyHelperDef {
                 Ok(json) => json,
                 Err(e) => {
                     let desc = format!("Failed to serialize context: {}", e);
-                    return Err(RenderError::from(RenderErrorReason::Other(desc.into())));
+                    return Err(RenderError::from(RenderErrorReason::Other(desc)));
                 }
             };
 
@@ -144,7 +144,7 @@ impl HelperDef for PyHelperDef {
                         Ok(s) => s,
                         Err(e) => {
                             let desc = format!("Failed to extract result: {}", e);
-                            return Err(RenderError::from(RenderErrorReason::Other(desc.into())));
+                            return Err(RenderError::from(RenderErrorReason::Other(desc)));
                         }
                     };
                     out.write(&result_str)?;
@@ -152,7 +152,7 @@ impl HelperDef for PyHelperDef {
                 }
                 Err(e) => {
                     let desc = format!("Helper execution failed: {}", e);
-                    Err(RenderError::from(RenderErrorReason::Other(desc.into())))
+                    Err(RenderError::from(RenderErrorReason::Other(desc)))
                 }
             }
         })
@@ -613,8 +613,9 @@ impl HelperDef for UnlessEqualsHelper {
 ///
 /// ## Hash Arguments
 ///
-/// * `indent`: Optional. If provided, the JSON output will be pretty-printed with the specified indent level (integer).
-///             If not provided, the JSON output will be compact (no whitespace).
+/// * `indent`: Optional. If provided, the JSON output will be pretty-printed
+///   with the specified indent level (integer).  If not provided, the JSON
+///   output will be compact (no whitespace).
 ///
 /// This helper is useful for embedding JSON data directly into templates,
 /// for example, to pass configuration or data to client-side JavaScript code.
