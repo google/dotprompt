@@ -17,7 +17,6 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { Dotprompt } from './dotprompt';
 import type { MessageSource } from './parse';
 import {
   FRONTMATTER_AND_BODY_REGEX,
@@ -216,6 +215,43 @@ describe('convertNamespacedEntryToNestedObject', () => {
 });
 
 describe('FRONTMATTER_AND_BODY_REGEX', () => {
+  it('should handle CRLF line endings', () => {
+    const source = '---\r\nfoo: bar\r\n---\r\nThis is the body.';
+    const match = source.match(FRONTMATTER_AND_BODY_REGEX);
+    expect(match).not.toBeNull();
+
+    if (match) {
+      const [fullMatch, frontmatter, body] = match;
+      expect(fullMatch).toBe(source);
+      expect(frontmatter).toBe('foo: bar');
+      expect(body).toBe('This is the body.');
+    }
+  });
+
+  it('should handle CR line endings', () => {
+    const source = '---\rfoo: bar\r---\rThis is the body.';
+    const match = source.match(FRONTMATTER_AND_BODY_REGEX);
+    expect(match).not.toBeNull();
+    if (match) {
+      const [fullMatch, frontmatter, body] = match;
+      expect(fullMatch).toBe(source);
+      expect(frontmatter).toBe('foo: bar');
+      expect(body).toBe('This is the body.');
+    }
+  });
+
+  it('should handle LF line endings', () => {
+    const source = '---\nfoo: bar\n---\nThis is the body.';
+    const match = source.match(FRONTMATTER_AND_BODY_REGEX);
+    expect(match).not.toBeNull();
+    if (match) {
+      const [fullMatch, frontmatter, body] = match;
+      expect(fullMatch).toBe(source);
+      expect(frontmatter).toBe('foo: bar');
+      expect(body).toBe('This is the body.');
+    }
+  });
+
   it('should match a document with frontmatter and body', () => {
     const source = '---\nfoo: bar\n---\nThis is the body.';
     const match = source.match(FRONTMATTER_AND_BODY_REGEX);
