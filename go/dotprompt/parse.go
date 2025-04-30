@@ -52,7 +52,7 @@ var (
 	// FrontmatterAndBodyRegex is a regular expression to match YAML frontmatter
 	// delineated by `---` markers at the start of a .prompt content block.
 	FrontmatterAndBodyRegex = regexp.MustCompile(
-		`^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$`)
+		`^---\s*(?:\r\n|\r|\n)([\s\S]*?)(?:\r\n|\r|\n)---\s*(?:\r\n|\r|\n)([\s\S]*)$`)
 
 	// EmptyFrontmatterRegex is a regular expression to match empty YAML
 	// frontmatter (where there's no content between the frontmatter markers).

@@ -33,6 +33,27 @@ func TestFrontmatterAndBodyRegex(t *testing.T) {
 		shouldMatch         bool
 	}{
 		{
+			name:                "Document with CRLF line endings",
+			source:              "---\r\nfoo: bar\r\n---\r\nThis is the body.\r\n",
+			expectedFrontmatter: "foo: bar",
+			expectedBody:        "This is the body.\r\n",
+			shouldMatch:         true,
+		},
+		{
+			name:                "Document with CR line endings",
+			source:              "---\rfoo: bar\r---\rThis is the body.\r",
+			expectedFrontmatter: "foo: bar",
+			expectedBody:        "This is the body.\r",
+			shouldMatch:         true,
+		},
+		{
+			name:                "Document with LF line endings",
+			source:              "---\nfoo: bar\n---\nThis is the body.\n",
+			expectedFrontmatter: "foo: bar",
+			expectedBody:        "This is the body.\n",
+			shouldMatch:         true,
+		},
+		{
 			name:                "Document with frontmatter and body",
 			source:              "---\nfoo: bar\n---\nThis is the body.",
 			expectedFrontmatter: "foo: bar",
