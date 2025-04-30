@@ -59,10 +59,20 @@ from dotpromptz.typing import (
     'source,expected_frontmatter,expected_body',
     [
         (
-            '---\nfoo: bar\n---\nThis is the body.',
+            '---\r\nfoo: bar\r\n---\r\nThis is the body.\r\n',
             'foo: bar',
-            'This is the body.',
-        ),  # Test document with frontmatter and body
+            'This is the body.\r\n',
+        ),  # Test document with CRLF line endings
+        (
+            '---\rfoo: bar\r---\rThis is the body.\r',
+            'foo: bar',
+            'This is the body.\r',
+        ),  # Test document with CR line endings
+        (
+            '---\nfoo: bar\n---\nThis is the body.\n',
+            'foo: bar',
+            'This is the body.\n',
+        ),  # Test document with LF line endings
         (
             '---\n\n---\nBody only.',
             '',
