@@ -1,0 +1,11 @@
+.trunk
+bazel-bin
+bazel-dotprompt
+bazel-out
+bazel-testlogs
+js/coverage
+js/dist
+js/node_modules
+node_modules
+target/
+third_party/docsite/node_modules

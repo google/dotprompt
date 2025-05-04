@@ -1,0 +1,28 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "test",
+    srcs = [
+        "spec_parser_func.go",
+        "types.go",
+    ],
+    importpath = "github.com/google/dotprompt/go/dotprompt/test",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//go/dotprompt",
+        "@com_github_goccy_go_yaml//:go-yaml",
+        "@com_github_invopop_jsonschema//:jsonschema",
+    ],
+)
+
+go_test(
+    name = "test_test",
+    srcs = ["spec_test.go"],
+    data = ["//spec"],
+    embed = [":test"],
+    deps = [
+        "//go/dotprompt",
+        "@com_github_go_viper_mapstructure_v2//:mapstructure",
+        "@com_github_invopop_jsonschema//:jsonschema",
+    ],
+)

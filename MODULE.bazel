@@ -1,0 +1,15 @@
+"""Google Dotprompt."""
+
+module(
+    name = "dotprompt",
+    version = "0.0.1",
+)
+
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "gazelle", version = "0.42.0")
+bazel_dep(name = "platforms", version = "0.0.11")
+
+include("//:go.MODULE.bazel")
+include("//:java.MODULE.bazel")
+include("//:rust.MODULE.bazel")
+include("//:ts.MODULE.bazel")

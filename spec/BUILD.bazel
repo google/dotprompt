@@ -1,0 +1,13 @@
+load("@aspect_rules_js//js:defs.bzl", "js_library")
+
+filegroup(
+    name = "spec",
+    srcs = glob(["**/*.yaml"]),
+    visibility = ["//visibility:public"],
+)
+
+js_library(
+    name = "spec_js_lib",
+    srcs = glob(["**/*.yaml"]),
+    visibility = ["//visibility:public"],
+)

@@ -33,6 +33,7 @@
       ".trunk/**",
       "bazel-*/**",
       "go/**",
+      "maven_install.json",
       "node_modules/**",
       "python/**",
       "third_party/**"

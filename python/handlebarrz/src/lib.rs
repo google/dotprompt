@@ -290,7 +290,7 @@ impl HandlebarrzTemplate {
                 return Err(PyValueError::new_err(format!(
                     "Unknown escape function: {}",
                     escape_fn
-                )))
+                )));
             }
         }
         Ok(())

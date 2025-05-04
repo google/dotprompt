@@ -1,0 +1,42 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "dotprompt",
+    srcs = [
+        "doc.go",
+        "dotprompt.go",
+        "helper.go",
+        "parse.go",
+        "picoschema.go",
+        "types.go",
+        "util.go",
+    ],
+    importpath = "github.com/google/dotprompt/go/dotprompt",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_goccy_go_yaml//:go-yaml",
+        "@com_github_invopop_jsonschema//:jsonschema",
+        "@com_github_mbleigh_raymond//:raymond",
+        "@com_github_wk8_go_ordered_map_v2//:go-ordered-map",
+    ],
+)
+
+go_test(
+    name = "dotprompt_test",
+    srcs = [
+        "dotprompt_test.go",
+        "example_test.go",
+        "helper_test.go",
+        "parse_test.go",
+        "picoschema_test.go",
+        "types_test.go",
+        "util_test.go",
+    ],
+    embed = [":dotprompt"],
+    deps = [
+        "@com_github_invopop_jsonschema//:jsonschema",
+        "@com_github_mbleigh_raymond//:raymond",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_wk8_go_ordered_map_v2//:go-ordered-map",
+    ],
+)

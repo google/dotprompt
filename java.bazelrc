@@ -1,0 +1,39 @@
+#common:java17 --java_language_version=17
+#common:java17 --tool_java_language_version=17
+#common:java17 --java_runtime_version=remotejdk_17
+#common:java17 --tool_java_runtime_version=remotejdk_17
+
+common:java21 --java_language_version=21
+common:java21 --tool_java_language_version=21
+common:java21 --java_runtime_version=remotejdk_21
+common:java21 --tool_java_runtime_version=remotejdk_21
+
+common --config=java21
+
+# =============================================================================
+# junit_test is incompatible with JDK 18+ -
+# "java.lang.UnsupportedOperationException: The Security Manager is deprecated"
+# =============================================================================
+# See: https://github.com/bazelbuild/bazel/issues/16421
+#build --jvmopt=-Djava.security.manager=allow
+#build --jvmopt=-Dfile.encoding=UTF-8
+
+# =============================================================================
+# Force local JDK for everything.
+# =============================================================================
+# See: https://bazel.build/docs/bazel-and-java
+#common --extra_toolchains=@local_jdk//:all
+#common --java_runtime_version=local_jdk
+#common --tool_java_runtime_version=local_jdk
+
+# =============================================================================
+# FreeBSD requires a local JDK configuration because rules_java doesn't have a
+# remote JDK for FreeBSD.
+# =============================================================================
+# See: https://bazel.build/docs/bazel-and-java
+build:freebsd --extra_toolchains=@local_jdk//:all
+build:freebsd --java_runtime_version=local_jdk
+build:freebsd --tool_java_runtime_version=local_jdk
+
+# Speed up Java builds by removing indirect dependencies from classpath.
+build --experimental_java_classpath=bazel

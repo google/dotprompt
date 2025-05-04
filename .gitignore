@@ -1,7 +1,9 @@
 .DS_Store
+.aspect
 .cache
 .firebaserc
 .idea
+.user.bazelrc
 /js/coverage
 /js/dist
 /third_party/docsite/src/content/refdocs
@@ -12,3 +14,4 @@ python/.nox
 python/.tox
 python/handlebarrz/target
 site/
+target/

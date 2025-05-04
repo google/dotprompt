@@ -1,0 +1,21 @@
+load("@aspect_rules_js//npm:defs.bzl", "npm_link_package")
+load("@gazelle//:def.bzl", "gazelle")
+load("@npm//:defs.bzl", "npm_link_all_packages")
+
+package(default_visibility = ["//visibility:public"])
+
+# gazelle:prefix github.com/google/dotprompt
+gazelle(name = "gazelle")
+
+# Building this package creates bazel-bin/node_modules/@google/dotprompt
+# so that other packages can depend on this target.
+npm_link_package(
+    name = "node_modules/@google/dotprompt",
+    src = "//js:pkg",
+    package = "@google/dotprompt",
+    visibility = ["//visibility:public"],
+)
+
+# This macro expands to a npm_link_package for each of the dependencies in
+# package.json.
+npm_link_all_packages(name = "node_modules")

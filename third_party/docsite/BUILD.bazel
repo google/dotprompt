@@ -1,0 +1,38 @@
+load("@aspect_rules_js//js:defs.bzl", "js_library")
+load("@aspect_rules_ts//ts:defs.bzl", "ts_config", "ts_project")
+
+ts_config(
+    name = "tsconfig",
+    src = "tsconfig.json",
+    visibility = [":__subpackages__"],
+)
+
+#ts_project(
+#    name = "docsite",
+#    srcs = glob(
+#        [
+#            "**/*.ts",
+#        ],
+#        exclude = [
+#            "**/*.test.ts",
+#            "**/*.bench.ts",
+#            "**/*.test.tsx",
+#            "node_modules/**",
+#        ],
+#    ),
+#    out_dir = "dist",
+#    tsconfig = ":tsconfig",
+#    visibility = ["//visibility:public"],
+#    deps = [
+#        "//:node_modules/@types/node",
+#    ],
+#)
+
+js_library(
+    name = "pkg",
+    srcs = [
+        "package.json",
+        #":docsite",
+    ],
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,15 @@
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+
+rust_library(
+    name = "smoke",
+    srcs = [
+        "src/lib.rs",
+    ],
+)
+
+rust_test(
+    name = "smoke_test",
+    size = "small",
+    srcs = ["src/lib.rs"],
+    deps = [":smoke"],
+)

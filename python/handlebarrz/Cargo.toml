@@ -2,7 +2,7 @@
 authors       = ["Yesudeep Mangalapilly <yesudeep@google.com>"]
 description   = "Handlebars library for Python based on handlebars-rust"
 documentation = "https://github.com/google/dotprompt"
-edition       = "2021"
+edition       = "2024"
 homepage      = "https://github.com/google/dotprompt"
 license       = "Apache-2.0"
 name          = "handlebarrz"

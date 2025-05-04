@@ -1,0 +1,46 @@
+"""Configuration for Bazel with Node.js, TypeScript, and JavaScript dependencies."""
+
+PNPM_VERSION = "9.10.0"
+
+NODE_VERSION = "22.8.0"
+
+# Node.js
+# See: https://github.com/bazel-contrib/rules_nodejs/blob/main/nodejs/private/node_versions.bzl
+bazel_dep(name = "rules_nodejs", version = "6.3.5")
+
+node = use_extension("@rules_nodejs//nodejs:extensions.bzl", "node", dev_dependency = True)
+node.toolchain(node_version = NODE_VERSION)
+
+# TypeScript.
+bazel_dep(name = "aspect_rules_ts", version = "3.5.3")
+
+rules_ts_ext = use_extension("@aspect_rules_ts//ts:extensions.bzl", "ext", dev_dependency = True)
+rules_ts_ext.deps(ts_version_from = "//:package.json")
+use_repo(rules_ts_ext, "npm_typescript")
+
+# JavaScript.
+bazel_dep(name = "aspect_rules_js", version = "2.3.7")
+
+npm = use_extension("@aspect_rules_js//npm:extensions.bzl", "npm", dev_dependency = True)
+npm.npm_translate_lock(
+    name = "npm",
+    data = [
+        "//js:package.json",
+        "//third_party/docsite:package.json",
+        ":package.json",
+        ":pnpm-workspace.yaml",
+    ],
+    npmrc = "//:.npmrc",
+    pnpm_lock = "//:pnpm-lock.bazel.yaml",
+    update_pnpm_lock = True,
+    verify_node_modules_ignored = "//:.bazelignore",
+)
+use_repo(npm, "npm")
+
+# Allow us to do 'bazel run @pnpm -- --dir=$PWD install'
+pnpm = use_extension("@aspect_rules_js//npm:extensions.bzl", "pnpm", dev_dependency = True)
+pnpm.pnpm(
+    name = "pnpm",
+    pnpm_version = PNPM_VERSION,
+)
+use_repo(pnpm, "pnpm")

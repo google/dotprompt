@@ -31,7 +31,6 @@
     "vitest": "^3.1.2"
   },
   "dependencies": {
-    "@types/handlebars": "^4.1.0",
     "handlebars": "^4.7.8",
     "yaml": "^2.7.1"
   },

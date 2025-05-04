@@ -43,6 +43,9 @@
           "run": "scripts/lint"
         },
         {
+          "run": "scripts/run_bazel_checks"
+        },
+        {
           "run": "scripts/run_rust_tests"
         },
         {
@@ -93,6 +96,9 @@
         },
         {
           "run": "scripts/lint"
+        },
+        {
+          "run": "scripts/run_bazel_checks"
         },
         {
           "run": "scripts/run_rust_tests --verbose"

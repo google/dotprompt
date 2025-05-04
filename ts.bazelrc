@@ -1,0 +1,59 @@
+########## Required Typecheck Performance Selection ########
+#
+# TypeScript's type-checking exposes a flag `--skipLibCheck`:
+# https://www.typescriptlang.org/tsconfig#skipLibCheck
+#
+# Using this flag saves substantial time during type-checking.
+# Rather than doing a full check of all d.ts files, TypeScript will only type-check the code you
+# specifically refer to in your app's source code.
+# We recommend this for most rules_ts users.
+#
+# HOWEVER this performance improvement comes at the expense of type-system accuracy.
+# For example, two packages could define two copies of the same type in an inconsistent way.
+# If you publish a library from your repository, your incorrect types may result in errors for your users.
+#
+# You must choose exactly one of the following flags:
+#
+# 1. To choose the faster performance put this in /.bazelrc:
+#
+#     # passes an argument `--skipLibCheck` to *every* spawn of tsc
+#     # Bazel 6.4 or greater: 'common' means 'any command that supports this flag'
+#     common --@aspect_rules_ts//ts:skipLibCheck=always
+#
+#     # Between Bazel 6.0 and 6.3, you need all of this, to avoid discarding the analysis cache:
+#     build --@aspect_rules_ts//ts:skipLibCheck=always
+#     fetch --@aspect_rules_ts//ts:skipLibCheck=always
+#     query --@aspect_rules_ts//ts:skipLibCheck=always
+#
+#     # Before Bazel 6.0, only the 'build' and 'fetch' lines work.
+#
+# 2. To choose more correct typechecks, put this in /.bazelrc:
+#
+#     # honor the setting of `skipLibCheck` in the tsconfig.json file
+#     # Bazel 6.4 or greater: 'common' means 'any command that supports this flag'
+#     common --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+#
+#     # Between Bazel 6.0 and 6.3, you need all of this, to avoid discarding the analysis cache:
+#     build --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+#     fetch --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+#     query --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+#
+#     # Before Bazel 6.0, only the 'build' and 'fetch' lines work.
+#
+# ##########################################################
+#
+#
+# This instance of @@aspect_rules_ts~//ts:options has configuration identifier c704f78. To inspect its configuration, run: bazel config c704f78.
+#
+# For more help, see https://bazel.build/docs/configurable-attributes#faq-select-choose-condition.
+
+# The option we've chosen: correct & fast enough.
+#
+# honor the setting of `skipLibCheck` in the tsconfig.json file
+# Bazel 6.4 or greater: 'common' means 'any command that supports this flag'
+common --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+
+
+# Setting the transpiler to `tsc`.
+# See: https://docs.aspect.build/rulesets/aspect_rules_ts/docs/transpiler/
+common --@aspect_rules_ts//ts:default_to_tsc_transpiler
