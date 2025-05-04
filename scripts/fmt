@@ -58,6 +58,14 @@ if [[ $? -ne 0 ]]; then
 fi
 popd
 
+# Format handlebarrz
+pushd "${TOP_DIR}/python/handlebarrz"
+cargo fmt --all
+if [[ $? -ne 0 ]]; then
+  exit 1
+fi
+popd
+
 # Format all rust code
 pushd "${TOP_DIR}"
 cargo fmt --all

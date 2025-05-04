@@ -1,7 +1,14 @@
 [package]
-edition = "2024"
-name    = "smoke"
-version = "0.1.0"
+authors     = ["Yesudeep Mangalapilly <yesudeep@google.com>"]
+categories  = ["development-tools"]
+description = "A smoke test package for dotprompt workspace."
+edition     = "2024"
+keywords    = ["smoke-test", "dotprompt"]
+license     = "Apache-2.0"
+name        = "smoke"
+readme      = "README.md"
+repository  = "https://github.com/google/dotprompt"
+version     = "0.1.0"
 
 [dependencies]
 

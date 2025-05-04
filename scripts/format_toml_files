@@ -17,6 +17,11 @@
 
 set -euo pipefail
 
+if ((EUID == 0)); then
+  echo "Please do not run as root"
+  exit 1
+fi
+
 TOP_DIR=$(git rev-parse --show-toplevel)
 
 if command -v taplo >/dev/null 2>&1; then

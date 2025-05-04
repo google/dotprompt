@@ -17,6 +17,11 @@
 
 set -euo pipefail
 
+if ((EUID == 0)); then
+  echo "Please do not run as root"
+  exit 1
+fi
+
 TOP_DIR=$(git rev-parse --show-toplevel)
 
 "${TOP_DIR}/scripts/run_go_tests"
@@ -25,9 +30,15 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-"${TOP_DIR}/scripts/run_rust_tests"
+"${TOP_DIR}/scripts/run_rust_checks"
 if [ $? -ne 0 ]; then
   echo "Rust tests failed."
+  exit 1
+fi
+
+"${TOP_DIR}/scripts/run_handlebarrz_tests"
+if [ $? -ne 0 ]; then
+  echo "Handlebarrz tests failed."
   exit 1
 fi
 

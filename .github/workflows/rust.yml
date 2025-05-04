@@ -1,0 +1,73 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: "Rust checks"
+
+on:
+  pull_request:
+    paths:
+      - "rs/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/rust.yml"
+
+jobs:
+  check-build-test:
+    name: Check, Build & Test (${{ matrix.toolchain }}, ${{ matrix.os_config.os }}-${{ matrix.os_config.arch }})
+    runs-on: ${{ matrix.os_config.os }}
+    strategy:
+      fail-fast: false # Keep running other jobs even if one fails
+      matrix:
+        os_config:
+          - { os: ubuntu-latest, arch: x64 }
+          - { os: ubuntu-latest, arch: arm64 }
+          - { os: macos-latest, arch: arm64 }
+        toolchain: [stable, nightly]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (${{ matrix.toolchain }})
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+
+      - name: Cache Cargo registry and index
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ matrix.os_config.os }}-${{ matrix.os_config.arch }}-cargo-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check code
+        run: cargo check --all-targets --workspace
+        # Allow nightly check to fail without failing the entire workflow
+        continue-on-error: ${{ matrix.toolchain == 'nightly' }}
+
+      - name: Build code
+        run: cargo build --all-targets --workspace
+        # Allow nightly build to fail
+        continue-on-error: ${{ matrix.toolchain == 'nightly' }}
+
+      - name: Run tests
+        run: cargo test --all-targets --workspace
+        # Allow nightly tests to fail
+        continue-on-error: ${{ matrix.toolchain == 'nightly' }}

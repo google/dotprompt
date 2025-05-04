@@ -16,8 +16,9 @@
 
 //! Smoke test for the build system.
 
-/// Adds two numbers.
-pub fn add(left: u64, right: u64) -> u64 {
+/// A simple addition function.
+#[must_use]
+pub const fn add(left: u64, right: u64) -> u64 {
     left + right
 }
 

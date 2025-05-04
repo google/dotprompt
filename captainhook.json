@@ -46,7 +46,10 @@
           "run": "scripts/run_bazel_checks"
         },
         {
-          "run": "scripts/run_rust_tests"
+          "run": "scripts/run_rust_checks"
+        },
+        {
+          "run": "scripts/run_handlebarrz_tests"
         },
         {
           "run": "scripts/run_python_tests_with_nox -s tests"
@@ -101,7 +104,10 @@
           "run": "scripts/run_bazel_checks"
         },
         {
-          "run": "scripts/run_rust_tests --verbose"
+          "run": "scripts/run_rust_checks"
+        },
+        {
+          "run": "scripts/run_handlebarrz_tests --verbose"
         },
         {
           "run": "scripts/run_python_tests_with_nox -s tests"

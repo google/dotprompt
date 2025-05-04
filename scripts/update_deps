@@ -18,6 +18,11 @@
 set -x
 set -euo pipefail
 
+if ((EUID == 0)); then
+  echo "Please do not run as root"
+  exit 1
+fi
+
 TOP_DIR=$(git rev-parse --show-toplevel)
 
 PY_DIR="${TOP_DIR}/python"

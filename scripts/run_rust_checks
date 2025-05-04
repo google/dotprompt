@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# set -x # Uncomment to enable tracing.
+set -euo pipefail
+
+if ((EUID == 0)); then
+  echo "Please do not run as root"
+  exit 1
+fi
+
+# Function to print error messages
+function error_exit() {
+  echo "Error: $1" >&2
+  exit 1
+}
+
+# Check if rustup is installed
+if ! command -v rustup &> /dev/null; then
+  error_exit "rustup could not be found. Please install rustup first: https://rustup.rs/"
+fi
+
+echo "=== Running Rust tests ==="
+
+# Install stable and nightly toolchains if they aren't already installed.
+echo "--- Ensuring stable and nightly toolchains are installed ---"
+rustup toolchain install stable --no-self-update || error_exit "Failed to install stable toolchain"
+rustup toolchain install nightly --no-self-update || error_exit "Failed to install nightly toolchain"
+
+# Format check with stable toolchain.
+echo "--- Checking formatting with +stable toolchain ---"
+cargo +stable fmt --all -- --check || error_exit "Formatting check failed with stable toolchain"
+
+# Lint with stable toolchain (treat warnings as errors).
+echo "--- Running clippy with +stable toolchain ---"
+cargo +stable clippy --all-targets --workspace -- -D warnings || error_exit "Clippy failed with stable toolchain"
+
+# Run tests with stable toolchain.
+echo "--- Running tests with +stable toolchain ---"
+cargo +stable test --all-targets --workspace || error_exit "Tests failed with stable toolchain"
+
+# Format check with nightly toolchain.
+echo "--- Checking formatting with +nightly toolchain ---"
+cargo +nightly fmt --all -- --check || echo "Warning: Formatting check failed with nightly toolchain (allowed to fail)"
+
+# Lint with nightly toolchain (treat warnings as errors).
+echo "--- Running clippy with +nightly toolchain ---"
+cargo +nightly clippy --all-targets --workspace -- -D warnings || echo "Warning: Clippy failed with nightly toolchain (allowed to fail)"
+
+# Run tests with nightly toolchain.
+echo "--- Running tests with +nightly toolchain ---"
+cargo +nightly test --all-targets --workspace || echo "Warning: Tests failed with nightly toolchain (allowed to fail)"
+
+echo "=== Rust tests completed successfully (nightly failures are allowed) ==="
+exit 0
