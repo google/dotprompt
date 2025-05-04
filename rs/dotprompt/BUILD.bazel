@@ -1,0 +1,27 @@
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+
+rust_library(
+    name = "dotprompt",
+    srcs = [
+        "src/lib.rs",
+        "src/types.rs",
+    ],
+    deps = [
+        "@crates//:serde",
+        "@crates//:serde_json",
+    ],
+)
+
+rust_test(
+    name = "dotprompt_test",
+    size = "small",
+    srcs = [
+        "src/lib.rs",
+        "src/types.rs",
+    ],
+    deps = [
+        ":dotprompt",
+        "@crates//:serde",
+        "@crates//:serde_json",
+    ],
+)

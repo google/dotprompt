@@ -42,7 +42,9 @@ PRs to ensure they get included in our release notes:
 |-----------------|----------------------------------------------|
 | `deps`          | For dependency updates                       |
 | `go`            | For changes to the Go implementation         |
+| `java`          | For changes to the Java implementation       |
 | `js`            | For changes to the JavaScript implementation |
 | `py/dotpromptz` | For changes to the Python dotpromptz package |
 | `py/handlebarrz`| For changes to the Python handlebarrz package|
 | `py`            | For changes affecting all Python packages    |
+| `rust`          | For changes to the Rust implementation       |

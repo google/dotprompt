@@ -17,6 +17,7 @@ crate.from_cargo(
     cargo_lockfile = "//:Cargo.lock",
     manifests = [
         "//:Cargo.toml",
+        "//rs/dotprompt:Cargo.toml",
         "//rs/smoke:Cargo.toml",
     ],
 )

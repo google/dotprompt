@@ -74,6 +74,14 @@ if [[ $? -ne 0 ]]; then
 fi
 popd
 
+# Format handlebarrz
+pushd "${TOP_DIR}/python/handlebarrz"
+cargo fmt --all
+if [[ $? -ne 0 ]]; then
+  exit 1
+fi
+popd
+
 # Format all build files.
 if ! command -v "buildifier" >/dev/null 2>&1; then
   echo "Buildifier not found. Installing via go install..."
