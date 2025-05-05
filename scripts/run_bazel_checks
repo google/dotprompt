@@ -26,6 +26,11 @@ if ! command -v "bazelisk" >/dev/null 2>&1; then
   go install github.com/bazelbuild/bazelisk@latest
 fi
 
+TOP_DIR=$(git rev-parse --show-toplevel)
+
+echo "Updating build files..."
+"${TOP_DIR}/scripts/gazelle"
+
 echo "Pinning dependencies..."
 bazelisk run @maven//:pin
 
