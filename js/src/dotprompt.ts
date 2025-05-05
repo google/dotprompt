@@ -88,22 +88,8 @@ export class Dotprompt {
     this.schemaResolver = options?.schemaResolver;
     this.partialResolver = options?.partialResolver;
 
-    for (const key in helpers) {
-      this.defineHelper(key, helpers[key as keyof typeof helpers]);
-      this.handlebars.registerHelper(key, helpers[key as keyof typeof helpers]);
-    }
-
-    if (options?.helpers) {
-      for (const key in options.helpers) {
-        this.defineHelper(key, options.helpers[key]);
-      }
-    }
-
-    if (options?.partials) {
-      for (const key in options.partials) {
-        this.definePartial(key, options.partials[key]);
-      }
-    }
+    this.registerInitialHelpers(options?.helpers);
+    this.registerInitialPartials(options?.partials);
   }
 
   /**
@@ -174,6 +160,106 @@ export class Dotprompt {
     return renderer(data, options);
   }
 
+  /**
+   * Compiles a template into a reusable function for rendering prompts.
+   *
+   * @param source The template source or parsed prompt to compile
+   * @param additionalMetadata Additional metadata to include in the compiled template
+   * @return A promise resolving to a function for rendering the template
+   */
+  async compile<
+    Variables = Record<string, unknown>,
+    ModelConfig = Record<string, unknown>,
+  >(
+    source: string | ParsedPrompt<ModelConfig>,
+    additionalMetadata?: PromptMetadata<ModelConfig>
+  ): Promise<PromptFunction<ModelConfig>> {
+    let parsedSource: ParsedPrompt<ModelConfig>;
+    if (typeof source === 'string') {
+      parsedSource = this.parse<ModelConfig>(source);
+    } else {
+      parsedSource = source;
+    }
+
+    if (additionalMetadata) {
+      parsedSource = { ...parsedSource, ...additionalMetadata };
+    }
+
+    // Resolve all partials before compilation.
+    await this.resolvePartials(parsedSource.template);
+
+    const renderString = this.handlebars.compile<Variables>(
+      parsedSource.template,
+      {
+        knownHelpers: this.knownHelpers,
+        knownHelpersOnly: true,
+        noEscape: true,
+      }
+    );
+
+    const renderFunc = async (
+      data: DataArgument,
+      options?: PromptMetadata<ModelConfig>
+    ) => {
+      // Discard the input schema as once rendered it doesn't make sense.
+      const { input, ...mergedMetadata } =
+        await this.renderMetadata(parsedSource);
+
+      const renderedString = renderString(
+        { ...(options?.input?.default || {}), ...data.input },
+        {
+          data: {
+            metadata: {
+              prompt: mergedMetadata,
+              docs: data.docs,
+              messages: data.messages,
+            },
+            ...(data.context || {}),
+          },
+        }
+      );
+
+      return {
+        ...mergedMetadata,
+        messages: toMessages<ModelConfig>(renderedString, data),
+      };
+    };
+    (renderFunc as PromptFunction<ModelConfig>).prompt = parsedSource;
+    return renderFunc as PromptFunction<ModelConfig>;
+  }
+
+  /**
+   * Processes and resolves all metadata for a prompt template.
+   *
+   * @param source The template source or parsed prompt
+   * @param additionalMetadata Additional metadata to include
+   * @return A promise resolving to the fully processed metadata
+   */
+  async renderMetadata<ModelConfig>(
+    source: string | ParsedPrompt<ModelConfig>,
+    additionalMetadata?: PromptMetadata<ModelConfig>
+  ): Promise<PromptMetadata<ModelConfig>> {
+    let parsedSource: ParsedPrompt<ModelConfig>;
+    if (typeof source === 'string') {
+      parsedSource = this.parse<ModelConfig>(source);
+    } else {
+      parsedSource = source;
+    }
+
+    const model =
+      additionalMetadata?.model || parsedSource.model || this.defaultModel;
+
+    let modelConfig: ModelConfig | undefined;
+    if (model && this.modelConfigs[model]) {
+      modelConfig = this.modelConfigs[model] as ModelConfig;
+    }
+
+    return this.resolveMetadata<ModelConfig>(
+      modelConfig ? { config: modelConfig } : {},
+      parsedSource,
+      additionalMetadata
+    );
+  }
   /**
    * Processes schema definitions in picoschema format into standard JSON Schema.
    *
@@ -401,103 +487,37 @@ export class Dotprompt {
   }
 
   /**
-   * Compiles a template into a reusable function for rendering prompts.
-   *
-   * @param source The template source or parsed prompt to compile
-   * @param additionalMetadata Additional metadata to include in the compiled template
-   * @return A promise resolving to a function for rendering the template
+   * Registers initial helpers from built-in helpers and options.
+   * @private
    */
-  async compile<
-    Variables = Record<string, unknown>,
-    ModelConfig = Record<string, unknown>,
-  >(
-    source: string | ParsedPrompt<ModelConfig>,
-    additionalMetadata?: PromptMetadata<ModelConfig>
-  ): Promise<PromptFunction<ModelConfig>> {
-    let parsedSource: ParsedPrompt<ModelConfig>;
-    if (typeof source === 'string') {
-      parsedSource = this.parse<ModelConfig>(source);
-    } else {
-      parsedSource = source;
+  private registerInitialHelpers(
+    customHelpers?: Record<string, Handlebars.HelperDelegate>
+  ): void {
+    // Register built-in helpers
+    for (const key in helpers) {
+      this.defineHelper(key, helpers[key as keyof typeof helpers]);
+      this.handlebars.registerHelper(key, helpers[key as keyof typeof helpers]);
     }
 
-    if (additionalMetadata) {
-      parsedSource = { ...parsedSource, ...additionalMetadata };
-    }
-
-    // Resolve all partials before compilation.
-    await this.resolvePartials(parsedSource.template);
-
-    const renderString = this.handlebars.compile<Variables>(
-      parsedSource.template,
-      {
-        knownHelpers: this.knownHelpers,
-        knownHelpersOnly: true,
-        noEscape: true,
+    // Register custom helpers from options
+    if (customHelpers) {
+      for (const key in customHelpers) {
+        this.defineHelper(key, customHelpers[key]);
       }
-    );
-
-    const renderFunc = async (
-      data: DataArgument,
-      options?: PromptMetadata<ModelConfig>
-    ) => {
-      // Discard the input schema as once rendered it doesn't make sense.
-      const { input, ...mergedMetadata } =
-        await this.renderMetadata(parsedSource);
-
-      const renderedString = renderString(
-        { ...(options?.input?.default || {}), ...data.input },
-        {
-          data: {
-            metadata: {
-              prompt: mergedMetadata,
-              docs: data.docs,
-              messages: data.messages,
-            },
-            ...(data.context || {}),
-          },
-        }
-      );
-
-      return {
-        ...mergedMetadata,
-        messages: toMessages<ModelConfig>(renderedString, data),
-      };
-    };
-    (renderFunc as PromptFunction<ModelConfig>).prompt = parsedSource;
-    return renderFunc as PromptFunction<ModelConfig>;
+    }
   }
 
   /**
-   * Processes and resolves all metadata for a prompt template.
+   * Registers initial partials from the options.
    *
-   * @param source The template source or parsed prompt
-   * @param additionalMetadata Additional metadata to include
-   * @return A promise resolving to the fully processed metadata
+   * @param partials The partials to register
+   * @private
    */
-  async renderMetadata<ModelConfig>(
-    source: string | ParsedPrompt<ModelConfig>,
-    additionalMetadata?: PromptMetadata<ModelConfig>
-  ): Promise<PromptMetadata<ModelConfig>> {
-    let parsedSource: ParsedPrompt<ModelConfig>;
-    if (typeof source === 'string') {
-      parsedSource = this.parse<ModelConfig>(source);
-    } else {
-      parsedSource = source;
+  private registerInitialPartials(partials?: Record<string, string>): void {
+    if (partials) {
+      for (const key in partials) {
+        this.definePartial(key, partials[key]);
+      }
     }
-
-    const model =
-      additionalMetadata?.model || parsedSource.model || this.defaultModel;
-
-    let modelConfig: ModelConfig | undefined;
-    if (model && this.modelConfigs[model]) {
-      modelConfig = this.modelConfigs[model] as ModelConfig;
-    }
-
-    return this.resolveMetadata<ModelConfig>(
-      modelConfig ? { config: modelConfig } : {},
-      parsedSource,
-      additionalMetadata
-    );
   }
 }

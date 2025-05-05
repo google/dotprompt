@@ -44,8 +44,8 @@ from typing import Any
 
 import anyio
 
-from dotpromptz.helpers import register_all_helpers
-from dotpromptz.parse import parse_document, to_messages
+from dotpromptz.helpers import BUILTIN_HELPERS
+from dotpromptz.parse import parse_document
 from dotpromptz.picoschema import picoschema_to_json_schema
 from dotpromptz.resolvers import resolve_json_schema, resolve_partial, resolve_tool
 from dotpromptz.typing import (
@@ -200,19 +200,11 @@ class Dotprompt:
         self._partial_resolver: PartialResolver | None = partial_resolver
         self._store: PromptStore | None = None
 
-        self._register_initial_helpers()
-        self._register_initial_partials()
-
-    def _register_initial_helpers(self) -> None:
-        """Register the initial helpers."""
-        register_all_helpers(self._handlebars)
-        for name, fn in self._helpers.items():
-            self._handlebars.register_helper(name, fn)
-
-    def _register_initial_partials(self) -> None:
-        """Register the initial partials."""
-        for name, source in self._partials.items():
-            self._handlebars.register_partial(name, source)
+        self._register_initial_helpers(
+            builtin_helpers=BUILTIN_HELPERS,
+            custom_helpers=helpers,
+        )
+        self._register_initial_partials(partials)
 
     def define_helper(self, name: str, fn: HelperFn) -> Dotprompt:
         """Define a helper function for the template.
@@ -538,3 +530,35 @@ class Dotprompt:
 
         # TODO: Should we cache the resolved schema in self._schemas?
         return await resolve_json_schema(name, self._schema_resolver)
+
+    def _register_initial_helpers(
+        self,
+        builtin_helpers: dict[str, HelperFn] | None = None,
+        custom_helpers: dict[str, HelperFn] | None = None,
+    ) -> None:
+        """Register the initial helpers.
+
+        Built-in helpers are registered first, then custom helpers are
+        registered.
+
+        Args:
+            builtin_helpers: Built-in helpers to register.
+            custom_helpers: Custom helpers to register.
+        """
+        if builtin_helpers is not None:
+            for name, fn in builtin_helpers.items():
+                self.define_helper(name, fn)
+
+        if custom_helpers is not None:
+            for name, fn in custom_helpers.items():
+                self.define_helper(name, fn)
+
+    def _register_initial_partials(self, partials: dict[str, str] | None = None) -> None:
+        """Register the initial partials.
+
+        Args:
+            partials: Partials to register.
+        """
+        if partials is not None:
+            for name, source in partials.items():
+                self.define_partial(name, source)

@@ -52,22 +52,20 @@ def mock_handlebars() -> Generator[Mock, None, None]:
         yield mock_instance
 
 
-@pytest.fixture
-def mock_register_all_helpers() -> Generator[Mock, None, None]:
-    """Create a mock for the register_all_helpers function."""
-    with patch('dotpromptz.dotprompt.register_all_helpers') as mock:
-        yield mock
-
-
-def test_init_default(mock_handlebars: Mock, mock_register_all_helpers: Mock) -> None:
+def test_init_default(mock_handlebars: Mock) -> None:
     """Test initializing Dotprompt with default options."""
     dotprompt = Dotprompt()
 
     assert dotprompt._handlebars == mock_handlebars
-
-    mock_register_all_helpers.assert_called_once_with(mock_handlebars)
-
-    assert dotprompt._known_helpers == {}
+    assert dotprompt._known_helpers == {
+        'history': True,
+        'ifEquals': True,
+        'json': True,
+        'media': True,
+        'role': True,
+        'section': True,
+        'unlessEquals': True,
+    }
     assert dotprompt._default_model is None
     assert dotprompt._model_configs == {}
     assert dotprompt._tools == {}
@@ -78,7 +76,7 @@ def test_init_default(mock_handlebars: Mock, mock_register_all_helpers: Mock) ->
     assert dotprompt._store is None
 
 
-def test_init_with_options(mock_handlebars: Mock, mock_register_all_helpers: Mock) -> None:
+def test_init_with_options(mock_handlebars: Mock) -> None:
     """Test initializing Dotprompt with custom options."""
 
     def helper_fn(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:

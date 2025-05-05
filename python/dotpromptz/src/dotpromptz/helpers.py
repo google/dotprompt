@@ -39,7 +39,7 @@
 import json
 from typing import Any
 
-from handlebarrz import Handlebars
+from handlebarrz import Handlebars, HelperFn
 
 
 def json_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
@@ -75,7 +75,6 @@ def role_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any
     """Create a dotprompt role marker.
 
     Example:
-
         ```handlebars
         {{role "system"}}
         ```
@@ -99,7 +98,6 @@ def history_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, 
     """Create a dotprompt history marker.
 
     Example:
-
         ```handlebars
         {{history}}
         ```
@@ -119,7 +117,6 @@ def section_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, 
     """Create a dotprompt section marker.
 
     Example:
-
         ```handlebars
         {{section "name"}}
         ```
@@ -143,7 +140,6 @@ def media_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, An
     """Create a dotprompt media marker.
 
     Example:
-
         ```handlebars
         {{media url="https://example.com/image.png" contentType="image/png"}}
         ```
@@ -168,10 +164,9 @@ def media_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, An
 
 
 def if_equals_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
-    """ifEquals compares two values and returns appropriate content.
+    """Compares two values and returns appropriate content.
 
     Example:
-
         ```handlebars
         {{#ifEquals arg1 arg2}}
             <p>arg1 is equal to arg2</p>
@@ -202,10 +197,9 @@ def if_equals_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str
 
 
 def unless_equals_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
-    """unlessEquals compares two values and returns appropriate content.
+    """Compares two values and returns appropriate content.
 
     Example:
-
         ```handlebars
         {{#unlessEquals arg1 arg2}}
             <p>arg1 is not equal to arg2</p>
@@ -235,8 +229,19 @@ def unless_equals_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict
     return ''
 
 
+BUILTIN_HELPERS: dict[str, HelperFn] = {
+    'history': history_helper,
+    'ifEquals': if_equals_helper,
+    'json': json_helper,
+    'media': media_helper,
+    'role': role_helper,
+    'section': section_helper,
+    'unlessEquals': unless_equals_helper,
+}
+
+
 def register_all_helpers(handlebars: Handlebars) -> None:
-    """Register all custom helpers with the handlebars instance.
+    """Register all builtin helpers with the handlebars instance.
 
     Args:
         handlebars: An instance of the Handlebars template engine.
@@ -244,10 +249,5 @@ def register_all_helpers(handlebars: Handlebars) -> None:
     Returns:
         None.
     """
-    handlebars.register_helper('history', history_helper)
-    handlebars.register_helper('ifEquals', if_equals_helper)
-    handlebars.register_helper('json', json_helper)
-    handlebars.register_helper('media', media_helper)
-    handlebars.register_helper('role', role_helper)
-    handlebars.register_helper('section', section_helper)
-    handlebars.register_helper('unlessEquals', unless_equals_helper)
+    for name, fn in BUILTIN_HELPERS.items():
+        handlebars.register_helper(name, fn)
