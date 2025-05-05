@@ -246,7 +246,7 @@ class Dotprompt:
         self._tools[definition.name] = definition
         return self
 
-    def parse(self, source: str) -> ParsedPrompt[Any]:
+    def parse(self, source: str) -> ParsedPrompt[ModelConfigT]:
         """Parse a prompt from a string.
 
         Args:
@@ -285,7 +285,7 @@ class Dotprompt:
         Returns:
             A function that can be used to render the prompt.
         """
-        prompt = self.parse(source) if isinstance(source, str) else source
+        prompt: ParsedPrompt[ModelConfigT] = self.parse(source) if isinstance(source, str) else source
         if additional_metadata is not None:
             prompt = prompt.model_copy(
                 deep=True,
@@ -400,6 +400,24 @@ class Dotprompt:
 
         return new_meta
 
+    async def _wrapped_schema_resolver(self, name: str) -> JsonSchema | None:
+        """Resolve a schema from either instance local mapping or the resolver.
+
+        Args:
+            name: The name of the schema to resolve.
+
+        Returns:
+            The resolved schema or None if it is not found.
+        """
+        if name in self._schemas:
+            return self._schemas[name]
+
+        if self._schema_resolver is None:
+            return None
+
+        # TODO: Should we cache the resolved schema in self._schemas?
+        return await resolve_json_schema(name, self._schema_resolver)
+
     async def _resolve_tools(self, metadata: PromptMetadata[ModelConfigT]) -> PromptMetadata[ModelConfigT]:
         """Resolve all tools in a prompt.
 
@@ -512,24 +530,6 @@ class Dotprompt:
         async with anyio.create_task_group() as tg:
             for name in unregistered_names:
                 tg.start_soon(resolve_and_register, name)
-
-    async def _wrapped_schema_resolver(self, name: str) -> JsonSchema | None:
-        """Resolve a schema from either instance local mapping or the resolver.
-
-        Args:
-            name: The name of the schema to resolve.
-
-        Returns:
-            The resolved schema or None if it is not found.
-        """
-        if name in self._schemas:
-            return self._schemas[name]
-
-        if self._schema_resolver is None:
-            return None
-
-        # TODO: Should we cache the resolved schema in self._schemas?
-        return await resolve_json_schema(name, self._schema_resolver)
 
     def _register_initial_helpers(
         self,

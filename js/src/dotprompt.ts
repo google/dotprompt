@@ -17,7 +17,7 @@
  */
 
 import * as Handlebars from 'handlebars';
-import * as helpers from './helpers';
+import * as builtinHelpers from './helpers';
 import { parseDocument, toMessages } from './parse';
 import { picoschema } from './picoschema';
 import {
@@ -26,7 +26,6 @@ import {
   type ParsedPrompt,
   type PromptFunction,
   type PromptMetadata,
-  PromptRefFunction,
   type PromptStore,
   type RenderedPrompt,
   type Schema,
@@ -88,7 +87,7 @@ export class Dotprompt {
     this.schemaResolver = options?.schemaResolver;
     this.partialResolver = options?.partialResolver;
 
-    this.registerInitialHelpers(options?.helpers);
+    this.registerInitialHelpers(builtinHelpers, options?.helpers);
     this.registerInitialPartials(options?.partials);
   }
 
@@ -260,6 +259,48 @@ export class Dotprompt {
       additionalMetadata
     );
   }
+
+  /**
+   * Merges multiple metadata objects together, resolving tools and schemas.
+   *
+   * @param base The base metadata object
+   * @param merges Additional metadata objects to merge into the base
+   * @return A promise resolving to the merged and processed metadata
+   */
+  private async resolveMetadata<ModelConfig = Record<string, unknown>>(
+    base: PromptMetadata<ModelConfig>,
+    ...merges: (PromptMetadata<ModelConfig> | undefined)[]
+  ): Promise<PromptMetadata<ModelConfig>> {
+    let out = { ...base };
+
+    for (let i = 0; i < merges.length; i++) {
+      if (!merges[i]) {
+        continue;
+      }
+
+      // Keep a reference to the original config.
+      const originalConfig = out.config || ({} as ModelConfig);
+
+      // Merge the new metadata.
+      out = { ...out, ...merges[i] };
+
+      // Merge the configs.
+      out.config = { ...originalConfig, ...(merges[i]?.config || {}) };
+    }
+
+    // Remove the template attribute if it exists.
+    const { template: _, ...outWithoutTemplate } =
+      out as PromptMetadata<ModelConfig> & { template?: string };
+    out = outWithoutTemplate as PromptMetadata<ModelConfig>;
+
+    out = removeUndefinedFields(out);
+    // TODO: Can this be done concurrently?
+    out = await this.resolveTools(out);
+    out = await this.renderPicoschema(out);
+
+    return out;
+  }
+
   /**
    * Processes schema definitions in picoschema format into standard JSON Schema.
    *
@@ -325,47 +366,6 @@ export class Dotprompt {
       return await this.schemaResolver(name);
     }
     return null;
-  }
-
-  /**
-   * Merges multiple metadata objects together, resolving tools and schemas.
-   *
-   * @param base The base metadata object
-   * @param merges Additional metadata objects to merge into the base
-   * @return A promise resolving to the merged and processed metadata
-   */
-  private async resolveMetadata<ModelConfig = Record<string, unknown>>(
-    base: PromptMetadata<ModelConfig>,
-    ...merges: (PromptMetadata<ModelConfig> | undefined)[]
-  ): Promise<PromptMetadata<ModelConfig>> {
-    let out = { ...base };
-
-    for (let i = 0; i < merges.length; i++) {
-      if (!merges[i]) {
-        continue;
-      }
-
-      // Keep a reference to the original config.
-      const originalConfig = out.config || ({} as ModelConfig);
-
-      // Merge the new metadata.
-      out = { ...out, ...merges[i] };
-
-      // Merge the configs.
-      out.config = { ...originalConfig, ...(merges[i]?.config || {}) };
-    }
-
-    // Remove the template attribute if it exists.
-    const { template: _, ...outWithoutTemplate } =
-      out as PromptMetadata<ModelConfig> & { template?: string };
-    out = outWithoutTemplate as PromptMetadata<ModelConfig>;
-
-    out = removeUndefinedFields(out);
-    // TODO: Can this be done concurrently?
-    out = await this.resolveTools(out);
-    out = await this.renderPicoschema(out);
-
-    return out;
   }
 
   /**
@@ -491,12 +491,17 @@ export class Dotprompt {
    * @private
    */
   private registerInitialHelpers(
+    builtinHelpers?: Record<string, Handlebars.HelperDelegate>,
     customHelpers?: Record<string, Handlebars.HelperDelegate>
   ): void {
     // Register built-in helpers
-    for (const key in helpers) {
-      this.defineHelper(key, helpers[key as keyof typeof helpers]);
-      this.handlebars.registerHelper(key, helpers[key as keyof typeof helpers]);
+    if (builtinHelpers) {
+      for (const key in builtinHelpers) {
+        this.defineHelper(
+          key,
+          builtinHelpers[key as keyof typeof builtinHelpers]
+        );
+      }
     }
 
     // Register custom helpers from options
