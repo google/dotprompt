@@ -1,0 +1,11 @@
+# RUST_BACKTRACE=1
+build --action_env=RUST_BACKTRACE=1
+run --run_env=RUST_BACKTRACE=1
+test --action_env=RUST_BACKTRACE=1
+test --test_env=RUST_BACKTRACE=1
+
+# RUST_BACKTRACE=full
+build:debug --action_env=RUST_BACKTRACE=full
+run:debug --run_env=RUST_BACKTRACE=full
+test:debug --action_env=RUST_BACKTRACE=full
+test:debug --test_env=RUST_BACKTRACE=full

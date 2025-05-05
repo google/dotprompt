@@ -30,11 +30,15 @@ function error_exit() {
 }
 
 # Check if rustup is installed
-if ! command -v rustup &> /dev/null; then
+if ! command -v rustup &>/dev/null; then
   error_exit "rustup could not be found. Please install rustup first: https://rustup.rs/"
 fi
 
 echo "=== Running Rust tests ==="
+
+# Show relevant stack traces.
+export RUST_BACKTRACE=1
+#export RUST_BACKTRACE=full  # For more detailed stack traces.
 
 # Install stable and nightly toolchains if they aren't already installed.
 echo "--- Ensuring stable and nightly toolchains are installed ---"

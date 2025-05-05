@@ -19,7 +19,7 @@ name: "Rust checks"
 on:
   pull_request:
     paths:
-      - "rs/**"
+      - "rs/**" # TODO: Add python/handlebarrz after fixing linker errors.
       - "Cargo.toml"
       - "Cargo.lock"
       - ".github/workflows/rust.yml"
@@ -40,11 +40,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Install Rust toolchain (${{ matrix.toolchain }})
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.toolchain }}
 
       - name: Cache Cargo registry and index
         uses: actions/cache@v4
@@ -68,6 +63,76 @@ jobs:
         continue-on-error: ${{ matrix.toolchain == 'nightly' }}
 
       - name: Run tests
+        env:
+          RUST_BACKTRACE: 1
         run: cargo test --all-targets --workspace
         # Allow nightly tests to fail
         continue-on-error: ${{ matrix.toolchain == 'nightly' }}
+
+  #check-build-test-musl-matrix:
+  #  name: Check, Build & Test (${{ matrix.toolchain }}, alpine-${{ matrix.arch }}-musl)
+  #  runs-on: ubuntu-latest # Runner OS
+  #  container: # Run steps inside this container
+  #    image: rust:alpine # Use official Rust image based on Alpine (multi-arch)
+  #  strategy:
+  #    fail-fast: false
+  #    matrix:
+  #      include:
+  #        - arch: x86_64
+  #          target: x86_64-unknown-linux-musl
+  #        - arch: aarch64
+  #          target: aarch64-unknown-linux-musl
+  #      toolchain: [stable, nightly]
+  #  steps:
+  #    - name: Checkout code
+  #      uses: actions/checkout@v4
+
+  #    - name: Install musl build dependencies
+  #      run: |
+  #        # Install native gcc, bash, docker-cli
+  #        apk add --no-cache musl-dev gcc bash docker-cli
+
+  #    - name: Set up QEMU
+  #      uses: docker/setup-qemu-action@v3
+
+  #    - name: Install Rust toolchain (${{ matrix.toolchain }}) via rustup
+  #      shell: bash
+  #      run: |
+  #        echo "Installing toolchain: ${{ matrix.toolchain }} and target: ${{ matrix.target }}"
+  #        rustup toolchain install ${{ matrix.toolchain }} --profile minimal --target ${{ matrix.target }}
+  #        rustup default ${{ matrix.toolchain }}
+
+  #        echo "Rust toolchain info:"
+  #        rustc --version --verbose
+  #        cargo --version --verbose
+
+  #    - name: Cache Cargo registry and index (musl)
+  #      uses: actions/cache@v4
+  #      with:
+  #        path: |
+  #          /usr/local/cargo/registry/index/
+  #          /usr/local/cargo/registry/cache/
+  #          /usr/local/cargo/git/db/
+  #          target/
+  #        # Include architecture and toolchain in cache key
+  #        key: linux-musl-${{ matrix.arch }}-cargo-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.lock') }}
+
+  #    - name: Check code (musl, ${{ matrix.arch }}, ${{ matrix.toolchain }})
+  #      shell: bash
+  #      run: cargo check --all-targets --workspace --target ${{ matrix.target }}
+  #      # Allow nightly check to fail
+  #      continue-on-error: ${{ matrix.toolchain == 'nightly' }}
+
+  #    - name: Build code (musl, ${{ matrix.arch }}, ${{ matrix.toolchain }})
+  #      shell: bash
+  #      run: cargo build --all-targets --workspace --target ${{ matrix.target }}
+  #      # Allow nightly build to fail
+  #      continue-on-error: ${{ matrix.toolchain == 'nightly' }}
+
+  #    - name: Run tests (musl, ${{ matrix.arch }}, ${{ matrix.toolchain }})
+  #      shell: bash
+  #      env:
+  #        RUST_BACKTRACE: 1 # Keep the backtrace env var
+  #      run: cargo test --all-targets --workspace --target ${{ matrix.target }}
+  #      # Allow nightly tests to fail
+  #      continue-on-error: ${{ matrix.toolchain == 'nightly' }}

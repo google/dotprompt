@@ -41,6 +41,8 @@ for arg in "$@"; do
   esac
 done
 
+export RUST_BACKTRACE=1
+
 if [ "$VERBOSE" = true ]; then
   echo "Running tests in verbose mode..."
   cargo test "${CARGO_ARGS[@]}"
