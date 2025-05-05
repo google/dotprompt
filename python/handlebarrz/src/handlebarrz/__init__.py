@@ -67,11 +67,13 @@ result = handlebars.render('formatted', {'name': 'World'})  # "Hello WORLD!"
 ```
 """
 
+from __future__ import annotations
+
 import json
 import sys  # noqa
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 import structlog
 
@@ -91,6 +93,22 @@ logger = structlog.get_logger(__name__)
 
 HelperFn = Callable[[list[Any], dict[str, Any], dict[str, Any]], str]
 NativeHelperFn = Callable[[str, str, str], str]
+Context = dict[str, Any]
+
+
+class RuntimeOptions(TypedDict):
+    """Options for the runtime of a Handlebars template.
+
+    These options are used to configure the runtime behavior of a Handlebars
+    template. They can be passed to the compiled template function to customize
+    the rendering process.
+    """
+
+    data: dict[str, Any] | None
+    # TODO: Add other options based on supported features.
+
+
+CompiledRenderer = Callable[[Context, RuntimeOptions | None], str]
 
 
 class EscapeFunction(StrEnum):
@@ -427,7 +445,7 @@ class Template:
         self._template.unregister_template(name)
         logger.debug({'event': 'template_unregistered', 'name': name})
 
-    def render(self, name: str, data: dict[str, Any]) -> str:
+    def render(self, name: str, data: dict[str, Any], options: RuntimeOptions | None = None) -> str:
         """Render a template with the given data.
 
         Renders a previously registered template using the provided data
@@ -437,6 +455,7 @@ class Template:
         Args:
             name: The name of the template to render
             data: The data to render the template with
+            options: Additional options for the template.
 
         Returns:
             str: The rendered template string
@@ -445,6 +464,8 @@ class Template:
             ValueError: If the template does not exist or there is a rendering
                 error.
         """
+        # TODO: options is currently ignored; need to add support for it.
+
         try:
             result = self._template.render(name, json.dumps(data))
             logger.debug({'event': 'template_rendered', 'name': name})
@@ -457,7 +478,7 @@ class Template:
             })
             raise
 
-    def render_template(self, template_string: str, data: dict[str, Any]) -> str:
+    def render_template(self, template_string: str, data: dict[str, Any], options: RuntimeOptions | None = None) -> str:
         """Render a template string directly without registering it.
 
         Parses and renders the template string in one step. This is useful for
@@ -467,6 +488,7 @@ class Template:
         Args:
             template_string: The template string to render
             data: The data to render the template with
+            options: Additional options for the template.
 
         Returns:
             Rendered template string.
@@ -475,8 +497,15 @@ class Template:
             ValueError: If there is a syntax error in the template or a
                 rendering error.
         """
+        # TODO: options is currently ignored; need to add support for it.
         try:
-            result = self._template.render_template(template_string, json.dumps(data))
+            # Serialize options if provided, focusing on the '@data' part
+            options_json = None
+            if options:
+                # Pass the whole options dict as JSON
+                options_json = json.dumps(options)
+
+            result = self._template.render_template(template_string, json.dumps(data), options_json)
             logger.debug({'event': 'template_string_rendered'})
             return result
         except ValueError as e:
@@ -486,7 +515,7 @@ class Template:
             })
             raise
 
-    def compile(self, template_string: str) -> Callable[[dict[str, Any]], str]:
+    def compile(self, template_string: str) -> CompiledRenderer:
         """Compile a template string into a reusable function.
 
         This method provides an interface similar to Handlebars.js's `compile`.
@@ -502,8 +531,8 @@ class Template:
             template_string: The Handlebars template string to compile.
 
         Returns:
-            A callable function that takes a data dictionary and returns the
-            rendered string.
+            A callable function that takes a data dictionary and some runtime
+            options and returns the rendered string.
 
         Raises:
             ValueError: If there is a syntax error during the initial parse
@@ -512,8 +541,17 @@ class Template:
             called.
         """
 
-        def compiled(data: dict[str, Any]) -> str:
-            return self.render_template(template_string, data)
+        def compiled(context: Context, options: RuntimeOptions | None = None) -> str:
+            """Compiled template function.
+
+            Args:
+                context: The data to render the template with.
+                options: Additional options for the template.
+
+            Returns:
+                The rendered template string.
+            """
+            return self.render_template(template_string, context, options)
 
         return compiled
 

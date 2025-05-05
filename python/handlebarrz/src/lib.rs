@@ -450,7 +450,8 @@ impl HandlebarrzTemplate {
     /// # Arguments
     ///
     /// * `template_string` - The template source code.
-    /// * `data` - The data to use for rendering (as JSON).
+    /// * `data_json` - The data to use for rendering (as JSON).
+    /// * `options_json` - Optional. If provided, the data will be merged with this JSON object.
     ///
     /// # Raises
     ///
@@ -459,10 +460,26 @@ impl HandlebarrzTemplate {
     /// # Returns
     ///
     /// Rendered template as a string.
-    #[pyo3(text_signature = "($self, template_string, data)")]
-    fn render_template(&self, template_string: &str, data: &str) -> PyResult<String> {
-        let data: Value = serde_json::from_str(data)
+    #[pyo3(text_signature = "($self, template_string, data_json, options_json = None)")]
+    fn render_template(
+        &self,
+        template_string: &str,
+        data_json: &str,
+        options_json: Option<&str>,
+    ) -> PyResult<String> {
+        let mut data: Value = serde_json::from_str(data_json)
             .map_err(|e| PyValueError::new_err(format!("invalid JSON: {}", e)))?;
+
+        if let Some(options_str) = options_json {
+            let options_data: Value = serde_json::from_str(options_str)
+                .map_err(|e| PyValueError::new_err(format!("invalid options JSON: {}", e)))?;
+
+            if let (Some(data_map), Some(options_map)) =
+                (data.as_object_mut(), options_data.as_object())
+            {
+                data_map.insert("@data".to_string(), options_data.clone());
+            }
+        }
 
         self.registry
             .render_template(template_string, &data)

@@ -64,7 +64,7 @@ from dotpromptz.typing import (
     VariablesT,
 )
 from dotpromptz.util import remove_undefined_fields
-from handlebarrz import EscapeFunction, Handlebars, HelperFn
+from handlebarrz import Context, EscapeFunction, Handlebars, HelperFn, RuntimeOptions
 
 # Pre-compiled regex for finding partial references in handlebars templates
 
@@ -151,9 +151,44 @@ class CompiledRenderer(PromptFunction[ModelConfigT]):
         Returns:
             The rendered prompt.
         """
+        # Discard the input schema as once rendered it doesn't make sense.
+        merged_metadata: PromptMetadata[ModelConfigT] = await self._dotprompt.render_metadata(self.prompt, options)
+        merged_metadata.input = None
+
+        # Prepare input data, merging defaults from options if available.
+        context: Context = {
+            **((options.input.default or {}) if options and options.input else {}),
+            **(data.input if data.input is not None else {}),
+        }
+
+        # Prepare runtime options.
+        runtime_options: RuntimeOptions = {
+            'data': {
+                'metadata': {
+                    'prompt': merged_metadata.model_dump(exclude_none=True, by_alias=True),
+                    'docs': data.docs,
+                    'messages': data.messages,
+                },
+                **(data.context or {}),
+            },
+        }
+
+        # Render the string.
+        render_string = self._handlebars.compile(self.prompt.template)
+        rendered_string = render_string(
+            context,
+            runtime_options,
+        )
+
+        # Parse the rendered string into messages.
+        messages = to_messages(rendered_string, data)
+
         # Construct and return the final RenderedPrompt.
-        # TODO: Stub
-        return RenderedPrompt[ModelConfigT](messages=[])
+        return RenderedPrompt[ModelConfigT](
+            # Spread the metadata fields into the RenderedPrompt constructor.
+            **merged_metadata.model_dump(exclude_none=True, by_alias=True),
+            messages=messages,
+        )
 
 
 class Dotprompt:
@@ -207,12 +242,12 @@ class Dotprompt:
         """Register the initial helpers."""
         register_all_helpers(self._handlebars)
         for name, fn in self._helpers.items():
-            self._handlebars.register_helper(name, fn)
+            self.define_helper(name, fn)
 
     def _register_initial_partials(self) -> None:
         """Register the initial partials."""
         for name, source in self._partials.items():
-            self._handlebars.register_partial(name, source)
+            self.define_partial(name, source)
 
     def define_helper(self, name: str, fn: HelperFn) -> Dotprompt:
         """Define a helper function for the template.
