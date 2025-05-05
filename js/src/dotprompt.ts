@@ -20,18 +20,18 @@ import * as Handlebars from 'handlebars';
 import * as builtinHelpers from './helpers';
 import { parseDocument, toMessages } from './parse';
 import { picoschema } from './picoschema';
-import {
-  type DataArgument,
-  type JSONSchema,
-  type ParsedPrompt,
-  type PromptFunction,
-  type PromptMetadata,
-  type PromptStore,
-  type RenderedPrompt,
-  type Schema,
-  type SchemaResolver,
-  type ToolDefinition,
-  type ToolResolver,
+import type {
+  DataArgument,
+  JSONSchema,
+  ParsedPrompt,
+  PromptFunction,
+  PromptMetadata,
+  PromptStore,
+  RenderedPrompt,
+  Schema,
+  SchemaResolver,
+  ToolDefinition,
+  ToolResolver,
 } from './types';
 import { removeUndefinedFields } from './util';
 
@@ -196,6 +196,7 @@ export class Dotprompt {
       }
     );
 
+    // Create an instance of a PromptFunction.
     const renderFunc = async (
       data: DataArgument,
       options?: PromptMetadata<ModelConfig>
@@ -223,7 +224,10 @@ export class Dotprompt {
         messages: toMessages<ModelConfig>(renderedString, data),
       };
     };
+
+    // Add the parsed source to the prompt function as a property.
     (renderFunc as PromptFunction<ModelConfig>).prompt = parsedSource;
+
     return renderFunc as PromptFunction<ModelConfig>;
   }
 

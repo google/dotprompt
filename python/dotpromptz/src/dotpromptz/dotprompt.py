@@ -45,7 +45,7 @@ from typing import Any
 import anyio
 
 from dotpromptz.helpers import BUILTIN_HELPERS
-from dotpromptz.parse import parse_document
+from dotpromptz.parse import parse_document, to_messages
 from dotpromptz.picoschema import picoschema_to_json_schema
 from dotpromptz.resolvers import resolve_json_schema, resolve_partial, resolve_tool
 from dotpromptz.typing import (
@@ -64,7 +64,7 @@ from dotpromptz.typing import (
     VariablesT,
 )
 from dotpromptz.util import remove_undefined_fields
-from handlebarrz import EscapeFunction, Handlebars, HelperFn
+from handlebarrz import Context, EscapeFunction, Handlebars, HelperFn, RuntimeOptions
 
 # Pre-compiled regex for finding partial references in handlebars templates
 
@@ -117,7 +117,7 @@ def _identify_partials(template: str) -> set[str]:
     return set(_PARTIAL_PATTERN.findall(template))
 
 
-class CompiledRenderer(PromptFunction[ModelConfigT]):
+class RenderFunc(PromptFunction[ModelConfigT]):
     """A compiled prompt function with the prompt as a property.
 
     This is the Python equivalent of the renderFunc nested function
@@ -151,9 +151,42 @@ class CompiledRenderer(PromptFunction[ModelConfigT]):
         Returns:
             The rendered prompt.
         """
+        # Discard the input schema as once rendered it doesn't make sense.
+        merged_metadata: PromptMetadata[ModelConfigT] = await self._dotprompt.render_metadata(self.prompt, options)
+        merged_metadata.input = None
+
+        # Prepare input data, merging defaults from options if available.
+        context: Context = {
+            **((options.input.default or {}) if options and options.input else {}),
+            **(data.input if data.input is not None else {}),
+        }
+
+        # Prepare runtime options.
+        # TODO: options are currently ignored; need to add support for it.
+        runtime_options: RuntimeOptions = {
+            'data': {
+                'metadata': {
+                    'prompt': merged_metadata.model_dump(exclude_none=True, by_alias=True),
+                    'docs': data.docs,
+                    'messages': data.messages,
+                },
+                **(data.context or {}),
+            },
+        }
+
+        # Render the string.
+        render_string = self._handlebars.compile(self.prompt.template)
+        rendered_string = render_string(context, runtime_options)
+
+        # Parse the rendered string into messages.
+        messages = to_messages(rendered_string, data)
+
         # Construct and return the final RenderedPrompt.
-        # TODO: Stub
-        return RenderedPrompt[ModelConfigT](messages=[])
+        return RenderedPrompt[ModelConfigT](
+            # Spread the metadata fields into the RenderedPrompt constructor.
+            **merged_metadata.model_dump(exclude_none=True, by_alias=True),
+            messages=messages,
+        )
 
 
 class Dotprompt:
@@ -294,7 +327,7 @@ class Dotprompt:
 
         # Resolve partials before compiling.
         await self._resolve_partials(prompt.template)
-        return CompiledRenderer(self, self._handlebars, prompt)
+        return RenderFunc(self, self._handlebars, prompt)
 
     async def render_metadata(
         self,
@@ -453,12 +486,13 @@ class Dotprompt:
                 # Found locally.
                 out.tool_defs.append(self._tools[name])
             elif have_resolver:
-                # Resolve from the tool resolver.
+                # Resolve using the tool resolver.
                 to_resolve.append(name)
             else:
                 # Unregistered tool.
                 unregistered_names.append(name)
 
+        # Resolve all the tools to be resolved using the resolver.
         if to_resolve:
 
             async def resolve_and_append(tool_name: str) -> None:
