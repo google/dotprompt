@@ -388,7 +388,7 @@ export class Dotprompt {
     out.toolDefs = out.toolDefs || [];
 
     await Promise.all(
-      out.tools.map(async (name) => {
+      out.tools.map(async (name: string) => {
         if (this.tools[name]) {
           // Found locally.
           if (out.toolDefs) {
@@ -459,11 +459,11 @@ export class Dotprompt {
       return;
     }
 
-    const partials = this.identifyPartials(template);
+    const names = this.identifyPartials(template);
 
     // Resolve and register each partial.
     await Promise.all(
-      Array.from(partials).map(async (name) => {
+      Array.from(names).map(async (name: string) => {
         if (!this.handlebars.partials[name]) {
           let content: string | null | undefined = null;
 
