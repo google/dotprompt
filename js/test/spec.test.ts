@@ -28,20 +28,23 @@ import type { DataArgument, JSONSchema, ToolDefinition } from '../src/types';
  */
 const SPEC_DIR = join('..', 'spec');
 
+/** An expectation for the spec. */
+interface Expect {
+  config: boolean;
+  ext: boolean;
+  input: boolean;
+  messages: boolean;
+  metadata: boolean;
+  raw: boolean;
+}
+
 /**
  * A test case for a YAML spec.
  */
 interface SpecTest {
   desc?: string;
   data: DataArgument;
-  expect: {
-    config: boolean;
-    ext: boolean;
-    input: boolean;
-    messages: boolean;
-    metadata: boolean;
-    raw: boolean;
-  };
+  expect: Expect;
   options: object;
 }
 
