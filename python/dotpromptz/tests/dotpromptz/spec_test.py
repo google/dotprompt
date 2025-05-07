@@ -106,7 +106,8 @@ from typing import Any, TypedDict, cast
 import structlog
 import yaml
 
-from dotpromptz.typing import DataArgument, JsonSchema, ToolDefinition
+from dotpromptz.dotprompt import Dotprompt
+from dotpromptz.typing import DataArgument, JsonSchema, PromptMetadata, ToolDefinition
 
 logger = structlog.get_logger(__name__)
 
@@ -148,6 +149,36 @@ CURRENT_FILE = Path(__file__)
 ROOT_DIR = CURRENT_FILE.parent.parent.parent.parent.parent
 SPECS_DIR = ROOT_DIR / 'spec'
 
+ALLOWLISTED_FILES = [
+    'spec/helpers/history.yaml',
+    'spec/helpers/ifEquals.yaml',
+    'spec/helpers/json.yaml',
+    'spec/helpers/media.yaml',
+    'spec/helpers/role.yaml',
+    'spec/helpers/section.yaml',
+    'spec/helpers/unlessEquals.yaml',
+    'spec/metadata.yaml',
+    #'spec/partials.yaml',
+    #'spec/picoschema.yaml',
+    'spec/variables.yaml',
+]
+
+
+def is_allowed_spec_file(file: Path) -> bool:
+    """Check if a spec file is allowed.
+
+    Args:
+        file: The file to check.
+
+    Returns:
+        True if the file is allowed, False otherwise.
+    """
+    fname = file.absolute().as_posix()
+    for allowed_file in ALLOWLISTED_FILES:
+        if fname.endswith(allowed_file):
+            return True
+    return False
+
 
 class TestSpecFiles(unittest.IsolatedAsyncioTestCase):
     """Runs specification tests defined in YAML files."""
@@ -171,6 +202,12 @@ class TestSpecFiles(unittest.IsolatedAsyncioTestCase):
     async def test_specs(self) -> None:
         """Discovers and runs all YAML specification tests."""
         for yaml_file in SPECS_DIR.glob('**/*.yaml'):
+            if not is_allowed_spec_file(yaml_file):
+                logger.debug(
+                    'Skipping spec file',
+                    file=yaml_file,
+                )
+                continue
             with self.subTest(file=yaml_file):
                 with open(yaml_file) as f:
                     suites_data = yaml.safe_load(f)
@@ -183,22 +220,59 @@ class TestSpecFiles(unittest.IsolatedAsyncioTestCase):
                             test_case: SpecTest = test_case_data_raw
 
                             with self.subTest(test=test_case.get('desc', 'UnnamedTest')):
-                                await self.run_yaml_test(suite, test_case)
+                                dotprompt = Dotprompt()
+                                await self.run_yaml_test(yaml_file, dotprompt, suite, test_case)
 
-    async def run_yaml_test(self, suite: SpecSuite, test_case: SpecTest) -> None:
+    async def run_yaml_test(
+        self,
+        yaml_file: Path,
+        dotprompt: Dotprompt,
+        suite: SpecSuite,
+        test_case: SpecTest,
+    ) -> None:
         """Runs a single specification test.
 
         Args:
+            yaml_file: The YAML file containing the specification.
+            dotprompt: The Dotprompt instance to use.
             suite: The suite to run the test on.
             test_case: The test case to run.
 
         Returns:
             None
         """
-        logger.info(
+        logger.debug(
             'Running spec test',
+            yaml_file=yaml_file,
             suite=suite,
             test=test_case,
+        )
+
+        # Define partials if they exist.
+        partials: dict[str, str] = suite.get('partials', {})
+        for name, template in partials.items():
+            dotprompt.define_partial(name, template)
+
+        # TODO: Render the template.
+        # data = {**suite.get('data', {}), **test_case.get('data', {})}
+        # result = await dotprompt.render(
+        #    suite.get('template'),
+        #    DataArgument(**data),
+        #    PromptMetadata(**test_case.get('options', {})),
+        # )
+
+        # TODO: Prune the result and compare to the expected output.
+        # TODO: Compare pruned result to the expected output.
+        # TODO: Only compare raw if the spec demands it.
+        # TODO: Render the metadata.
+        # TODO: Compare pruned metadata to the expected output.
+
+        logger.debug(
+            'Finished running spec test',
+            yaml_file=yaml_file,
+            suite=suite,
+            test=test_case,
+            # result=result,
         )
 
 

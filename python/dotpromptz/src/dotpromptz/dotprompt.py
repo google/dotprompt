@@ -45,6 +45,7 @@ from typing import Any
 import anyio
 
 from dotpromptz.helpers import BUILTIN_HELPERS
+from dotpromptz.models import dump_models
 from dotpromptz.parse import parse_document, to_messages
 from dotpromptz.picoschema import picoschema_to_json_schema
 from dotpromptz.resolvers import resolve_json_schema, resolve_partial, resolve_tool
@@ -163,12 +164,13 @@ class RenderFunc(PromptFunction[ModelConfigT]):
 
         # Prepare runtime options.
         # TODO: options are currently ignored; need to add support for it.
+
         runtime_options: RuntimeOptions = {
             'data': {
                 'metadata': {
                     'prompt': merged_metadata.model_dump(exclude_none=True, by_alias=True),
-                    'docs': data.docs,
-                    'messages': data.messages,
+                    'docs': dump_models(data.docs),
+                    'messages': dump_models(data.messages),
                 },
                 **(data.context or {}),
             },
