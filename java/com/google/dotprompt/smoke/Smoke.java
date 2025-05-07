@@ -18,9 +18,7 @@
 
 package com.google.dotprompt.smoke;
 
-/**
- * An example of a smoke test to ensure that Java builds work.
- */
+/** An example of a smoke test to ensure that Java builds work. */
 public final class Smoke {
 
   /**

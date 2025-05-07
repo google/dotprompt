@@ -51,7 +51,7 @@ if [[ $? -ne 0 ]]; then
 fi
 
 # Format all TypeScript code.
-pushd ${TOP_DIR}
+pushd "${TOP_DIR}"
 pnpm run format
 if [[ $? -ne 0 ]]; then
   exit 1
@@ -69,6 +69,14 @@ popd
 # Format all rust code
 pushd "${TOP_DIR}"
 cargo fmt --all
+if [[ $? -ne 0 ]]; then
+  exit 1
+fi
+popd
+
+# Format all Java code.
+pushd "${TOP_DIR}"
+"${TOP_DIR}/scripts/format_java_files"
 if [[ $? -ne 0 ]]; then
   exit 1
 fi

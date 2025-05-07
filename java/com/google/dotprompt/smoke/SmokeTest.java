@@ -21,7 +21,6 @@ package com.google.dotprompt.smoke;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.dotprompt.smoke.Smoke;
 import com.github.jknack.handlebars.Context;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Template;
@@ -55,9 +54,7 @@ public final class SmokeTest {
   public void handlebars_rendersTemplate() throws IOException {
     Handlebars handlebars = new Handlebars();
     Template template = handlebars.compileInline("Hello {{name}}!");
-    Context context = Context.newContext(
-        Map.of("name", "World")
-    );
+    Context context = Context.newContext(Map.of("name", "World"));
     String result = template.apply(context);
     assertThat(result).isEqualTo("Hello World!");
   }
