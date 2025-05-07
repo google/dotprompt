@@ -36,11 +36,13 @@ unused_parens                 = "deny"
 unused_variables              = "deny"
 
 [workspace.lints.clippy]
-# Promote warnings to errors for core clippy groups.
 cargo       = "deny"
 correctness = "deny"
+expect_used = "deny"
 nursery     = "deny" # Experimental lints.
+panic       = "deny"
 pedantic    = "deny"
 perf        = "deny"
 style       = "deny"
 suspicious  = "deny"
+unwrap_used = "deny"
