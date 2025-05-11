@@ -55,7 +55,8 @@ input:
     text: string
 output:
   format: json
-    schema: name?: string, the full name of the person
+  schema:
+    name?: string, the full name of the person
     age?: number, the age of the person
     occupation?: string, the person's occupation
 ---
