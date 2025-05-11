@@ -270,7 +270,7 @@ func (p *PicoschemaParser) parsePico(obj any, path ...string) (*jsonschema.Schem
 			newProp = updatedProp
 		case "enum":
 			enumValues := value.([]any)
-			if isOptional && !containsInterface(enumValues, nil) {
+			if isOptional && !slices.ContainsFunc(enumValues, func(s any) bool { return s == nil }) {
 				enumValues = append(enumValues, nil)
 			}
 			newProp.Enum = enumValues
@@ -298,14 +298,4 @@ func extractDescription(input string) [2]string {
 
 	parts := strings.SplitN(input, ",", 2)
 	return [2]string{strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])}
-}
-
-// containsInterface checks if a slice contains a specific item.
-func containsInterface(slice []any, item any) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
 }

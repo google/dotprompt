@@ -23,6 +23,7 @@ import (
 	"unicode"
 
 	"github.com/invopop/jsonschema"
+	"maps"
 )
 
 // stringOrEmpty returns the string value of an any or an empty string if it's not a string.
@@ -52,9 +53,7 @@ func getMapOrNil(m map[string]any, key string) map[string]any {
 // copyMapping copies a map.
 func copyMapping[K comparable, V any](mapping map[K]V) map[K]V {
 	newMapping := make(map[K]V)
-	for k, v := range mapping {
-		newMapping[k] = v
-	}
+	maps.Copy(newMapping, mapping)
 	return newMapping
 }
 
@@ -71,9 +70,7 @@ func MergeMaps(map1, map2 map[string]any) map[string]any {
 	}
 
 	// Merge map2 into map1
-	for key, value := range map2 {
-		map1[key] = value
-	}
+	maps.Copy(map1, map2)
 
 	return map1
 }

@@ -25,6 +25,7 @@ import (
 
 	"github.com/invopop/jsonschema"
 	"github.com/mbleigh/raymond"
+	"maps"
 )
 
 // PartialResolver is a function to resolve partial names to their content.
@@ -213,9 +214,7 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata) 
 		var inputContext map[string]any
 		defaultInput := make(map[string]any)
 		if mergedMetadata.Input.Default != nil {
-			for k, v := range mergedMetadata.Input.Default {
-				defaultInput[k] = v
-			}
+			maps.Copy(defaultInput, mergedMetadata.Input.Default)
 		}
 		inputContext = MergeMaps(defaultInput, data.Input)
 		privDF := raymond.NewDataFrame()
@@ -347,7 +346,7 @@ func mergeStructs(out, merge PromptMetadata) PromptMetadata {
 	outVal := reflect.ValueOf(&out).Elem()
 	mergeVal := reflect.ValueOf(merge)
 
-	for i := 0; i < mergeVal.NumField(); i++ {
+	for i := range mergeVal.NumField() {
 		field := mergeVal.Type().Field(i)
 		value := mergeVal.Field(i)
 
@@ -368,9 +367,7 @@ func (dp *Dotprompt) ResolveMetadata(base PromptMetadata, merges []*PromptMetada
 		}
 		out = mergeStructs(out, *merge)
 
-		for key, value := range merge.Config {
-			out.Config[key] = value
-		}
+		maps.Copy(out.Config, merge.Config)
 	}
 	out, err := dp.ResolveTools(out)
 	if err != nil {

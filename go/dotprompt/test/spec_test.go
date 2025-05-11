@@ -27,6 +27,7 @@ import (
 	"github.com/go-viper/mapstructure/v2"
 	. "github.com/google/dotprompt/go/dotprompt"
 	"github.com/invopop/jsonschema"
+	"maps"
 )
 
 const SpecDir = "../../../spec"
@@ -180,9 +181,7 @@ func mergeData(data1, data2 DataArgument) DataArgument {
 		if merged.Input == nil {
 			merged.Input = make(map[string]any)
 		}
-		for k, v := range data2.Input {
-			merged.Input[k] = v
-		}
+		maps.Copy(merged.Input, data2.Input)
 	}
 	if data2.Docs != nil {
 		merged.Docs = append(merged.Docs, data2.Docs...)
@@ -194,9 +193,7 @@ func mergeData(data1, data2 DataArgument) DataArgument {
 		if merged.Context == nil {
 			merged.Context = make(map[string]any)
 		}
-		for k, v := range data2.Context {
-			merged.Context[k] = v
-		}
+		maps.Copy(merged.Context, data2.Context)
 	}
 	return merged
 }

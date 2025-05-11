@@ -43,7 +43,7 @@ func JSON(serializable any, options *raymond.Options) raymond.SafeString {
 	} else {
 		indent := options.HashProp("indent").(int)
 		indentStr := ""
-		for i := 0; i < indent; i++ {
+		for range indent {
 			indentStr += " "
 		}
 		jsonData, err = json.MarshalIndent(serializable, "", indentStr)

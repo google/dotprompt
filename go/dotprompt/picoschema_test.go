@@ -221,19 +221,3 @@ func TestExtractDescription(t *testing.T) {
 		assert.Equal(t, expected, result)
 	})
 }
-
-func TestContainsInterface(t *testing.T) {
-	t.Run("contains item", func(t *testing.T) {
-		slice := []any{"a", "b", "c"}
-		item := "b"
-		result := containsInterface(slice, item)
-		assert.True(t, result)
-	})
-
-	t.Run("does not contain item", func(t *testing.T) {
-		slice := []any{"a", "b", "c"}
-		item := "d"
-		result := containsInterface(slice, item)
-		assert.False(t, result)
-	})
-}
