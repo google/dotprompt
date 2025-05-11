@@ -27,7 +27,11 @@ fi
 TOP_DIR=$(git rev-parse --show-toplevel)
 PY_DIR="$TOP_DIR/python"
 
-echo "Running Python tests via tox..."
+echo "=== Running Python lint ==="
+uv run --directory "${PY_DIR}" ruff check --select I --fix --preview --unsafe-fixes .
+uv run --directory "${PY_DIR}" mypy .
+
+echo "=== Running Python tests ==="
 
 # Erase any previous coverage data to prevent errors during combine
 echo "Erasing previous coverage data..."
@@ -41,3 +45,5 @@ uv run --active --directory "$PY_DIR/handlebarrz" maturin develop
 # The '-p auto' flag tells tox to use available CPU cores for parallelism.
 # Any arguments passed to this script ($@) are forwarded to tox (and then pytest)
 uv run --active --directory "$PY_DIR" tox "$@"
+
+echo "=== Python tests completed ==="

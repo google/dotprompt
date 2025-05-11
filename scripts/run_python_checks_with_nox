@@ -27,6 +27,10 @@ fi
 TOP_DIR=$(git rev-parse --show-toplevel)
 PY_DIR="$TOP_DIR/python"
 
+echo "=== Running Python lint ==="
+uv run --directory "${PY_DIR}" ruff check --select I --fix --preview --unsafe-fixes .
+uv run --directory "${PY_DIR}" mypy .
+
 echo "=== Running Python tests (nox) ==="
 echo "Project root: ${TOP_DIR}"
 echo "Python directory: ${PY_DIR}"

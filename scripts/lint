@@ -23,24 +23,3 @@ if ((EUID == 0)); then
 fi
 
 TOP_DIR=$(git rev-parse --show-toplevel)
-
-GO_DIR="${TOP_DIR}/go"
-PY_DIR="${TOP_DIR}/python"
-JS_DIR="${TOP_DIR}/js"
-HANDLEBARRZ_DIR="${TOP_DIR}/python/handlebarrz"
-
-pushd "${GO_DIR}" &>/dev/null
-golangci-lint run ./...
-go vet -v ./...
-popd &>/dev/null
-
-# TODO: Disabled for now since we have a lot of lint errors.
-#pnpm run lint
-
-uv run --directory "${PY_DIR}" ruff check --select I --fix --preview --unsafe-fixes .
-uv run --directory "${PY_DIR}" mypy .
-
-pushd "${HANDLEBARRZ_DIR}" &>/dev/null
-cargo fmt --all
-cargo clippy --all-targets --all-features -- -D warnings
-popd &>/dev/null

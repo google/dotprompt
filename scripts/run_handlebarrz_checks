@@ -51,5 +51,15 @@ else
   cargo test "${CARGO_ARGS[@]}" --quiet
 fi
 
+
+echo "=== Run checks for handlebarrz ==="
+
+pushd "${HANDLEBARRZ_DIR}" &>/dev/null
+cargo fmt --all
+cargo clippy --all-targets --all-features -- -D warnings
+popd &>/dev/null
+
+echo "=== Done with Rust checks for handlebarrz ==="
+
 echo ""
 echo "=== Rust tests completed ==="

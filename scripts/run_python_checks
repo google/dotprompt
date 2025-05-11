@@ -35,6 +35,10 @@ PYTHON_VERSIONS=(
   #"python3.14" # Next version to catch breakages early.
 )
 
+echo "=== Running Python lint ==="
+uv run --directory "${PY_DIR}" ruff check --select I --fix --preview --unsafe-fixes .
+uv run --directory "${PY_DIR}" mypy .
+
 echo "=== Running Python tests ==="
 echo "Project root: ${TOP_DIR}"
 echo "Python directory: ${PY_DIR}"

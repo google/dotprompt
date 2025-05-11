@@ -40,28 +40,22 @@
           "run": "scripts/check_license"
         },
         {
-          "run": "scripts/lint"
-        },
-        {
           "run": "scripts/run_bazel_checks"
         },
         {
           "run": "scripts/run_rust_checks"
         },
         {
-          "run": "scripts/run_handlebarrz_tests"
+          "run": "scripts/run_handlebarrz_checks"
         },
         {
-          "run": "scripts/run_python_tests_with_nox -s tests"
+          "run": "scripts/run_python_checks_with_nox -s tests"
         },
         {
-          "run": "scripts/run_js_tests"
+          "run": "scripts/run_js_checks"
         },
         {
-          "run": "scripts/run_go_tests"
-        },
-        {
-          "run": "govulncheck -C go ./..."
+          "run": "scripts/run_go_checks"
         },
         {
           "run": "pnpm -C js build"
@@ -98,28 +92,22 @@
           "run": "scripts/check_license"
         },
         {
-          "run": "scripts/lint"
-        },
-        {
           "run": "scripts/run_bazel_checks"
         },
         {
           "run": "scripts/run_rust_checks"
         },
         {
-          "run": "scripts/run_handlebarrz_tests --verbose"
+          "run": "scripts/run_handlebarrz_checks --verbose"
         },
         {
-          "run": "scripts/run_python_tests_with_nox -s tests"
+          "run": "scripts/run_python_checks_with_nox -s tests"
         },
         {
-          "run": "scripts/run_js_tests"
+          "run": "scripts/run_js_checks"
         },
         {
-          "run": "scripts/run_go_tests"
-        },
-        {
-          "run": "govulncheck -C go ./..."
+          "run": "scripts/run_go_checks"
         },
         {
           "run": "pnpm -C js build"

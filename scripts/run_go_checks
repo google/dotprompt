@@ -33,6 +33,14 @@ GO_VERSIONS=(
   #"tip" # Fetches and builds the latest version of go from source and is slow.
 )
 
+echo "=== Linting and applying fixes ==="
+pushd "${GO_DIR}" &>/dev/null
+#go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest ./...
+golangci-lint run ./...
+go vet -v ./...
+govulncheck ./...
+popd &>/dev/null
+
 echo "=== Running Go tests ==="
 echo "Project root: ${TOP_DIR}"
 echo "Go directory: ${GO_DIR}"
