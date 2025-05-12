@@ -83,8 +83,8 @@ jobs:
       - name: Check licenses
         run: ./scripts/check_license
 
-      - name: Run Rust tests for handlebarrz
-        run: ./scripts/run_handlebarrz_tests
+      - name: Run Rust checks for handlebarrz
+        run: ./scripts/run_handlebarrz_checks
 
       - name: Build Rust extension for Python ${{ matrix.python-version }}
         working-directory: ./python

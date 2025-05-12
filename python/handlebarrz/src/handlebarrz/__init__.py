@@ -414,7 +414,7 @@ class Template:
         try:
             # TODO: Fix this type error.
             self._template.register_helper(name, create_helper(helper_fn))  # type: ignore[arg-type]
-            logger.debug({'event': 'helper_registered', 'name': name})
+            # logger.debug({'event': 'helper_registered', 'name': name})
         except Exception as e:
             logger.exception({
                 'event': 'helper_registration_error',

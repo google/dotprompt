@@ -158,8 +158,8 @@ ALLOWLISTED_FILES = [
     'spec/helpers/section.yaml',
     'spec/helpers/unlessEquals.yaml',
     'spec/metadata.yaml',
-    #'spec/partials.yaml',
-    #'spec/picoschema.yaml',
+    'spec/partials.yaml',
+    'spec/picoschema.yaml',
     'spec/variables.yaml',
 ]
 
@@ -185,25 +185,25 @@ class TestSpecFiles(unittest.IsolatedAsyncioTestCase):
 
     def test_spec_path(self) -> None:
         """Test that the spec directory exists."""
-        assert SPECS_DIR.exists()
-        assert SPECS_DIR.is_dir()
+        self.assertTrue(SPECS_DIR.exists())
+        self.assertTrue(SPECS_DIR.is_dir())
 
     def test_spec_path_contains_yaml_files(self) -> None:
         """Test that the spec directory contains YAML files."""
-        assert list(SPECS_DIR.glob('**/*.yaml'))
+        self.assertTrue(list(SPECS_DIR.glob('**/*.yaml')))
 
     def test_spec_files_are_valid(self) -> None:
         """Test that all spec files contain valid YAML."""
         for file in SPECS_DIR.glob('**/*.yaml'):
             with open(file) as f:
                 data = yaml.safe_load(f)
-                assert data is not None
+                self.assertIsNotNone(data)
 
     async def test_specs(self) -> None:
         """Discovers and runs all YAML specification tests."""
         for yaml_file in SPECS_DIR.glob('**/*.yaml'):
             if not is_allowed_spec_file(yaml_file):
-                logger.debug(
+                logger.warn(
                     'Skipping spec file',
                     file=yaml_file,
                 )
@@ -214,14 +214,57 @@ class TestSpecFiles(unittest.IsolatedAsyncioTestCase):
 
                 for suite_data_raw in suites_data:
                     suite: SpecSuite = cast(SpecSuite, suite_data_raw)
+                    suite_name: str = suite.get('name', f'UnnamedSuite_in_{yaml_file.name}')
 
-                    with self.subTest(suite=suite.get('name', 'UnnamedSuite')):
-                        for test_case_data_raw in suite.get('tests', []):
-                            test_case: SpecTest = test_case_data_raw
+                    suite['name'] = suite_name
 
-                            with self.subTest(test=test_case.get('desc', 'UnnamedTest')):
-                                dotprompt = Dotprompt()
-                                await self.run_yaml_test(yaml_file, dotprompt, suite, test_case)
+                    with self.subTest(suite=suite_name):
+                        for tc_raw in suite.get('tests', []):
+                            tc: SpecTest = tc_raw
+                            tc_name = tc.get('desc', f'UnnamedTest_in_{suite_name}')
+                            tc['desc'] = tc_name
+
+                            with self.subTest(test=tc_name):
+                                # TODO: Doing this per test case is safer for
+                                # test sandboxing but we could perhaps do this
+                                # per suite as well.
+                                dotprompt = self.make_dotprompt(suite)
+                                await self.run_yaml_test(yaml_file, dotprompt, suite, tc)
+
+    def make_dotprompt(self, suite: SpecSuite) -> Dotprompt:
+        """Constructs and sets up a Dotprompt instance for the given suite.
+
+        Args:
+            suite: The suite to set up the Dotprompt for.
+
+        Returns:
+            A Dotprompt instance configured for the given suite.
+        """
+        resolver_partials: dict[str, str] = suite.get('resolver_partials', {})
+
+        def partial_resolver_fn(name: str) -> str | None:
+            """Resolves a partial name to a template string.
+
+            Args:
+                name: The name of the partial to resolve.
+
+            Returns:
+                The template string for the partial, or None if the partial is not found.
+            """
+            return resolver_partials.get(name)
+
+        dotprompt = Dotprompt(
+            schemas=suite.get('schemas'),
+            tools=suite.get('tools'),
+            partial_resolver=partial_resolver_fn if resolver_partials else None,
+        )
+
+        # Define partials if they exist.
+        partials: dict[str, str] = suite.get('partials', {})
+        for name, template in partials.items():
+            dotprompt.define_partial(name, template)
+
+        return dotprompt
 
     async def run_yaml_test(
         self,
@@ -241,17 +284,16 @@ class TestSpecFiles(unittest.IsolatedAsyncioTestCase):
         Returns:
             None
         """
-        logger.debug(
-            'Running spec test',
-            yaml_file=yaml_file,
-            suite=suite,
-            test=test_case,
+        suite_name = suite.get('name')
+        test_name = test_case.get('desc')
+        logger.info(
+            f'[TEST] \033[1m{yaml_file.name}\033[0m: {suite_name} > {test_name}',
+            yaml_file=yaml_file.name,
+            suite_name=suite_name,
+            test_name=test_name,
+            # suite=suite,
+            # test=test_case,
         )
-
-        # Define partials if they exist.
-        partials: dict[str, str] = suite.get('partials', {})
-        for name, template in partials.items():
-            dotprompt.define_partial(name, template)
 
         # TODO: Render the template.
         # data = {**suite.get('data', {}), **test_case.get('data', {})}
@@ -267,13 +309,15 @@ class TestSpecFiles(unittest.IsolatedAsyncioTestCase):
         # TODO: Render the metadata.
         # TODO: Compare pruned metadata to the expected output.
 
-        logger.debug(
-            'Finished running spec test',
-            yaml_file=yaml_file,
-            suite=suite,
-            test=test_case,
-            # result=result,
-        )
+        # logger.info(
+        #    f'[TEST] \033[1m{yaml_file.name}\033[0m: {suite_name} > {test_name} finished',
+        #    yaml_file=yaml_file.name,
+        #    suite_name=suite_name,
+        #    test_name=test_name,
+        #    # suite=suite,
+        #    # test=test_case,
+        #    # result=result,
+        # )
 
 
 if __name__ == '__main__':
