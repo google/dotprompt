@@ -38,9 +38,11 @@ types:
   - revert
 
 scopes:
+  - deps
+  - go
+  - java
   - js
   - py
-  - go
   - py/dotpromptz
   - py/handlebarrz
-  - deps
+  - rs

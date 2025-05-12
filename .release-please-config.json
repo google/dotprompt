@@ -65,6 +65,26 @@
       "draft": false,
       "prerelease": false,
       "path": "go/**"
+    },
+    "rs": {
+      "release-type": "rust",
+      "package-name": "dotprompt-rs",
+      "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "draft": false,
+      "prerelease": false,
+      "path": "rs/**"
+    },
+    "java": {
+      "release-type": "java",
+      "package-name": "dotprompt-java",
+      "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "draft": false,
+      "prerelease": false,
+      "path": "java/**"
     }
   },
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
