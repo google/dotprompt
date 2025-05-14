@@ -19,7 +19,7 @@ description = "Handlebars library for Python based on handlebars-rust."
 name = "dotprompt_handlebars"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "0.0.1.dev1"
+version = "0.1.1"
 
 [build-system]
 build-backend = "maturin"
