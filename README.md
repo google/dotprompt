@@ -1,6 +1,7 @@
 [![Go checks](https://github.com/google/dotprompt/actions/workflows/go.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/go.yml)
 [![Python checks](https://github.com/google/dotprompt/actions/workflows/python.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/python.yml)
 [![JS checks](https://github.com/google/dotprompt/actions/workflows/test.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/test.yml)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/google/dotprompt)
 
 # Dotprompt: Executable GenAI Prompt Templates
 
@@ -16,26 +17,26 @@ An executable prompt template is a file that contains not only the text of a
 prompt but also metadata and instructions for how to use that prompt with a
 generative AI model. Here's what makes Dotprompt files executable:
 
-- **Metadata Inclusion**: Dotprompt files include metadata about model
+* **Metadata Inclusion**: Dotprompt files include metadata about model
   configuration, input requirements, and expected output format. This
   information is typically stored in a YAML frontmatter section at the beginning
   of the file.
 
-- **Self-Contained Entity**: Because a Dotprompt file contains all the necessary
+* **Self-Contained Entity**: Because a Dotprompt file contains all the necessary
   information to execute a prompt, it can be treated as a self-contained entity.
   This means you can "run" a Dotprompt file directly, without needing additional
   configuration or setup in your code.
 
-- **Model Configuration**: The file specifies which model to use and how to
+* **Model Configuration**: The file specifies which model to use and how to
   configure it (e.g., temperature, max tokens).
 
-- **Input Schema**: It defines the structure of the input data expected by the
+* **Input Schema**: It defines the structure of the input data expected by the
   prompt, allowing for validation and type-checking.
 
-- **Output Format**: The file can specify the expected format of the model's
+* **Output Format**: The file can specify the expected format of the model's
   output, which can be used for parsing and validation.
 
-- **Templating**: The prompt text itself uses Handlebars syntax, allowing for
+* **Templating**: The prompt text itself uses Handlebars syntax, allowing for
   dynamic content insertion based on input variables.
 
 This combination of features makes it possible to treat a Dotprompt file as an

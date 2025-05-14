@@ -99,17 +99,44 @@ spec/
 
 from __future__ import annotations
 
+import re
 import unittest
+from collections.abc import Callable, Coroutine
 from pathlib import Path
-from typing import Any, TypedDict, cast
+from typing import Any, TypedDict
 
 import structlog
 import yaml
 
 from dotpromptz.dotprompt import Dotprompt
-from dotpromptz.typing import DataArgument, JsonSchema, PromptMetadata, ToolDefinition
+from dotpromptz.typing import DataArgument, JsonSchema, ToolDefinition
 
 logger = structlog.get_logger(__name__)
+
+
+CURRENT_FILE = Path(__file__)
+ROOT_DIR = CURRENT_FILE.parent.parent.parent.parent.parent
+SPECS_DIR = ROOT_DIR / 'spec'
+
+# List of files that are allowed to be used as spec files.
+# Useful for debugging and testing.
+ALLOWLISTED_FILES = [
+    'spec/helpers/history.yaml',
+    'spec/helpers/ifEquals.yaml',
+    'spec/helpers/json.yaml',
+    'spec/helpers/media.yaml',
+    'spec/helpers/role.yaml',
+    'spec/helpers/section.yaml',
+    'spec/helpers/unlessEquals.yaml',
+    'spec/metadata.yaml',
+    'spec/partials.yaml',
+    'spec/picoschema.yaml',
+    'spec/variables.yaml',
+]
+
+# Counters for test class and test method names.
+suite_counter = 0
+test_case_counter = 0
 
 
 class Expect(TypedDict, total=False):
@@ -145,25 +172,6 @@ class SpecSuite(TypedDict, total=False):
     tests: list[SpecTest]
 
 
-CURRENT_FILE = Path(__file__)
-ROOT_DIR = CURRENT_FILE.parent.parent.parent.parent.parent
-SPECS_DIR = ROOT_DIR / 'spec'
-
-ALLOWLISTED_FILES = [
-    'spec/helpers/history.yaml',
-    'spec/helpers/ifEquals.yaml',
-    'spec/helpers/json.yaml',
-    'spec/helpers/media.yaml',
-    'spec/helpers/role.yaml',
-    'spec/helpers/section.yaml',
-    'spec/helpers/unlessEquals.yaml',
-    'spec/metadata.yaml',
-    'spec/partials.yaml',
-    'spec/picoschema.yaml',
-    'spec/variables.yaml',
-]
-
-
 def is_allowed_spec_file(file: Path) -> bool:
     """Check if a spec file is allowed.
 
@@ -180,8 +188,84 @@ def is_allowed_spec_file(file: Path) -> bool:
     return False
 
 
+def sanitize_name_component(name: str | None) -> str:
+    """Sanitizes a name component for use in a Python identifier.
+
+    Args:
+        name: The name to sanitize.
+
+    Returns:
+        A sanitized name.
+    """
+    name_str = str(name) if name is not None else 'None'
+    name_str = re.sub(r'[^a-zA-Z0-9_]', '_', name_str)
+    if name_str and name_str[0].isdigit():
+        name_str = '_' + name_str
+    return name_str or 'unnamed_component'
+
+
+def make_test_method_name(yaml_file_name: str, suite_name: str | None, test_desc: str | None) -> str:
+    """Creates a sanitized test method name.
+
+    Args:
+        yaml_file_name: The name of the YAML file.
+        suite_name: The name of the suite.
+        test_desc: The description of the test.
+
+    Returns:
+        A sanitized test method name.
+    """
+    file_part = sanitize_name_component(yaml_file_name.replace('.yaml', ''))
+    suite_part = sanitize_name_component(suite_name)
+    desc_part = sanitize_name_component(test_desc)
+    return f'test_{file_part}_{suite_part}_{desc_part}_'
+
+
+def make_test_class_name(yaml_file_name: str, suite_name: str | None) -> str:
+    """Creates a sanitized test class name for a suite.
+
+    Args:
+        yaml_file_name: The name of the YAML file.
+        suite_name: The name of the suite.
+
+    Returns:
+        A sanitized test class name.
+    """
+    file_part = sanitize_name_component(yaml_file_name.replace('.yaml', ''))
+    suite_part = sanitize_name_component(suite_name)
+    return f'Test_{file_part}_{suite_part}Suite'
+
+
+def make_dotprompt_for_suite(suite: SpecSuite) -> Dotprompt:
+    """Constructs and sets up a Dotprompt instance for the given suite.
+
+    Args:
+        suite: The suite to construct a Dotprompt for.
+
+    Returns:
+        A Dotprompt instance.
+    """
+    resolver_partials_from_suite: dict[str, str] = suite.get('resolver_partials', {})
+
+    def partial_resolver_fn(name: str) -> str | None:
+        return resolver_partials_from_suite.get(name)
+
+    dotprompt = Dotprompt(
+        schemas=suite.get('schemas'),
+        tools=suite.get('tools'),
+        partial_resolver=partial_resolver_fn if resolver_partials_from_suite else None,
+    )
+
+    # Register partials directly defined in the suite
+    defined_partials: dict[str, str] = suite.get('partials', {})
+    for name, template_content in defined_partials.items():
+        dotprompt.define_partial(name, template_content)
+
+    return dotprompt
+
+
 class TestSpecFiles(unittest.IsolatedAsyncioTestCase):
-    """Runs specification tests defined in YAML files."""
+    """Runs essential checks to ensure the spec directory is valid."""
 
     def test_spec_path(self) -> None:
         """Test that the spec directory exists."""
@@ -199,126 +283,170 @@ class TestSpecFiles(unittest.IsolatedAsyncioTestCase):
                 data = yaml.safe_load(f)
                 self.assertIsNotNone(data)
 
-    async def test_specs(self) -> None:
-        """Discovers and runs all YAML specification tests."""
-        for yaml_file in SPECS_DIR.glob('**/*.yaml'):
-            if not is_allowed_spec_file(yaml_file):
-                logger.warn(
-                    'Skipping spec file',
-                    file=yaml_file,
-                )
-                continue
-            with self.subTest(file=yaml_file):
-                with open(yaml_file) as f:
-                    suites_data = yaml.safe_load(f)
 
-                for suite_data_raw in suites_data:
-                    suite: SpecSuite = cast(SpecSuite, suite_data_raw)
-                    suite_name: str = suite.get('name', f'UnnamedSuite_in_{yaml_file.name}')
+class YamlSpecTestBase(unittest.IsolatedAsyncioTestCase):
+    """A base class that is used as a template for all YAML spec test suites."""
 
-                    suite['name'] = suite_name
-
-                    with self.subTest(suite=suite_name):
-                        for tc_raw in suite.get('tests', []):
-                            tc: SpecTest = tc_raw
-                            tc_name = tc.get('desc', f'UnnamedTest_in_{suite_name}')
-                            tc['desc'] = tc_name
-
-                            with self.subTest(test=tc_name):
-                                # TODO: Doing this per test case is safer for
-                                # test sandboxing but we could perhaps do this
-                                # per suite as well.
-                                dotprompt = self.make_dotprompt(suite)
-                                await self.run_yaml_test(yaml_file, dotprompt, suite, tc)
-
-    def make_dotprompt(self, suite: SpecSuite) -> Dotprompt:
-        """Constructs and sets up a Dotprompt instance for the given suite.
+    async def run_yaml_test(self, yaml_file: Path, suite: SpecSuite, test_case: SpecTest) -> None:
+        """Runs a YAML test.
 
         Args:
-            suite: The suite to set up the Dotprompt for.
-
-        Returns:
-            A Dotprompt instance configured for the given suite.
-        """
-        resolver_partials: dict[str, str] = suite.get('resolver_partials', {})
-
-        def partial_resolver_fn(name: str) -> str | None:
-            """Resolves a partial name to a template string.
-
-            Args:
-                name: The name of the partial to resolve.
-
-            Returns:
-                The template string for the partial, or None if the partial is not found.
-            """
-            return resolver_partials.get(name)
-
-        dotprompt = Dotprompt(
-            schemas=suite.get('schemas'),
-            tools=suite.get('tools'),
-            partial_resolver=partial_resolver_fn if resolver_partials else None,
-        )
-
-        # Define partials if they exist.
-        partials: dict[str, str] = suite.get('partials', {})
-        for name, template in partials.items():
-            dotprompt.define_partial(name, template)
-
-        return dotprompt
-
-    async def run_yaml_test(
-        self,
-        yaml_file: Path,
-        dotprompt: Dotprompt,
-        suite: SpecSuite,
-        test_case: SpecTest,
-    ) -> None:
-        """Runs a single specification test.
-
-        Args:
-            yaml_file: The YAML file containing the specification.
-            dotprompt: The Dotprompt instance to use.
+            yaml_file: The path to the YAML file.
             suite: The suite to run the test on.
             test_case: The test case to run.
 
         Returns:
-            None
+            None.
         """
-        suite_name = suite.get('name')
-        test_name = test_case.get('desc')
-        logger.info(
-            f'[TEST] \033[1m{yaml_file.name}\033[0m: {suite_name} > {test_name}',
-            yaml_file=yaml_file.name,
-            suite_name=suite_name,
-            test_name=test_name,
-            # suite=suite,
-            # test=test_case,
-        )
+        suite_name = suite.get('name', 'UnnamedSuite')
+        test_desc = test_case.get('desc', 'UnnamedTest')
+        logger.info(f'[TEST] {yaml_file.stem} > {suite_name} > {test_desc}')
 
-        # TODO: Render the template.
-        # data = {**suite.get('data', {}), **test_case.get('data', {})}
-        # result = await dotprompt.render(
-        #    suite.get('template'),
-        #    DataArgument(**data),
-        #    PromptMetadata(**test_case.get('options', {})),
-        # )
+        # Create test-specific dotprompt instance.
+        dotprompt = make_dotprompt_for_suite(suite)
+        self.assertIsNotNone(dotprompt)
 
-        # TODO: Prune the result and compare to the expected output.
-        # TODO: Compare pruned result to the expected output.
-        # TODO: Only compare raw if the spec demands it.
-        # TODO: Render the metadata.
-        # TODO: Compare pruned metadata to the expected output.
+        # TODO: Add test logic here.
 
-        # logger.info(
-        #    f'[TEST] \033[1m{yaml_file.name}\033[0m: {suite_name} > {test_name} finished',
-        #    yaml_file=yaml_file.name,
-        #    suite_name=suite_name,
-        #    test_name=test_name,
-        #    # suite=suite,
-        #    # test=test_case,
-        #    # result=result,
-        # )
 
+def make_suite_class_name(yaml_file: Path, suite_name: str | None) -> str:
+    """Creates a class name for a suite.
+
+    Args:
+        yaml_file: The path to the YAML file.
+        suite_name: The name of the suite.
+
+    Returns:
+        A class name for the suite.
+    """
+    global suite_counter
+    suite_counter += 1
+    file_part = sanitize_name_component(yaml_file.stem)
+    suite_part = sanitize_name_component(suite_name)
+    return f'Test_{file_part}_{suite_part}Suite_{suite_counter}'
+
+
+def make_test_case_name(yaml_file: Path, suite_name: str, test_desc: str) -> str:
+    """Creates a test case name.
+
+    Args:
+        yaml_file: The path to the YAML file.
+        suite_name: The name of the suite.
+        test_desc: The description of the test.
+
+    Returns:
+        A test case name.
+    """
+    global test_case_counter
+    test_case_counter += 1
+    file_part = sanitize_name_component(yaml_file.stem)
+    suite_part = sanitize_name_component(suite_name)
+    test_method_part = sanitize_name_component(test_desc)
+    return f'test_{file_part}_{suite_part}_{test_method_part}_{test_case_counter}'
+
+
+def make_async_test_case_method(
+    yaml_file: Path,
+    suite: SpecSuite,
+    test_case: SpecTest,
+) -> Callable[[YamlSpecTestBase], Coroutine[Any, Any, None]]:
+    """Creates an async test method for a test case.
+
+    Args:
+        yaml_file: The path to the YAML file.
+        suite: The suite to create the test method for.
+        test_case: The test case to create the test method for.
+
+    Returns:
+        An async test method.
+    """
+
+    async def test_method(self_dynamic: YamlSpecTestBase) -> None:
+        """An async test method."""
+        await self_dynamic.run_yaml_test(yaml_file, suite, test_case)
+
+    return test_method
+
+
+def make_async_skip_test_method(
+    yaml_file: Path, suite_name: str
+) -> Callable[[YamlSpecTestBase], Coroutine[Any, Any, None]]:
+    """Creates a skip test for a suite.
+
+    Args:
+        yaml_file: The path to the YAML file.
+        suite_name: The name of the suite.
+
+    Returns:
+        A skip test.
+    """
+
+    async def skip_method(self_dynamic: YamlSpecTestBase) -> None:
+        self_dynamic.skipTest(f"Suite '{suite_name}' in {yaml_file.stem} has no tests.")
+
+    return skip_method
+
+
+def generate_test_suites(files: list[Path]) -> None:
+    """Dynamically generates test suite classes and methods from YAML spec files.
+
+    Args:
+        files: A list of YAML spec files to generate test suites from.
+
+    Returns:
+        None.
+    """
+    module_globals = globals()
+
+    for yaml_file in files:
+        if not is_allowed_spec_file(yaml_file):
+            logger.warn('Skipping non-allowlisted spec file for class generation', file=str(yaml_file))
+            continue
+
+        # Load the YAML file and ensure it's valid.
+        try:
+            with open(yaml_file, encoding='utf-8') as f:
+                suites_data = yaml.safe_load(f)
+            if not suites_data:
+                logger.warn('Skipping spec file with no data', file=str(yaml_file))
+                continue
+        except yaml.YAMLError as e:
+            logger.error('Error loading spec file', file=str(yaml_file), error=e)
+            raise
+
+        # Iterate over the suites in the YAML file and ensure it has a name.
+        for suite_data in suites_data:
+            # Normalize the suite data to ensure it has a name.
+            suite: SpecSuite = suite_data
+            suite_name = suite.get('name', f'UnnamedSuite_{yaml_file.stem}')
+            suite['name'] = suite_name
+
+            # Create the dynamic test class for the suite.
+            class_name = make_suite_class_name(yaml_file, suite_name)
+            klass = type(class_name, (YamlSpecTestBase,), {})
+
+            # Skip the suite if it has no tests.
+            test_cases = suite.get('tests', [])
+            if not test_cases:
+                klass.test_empty_suite = make_async_skip_test_method(yaml_file, suite_name)  # type: ignore[attr-defined]
+
+            # Iterate over the tests in the suite and add them to the class.
+            for tc_raw in test_cases:
+                # Normalize the test case data to ensure it has a name.
+                tc: SpecTest = tc_raw
+                tc_name = tc.get('desc', 'UnnamedTest')
+                tc['desc'] = tc_name
+
+                # Create the test case method and add it to the class.
+                test_case_name = make_test_case_name(yaml_file, suite_name, tc_name)
+                test_method = make_async_test_case_method(yaml_file, suite, tc_raw)
+                setattr(klass, test_case_name, test_method)
+
+            # Add the test suite class to the module globals.
+            module_globals[class_name] = klass
+
+
+generate_test_suites(list(SPECS_DIR.glob('**/*.yaml')))
 
 if __name__ == '__main__':
     unittest.main()
