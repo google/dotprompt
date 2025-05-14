@@ -1,6 +1,6 @@
 {
   "name": "dotprompt",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Dotprompt: Executable GenAI Prompt Templates",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -16,7 +16,13 @@
     "test": "vitest run --coverage",
     "test:watch": "vitest"
   },
-  "keywords": ["genai", "prompting", "llms", "templating", "handlebars"],
+  "keywords": [
+    "genai",
+    "prompting",
+    "llms",
+    "templating",
+    "handlebars"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
