@@ -1,6 +1,8 @@
 """Configuration for Bazel with Java dependencies."""
 
 bazel_dep(name = "rules_java", version = "8.11.0")
+
+# rules_jvm_external 6.7 is the latest as of June 2024
 bazel_dep(name = "rules_jvm_external", version = "6.7")
 
 # Register the specific Java toolchain version.
@@ -11,12 +13,11 @@ java_toolchain(
     version = "21",
 )
 
-
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
 
 # Overriding these versions to prevent duplicate version warnings.
 maven.artifact(
-    artifact = "com.google.guava:guava:33.4.8-jre",
+    artifact = "com.google.guava:guava:33.2.1-jre",  # Updated to a recent general release
     group = "com.google.guava",
     name = "guava",
     version = "33.4.8-jre",
@@ -29,12 +30,31 @@ maven.artifact(
 )
 
 maven.install(
+    # List all direct Maven dependencies here.
+    # Versions specified in maven.artifact above will take precedence.
     artifacts = [
+        # Testing
         "junit:junit:4.13.2",
         "com.google.truth.extensions:truth-proto-extension:1.4.4",
         "com.google.truth:truth:1.4.4",
-        "com.github.jknack:handlebars:4.3.1", 
-        "com.google.guava:guava:33.4.8-jre",
+
+        # Core Libraries
+        "com.github.jknack:handlebars:4.3.1",
+        "com.google.guava:guava:33.2.1-jre",
+        "org.yaml:snakeyaml:2.2",
+
+        # Logging (Flogger)
+        "com.google.flogger:flogger:0.8",
+        "com.google.flogger:flogger-system-backend:0.8",
+
+        # Error Prone
+        "com.google.errorprone:error_prone_core:2.29.0",
+        "com.google.errorprone:error_prone_annotations:2.29.0",
+
+        # Dagger
+        "com.google.dagger:dagger:2.51.1",
+        "com.google.dagger:dagger-compiler:2.51.1",
+        "com.google.dagger:dagger-producers:2.51.1",
     ],
     lock_file = "//:maven_install.json",
     repositories = [
