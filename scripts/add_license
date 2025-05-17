@@ -33,7 +33,7 @@ if ! command -v addlicense &>/dev/null; then
     exit 1
   fi
   echo "Installing addlicense..."
-  go install github.com/google/addlicense@latest
+  go install github.com/google/addlicense@HEAD
 fi
 
 # NOTE: If you edit the ignore patterns, make sure to update the ignore patterns
