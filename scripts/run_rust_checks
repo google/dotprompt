@@ -47,6 +47,12 @@ else
   echo "Install mold for a faster linker: https://github.com/rui314/mold"
 fi
 
+if command -v sccache &>/dev/null; then
+  SCCACHE=$(which sccache)
+  echo "Found sccache at ${SCCACHE}"
+  export RUSTC_WRAPPER="${SCCACHE}"
+fi
+
 # Show relevant stack traces.
 export RUST_BACKTRACE=1
 #export RUST_BACKTRACE=full  # For more detailed stack traces.
