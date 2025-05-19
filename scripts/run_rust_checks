@@ -34,11 +34,28 @@ if ! command -v rustup &>/dev/null; then
   error_exit "rustup could not be found. Please install rustup first: https://rustup.rs/"
 fi
 
-echo "=== Running Rust tests ==="
+# Set up all the config and flags.
+CARGO=cargo
+RUSTFLAGS=
+
+# Switch to the faster mold linker if available.
+if command -v mold &>/dev/null; then
+  MOLD=$(which mold)
+  echo "Found the mold linker at ${MOLD}".
+  RUSTFLAGS="${RUSTFLAGS} -C link-arg=-fuse-ld=${MOLD}"
+else
+  echo "Install mold for a faster linker: https://github.com/rui314/mold"
+fi
 
 # Show relevant stack traces.
 export RUST_BACKTRACE=1
 #export RUST_BACKTRACE=full  # For more detailed stack traces.
+
+echo "=== Running Rust tests ==="
+
+echo "RUST_BACKTRACE=${RUST_BACKTRACE}"
+echo "CARGO=${CARGO}"
+echo "RUSTFLAGS=${RUSTFLAGS}"
 
 # Install stable and nightly toolchains if they aren't already installed.
 echo "--- Ensuring stable and nightly toolchains are installed ---"
@@ -47,27 +64,27 @@ rustup toolchain install nightly --no-self-update || error_exit "Failed to insta
 
 # Format check with stable toolchain.
 echo "--- Checking formatting with +stable toolchain ---"
-cargo +stable fmt --all -- --check || error_exit "Formatting check failed with stable toolchain"
+"${CARGO}" +stable fmt --all -- --check || error_exit "Formatting check failed with stable toolchain"
 
 # Lint with stable toolchain (treat warnings as errors).
 echo "--- Running clippy with +stable toolchain ---"
-cargo +stable clippy --all-targets --workspace -- -D warnings || error_exit "Clippy failed with stable toolchain"
+"${CARGO}" +stable clippy --all-targets --workspace -- -D warnings || error_exit "Clippy failed with stable toolchain"
 
 # Run tests with stable toolchain.
 echo "--- Running tests with +stable toolchain ---"
-cargo +stable test --all-targets --workspace || error_exit "Tests failed with stable toolchain"
+"${CARGO}" +stable test --all-targets --workspace || error_exit "Tests failed with stable toolchain"
 
 # Format check with nightly toolchain.
 echo "--- Checking formatting with +nightly toolchain ---"
-cargo +nightly fmt --all -- --check || echo "Warning: Formatting check failed with nightly toolchain (allowed to fail)"
+"${CARGO}" +nightly fmt --all -- --check || echo "Warning: Formatting check failed with nightly toolchain (allowed to fail)"
 
 # Lint with nightly toolchain (treat warnings as errors).
 echo "--- Running clippy with +nightly toolchain ---"
-cargo +nightly clippy --all-targets --workspace -- -D warnings || echo "Warning: Clippy failed with nightly toolchain (allowed to fail)"
+"${CARGO}" +nightly clippy --all-targets --workspace -- -D warnings || echo "Warning: Clippy failed with nightly toolchain (allowed to fail)"
 
 # Run tests with nightly toolchain.
 echo "--- Running tests with +nightly toolchain ---"
-cargo +nightly test --all-targets --workspace || echo "Warning: Tests failed with nightly toolchain (allowed to fail)"
+"${CARGO}" +nightly test --all-targets --workspace || echo "Warning: Tests failed with nightly toolchain (allowed to fail)"
 
 echo "=== Rust tests completed successfully (nightly failures are allowed) ==="
 exit 0
