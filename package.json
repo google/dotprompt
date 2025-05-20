@@ -9,14 +9,14 @@
   },
   "dependencies": {
     "handlebars": "^4.7.8",
-    "yaml": "^2.4.2"
+    "yaml": "^2.8.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@types/node": "^20.17.32",
-    "@vitest/coverage-v8": "^3.1.2",
-    "typescript": "5.6.2",
-    "vitest": "^3.1.2"
+    "@types/node": "^22.15.20",
+    "@vitest/coverage-v8": "^3.1.4",
+    "typescript": "5.8.3",
+    "vitest": "^3.1.4"
   },
   "pnpm": {
     "onlyBuiltDependencies": ["js"],
