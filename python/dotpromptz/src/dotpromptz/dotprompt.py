@@ -152,9 +152,7 @@ class RenderFunc(PromptFunction[ModelConfigT]):
         Returns:
             The rendered prompt.
         """
-        # Discard the input schema as once rendered it doesn't make sense.
         merged_metadata: PromptMetadata[ModelConfigT] = await self._dotprompt.render_metadata(self.prompt, options)
-        merged_metadata.input = None
 
         # Prepare input data, merging defaults from options if available.
         context: Context = {
@@ -381,7 +379,7 @@ class Dotprompt:
         out = base.model_copy(deep=True)
 
         for merge in merges:
-            if merge is not None:
+            if merge:
                 out = _merge_metadata(out, merge)
 
         # Remove the template attribute if it exists (TS does this).
