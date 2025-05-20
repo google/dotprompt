@@ -104,7 +104,7 @@ import re
 import unittest
 from collections.abc import Callable, Coroutine
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, Generic, TypedDict
 
 import structlog
 import yaml
@@ -154,7 +154,7 @@ test_case_counter = 0
 class Expect(BaseModel):
     """An expectation for the spec."""
 
-    config: ModelConfigT | None = Field(default_factory=dict)
+    config: dict[Any, Any] = Field(default_factory=dict)
     ext: dict[str, dict[str, Any]] = Field(default_factory=dict)
     input: PromptInputConfig | None = None
     messages: list[Message] = Field(default_factory=list)
@@ -162,7 +162,7 @@ class Expect(BaseModel):
     raw: dict[str, Any] | None = None
 
 
-class SpecTest(BaseModel):
+class SpecTest(BaseModel, Generic[ModelConfigT]):
     """A test case for a YAML spec."""
 
     desc: str = Field(default='UnnamedTest')
@@ -171,17 +171,17 @@ class SpecTest(BaseModel):
     options: PromptMetadata[ModelConfigT] | None = None
 
 
-class SpecSuite(BaseModel):
+class SpecSuite(BaseModel, Generic[ModelConfigT]):
     """A suite of test cases for a YAML spec."""
 
     name: str = Field(default='UnnamedSuite')
-    template: str | None = None
+    template: str
     data: DataArgument[Any] | None = None
     schemas: dict[str, JsonSchema] | None = None
     tools: dict[str, ToolDefinition] | None = None
     partials: dict[str, str] = Field(default_factory=dict)
     resolver_partials: dict[str, str] = Field(default_factory=dict)
-    tests: list[SpecTest] = Field(default_factory=list)
+    tests: list[SpecTest[ModelConfigT]] = Field(default_factory=list)
 
 
 def is_allowed_spec_file(file: Path) -> bool:
@@ -248,7 +248,7 @@ def make_test_class_name(yaml_file_name: str, suite_name: str | None) -> str:
     return f'Test_{file_part}_{suite_part}Suite'
 
 
-def make_dotprompt_for_suite(suite: SpecSuite) -> Dotprompt:
+def make_dotprompt_for_suite(suite: SpecSuite[ModelConfigT]) -> Dotprompt:
     """Constructs and sets up a Dotprompt instance for the given suite.
 
     Args:
@@ -296,10 +296,10 @@ class TestSpecFiles(unittest.IsolatedAsyncioTestCase):
                 self.assertIsNotNone(data)
 
 
-class YamlSpecTestBase(unittest.IsolatedAsyncioTestCase):
+class YamlSpecTestBase(unittest.IsolatedAsyncioTestCase, Generic[ModelConfigT]):
     """A base class that is used as a template for all YAML spec test suites."""
 
-    async def run_yaml_test(self, yaml_file: Path, suite: SpecSuite, test_case: SpecTest) -> None:
+    async def run_yaml_test(self, yaml_file: Path, suite: SpecSuite[ModelConfigT], test_case: SpecTest[ModelConfigT]) -> None:
         """Runs a YAML test.
 
         Args:
@@ -318,7 +318,7 @@ class YamlSpecTestBase(unittest.IsolatedAsyncioTestCase):
 
         data = self._merge_data(suite.data or DataArgument[Any](), test_case.data or DataArgument[Any]())
         result = await dotprompt.render(suite.template, data, test_case.options)
-        pruned_res = Expect(**result.model_dump())
+        pruned_res: Expect = Expect(**result.model_dump())
         self.assertEqual(pruned_res, test_case.expect)
 
     def _merge_data(self, data1: DataArgument[Any], data2: DataArgument[Any]) -> DataArgument[Any]:
@@ -368,9 +368,9 @@ def make_test_case_name(yaml_file: Path, suite_name: str, test_desc: str) -> str
 
 def make_async_test_case_method(
     yaml_file: Path,
-    suite: SpecSuite,
-    test_case: SpecTest,
-) -> Callable[[YamlSpecTestBase], Coroutine[Any, Any, None]]:
+    suite: SpecSuite[ModelConfigT],
+    test_case: SpecTest[ModelConfigT],
+) -> Callable[[YamlSpecTestBase[ModelConfigT]], Coroutine[Any, Any, None]]:
     """Creates an async test method for a test case.
 
     Args:
@@ -382,7 +382,7 @@ def make_async_test_case_method(
         An async test method.
     """
 
-    async def test_method(self_dynamic: YamlSpecTestBase) -> None:
+    async def test_method(self_dynamic: YamlSpecTestBase[ModelConfigT]) -> None:
         """An async test method."""
         await self_dynamic.run_yaml_test(yaml_file, suite, test_case)
 
@@ -391,7 +391,7 @@ def make_async_test_case_method(
 
 def make_async_skip_test_method(
     yaml_file: Path, suite_name: str
-) -> Callable[[YamlSpecTestBase], Coroutine[Any, Any, None]]:
+) -> Callable[[YamlSpecTestBase[ModelConfigT]], Coroutine[Any, Any, None]]:
     """Creates a skip test for a suite.
 
     Args:
@@ -402,7 +402,7 @@ def make_async_skip_test_method(
         A skip test.
     """
 
-    async def skip_method(self_dynamic: YamlSpecTestBase) -> None:
+    async def skip_method(self_dynamic: YamlSpecTestBase[ModelConfigT]) -> None:
         self_dynamic.skipTest(f"Suite '{suite_name}' in {yaml_file.stem} has no tests.")
 
     return skip_method
@@ -438,7 +438,7 @@ def generate_test_suites(files: list[Path]) -> None:
         # Iterate over the suites in the YAML file and ensure it has a name.
         for suite_data in suites_data:
             # Normalize the suite data to ensure it has a name.
-            suite: SpecSuite = SpecSuite(**suite_data)
+            suite = SpecSuite(**suite_data)
             suite.name = suite.name or f'UnnamedSuite_{yaml_file.stem}'
 
             # Create the dynamic test class for the suite.
