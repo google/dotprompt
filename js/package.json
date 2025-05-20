@@ -20,7 +20,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "^22.15.3",
+    "@types/node": "22.15.20",
     "@vitest/coverage-v8": "^3.1.2",
     "prettier": "^3.5.3",
     "tsup": "^8.4.0",
