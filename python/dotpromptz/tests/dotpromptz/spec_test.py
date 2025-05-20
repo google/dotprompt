@@ -299,7 +299,9 @@ class TestSpecFiles(unittest.IsolatedAsyncioTestCase):
 class YamlSpecTestBase(unittest.IsolatedAsyncioTestCase, Generic[ModelConfigT]):
     """A base class that is used as a template for all YAML spec test suites."""
 
-    async def run_yaml_test(self, yaml_file: Path, suite: SpecSuite[ModelConfigT], test_case: SpecTest[ModelConfigT]) -> None:
+    async def run_yaml_test(
+        self, yaml_file: Path, suite: SpecSuite[ModelConfigT], test_case: SpecTest[ModelConfigT]
+    ) -> None:
         """Runs a YAML test.
 
         Args:
