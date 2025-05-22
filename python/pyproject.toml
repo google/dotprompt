@@ -37,6 +37,7 @@ dev = [
   "tox-uv>=1.25.0",
   "nox>=2025.2.9",
   "nox-uv>=0.2.1",
+  "pyrefly>=0.16.1",
 ]
 lint = ["mypy>=1.14.1", "ruff>=0.9.2"]
 
@@ -152,3 +153,33 @@ disallow_incomplete_defs = true
 disallow_untyped_defs    = true
 strict                   = true
 warn_unused_configs      = true
+
+[tool.pyrefly]
+project_excludes = [
+  "**/.[!/.]*",     # Hidden files and folders.
+  "**/*venv/**",    # venv directories.
+  ".mypy_cache",
+  ".pytest_cache",
+  ".ruff_cache",
+  ".tox",
+  "__pypackages__",
+  "_build",
+  "build",
+  "dist",
+  "node_modules",
+]
+project_includes = ["dotpromptz", "handlebarrz", "tests"]
+python_version = "3.10" # Matches ruff.target-version
+search_path = ["."]
+
+# How to handle untyped function definitions.
+# "error": Emit an error (similar to mypy's disallow_untyped_defs = true).
+# "check": Type check the body as if it were annotated.
+# "skip": Skip checking the body (default).
+untyped_def_behavior = "error"
+
+# By default, all errors are enabled if the [tool.pyrefly.errors] table is empty or not present.
+# For maximum strictness similar to 'mypy --strict', we rely on this default behavior.
+# If specific errors need to be disabled later, they can be added here:
+# [tool.pyrefly.errors]
+# example-error-code = false
