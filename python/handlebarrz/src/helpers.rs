@@ -91,6 +91,19 @@ mod if_equals_tests {
     }
 
     #[test]
+    fn with_true_condition_renders_main_block_without_else_block() {
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("ifEquals", Box::new(IfEqualsHelper {}));
+
+        assert_eq!(
+            handlebars
+                .render_template("{{#ifEquals 1 1}}yes{{/ifEquals}}", &json!({}))
+                .unwrap(),
+            "yes"
+        );
+    }
+
+    #[test]
     fn with_false_condition_renders_else_block() {
         let mut handlebars = Handlebars::new();
         handlebars.register_helper("ifEquals", Box::new(IfEqualsHelper {}));
@@ -116,6 +129,7 @@ mod if_equals_tests {
         );
     }
 }
+
 /// Helper for comparing inequality between two values.
 ///
 /// Renders the template block if `arg1` is not equal to `arg2`.
@@ -191,6 +205,19 @@ mod unless_equals_tests {
     }
 
     #[test]
+    fn with_false_condition_renders_main_block_without_else_block() {
+        let mut handlebars = Handlebars::new();
+        handlebars.register_helper("unlessEquals", Box::new(UnlessEqualsHelper {}));
+
+        assert_eq!(
+            handlebars
+                .render_template("{{#unlessEquals 1 2}}yes{{/unlessEquals}}", &json!({}))
+                .unwrap(),
+            "yes"
+        );
+    }
+
+    #[test]
     fn with_true_condition_renders_else_block() {
         let mut handlebars = Handlebars::new();
         handlebars.register_helper("unlessEquals", Box::new(UnlessEqualsHelper {}));
@@ -219,6 +246,7 @@ mod unless_equals_tests {
         );
     }
 }
+
 /// Helper to serialize data to a JSON string.
 ///
 /// ## Usage
