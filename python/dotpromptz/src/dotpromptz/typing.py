@@ -441,7 +441,7 @@ class PendingMetadata(BaseModel):
         """
         instance = cls(pending=True)
         # Set purpose as an extra field
-        object.__setattr__(instance, 'purpose', purpose)
+        instance.__setattr__('purpose', purpose)
         return instance
 
 

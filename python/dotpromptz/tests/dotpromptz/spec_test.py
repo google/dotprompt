@@ -138,7 +138,7 @@ ALLOWLISTED_FILES = [
     'spec/helpers/role.yaml',
     'spec/helpers/unlessEquals.yaml',
     'spec/variables.yaml',
-    # 'spec/helpers/section.yaml',
+    'spec/helpers/section.yaml',
     # 'spec/metadata.yaml',
     # 'spec/partials.yaml',
     # 'spec/picoschema.yaml',
