@@ -241,10 +241,12 @@ class Template:
         """
         try:
             self._template.set_escape_fn(escape_fn)
-            logger.debug({
-                'event': 'escape_function_changed',
-                'function': escape_fn,
-            })
+            logger.debug(
+                {
+                    'event': 'escape_function_changed',
+                    'function': escape_fn,
+                }
+            )
         except ValueError as e:
             logger.exception({'event': 'escape_function_error', 'error': str(e)})
             raise
@@ -267,11 +269,13 @@ class Template:
             self._template.register_template(name, template_string)
             logger.debug({'event': 'template_registered', 'name': name})
         except ValueError as e:
-            logger.exception({
-                'event': 'template_registration_error',
-                'name': name,
-                'error': str(e),
-            })
+            logger.exception(
+                {
+                    'event': 'template_registration_error',
+                    'name': name,
+                    'error': str(e),
+                }
+            )
             raise
 
     def register_partial(self, name: str, template_string: str) -> None:
@@ -293,11 +297,13 @@ class Template:
             self._known_partials.add(name)
             logger.debug({'event': 'partial_registered', 'name': name})
         except Exception as e:
-            logger.exception({
-                'event': 'partial_registration_error',
-                'name': name,
-                'error': str(e),
-            })
+            logger.exception(
+                {
+                    'event': 'partial_registration_error',
+                    'name': name,
+                    'error': str(e),
+                }
+            )
             raise
 
     def has_partial(self, name: str) -> bool:
@@ -329,18 +335,22 @@ class Template:
         file_path_str = str(file_path)
         try:
             self._template.register_template_file(name, file_path_str)
-            logger.debug({
-                'event': 'template_file_registered',
-                'name': name,
-                'path': file_path_str,
-            })
+            logger.debug(
+                {
+                    'event': 'template_file_registered',
+                    'name': name,
+                    'path': file_path_str,
+                }
+            )
         except (FileNotFoundError, ValueError) as e:
-            logger.exception({
-                'event': 'template_file_registration_error',
-                'name': name,
-                'path': file_path_str,
-                'error': str(e),
-            })
+            logger.exception(
+                {
+                    'event': 'template_file_registration_error',
+                    'name': name,
+                    'path': file_path_str,
+                    'error': str(e),
+                }
+            )
             raise
 
     def register_templates_directory(self, dir_path: str | Path, extension: str = '.hbs') -> None:
@@ -361,18 +371,22 @@ class Template:
         dir_path_str = str(dir_path)
         try:
             self._template.register_templates_directory(dir_path_str, extension)
-            logger.debug({
-                'event': 'templates_directory_registered',
-                'path': dir_path_str,
-                'extension': extension,
-            })
+            logger.debug(
+                {
+                    'event': 'templates_directory_registered',
+                    'path': dir_path_str,
+                    'extension': extension,
+                }
+            )
         except (FileNotFoundError, ValueError) as e:
-            logger.exception({
-                'event': 'templates_directory_registration_error',
-                'path': dir_path_str,
-                'extension': extension,
-                'error': str(e),
-            })
+            logger.exception(
+                {
+                    'event': 'templates_directory_registration_error',
+                    'path': dir_path_str,
+                    'extension': extension,
+                    'error': str(e),
+                }
+            )
             raise
 
     def register_helper(
@@ -417,11 +431,13 @@ class Template:
             self._template.register_helper(name, create_helper(helper_fn))  # type: ignore[arg-type]
             # logger.debug({'event': 'helper_registered', 'name': name})
         except Exception as e:
-            logger.exception({
-                'event': 'helper_registration_error',
-                'name': name,
-                'error': str(e),
-            })
+            logger.exception(
+                {
+                    'event': 'helper_registration_error',
+                    'name': name,
+                    'error': str(e),
+                }
+            )
             raise
 
     def has_template(self, name: str) -> bool:
@@ -472,11 +488,13 @@ class Template:
             logger.debug({'event': 'template_rendered', 'name': name})
             return result
         except ValueError as e:
-            logger.exception({
-                'event': 'template_rendering_error',
-                'name': name,
-                'error': str(e),
-            })
+            logger.exception(
+                {
+                    'event': 'template_rendering_error',
+                    'name': name,
+                    'error': str(e),
+                }
+            )
             raise
 
     def render_template(self, template_string: str, data: dict[str, Any], options: RuntimeOptions | None = None) -> str:
@@ -510,10 +528,12 @@ class Template:
             logger.debug({'event': 'template_string_rendered'})
             return result
         except ValueError as e:
-            logger.exception({
-                'event': 'template_string_rendering_error',
-                'error': str(e),
-            })
+            logger.exception(
+                {
+                    'event': 'template_string_rendering_error',
+                    'error': str(e),
+                }
+            )
             raise
 
     def compile(self, template_string: str) -> CompiledRenderer:
@@ -570,10 +590,12 @@ class Template:
             self._template.register_extra_helpers()
             logger.debug({'event': 'extra_helpers_registered'})
         except Exception as e:
-            logger.exception({
-                'event': 'extra_helpers_registration_error',
-                'error': str(e),
-            })
+            logger.exception(
+                {
+                    'event': 'extra_helpers_registration_error',
+                    'error': str(e),
+                }
+            )
             raise
 
 
@@ -584,18 +606,18 @@ class Helper:
         self._helper: HandlebarrzHelper = helper
 
     def context(self) -> dict[str, Any]:
-        context_json =  self._helper.context_json()
+        context_json = self._helper.context_json()
         return json.loads(context_json) or {}
 
     def hash_value(self, key: str) -> Any:
-        hash_value_json =  self._helper.hash_value_json(key)
+        hash_value_json = self._helper.hash_value_json(key)
         return json.loads(hash_value_json) if hash_value_json else ''
 
     def fn(self) -> str:
-        return  self._helper.template()
+        return self._helper.template()
 
     def inverse(self) -> str:
-        return  self._helper.inverse()
+        return self._helper.inverse()
 
 
 def create_helper(
