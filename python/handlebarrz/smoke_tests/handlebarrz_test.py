@@ -18,10 +18,10 @@
 
 from typing import Any
 
-from handlebarrz import Helper, Template
+from handlebarrz import HelperOptions, Template
 
 
-def loud_helper(params: list[str], helper: Helper) -> str:
+def loud_helper(params: list[str], options: HelperOptions) -> str:
     """Test helper."""
     # Get the first parameter or use an empty string
     text = params[0] if params else ''

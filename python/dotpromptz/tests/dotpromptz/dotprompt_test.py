@@ -40,7 +40,7 @@ import pytest
 
 from dotpromptz.dotprompt import Dotprompt, _identify_partials
 from dotpromptz.typing import ModelConfigT, ParsedPrompt, PromptMetadata, ToolDefinition
-from handlebarrz import Helper, HelperFn
+from handlebarrz import HelperFn, HelperOptions
 
 
 @pytest.fixture
@@ -79,7 +79,8 @@ def test_init_default(mock_handlebars: Mock) -> None:
 def test_init_with_options(mock_handlebars: Mock) -> None:
     """Test initializing Dotprompt with custom options."""
 
-    def helper_fn(params: list[Any], helper: Helper) -> str:
+    def helper_fn(params: list[Any], options: HelperOptions) -> str:
+        """Test helper."""
         return 'test_helper'
 
     helpers: dict[str, HelperFn] = {'helper1': helper_fn}
@@ -98,7 +99,8 @@ def test_define_helper(mock_handlebars: Mock) -> None:
     """Test defining a helper function."""
 
     # This should match the signature of HelperFn.
-    def helper_fn(params: list[Any], helper: Helper) -> str:
+    def helper_fn(params: list[Any], options: HelperOptions) -> str:
+        """Test helper."""
         return 'test_helper'
 
     dotprompt = Dotprompt()
@@ -168,7 +170,8 @@ def test_chainable_interface(mock_handlebars: Mock) -> None:
         inputSchema={'type': 'object'},
     )
 
-    def helper_fn(params: list[Any], helper: Helper) -> str:
+    def helper_fn(params: list[Any], options: HelperOptions) -> str:
+        """Test helper."""
         return 'helper1'
 
     result = dotprompt.define_helper('helper1', helper_fn).define_partial('partial1', 'content').define_tool(tool_def)

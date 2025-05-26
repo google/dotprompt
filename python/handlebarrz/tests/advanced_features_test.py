@@ -19,7 +19,7 @@
 import unittest
 from typing import Any
 
-from handlebarrz import Helper, Template
+from handlebarrz import HelperOptions, Template
 
 
 class TestAdvancedFeatures(unittest.TestCase):
@@ -27,9 +27,8 @@ class TestAdvancedFeatures(unittest.TestCase):
         """Test a simple custom helper function."""
         template = Template()
 
-        # Register a simple helper.
-        def loud_helper(params: list[str], helper: Helper) -> str:
-            # Get the first parameter or use an empty string
+        def loud_helper(params: list[str], options: HelperOptions) -> str:
+            """Test helper."""
             text = params[0] if params else ''
             return text.upper()
 
@@ -46,14 +45,14 @@ class TestAdvancedFeatures(unittest.TestCase):
         """Test a helper that uses hash arguments."""
         template = Template()
 
-        # Register a helper that uses hash arguments.
-        def format_helper(params: list[str], helper: Helper) -> str:
+        def format_helper(params: list[str], options: HelperOptions) -> str:
+            """Test helper that uses hash arguments."""
             # First parameter is the text.
             text = params[0] if params else ''
 
             # Get formatting options from hash arguments.
-            bold = helper.hash_value('bold') or False
-            italic = helper.hash_value('italic') or False
+            bold = options.hash_value('bold') or False
+            italic = options.hash_value('italic') or False
 
             # Apply formatting.
             if bold:
@@ -82,10 +81,10 @@ class TestAdvancedFeatures(unittest.TestCase):
         """Test a helper that uses the context."""
         template = Template()
 
-        # Register a helper that uses the context.
-        def greeting_helper(params: list[str], helper: Helper) -> str:
+        def greeting_helper(params: list[str], options: HelperOptions) -> str:
+            """Test helper that uses the context."""
             # Get the name from the context.
-            context = helper.context()
+            context = options.context()
             name = context.get('name', '')
             time_of_day = context.get('time_of_day', '')
 
@@ -136,17 +135,17 @@ class TestAdvancedFeatures(unittest.TestCase):
         """Test a helper that accesses nested properties."""
         template = Template()
 
-        # Register a helper that formats a user's name.
-        def format_name_helper(params: list[str], helper: Helper) -> str:
+        def format_name_helper(params: list[str], options: HelperOptions) -> str:
+            """Test helper that formats user's name."""
             # Access nested user object from the context.
-            user = helper.context().get('user', {})
+            user = options.context().get('user', {})
 
             # Get first and last name.
             first_name: str = user.get('firstName', '')
             last_name: str = user.get('lastName', '')
 
             # Format based on hash arguments.
-            format_type: str | None = helper.hash_value('format')
+            format_type: str | None = options.hash_value('format')
 
             if format_type == 'full':
                 return f'{first_name} {last_name}'
@@ -184,8 +183,8 @@ class TestAdvancedFeatures(unittest.TestCase):
         """Test a helper that uses the 'this' context in Handlebars."""
         template = Template()
 
-        # Register a helper that capitalizes all properties.
-        def capitalize_helper(params: list[str], helper: Helper) -> str:
+        def capitalize_helper(params: list[str], options: HelperOptions) -> str:
+            """Test helper that capitalizes all properties."""
             if not params:
                 return ''
 
@@ -193,7 +192,7 @@ class TestAdvancedFeatures(unittest.TestCase):
             prop = params[0]
 
             # Get the value from the context.
-            value = helper.context().get(prop, '')
+            value = options.context().get(prop, '')
 
             # Capitalize and return.
             return value.upper() if isinstance(value, str) else str(value)
@@ -211,8 +210,8 @@ class TestAdvancedFeatures(unittest.TestCase):
         """Test conditional rendering with helpers."""
         template = Template()
 
-        # Register a helper that renders content conditionally.
-        def if_equal_helper(params: list[str], helper: Helper) -> str:
+        def if_equal_helper(params: list[str], options: HelperOptions) -> str:
+            """Test helper that renders content conditionally."""
             if len(params) < 2:
                 return ''
 
@@ -242,10 +241,10 @@ class TestAdvancedFeatures(unittest.TestCase):
         """Test a complex helper that processes arrays."""
         template = Template()
 
-        # Register a helper that processes arrays.
-        def list_helper(params: list[str], helper: Helper) -> str:
+        def list_helper(params: list[str], options: HelperOptions) -> str:
+            """Test helper that processes arrays."""
             # Get the array from the context.
-            items = helper.context().get('items', [])
+            items = options.context().get('items', [])
 
             # Create an HTML list.
             result = '<ul>'
@@ -309,9 +308,9 @@ class TestAdvancedFeatures(unittest.TestCase):
         """Test a helper that returns HTML content."""
         template = Template()
 
-        # Register a helper that returns HTML
-        def html_helper(params: list[str], helper: Helper) -> str:
-            tag = helper.hash_value('tag') or 'div'
+        def html_helper(params: list[str], options: HelperOptions) -> str:
+            """Test helper that returns HTML."""
+            tag = options.hash_value('tag') or 'div'
             content = params[0] if params else ''
 
             return f'<{tag}>{content}</{tag}>'
@@ -329,13 +328,13 @@ class TestAdvancedFeatures(unittest.TestCase):
         """Test a helper that formats numbers."""
         template = Template()
 
-        # Register a helper that formats numbers
-        def number_helper(params: list[str], helper: Helper) -> str:
+        def number_helper(params: list[str], options: HelperOptions) -> str:
+            """Test helper that formats numbers."""
             if not params:
                 return ''
 
             value = params[0]
-            format_type = helper.hash_value('format') or 'decimal'
+            format_type = options.hash_value('format') or 'decimal'
 
             if format_type == 'currency':
                 return f'${value:.2f}'

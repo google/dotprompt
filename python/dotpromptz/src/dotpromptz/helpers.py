@@ -39,15 +39,15 @@
 import json
 from typing import Any
 
-from handlebarrz import Handlebars, Helper, HelperFn
+from handlebarrz import Handlebars, HelperFn, HelperOptions
 
 
-def json_helper(params: list[Any], helper: Helper) -> str:
+def json_helper(params: list[Any], options: HelperOptions) -> str:
     """Convert a value to a JSON string.
 
     Args:
         params: List of values to convert to JSON
-        helper: Handlebars helper.
+        options: Handlebars helper options.
 
     Returns:
         JSON string representation of the value.
@@ -56,7 +56,7 @@ def json_helper(params: list[Any], helper: Helper) -> str:
         return ''
 
     obj = params[0]
-    indent = helper.hash_value('indent') or 0
+    indent = options.hash_value('indent') or 0
     try:
         if isinstance(indent, str):
             indent = int(indent)
@@ -71,7 +71,7 @@ def json_helper(params: list[Any], helper: Helper) -> str:
         return '{}'
 
 
-def role_helper(params: list[Any], helper: Helper) -> str:
+def role_helper(params: list[Any], options: HelperOptions) -> str:
     """Create a dotprompt role marker.
 
     Example:
@@ -81,7 +81,7 @@ def role_helper(params: list[Any], helper: Helper) -> str:
 
     Args:
         params: List of values.
-        helper: Handlebars helper.
+        options: Handlebars helper options.
 
     Returns:
         Role marker of the form `<<<dotprompt:role:...>>>`.
@@ -93,7 +93,7 @@ def role_helper(params: list[Any], helper: Helper) -> str:
     return f'<<<dotprompt:role:{role_name}>>>'
 
 
-def history_helper(params: list[Any], helper: Helper) -> str:
+def history_helper(params: list[Any], options: HelperOptions) -> str:
     """Create a dotprompt history marker.
 
     Example:
@@ -103,7 +103,7 @@ def history_helper(params: list[Any], helper: Helper) -> str:
 
     Args:
         params: List of values.
-        helper: Handlebars helper.
+        options: Handlebars helper options.
 
     Returns:
         History marker of the form `<<<dotprompt:history>>>`.
@@ -111,7 +111,7 @@ def history_helper(params: list[Any], helper: Helper) -> str:
     return '<<<dotprompt:history>>>'
 
 
-def section_helper(params: list[Any], helper: Helper) -> str:
+def section_helper(params: list[Any], options: HelperOptions) -> str:
     """Create a dotprompt section marker.
 
     Example:
@@ -121,7 +121,7 @@ def section_helper(params: list[Any], helper: Helper) -> str:
 
     Args:
         params: List of values.
-        helper: Handlebars helper.
+        options: Handlebars helper options.
 
     Returns:
         Section marker of the form `<<<dotprompt:section ...>>>`.
@@ -133,7 +133,7 @@ def section_helper(params: list[Any], helper: Helper) -> str:
     return f'<<<dotprompt:section {section_name}>>>'
 
 
-def media_helper(params: list[Any], helper: Helper) -> str:
+def media_helper(params: list[Any], options: HelperOptions) -> str:
     """Create a dotprompt media marker.
 
     Example:
@@ -143,23 +143,23 @@ def media_helper(params: list[Any], helper: Helper) -> str:
 
     Args:
         params: List of values.
-        helper: Handlebars helper.
+        options: Handlebars helper options.
 
     Returns:
         Media marker of the form `<<<dotprompt:media:url ...>>>`).
     """
-    url = helper.hash_value('url')
+    url = options.hash_value('url')
     if not url:
         return ''
 
-    content_type = helper.hash_value('contentType')
+    content_type = options.hash_value('contentType')
     if content_type:
         return f'<<<dotprompt:media:url {url} {content_type}>>>'
     else:
         return f'<<<dotprompt:media:url {url}>>>'
 
 
-def if_equals_helper(params: list[Any], helper: Helper) -> str:
+def if_equals_helper(params: list[Any], options: HelperOptions) -> str:
     """Compares two values and returns appropriate content.
 
     Example:
@@ -172,7 +172,7 @@ def if_equals_helper(params: list[Any], helper: Helper) -> str:
         ```
     Args:
         params: List containing the two values to compare.
-        helper: Handlebars helper.
+        options: Handlebars helper options.
 
     Returns:
         Rendered content based on equality check.
@@ -181,10 +181,10 @@ def if_equals_helper(params: list[Any], helper: Helper) -> str:
         return ''
 
     a, b = params[0], params[1]
-    return helper.fn() if a == b else helper.inverse()
+    return options.fn() if a == b else options.inverse()
 
 
-def unless_equals_helper(params: list[Any], helper: Helper) -> str:
+def unless_equals_helper(params: list[Any], options: HelperOptions) -> str:
     """Compares two values and returns appropriate content.
 
     Example:
@@ -197,7 +197,7 @@ def unless_equals_helper(params: list[Any], helper: Helper) -> str:
         ```
     Args:
         params: List containing the two values to compare.
-        helper: Handlebars helper.
+        options: Handlebars helper options.
 
     Returns:
         Rendered content based on inequality check.
@@ -206,7 +206,7 @@ def unless_equals_helper(params: list[Any], helper: Helper) -> str:
         return ''
 
     a, b = params[0], params[1]
-    return helper.fn() if a != b else helper.inverse()
+    return options.fn() if a != b else options.inverse()
 
 
 BUILTIN_HELPERS: dict[str, HelperFn] = {
