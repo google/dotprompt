@@ -116,8 +116,8 @@ impl HandlebarrzHelper {
     #[pyo3(text_signature = "($self)")]
     pub fn context_json(&self) -> PyResult<String> {
         let ctx = unsafe { &*self.ctx_ptr };
-        return serde_json::to_string(ctx.data())
-            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()));
+        serde_json::to_string(ctx.data())
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
     }
 
     // Returns hash JSON value for a given key (resolved within the context).
@@ -126,10 +126,10 @@ impl HandlebarrzHelper {
         let helper = unsafe { &*self.helper_ptr };
         if let Some(path_and_json) = helper.hash_get(key) {
             let value = path_and_json.value();
-            return serde_json::to_string(value)
-                .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()));
+            serde_json::to_string(value)
+                .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
         } else {
-            return Ok(String::new());
+            Ok(String::new())
         }
     }
 
@@ -195,10 +195,10 @@ impl HelperDef for PyHelperDef {
 
             // Call Python function.
             let py_helper = HandlebarrzHelper {
-                helper_ptr: h as *const _ as *const Helper<'static>,
-                reg_ptr: reg as *const _ as *const Handlebars<'static>,
+                helper_ptr: h as *const _ as *const _,
+                reg_ptr: reg as *const _ as *const _,
                 ctx_ptr: ctx as *const _,
-                rc_ptr: rc as *mut _ as *mut RenderContext<'static, 'static>,
+                rc_ptr: rc as *mut _ as *mut _,
             };
             let py_helper_obj = Py::new(py, py_helper).map_err(|e| {
                 RenderError::from(RenderErrorReason::Other(format!(
