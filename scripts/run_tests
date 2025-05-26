@@ -24,7 +24,7 @@ fi
 
 TOP_DIR=$(git rev-parse --show-toplevel)
 
-"${TOP_DIR}/scripts/run_go_tests"
+"${TOP_DIR}/scripts/run_go_checks"
 if [ $? -ne 0 ]; then
   echo "Go tests failed."
   exit 1
@@ -36,19 +36,19 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-"${TOP_DIR}/scripts/run_handlebarrz_tests"
+"${TOP_DIR}/scripts/run_handlebarrz_checks"
 if [ $? -ne 0 ]; then
   echo "Handlebarrz tests failed."
   exit 1
 fi
 
-"${TOP_DIR}/scripts/run_python_tests"
+"${TOP_DIR}/scripts/run_python_checks"
 if [ $? -ne 0 ]; then
   echo "Python tests failed."
   exit 1
 fi
 
-"${TOP_DIR}/scripts/run_js_tests"
+"${TOP_DIR}/scripts/run_js_checks"
 if [ $? -ne 0 ]; then
   echo "JavaScript tests failed."
   exit 1
