@@ -39,16 +39,15 @@
 import json
 from typing import Any
 
-from handlebarrz import Handlebars, HelperFn
+from handlebarrz import Handlebars, Helper, HelperFn
 
 
-def json_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
+def json_helper(params: list[Any], helper: Helper) -> str:
     """Convert a value to a JSON string.
 
     Args:
         params: List of values to convert to JSON
-        hash_args: Hash arguments including formatting options.
-        ctx: Current context options.
+        helper: Handlebars helper.
 
     Returns:
         JSON string representation of the value.
@@ -57,8 +56,7 @@ def json_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any
         return ''
 
     obj = params[0]
-    indent = hash_args.get('indent', 0)
-
+    indent = helper.hash_get('indent') or 0
     try:
         if isinstance(indent, str):
             indent = int(indent)
@@ -66,12 +64,14 @@ def json_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any
         indent = 0
 
     try:
+        if indent == 0:
+            return json.dumps(obj, separators=(',', ':'))
         return json.dumps(obj, indent=indent)
     except (TypeError, ValueError):
         return '{}'
 
 
-def role_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
+def role_helper(params: list[Any], helper: Helper) -> str:
     """Create a dotprompt role marker.
 
     Example:
@@ -81,8 +81,7 @@ def role_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any
 
     Args:
         params: List of values.
-        hash_args: Hash arguments.
-        ctx: Current context options.
+        helper: Handlebars helper.
 
     Returns:
         Role marker of the form `<<<dotprompt:role:...>>>`.
@@ -94,7 +93,7 @@ def role_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any
     return f'<<<dotprompt:role:{role_name}>>>'
 
 
-def history_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
+def history_helper(params: list[Any], helper: Helper) -> str:
     """Create a dotprompt history marker.
 
     Example:
@@ -104,8 +103,7 @@ def history_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, 
 
     Args:
         params: List of values.
-        hash_args: Hash arguments including formatting options.
-        ctx: Current context options.
+        helper: Handlebars helper.
 
     Returns:
         History marker of the form `<<<dotprompt:history>>>`.
@@ -113,7 +111,7 @@ def history_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, 
     return '<<<dotprompt:history>>>'
 
 
-def section_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
+def section_helper(params: list[Any], helper: Helper) -> str:
     """Create a dotprompt section marker.
 
     Example:
@@ -123,8 +121,7 @@ def section_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, 
 
     Args:
         params: List of values.
-        hash_args: Hash arguments including formatting options.
-        ctx: Current context options.
+        helper: Handlebars helper.
 
     Returns:
         Section marker of the form `<<<dotprompt:section ...>>>`.
@@ -136,7 +133,7 @@ def section_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, 
     return f'<<<dotprompt:section {section_name}>>>'
 
 
-def media_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
+def media_helper(params: list[Any], helper: Helper) -> str:
     """Create a dotprompt media marker.
 
     Example:
@@ -146,24 +143,23 @@ def media_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, An
 
     Args:
         params: List of values.
-        hash_args: Hash arguments including formatting options.
-        ctx: Current context options.
+        helper: Handlebars helper.
 
     Returns:
         Media marker of the form `<<<dotprompt:media:url ...>>>`).
     """
-    url = hash_args.get('url', '')
+    url = helper.hash_get('url')
     if not url:
         return ''
 
-    content_type = hash_args.get('contentType', '')
+    content_type = helper.hash_get('contentType')
     if content_type:
         return f'<<<dotprompt:media:url {url} {content_type}>>>'
     else:
         return f'<<<dotprompt:media:url {url}>>>'
 
 
-def if_equals_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
+def if_equals_helper(params: list[Any], helper: Helper) -> str:
     """Compares two values and returns appropriate content.
 
     Example:
@@ -176,8 +172,7 @@ def if_equals_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str
         ```
     Args:
         params: List containing the two values to compare.
-        hash_args: Hash arguments.
-        ctx: Current context options.
+        helper: Handlebars helper.
 
     Returns:
         Rendered content based on equality check.
@@ -186,17 +181,10 @@ def if_equals_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str
         return ''
 
     a, b = params[0], params[1]
-    fn = ctx.get('fn')
-    if a == b and fn is not None:
-        return str(fn(ctx))
-    else:
-        inverse = ctx.get('inverse')
-        if inverse is not None:
-            return str(inverse(ctx))
-    return ''
+    return helper.fn() if a == b else helper.inverse()
 
 
-def unless_equals_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict[str, Any]) -> str:
+def unless_equals_helper(params: list[Any], helper: Helper) -> str:
     """Compares two values and returns appropriate content.
 
     Example:
@@ -209,8 +197,7 @@ def unless_equals_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict
         ```
     Args:
         params: List containing the two values to compare.
-        hash_args: Hash arguments.
-        ctx: Current context options.
+        helper: Handlebars helper.
 
     Returns:
         Rendered content based on inequality check.
@@ -219,14 +206,7 @@ def unless_equals_helper(params: list[Any], hash_args: dict[str, Any], ctx: dict
         return ''
 
     a, b = params[0], params[1]
-    fn = ctx.get('fn')
-    if a != b and fn is not None:
-        return str(fn(ctx))
-    else:
-        inverse = ctx.get('inverse')
-        if inverse is not None:
-            return str(inverse(ctx))
-    return ''
+    return helper.fn() if a != b else helper.inverse()
 
 
 BUILTIN_HELPERS: dict[str, HelperFn] = {

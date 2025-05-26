@@ -83,6 +83,7 @@ else:  # noqa
     from enum import StrEnum  # noqa
 
 from ._native import (
+    HandlebarrzHelper,
     HandlebarrzTemplate,
     html_escape,
     no_escape,
@@ -91,7 +92,7 @@ from ._native import (
 logger = structlog.get_logger(__name__)
 
 
-HelperFn = Callable[[list[Any], dict[str, Any], dict[str, Any]], str]
+HelperFn = Callable[[list[Any], Any], str]
 NativeHelperFn = Callable[[str, str, str], str]
 Context = dict[str, Any]
 
@@ -576,6 +577,23 @@ class Template:
             raise
 
 
+class Helper:
+    """Handlebars render context helper wrapper."""
+
+    def __init__(self, helper: Han) -> None:
+        self.helper = helper
+
+    def hash_get(self, key: str) -> Any:
+        hash_json = self.helper.hash(key)
+        return json.loads(hash_json) if hash_json else ''
+
+    def fn(self) -> str:
+        return self.helper.template()
+
+    def inverse(self) -> str:
+        return self.helper.inverse()
+
+
 def create_helper(
     fn: HelperFn,
 ) -> NativeHelperFn:
@@ -600,12 +618,9 @@ def create_helper(
         Function compatible with the Rust interface.
     """
 
-    def wrapper(params_json: str, hash_json: str, ctx_json: str) -> str:
+    def wrapper(params_json: str, helper: PyHelper) -> str:
         params = json.loads(params_json)
-        hash = json.loads(hash_json)
-        ctx = json.loads(ctx_json)
-
-        result = fn(params, hash, ctx)
+        result = fn(params, Helper(helper))
         return result
 
     return wrapper

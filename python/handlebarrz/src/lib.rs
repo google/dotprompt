@@ -15,7 +15,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use handlebars::{
-    Context, Handlebars, Helper, HelperDef, Output, RenderContext, RenderError, RenderErrorReason,
+    Context, Handlebars, Helper, HelperDef, Output, Renderable, RenderContext, RenderError, RenderErrorReason,
 };
 use pyo3::exceptions::{PyFileNotFoundError, PyValueError};
 use pyo3::prelude::*;
@@ -37,6 +37,7 @@ mod helpers;
 /// - Template and helper function registration.
 #[pymodule]
 fn _native(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<HandlebarrzHelper>()?;
     m.add_class::<HandlebarrzTemplate>()?;
     m.add_function(wrap_pyfunction!(html_escape, py)?)?;
     m.add_function(wrap_pyfunction!(no_escape, py)?)?;
@@ -88,6 +89,76 @@ fn no_escape(text: &str) -> String {
     handlebars::no_escape(text)
 }
 
+// Handlebars render context helper Python wrapper.
+// WARNING: only intended to be used within the Python::with_gil(...) scope and not stored across threads.
+#[pyclass(unsendable)]
+pub struct HandlebarrzHelper {
+    helper_ptr: *const Helper<'static>,
+    reg_ptr: *const Handlebars<'static>,
+    ctx_ptr: *const Context,
+    rc_ptr: *mut RenderContext<'static, 'static>,
+}
+
+#[pymethods]
+impl HandlebarrzHelper {
+    #[new]
+    fn new() -> Self {
+        Self {
+            helper_ptr: std::ptr::null(),
+            reg_ptr: std::ptr::null(),
+            ctx_ptr: std::ptr::null(),
+            rc_ptr: std::ptr::null_mut(),
+        }
+    }
+
+    // Return hash value of a given key, resolved within the context
+    #[pyo3(text_signature = "($self, key)")]
+    pub fn hash(&self, key: &str) -> PyResult<String> {
+        let helper = unsafe { &*self.helper_ptr };
+        if let Some(path_and_json) = helper.hash_get(key) {
+            let value = path_and_json.value();
+            return serde_json::to_string(value)
+                .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
+        } else {
+            return Ok(String::new())
+        }
+    }
+
+    // Renders into a string and returns the default inner template (if the helper is a block helper).
+    #[pyo3(text_signature = "($self)")]
+    pub fn template(&self) -> PyResult<String> {
+        let helper = unsafe { &*self.helper_ptr };
+        let reg = unsafe { &*self.reg_ptr };
+        let ctx = unsafe { &*self.ctx_ptr };
+        let rc = unsafe { &mut *self.rc_ptr };
+
+        if let Some(template) = helper.template() {
+            template
+                .renders(reg, ctx, rc)
+                .map_err(|e| PyValueError::new_err(e.to_string()))
+        } else {
+            Ok(String::new())
+        }
+    }
+
+    // Renders into a string and returns the template of else branch (if any).
+    #[pyo3(text_signature = "($self)")]
+    pub fn inverse(&self) -> PyResult<String> {
+        let helper = unsafe { &*self.helper_ptr };
+        let reg = unsafe { &*self.reg_ptr };
+        let ctx = unsafe { &*self.ctx_ptr };
+        let rc = unsafe { &mut *self.rc_ptr };
+
+        if let Some(template) = helper.inverse() {
+            template
+                .renders(reg, ctx, rc)
+                .map_err(|e| PyValueError::new_err(e.to_string()))
+        } else {
+            Ok(String::new())
+        }
+    }
+}
+
 /// Callable helper.
 struct PyHelperDef {
     func: PyObject,
@@ -97,9 +168,9 @@ impl HelperDef for PyHelperDef {
     fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'rc>,
-        _reg: &'reg Handlebars<'reg>,
+        reg: &'reg Handlebars<'reg>,
         ctx: &'rc Context,
-        _rc: &mut RenderContext<'reg, 'rc>,
+        rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> Result<(), RenderError> {
         Python::with_gil(|py| {
@@ -113,31 +184,17 @@ impl HelperDef for PyHelperDef {
                 }
             };
 
-            // Get hash.
-            let hash = h.hash();
-            let mut hash_map = HashMap::new();
-            for (k, v) in hash.iter() {
-                hash_map.insert(k.to_string(), v.value().clone());
-            }
-            let hash_json = match serde_json::to_string(&hash_map) {
-                Ok(json) => json,
-                Err(e) => {
-                    let desc = format!("Failed to serialize hash: {}", e);
-                    return Err(RenderError::from(RenderErrorReason::Other(desc)));
-                }
-            };
-
-            // Convert context to JSON.
-            let ctx_json = match serde_json::to_string(ctx.data()) {
-                Ok(json) => json,
-                Err(e) => {
-                    let desc = format!("Failed to serialize context: {}", e);
-                    return Err(RenderError::from(RenderErrorReason::Other(desc)));
-                }
-            };
-
             // Call Python function.
-            let result = self.func.call1(py, (params_json, hash_json, ctx_json));
+            let py_helper = HandlebarrzHelper {
+                helper_ptr: h as *const _ as *const Helper<'static>,
+                reg_ptr: reg as *const _ as *const Handlebars<'static>,
+                ctx_ptr: ctx as *const _,
+                rc_ptr: rc as *mut _ as *mut RenderContext<'static, 'static>,
+            };
+            let py_helper_obj = Py::new(py, py_helper)
+                .map_err(|e| RenderError::from(RenderErrorReason::Other(format!("Failed to create HandlebarrzHelper: {}", e))))?;
+
+            let result = self.func.call1(py, (params_json, py_helper_obj));
 
             match result {
                 Ok(result) => {
