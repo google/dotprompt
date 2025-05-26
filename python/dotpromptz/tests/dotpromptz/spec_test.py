@@ -137,11 +137,11 @@ ALLOWLISTED_FILES = [
     'spec/helpers/media.yaml',
     'spec/helpers/role.yaml',
     'spec/helpers/unlessEquals.yaml',
+    'spec/variables.yaml',
     # 'spec/helpers/section.yaml',
     # 'spec/metadata.yaml',
     # 'spec/partials.yaml',
     # 'spec/picoschema.yaml',
-    # 'spec/variables.yaml',
 ]
 
 # Counters for test class and test method names.
@@ -319,9 +319,6 @@ class YamlSpecTestBase(unittest.IsolatedAsyncioTestCase, Generic[ModelConfigT]):
         data = self._merge_data(suite.data or DataArgument[Any](), test_case.data or DataArgument[Any]())
         result = await dotprompt.render(suite.template, data, test_case.options)
         pruned_res: Expect = Expect(**result.model_dump())
-
-        print('R: ', pruned_res)
-        print('E: ', test_case.expect)
         self.assertEqual(pruned_res, test_case.expect)
 
     def _merge_data(self, data1: DataArgument[Any], data2: DataArgument[Any]) -> DataArgument[Any]:
