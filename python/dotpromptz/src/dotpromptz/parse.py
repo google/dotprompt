@@ -321,16 +321,14 @@ def to_messages(
                 msgs = data.messages
             history_messages = transform_messages_to_history(msgs)
             if history_messages:
-                message_sources.extend(
-                    [
-                        MessageSource(
-                            role=msg.role,
-                            content=msg.content,
-                            metadata=msg.metadata,
-                        )
-                        for msg in history_messages
-                    ]
-                )
+                message_sources.extend([
+                    MessageSource(
+                        role=msg.role,
+                        content=msg.content,
+                        metadata=msg.metadata,
+                    )
+                    for msg in history_messages
+                ])
 
             # Add a new message source for the model
             current_message = MessageSource(role=Role.MODEL, source='')
