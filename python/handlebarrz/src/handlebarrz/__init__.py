@@ -581,21 +581,21 @@ class Helper:
     """Handlebars render context helper wrapper."""
 
     def __init__(self, helper: HandlebarrzHelper) -> None:
-        self.helper = helper
+        self._helper: HandlebarrzHelper = helper
 
     def context(self) -> dict[str, Any]:
-        context_json = self.helper.context_json()
+        context_json =  self._helper.context_json()
         return json.loads(context_json) or {}
 
     def hash_value(self, key: str) -> Any:
-        hash_value_json = self.helper.hash_value_json(key)
+        hash_value_json =  self._helper.hash_value_json(key)
         return json.loads(hash_value_json) if hash_value_json else ''
 
     def fn(self) -> str:
-        return self.helper.template()
+        return  self._helper.template()
 
     def inverse(self) -> str:
-        return self.helper.inverse()
+        return  self._helper.inverse()
 
 
 def create_helper(
