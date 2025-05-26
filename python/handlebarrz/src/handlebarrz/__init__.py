@@ -83,7 +83,7 @@ else:  # noqa
     from enum import StrEnum  # noqa
 
 from ._native import (
-    HandlebarrzHelper,
+    HandlebarrzHelperOptions,
     HandlebarrzTemplate,
     html_escape,
     no_escape,
@@ -92,8 +92,8 @@ from ._native import (
 logger = structlog.get_logger(__name__)
 
 
-HelperFn = Callable[[list[Any], Any], str]
-NativeHelperFn = Callable[[str, HandlebarrzHelper], str]
+HelperFn = Callable[[list[Any], 'HelperOptions'], str]
+NativeHelperFn = Callable[[str, HandlebarrzHelperOptions], str]
 Context = dict[str, Any]
 
 
@@ -577,25 +577,36 @@ class Template:
             raise
 
 
-class Helper:
-    """Handlebars render context helper wrapper."""
+class HelperOptions:
+    """Handlebars helper options."""
 
-    def __init__(self, helper: HandlebarrzHelper) -> None:
-        self._helper: HandlebarrzHelper = helper
+    def __init__(self, options: HandlebarrzHelperOptions) -> None:
+        self._options: HandlebarrzHelperOptions = options
 
     def context(self) -> dict[str, Any]:
-        context_json = self._helper.context_json()
+        """Get a representation of a context."""
+        context_json = self._options.context_json()
         return json.loads(context_json) or {}
 
     def hash_value(self, key: str) -> Any:
-        hash_value_json = self._helper.hash_value_json(key)
+        """Get a hash value for the given key (resolved within the context).
+
+        Args:
+            key: The key corresponding for the hash required.
+
+        Returns:
+            The hash value.
+        """
+        hash_value_json = self._options.hash_value_json(key)
         return json.loads(hash_value_json) if hash_value_json else ''
 
     def fn(self) -> str:
-        return self._helper.template()
+        """Renders a default inner template (if the helper is a block helper)."""
+        return self._options.template()
 
     def inverse(self) -> str:
-        return self._helper.inverse()
+        """Renders the template of the else branch (if any)."""
+        return self._options.inverse()
 
 
 def create_helper(
@@ -622,9 +633,9 @@ def create_helper(
         Function compatible with the Rust interface.
     """
 
-    def wrapper(params_json: str, helper: HandlebarrzHelper) -> str:
+    def wrapper(params_json: str, options: HandlebarrzHelperOptions) -> str:
         params = json.loads(params_json)
-        result = fn(params, Helper(helper))
+        result = fn(params, HelperOptions(options))
         return result
 
     return wrapper

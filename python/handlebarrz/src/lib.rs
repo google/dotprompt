@@ -38,7 +38,7 @@ mod helpers;
 /// - Template and helper function registration.
 #[pymodule]
 fn _native(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<HandlebarrzHelper>()?;
+    m.add_class::<HandlebarrzHelperOptions>()?;
     m.add_class::<HandlebarrzTemplate>()?;
     m.add_function(wrap_pyfunction!(html_escape, py)?)?;
     m.add_function(wrap_pyfunction!(no_escape, py)?)?;
@@ -90,10 +90,11 @@ fn no_escape(text: &str) -> String {
     handlebars::no_escape(text)
 }
 
-// Handlebars render context helper Python wrapper.
-// WARNING: only intended to be used within the Python::with_gil(...) scope and not stored across threads.
+/// Handlebars helper options Python wrapper.
+///
+/// WARNING: only intended to be used within the Python::with_gil(...) scope and not stored across threads.
 #[pyclass(unsendable)]
-pub struct HandlebarrzHelper {
+pub struct HandlebarrzHelperOptions {
     helper_ptr: *const Helper<'static>,
     reg_ptr: *const Handlebars<'static>,
     ctx_ptr: *const Context,
@@ -101,7 +102,7 @@ pub struct HandlebarrzHelper {
 }
 
 #[pymethods]
-impl HandlebarrzHelper {
+impl HandlebarrzHelperOptions {
     #[new]
     fn new() -> Self {
         Self {
@@ -112,7 +113,7 @@ impl HandlebarrzHelper {
         }
     }
 
-    // Returns JSON representation of a context.
+    /// Returns JSON representation of a context.
     #[pyo3(text_signature = "($self)")]
     pub fn context_json(&self) -> PyResult<String> {
         let ctx = unsafe { &*self.ctx_ptr };
@@ -120,7 +121,7 @@ impl HandlebarrzHelper {
             .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
     }
 
-    // Returns hash JSON value for a given key (resolved within the context).
+    /// Returns hash JSON value for a given key (resolved within the context).
     #[pyo3(text_signature = "($self, key)")]
     pub fn hash_value_json(&self, key: &str) -> PyResult<String> {
         let helper = unsafe { &*self.helper_ptr };
@@ -193,21 +194,22 @@ impl HelperDef for PyHelperDef {
                 }
             };
 
-            // Call Python function.
-            let py_helper = HandlebarrzHelper {
+            // Create template helper context.
+            let py_options = HandlebarrzHelperOptions {
                 helper_ptr: h as *const _ as *const _,
                 reg_ptr: reg as *const _ as *const _,
                 ctx_ptr: ctx as *const _,
                 rc_ptr: rc as *mut _ as *mut _,
             };
-            let py_helper_obj = Py::new(py, py_helper).map_err(|e| {
+            let py_options_obj = Py::new(py, py_options).map_err(|e| {
                 RenderError::from(RenderErrorReason::Other(format!(
-                    "Failed to create HandlebarrzHelper: {}",
+                    "Failed to create HandlebarrzHelperOptions: {}",
                     e
                 )))
             })?;
 
-            let result = self.func.call1(py, (params_json, py_helper_obj));
+            // Call Python function.
+            let result = self.func.call1(py, (params_json, py_options_obj));
 
             match result {
                 Ok(result) => {

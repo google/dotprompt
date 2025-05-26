@@ -17,7 +17,7 @@
 import unittest
 from typing import Any
 
-from handlebarrz import Helper, Template
+from handlebarrz import HelperOptions, Template
 
 
 class PartialsTest(unittest.TestCase):
@@ -179,8 +179,8 @@ class PartialsTest(unittest.TestCase):
         template_str = '{{> (lookup_partial userType) }}'
         template.register_template('dynamic-partial', template_str)
 
-        # Helper to dynamically select a partial name
-        def lookup_partial_helper(params: list[str], helper: Helper) -> str:
+        def lookup_partial_helper(params: list[str], options: HelperOptions) -> str:
+            """Test helper to dynamically select a partial name."""
             partial_type = params[0] if params else 'user'
             return partial_type
 
