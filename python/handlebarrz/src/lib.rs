@@ -116,7 +116,8 @@ impl HandlebarrzHelper {
     #[pyo3(text_signature = "($self)")]
     pub fn context_json(&self) -> PyResult<String> {
         let ctx = unsafe { &*self.ctx_ptr };
-        return serde_json::to_string(ctx.data()).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()));
+        return serde_json::to_string(ctx.data())
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()));
     }
 
     // Returns hash JSON value for a given key (resolved within the context).

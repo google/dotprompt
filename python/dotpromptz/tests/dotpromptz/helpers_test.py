@@ -21,12 +21,12 @@ import unittest
 
 from dotpromptz.helpers import (
     history_helper,
+    if_equals_helper,
     json_helper,
     media_helper,
     role_helper,
     section_helper,
     unless_equals_helper,
-    if_equals_helper,
 )
 from handlebarrz import Handlebars
 
