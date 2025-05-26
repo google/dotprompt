@@ -17,7 +17,7 @@
 import unittest
 from typing import Any
 
-from handlebarrz import Template
+from handlebarrz import Helper, Template
 
 
 class HelpersTest(unittest.TestCase):
@@ -26,11 +26,7 @@ class HelpersTest(unittest.TestCase):
         template = Template()
 
         # Define a simple helper that uppercases a string
-        def uppercase_helper(
-            params: list[str],
-            hash_args: dict[str, str],
-            context: dict[str, Any],
-        ) -> str:
+        def uppercase_helper(params: list[str], helper: Helper) -> str:
             if params:
                 return params[0].upper()
             return ''
@@ -54,14 +50,10 @@ class HelpersTest(unittest.TestCase):
         template = Template()
 
         # Define a helper that formats text
-        def format_helper(
-            params: list[str],
-            hash_args: dict[str, str],
-            context: dict[str, Any],
-        ) -> str:
+        def format_helper(params: list[str], helper: Helper) -> str:
             text = params[0] if params else ''
-            prefix = hash_args.get('prefix', '')
-            suffix = hash_args.get('suffix', '')
+            prefix = helper.hash_value('prefix')
+            suffix = helper.hash_value('suffix')
             return f'{prefix}{text}{suffix}'
 
         # Register the helper
@@ -83,17 +75,11 @@ class HelpersTest(unittest.TestCase):
         template = Template()
 
         # Define a helper that creates a list from context
-        def list_helper(
-            params: list[str],
-            hash_args: dict[str, str],
-            context: dict[str, Any],
-        ) -> str:
-            prefix = hash_args.get('prefix', '')
+        def list_helper(params: list[str], helper: Helper) -> str:
+            prefix = helper.hash_value('prefix')
             result = []
-            if 'items' in context:
-                items = context['items']
-                for item in items:
-                    result.append(f'{prefix}{item}')
+            for item in helper.context().get('items', []):
+                result.append(f'{prefix}{item}')
             return ', '.join(result)
 
         # Register the helper
@@ -115,15 +101,11 @@ class HelpersTest(unittest.TestCase):
         template = Template()
 
         # Define a block helper for creating lists
-        def list_block_helper(
-            params: list[str],
-            hash_args: dict[str, str],
-            context: dict[str, Any],
-        ) -> str:
+        def list_block_helper(params: list[str], helper: Helper) -> str:
             if not params:
                 return ''
 
-            list_type = hash_args.get('type', 'ul')
+            list_type = helper.hash_value('type') or 'ul'
             items = params[0]
 
             if list_type == 'ul':
@@ -144,11 +126,7 @@ class HelpersTest(unittest.TestCase):
         """
 
         # Register a concat helper to create the item HTML
-        def concat_helper(
-            params: list[str],
-            hash_args: dict[str, str],
-            context: dict[str, Any],
-        ) -> str:
+        def concat_helper(params: list[str], helper: Helper) -> str:
             return ''.join([str(p) for p in params])
 
         template.register_helper('concat', concat_helper)
@@ -171,11 +149,7 @@ class HelpersTest(unittest.TestCase):
         template = Template()
 
         # Define helpers for testing subexpressions
-        def add_helper(
-            params: list[str],
-            hash_args: dict[str, str],
-            context: dict[str, Any],
-        ) -> str:
+        def add_helper(params: list[str], helper: Helper) -> str:
             if len(params) >= 2:
                 try:
                     # Return result as string
@@ -184,11 +158,7 @@ class HelpersTest(unittest.TestCase):
                     return '0'
             return '0'
 
-        def multiply_helper(
-            params: list[str],
-            hash_args: dict[str, str],
-            context: dict[str, Any],
-        ) -> str:
+        def multiply_helper(params: list[str], helper: Helper) -> str:
             if len(params) >= 2:
                 try:
                     # Return result as string
@@ -216,11 +186,7 @@ class HelpersTest(unittest.TestCase):
         template = Template()
 
         # Define a helper that doesn't escape HTML
-        def html_helper(
-            params: list[str],
-            hash_args: dict[str, str],
-            context: dict[str, Any],
-        ) -> str:
+        def html_helper(params: list[str], helper: Helper) -> str:
             if params:
                 return params[0]
             return ''

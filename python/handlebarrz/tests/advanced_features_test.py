@@ -19,7 +19,7 @@
 import unittest
 from typing import Any
 
-from handlebarrz import Template
+from handlebarrz import Helper, Template
 
 
 class TestAdvancedFeatures(unittest.TestCase):
@@ -28,11 +28,7 @@ class TestAdvancedFeatures(unittest.TestCase):
         template = Template()
 
         # Register a simple helper.
-        def loud_helper(
-            params: list[str],
-            hash_args: dict[str, Any],
-            context: dict[str, Any],
-        ) -> str:
+        def loud_helper(params: list[str], helper: Helper) -> str:
             # Get the first parameter or use an empty string
             text = params[0] if params else ''
             return text.upper()
@@ -51,17 +47,13 @@ class TestAdvancedFeatures(unittest.TestCase):
         template = Template()
 
         # Register a helper that uses hash arguments.
-        def format_helper(
-            params: list[str],
-            hash_args: dict[str, Any],
-            context: dict[str, Any],
-        ) -> str:
+        def format_helper(params: list[str], helper: Helper) -> str:
             # First parameter is the text.
             text = params[0] if params else ''
 
             # Get formatting options from hash arguments.
-            bold = hash_args.get('bold', False)
-            italic = hash_args.get('italic', False)
+            bold = helper.hash_value('bold') or False
+            italic = helper.hash_value('italic') or False
 
             # Apply formatting.
             if bold:
@@ -91,12 +83,9 @@ class TestAdvancedFeatures(unittest.TestCase):
         template = Template()
 
         # Register a helper that uses the context.
-        def greeting_helper(
-            params: list[str],
-            hash_args: dict[str, Any],
-            context: dict[str, Any],
-        ) -> str:
+        def greeting_helper(params: list[str], helper: Helper) -> str:
             # Get the name from the context.
+            context = helper.context()
             name = context.get('name', '')
             time_of_day = context.get('time_of_day', '')
 
@@ -148,20 +137,16 @@ class TestAdvancedFeatures(unittest.TestCase):
         template = Template()
 
         # Register a helper that formats a user's name.
-        def format_name_helper(
-            params: list[str],
-            hash_args: dict[str, Any],
-            context: dict[str, Any],
-        ) -> str:
+        def format_name_helper(params: list[str], helper: Helper) -> str:
             # Access nested user object from the context.
-            user = context.get('user', {})
+            user = helper.context().get('user', {})
 
             # Get first and last name.
             first_name: str = user.get('firstName', '')
             last_name: str = user.get('lastName', '')
 
             # Format based on hash arguments.
-            format_type: str | None = hash_args.get('format')
+            format_type: str | None = helper.hash_value('format')
 
             if format_type == 'full':
                 return f'{first_name} {last_name}'
@@ -200,11 +185,7 @@ class TestAdvancedFeatures(unittest.TestCase):
         template = Template()
 
         # Register a helper that capitalizes all properties.
-        def capitalize_helper(
-            params: list[str],
-            hash_args: dict[str, Any],
-            context: dict[str, Any],
-        ) -> str:
+        def capitalize_helper(params: list[str], helper: Helper) -> str:
             if not params:
                 return ''
 
@@ -212,7 +193,7 @@ class TestAdvancedFeatures(unittest.TestCase):
             prop = params[0]
 
             # Get the value from the context.
-            value = context.get(prop, '')
+            value = helper.context().get(prop, '')
 
             # Capitalize and return.
             return value.upper() if isinstance(value, str) else str(value)
@@ -231,11 +212,7 @@ class TestAdvancedFeatures(unittest.TestCase):
         template = Template()
 
         # Register a helper that renders content conditionally.
-        def if_equal_helper(
-            params: list[str],
-            hash_args: dict[str, Any],
-            context: dict[str, Any],
-        ) -> str:
+        def if_equal_helper(params: list[str], helper: Helper) -> str:
             if len(params) < 2:
                 return ''
 
@@ -266,13 +243,9 @@ class TestAdvancedFeatures(unittest.TestCase):
         template = Template()
 
         # Register a helper that processes arrays.
-        def list_helper(
-            params: list[str],
-            hash_args: dict[str, Any],
-            context: dict[str, Any],
-        ) -> str:
+        def list_helper(params: list[str], helper: Helper) -> str:
             # Get the array from the context.
-            items = context.get('items', [])
+            items = helper.context().get('items', [])
 
             # Create an HTML list.
             result = '<ul>'
@@ -337,12 +310,8 @@ class TestAdvancedFeatures(unittest.TestCase):
         template = Template()
 
         # Register a helper that returns HTML
-        def html_helper(
-            params: list[str],
-            hash_args: dict[str, Any],
-            context: dict[str, Any],
-        ) -> str:
-            tag = hash_args.get('tag', 'div')
+        def html_helper(params: list[str], helper: Helper) -> str:
+            tag = helper.hash_value('tag') or 'div'
             content = params[0] if params else ''
 
             return f'<{tag}>{content}</{tag}>'
@@ -361,16 +330,12 @@ class TestAdvancedFeatures(unittest.TestCase):
         template = Template()
 
         # Register a helper that formats numbers
-        def number_helper(
-            params: list[str],
-            hash_args: dict[str, Any],
-            context: dict[str, Any],
-        ) -> str:
+        def number_helper(params: list[str], helper: Helper) -> str:
             if not params:
                 return ''
 
             value = params[0]
-            format_type = hash_args.get('format', 'decimal')
+            format_type = helper.hash_value('format') or 'decimal'
 
             if format_type == 'currency':
                 return f'${value:.2f}'

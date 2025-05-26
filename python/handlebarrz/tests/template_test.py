@@ -26,6 +26,7 @@ from handlebarrz import (
     CompiledRenderer,
     EscapeFunction,
     Handlebars,
+    Helper,
     Template,
     html_escape,
     no_escape,
@@ -138,22 +139,21 @@ class TestTemplate(unittest.TestCase):
         """Test registering and using a custom helper function."""
 
         def create_helper(
-            func: Callable[[list[Any], dict[str, Any], dict[str, Any]], str],
-        ) -> Callable[[list[Any], dict[str, Any], dict[str, Any]], str]:
-            def helper(
+            func: Callable[[list[Any], Helper], str],
+        ) -> Callable[[list[Any], Helper], str]:
+            def helper_wrapper(
                 params: list[Any],
-                hash_args: dict[str, Any],
-                context: dict[str, Any],
+                helper: Helper,
             ) -> str:
-                return func(params, hash_args, context)
+                return func(params, helper)
 
-            return helper
+            return helper_wrapper
 
-        def format_list(params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]) -> str:
+        def format_list(params: list[Any], helper: Helper) -> str:
             """Format a list with custom separator."""
             # Access the items from the context instead of params.
-            items: list[Any] = ctx.get('items', [])
-            separator: str = hash.get('separator', ', ')
+            items: list[Any] = helper.context().get('items', [])
+            separator: str = helper.hash_value('separator') or ', '
 
             # Make sure items is a list before joining.
             if not isinstance(items, list):
@@ -232,7 +232,7 @@ class TestTemplate(unittest.TestCase):
         compiled_func: CompiledRenderer = template.compile('Helper: {{my_helper val}}')
 
         # Register the helper AFTER compiling.
-        def simple_upper(params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]) -> str:
+        def simple_upper(params: list[Any], helper: Helper) -> str:
             return str(params[0]).upper()
 
         template.register_helper('my_helper', simple_upper)
@@ -287,7 +287,7 @@ class TestHandlebarsAlias(unittest.TestCase):
         """Test that custom helpers work with the Handlebars alias."""
         handlebars = Handlebars()
 
-        def upper_helper(params: list[Any], hash: dict[str, Any], ctx: dict[str, Any]) -> str:
+        def upper_helper(params: list[Any], helper: Helper) -> str:
             return str(params[0]).upper()
 
         handlebars.register_helper('upper', upper_helper)
