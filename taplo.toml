@@ -15,7 +15,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [formatting]
+align_comments       = true
 align_entries        = true
+array_auto_collapse  = false
 array_trailing_comma = true
 reorder_keys         = true
 trailing_newline     = true

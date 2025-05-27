@@ -15,20 +15,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+#set -x  # Uncomment to enable tracing.
 set -euo pipefail
 
 if ((EUID == 0)); then
   echo "Please do not run as root"
-  exit 1
+  exit
 fi
 
 TOP_DIR=$(git rev-parse --show-toplevel)
-PY_DIR="${TOP_DIR}/python"
 
-uv run --directory "${PY_DIR}" ruff check --select I --fix --preview --unsafe-fixes .
-uv run --directory "${PY_DIR}" mypy .
+if ! command -v "buildifier" >/dev/null 2>&1; then
+  echo "Buildifier not found. Installing via go install..."
+  go install github.com/bazelbuild/buildtools/buildifier@latest
+fi
 
-# Add pylyzer, ty, and pyrefly
-#uv run --directory "${PY_DIR}" pylyzer --check .
-#uv run --directory "${PY_DIR}" ty check
-#uv run --directory "${PY_DIR}" pyrefly check
+buildifier -r "${TOP_DIR}"
