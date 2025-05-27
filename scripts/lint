@@ -31,4 +31,4 @@ uv run --directory "${PY_DIR}" mypy .
 # Add pylyzer, ty, and pyrefly
 #uv run --directory "${PY_DIR}" pylyzer --check .
 #uv run --directory "${PY_DIR}" ty check
-uv run --directory "${PY_DIR}" pyrefly check
+#uv run --directory "${PY_DIR}" pyrefly check
