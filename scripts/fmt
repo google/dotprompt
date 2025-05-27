@@ -30,61 +30,27 @@ TOP_DIR=$(git rev-parse --show-toplevel)
 # Add license header to all files that don't already have it.
 "${TOP_DIR}/scripts/add_license"
 
-# Format all TOML files.
-"${TOP_DIR}/scripts/format_toml_files"
-if [[ $? -ne 0 ]]; then
-  exit 1
+if command -v rust-parallel >/dev/null 2>&1; then
+  echo "Using rust-parallel to format files in parallel"
+  printf "%s\n" \
+    "${TOP_DIR}/scripts/format_go_files" \
+    "${TOP_DIR}/scripts/format_java_files" \
+    "${TOP_DIR}/scripts/format_rust_files" \
+    "${TOP_DIR}/scripts/format_python_files" \
+    "${TOP_DIR}/scripts/format_handlebarrz_files" \
+    "${TOP_DIR}/scripts/format_toml_files" \
+    "${TOP_DIR}/scripts/format_ts_files" \
+    | rust-parallel -s --exit-on-error || exit 1
+else
+  echo "rust-parallel was not detected; not performing formatting in parallel"
+  "${TOP_DIR}/scripts/format_go_files" || exit 1
+  "${TOP_DIR}/scripts/format_java_files" || exit 1
+  "${TOP_DIR}/scripts/format_python_files" || exit 1
+  "${TOP_DIR}/scripts/format_handlebarrz_files" || exit 1
+  "${TOP_DIR}/scripts/format_rust_files" || exit 1
+  "${TOP_DIR}/scripts/format_toml_files" || exit 1
+  "${TOP_DIR}/scripts/format_ts_files" || exit 1
 fi
 
-# Format all Python code and organize imports.
-uv run --directory "${TOP_DIR}/python" ruff check --select I --fix --preview --unsafe-fixes .
-uv run --directory "${TOP_DIR}/python" ruff format --preview .
-if [[ $? -ne 0 ]]; then
-  exit 1
-fi
-
-# Modernize and format all Go code.
-go mod -C "${TOP_DIR}/go" tidy -go="${GO_VERSION}"
-go fmt -C "${TOP_DIR}/go" ./...
-if [[ $? -ne 0 ]]; then
-  exit 1
-fi
-
-# Format all TypeScript code.
-pushd "${TOP_DIR}"
-pnpm run format
-if [[ $? -ne 0 ]]; then
-  exit 1
-fi
-popd
-
-# Format handlebarrz
-pushd "${TOP_DIR}/python/handlebarrz"
-cargo fmt --all
-if [[ $? -ne 0 ]]; then
-  exit 1
-fi
-popd
-
-# Format all rust code
-pushd "${TOP_DIR}"
-cargo fmt --all
-if [[ $? -ne 0 ]]; then
-  exit 1
-fi
-popd
-
-# Format all Java code.
-pushd "${TOP_DIR}"
-"${TOP_DIR}/scripts/format_java_files"
-if [[ $? -ne 0 ]]; then
-  exit 1
-fi
-popd
-
-# Format all build files.
-if ! command -v "buildifier" >/dev/null 2>&1; then
-  echo "Buildifier not found. Installing via go install..."
-  go install github.com/bazelbuild/buildtools/buildifier@latest
-fi
-buildifier -r "${TOP_DIR}"
+# Do this after all of the above have completed.
+"${TOP_DIR}/scripts/format_build_files" || exit 1
