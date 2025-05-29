@@ -137,10 +137,10 @@ ALLOWLISTED_FILES = [
     'spec/helpers/media.yaml',
     'spec/helpers/role.yaml',
     'spec/helpers/unlessEquals.yaml',
-    'spec/variables.yaml',
     'spec/helpers/section.yaml',
+    'spec/variables.yaml',
+    'spec/partials.yaml',
     # 'spec/metadata.yaml',
-    # 'spec/partials.yaml',
     # 'spec/picoschema.yaml',
 ]
 
@@ -178,7 +178,7 @@ class SpecSuite(BaseModel, Generic[ModelConfigT]):
     schemas: dict[str, JsonSchema] | None = None
     tools: dict[str, ToolDefinition] | None = None
     partials: dict[str, str] = Field(default_factory=dict)
-    resolver_partials: dict[str, str] = Field(default_factory=dict)
+    resolver_partials: dict[str, str] = Field(default_factory=dict, alias='resolverPartials')
     tests: list[SpecTest[ModelConfigT]] = Field(default_factory=list)
 
 
@@ -326,7 +326,7 @@ class YamlSpecTestBase(unittest.IsolatedAsyncioTestCase, Generic[ModelConfigT]):
         merged.input = data1.input or data2.input
         merged.docs = (data1.docs or []) + (data2.docs or [])
         merged.messages = (data1.messages or []) + (data2.messages or [])
-        merged.context = {**(data1.context or {}), **(data1.context or {})}
+        merged.context = {**(data1.context or {}), **(data2.context or {})}
         return merged
 
 
