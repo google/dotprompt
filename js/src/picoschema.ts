@@ -149,7 +149,8 @@ export class PicoschemaParser {
       }
 
       return description ? { type, description } : { type };
-    } else if (typeof obj !== 'object') {
+    }
+    if (typeof obj !== 'object') {
       throw new Error(
         `Picoschema: only consists of objects and strings. Got: ${JSON.stringify(obj)}`
       );
@@ -217,7 +218,7 @@ export class PicoschemaParser {
     }
 
     if (!schema.required.length) {
-      delete schema.required;
+      schema.required = undefined;
     }
     return schema;
   }

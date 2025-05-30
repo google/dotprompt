@@ -394,7 +394,8 @@ export function toParts(source: string): Part[] {
 export function parsePart(piece: string): Part {
   if (piece.startsWith(MEDIA_MARKER_PREFIX)) {
     return parseMediaPart(piece);
-  } else if (piece.startsWith(SECTION_MARKER_PREFIX)) {
+  }
+  if (piece.startsWith(SECTION_MARKER_PREFIX)) {
     return parseSectionPart(piece);
   }
   return parseTextPart(piece);
