@@ -11,8 +11,8 @@
   },
   "scripts": {
     "compile": "tsup-node src/index.ts --dts --format esm,cjs",
-    "build": "npm run compile && tsc -p ./tsconfig.build.json --noEmit",
-    "watch": "npm run compile -- --watch",
+    "build": "pnpm run compile && tsgo -p ./tsconfig.build.json --noEmit",
+    "watch": "pnpm run compile -- --watch",
     "test": "vitest run --coverage",
     "test:watch": "vitest"
   },
@@ -21,6 +21,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "22.15.20",
+    "@typescript/native-preview": "7.0.0-dev.20250529.1",
     "@vitest/coverage-v8": "^3.1.4",
     "prettier": "^3.5.3",
     "tsup": "^8.5.0",
