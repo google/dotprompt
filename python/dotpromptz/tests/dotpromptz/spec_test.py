@@ -326,8 +326,6 @@ class YamlSpecTestBase(unittest.IsolatedAsyncioTestCase, Generic[ModelConfigT]):
         if test_case.expect.raw is None:
             pruned_res.raw = None
 
-        print('----- R', pruned_res)
-        print('----- E', test_case.expect)
         self.assertEqual(pruned_res, test_case.expect)
 
     def _merge_data(self, data1: DataArgument[Any], data2: DataArgument[Any]) -> DataArgument[Any]:
