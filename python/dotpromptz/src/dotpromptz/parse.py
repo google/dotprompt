@@ -261,7 +261,8 @@ def parse_document(source: str) -> ParsedPrompt[T]:
                 raw=raw,
                 template=body.strip(),
             )
-        except Exception:
+        except Exception as e:
+            print(f'Dotprompt: Error building a parsed prompt object: {e}')
             # Return a basic ParsedPrompt with just the template
             return ParsedPrompt(
                 ext={},

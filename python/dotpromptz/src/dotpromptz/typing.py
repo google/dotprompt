@@ -157,8 +157,8 @@ from typing import (
 
 from pydantic import BaseModel, ConfigDict, Field
 
-Schema = dict[str, Any]
-"""Type alias for a generic schema, represented as a dictionary."""
+Schema = Any
+"""Type alias for a generic schema."""
 
 JsonSchema = Any
 """Type alias for a JSON schema definition. 'Any' allows flexibility."""

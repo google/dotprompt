@@ -118,6 +118,7 @@ from dotpromptz.typing import (
     ModelConfigT,
     PromptInputConfig,
     PromptMetadata,
+    PromptOutputConfig,
     ToolDefinition,
 )
 
@@ -140,8 +141,8 @@ ALLOWLISTED_FILES = [
     'spec/helpers/section.yaml',
     'spec/variables.yaml',
     'spec/partials.yaml',
+    'spec/picoschema.yaml',
     # 'spec/metadata.yaml',
-    # 'spec/picoschema.yaml',
 ]
 
 # Counters for test class and test method names.
@@ -155,6 +156,7 @@ class Expect(BaseModel):
     config: dict[Any, Any] = Field(default_factory=dict)
     ext: dict[str, dict[str, Any]] = Field(default_factory=dict)
     input: PromptInputConfig | None = None
+    output: PromptOutputConfig | None = None
     messages: list[Message] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
     raw: dict[str, Any] | None = None
@@ -319,6 +321,13 @@ class YamlSpecTestBase(unittest.IsolatedAsyncioTestCase, Generic[ModelConfigT]):
         data = self._merge_data(suite.data or DataArgument[Any](), test_case.data or DataArgument[Any]())
         result = await dotprompt.render(suite.template, data, test_case.options)
         pruned_res: Expect = Expect(**result.model_dump())
+
+        # Only compare raw if the spec demands it.
+        if test_case.expect.raw is None:
+            pruned_res.raw = None
+
+        print('----- R', pruned_res)
+        print('----- E', test_case.expect)
         self.assertEqual(pruned_res, test_case.expect)
 
     def _merge_data(self, data1: DataArgument[Any], data2: DataArgument[Any]) -> DataArgument[Any]:
