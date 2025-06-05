@@ -21,11 +21,17 @@ description = "Renders Dotprompt templates (with associated helpers and partials
 edition     = "2024"
 keywords    = ["dotprompt", "common model interface", "ai", "llm", "templates"]
 license     = "Apache-2.0"
-name        = "dotprompt"
+name        = "dotprompt-cli"
 repository  = "https://github.com/google/dotprompt"
 version     = "0.1.0"
 
+[[bin]]
+name = "dotprompt"
+path = "src/main.rs"
+
 [dependencies]
+clap                 = { workspace = true, features = ["derive", "cargo"] }
+dotprompt            = { path = "../dotprompt" }
 serde.workspace      = true
 serde_json.workspace = true
 

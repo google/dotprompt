@@ -27,6 +27,8 @@ repository  = "https://github.com/google/dotprompt"
 version     = "0.1.0"
 
 [dependencies]
+serde.workspace      = true
+serde_json.workspace = true
 
 [lints]
 workspace = true

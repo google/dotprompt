@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+#
 # Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,20 +16,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-[package]
-authors     = ["Yesudeep Mangalapilly <yesudeep@google.com>"]
-categories  = ["ai", "llm", "common-model-interface", "dotprompt", "templates"]
-description = "Renders Dotprompt templates (with associated helpers and partials) into a Common Model Interface."
-edition     = "2024"
-keywords    = ["dotprompt", "common model interface", "ai", "llm", "templates"]
-license     = "Apache-2.0"
-name        = "dotprompt"
-repository  = "https://github.com/google/dotprompt"
-version     = "0.1.0"
+# Convenience wrapper around bazel binary `dotprompt`.
 
-[dependencies]
-serde.workspace      = true
-serde_json.workspace = true
+#set -x
+set -euo pipefail
 
-[lints]
-workspace = true
+if ((EUID == 0)); then
+	echo "Please do not run as root"
+	exit
+fi
+
+GIT_ROOT=$(git rev-parse --show-toplevel)
+
+bazel build //rs/dotprompt-cli:dotprompt
+"${GIT_ROOT}/bazel-bin/rs/dotprompt-cli/dotprompt" "$@"
