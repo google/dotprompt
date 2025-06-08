@@ -49,7 +49,7 @@ maven.install(
         "junit:junit:4.13.2",
         "com.google.truth.extensions:truth-proto-extension:1.4.4",
         "com.google.truth:truth:1.4.4",
-        "com.github.jknack:handlebars:4.3.1", 
+        "com.github.jknack:handlebars:4.4.0", 
         "com.google.guava:guava:33.4.8-jre",
     ],
     lock_file = "//:maven_install.json",
