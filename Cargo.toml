@@ -18,10 +18,15 @@
 exclude = [
   "python/handlebarrz", # TODO: Fix linker errors.
 ]
-members = ["rs/smoke"]
+members = [
+  "rs/dotprompt",
+  "rs/dotprompt-cli",
+  "rs/smoke",
+]
 resolver = "3"
 
 [workspace.dependencies]
+clap = { version = "4.5.39", features = ["derive"] }
 handlebars = "6.3.2"
 pyo3 = { version = "0.24.2", features = [
   "extension-module",
