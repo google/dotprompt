@@ -34,10 +34,16 @@ echo "Updating build files..."
 echo "Pinning dependencies..."
 bazelisk run @maven//:pin
 
-echo "Running Bazel build..."
-bazelisk build //...
+echo "Running Bazel build (Java 21)..."
+bazelisk build --config=java21 //...
 
-echo "Running Bazel tests..."
-bazelisk test //... --test_output=errors
+echo "Running Bazel tests (Java 21)..."
+bazelisk test --config=java21 //... --test_output=errors
+
+#echo "Running Bazel build (Java 17)..."
+#bazelisk build --config=java17 //...
+#
+#echo "Running Bazel tests (Java 17)..."
+#bazelisk test --config=java17 //... --test_output=errors
 
 echo "Bazel build and tests completed successfully."

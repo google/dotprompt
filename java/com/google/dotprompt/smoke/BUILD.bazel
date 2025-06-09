@@ -19,24 +19,12 @@ load("@rules_java//java:defs.bzl", "java_library", "java_test")
 java_library(
     name = "smoke",
     srcs = ["Smoke.java"],
-    javacopts = [
-        "-source",
-        "11",
-        "-target",
-        "11",
-    ],
     visibility = ["//visibility:public"],
 )
 
 java_test(
     name = "SmokeTest",
     srcs = ["SmokeTest.java"],
-    javacopts = [
-        "-source",
-        "11",
-        "-target",
-        "11",
-    ],
     test_class = "com.google.dotprompt.smoke.SmokeTest",
     deps = [
         ":smoke",

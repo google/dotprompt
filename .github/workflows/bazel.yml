@@ -33,18 +33,18 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Bazel needs a JDK. Setup Java 11 as required by the tests.
-      - name: Setup Java JDK 11
+      # Bazel needs a JDK. Setup Java 21 as baseline.
+      - name: Setup Java JDK 21
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '11'
+          distribution: temurin
+          java-version: 21
 
       # Set up Go environment for go install
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.2'
+          go-version: 1.24.2
 
       # Use bazelisk to manage Bazel versions based on .bazelversion
       - name: Install Bazelisk via Go
@@ -72,9 +72,24 @@ jobs:
              bazel-action-${{ github.ref }}-${{ hashFiles('**/MODULE.bazel.lock', '**/maven_install.json', '**/pnpm-lock.yaml') }}
              bazel-action-
 
-      - name: Build all targets
-        run: bazelisk build //...
+      - name: Pin Java dependencies
+        run: bazelisk run @maven//:pin
 
-      - name: Test all targets
-        # --test_output=errors only shows logs for failed tests
-        run: bazelisk test //... --test_output=errors
+      - name: Check for changes in maven_install.json
+        id: git-check
+        run: |
+          if [[ -n "$(git status --porcelain maven_install.json)" ]]; then
+            echo "::error::'maven_install.json' has been modified. Please run 'bazelisk run @maven//:pin' locally and commit the updated file."
+            exit 1
+          fi
+
+      - name: Build all targets (Java 21)
+        run: bazelisk build --config=java21 //...
+      - name: Test all targets (Java 21)
+        run: bazelisk test --config=java21 //... --test_output=errors
+
+      - name: Build all targets (Java 17)
+        run: bazelisk build --config=java17 //...
+
+      - name: Test all targets (Java 17)
+        run: bazelisk test --config=java17 //... --test_output=errors
