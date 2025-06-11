@@ -23,9 +23,10 @@ import (
 	"regexp"
 	"strings"
 
+	"maps"
+
 	"github.com/invopop/jsonschema"
 	"github.com/mbleigh/raymond"
-	"maps"
 )
 
 // PartialResolver is a function to resolve partial names to their content.
@@ -161,6 +162,12 @@ func (dp *Dotprompt) RegisterPartials(tpl *raymond.Template, template string) er
 	return nil
 }
 
+func (dp *Dotprompt) initializeTemplate(tpl *raymond.Template) {
+	dp.Template = tpl
+	dp.knownHelpers = make(map[string]bool)
+	dp.knownPartials = make(map[string]bool)
+}
+
 // DefineTool registers a tool definition.
 func (dp *Dotprompt) DefineTool(def ToolDefinition) *Dotprompt {
 	dp.tools[def.Name] = def
@@ -195,7 +202,7 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata) 
 	if err != nil {
 		return nil, err
 	}
-	dp.Template = renderTpl
+	dp.initializeTemplate(renderTpl)
 
 	// RegisterHelpers()
 	if err = dp.RegisterHelpers(dp.Template); err != nil {
