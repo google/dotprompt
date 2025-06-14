@@ -2,5 +2,6 @@
   "yaml.schemas": {
     "./spec/schema.json": ["spec/**/*.yaml"]
   },
-  "prettier.configPath": "js/.prettierrc"
+  "prettier.configPath": "js/.prettierrc",
+  "typescript.experimental.useTsgo": true
 }
