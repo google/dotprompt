@@ -1,0 +1,22 @@
+---
+model: "gemini-1.5-flash"
+description: "Summarize the input text."
+input:
+  schema:
+    type: object
+    properties:
+      text:
+        type: string
+        description: "The text to summarize"
+    required:
+      - text
+output:
+  format: "text"
+---
+<<<dotprompt:role:user>>>
+Please summarize the following text.
+
+{{text}}
+
+<<<dotprompt:role:model>>>
+Yes, I understand. I will summarize it.
