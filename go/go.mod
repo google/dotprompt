@@ -3,7 +3,7 @@ module github.com/google/dotprompt/go
 go 1.23.8
 
 require (
-	github.com/go-viper/mapstructure/v2 v2.2.1
+	github.com/go-viper/mapstructure/v2 v2.3.0
 	github.com/goccy/go-yaml v1.17.1
 	github.com/invopop/jsonschema v0.13.0
 	github.com/stretchr/testify v1.10.0
