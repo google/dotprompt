@@ -189,7 +189,7 @@ impl HelperDef for PyHelperDef {
             let params_json = match serde_json::to_string(&params) {
                 Ok(json) => json,
                 Err(e) => {
-                    let desc = format!("Failed to serialize params: {}", e);
+                    let desc = format!("Failed to serialize params: {e}");
                     return Err(RenderError::from(RenderErrorReason::Other(desc)));
                 }
             };
@@ -203,8 +203,7 @@ impl HelperDef for PyHelperDef {
             };
             let py_options_obj = Py::new(py, py_options).map_err(|e| {
                 RenderError::from(RenderErrorReason::Other(format!(
-                    "Failed to create HandlebarrzHelperOptions: {}",
-                    e
+                    "Failed to create HandlebarrzHelperOptions: {e}"
                 )))
             })?;
 
@@ -216,7 +215,7 @@ impl HelperDef for PyHelperDef {
                     let result_str = match result.extract::<String>(py) {
                         Ok(s) => s,
                         Err(e) => {
-                            let desc = format!("Failed to extract result: {}", e);
+                            let desc = format!("Failed to extract result: {e}");
                             return Err(RenderError::from(RenderErrorReason::Other(desc)));
                         }
                     };
@@ -224,7 +223,7 @@ impl HelperDef for PyHelperDef {
                     Ok(())
                 }
                 Err(e) => {
-                    let desc = format!("Helper execution failed: {}", e);
+                    let desc = format!("Helper execution failed: {e}");
                     Err(RenderError::from(RenderErrorReason::Other(desc)))
                 }
             }
@@ -361,8 +360,7 @@ impl HandlebarrzTemplate {
             "no_escape" => self.registry.register_escape_fn(handlebars::no_escape),
             _ => {
                 return Err(PyValueError::new_err(format!(
-                    "Unknown escape function: {}",
-                    escape_fn
+                    "Unknown escape function: {escape_fn}"
                 )));
             }
         }
@@ -431,8 +429,7 @@ impl HandlebarrzTemplate {
         let path = Path::new(file_path);
         if !path.exists() {
             return Err(PyFileNotFoundError::new_err(format!(
-                "Template file not found: {}",
-                file_path
+                "Template file not found: {file_path}"
             )));
         }
 
@@ -511,7 +508,7 @@ impl HandlebarrzTemplate {
     #[pyo3(text_signature = "($self, name, data)")]
     fn render(&self, name: &str, data: &str) -> PyResult<String> {
         let data: Value = serde_json::from_str(data)
-            .map_err(|e| PyValueError::new_err(format!("invalid JSON: {}", e)))?;
+            .map_err(|e| PyValueError::new_err(format!("invalid JSON: {e}")))?;
 
         self.registry
             .render(name, &data)
@@ -535,7 +532,7 @@ impl HandlebarrzTemplate {
     #[pyo3(text_signature = "($self, template_string, data_json)")]
     fn render_template(&self, template_string: &str, data_json: &str) -> PyResult<String> {
         let data: Value = serde_json::from_str(data_json)
-            .map_err(|e| PyValueError::new_err(format!("invalid JSON: {}", e)))?;
+            .map_err(|e| PyValueError::new_err(format!("invalid JSON: {e}")))?;
         self.registry
             .render_template(template_string, &data)
             .map_err(|e| PyValueError::new_err(e.to_string()))
