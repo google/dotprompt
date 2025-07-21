@@ -161,15 +161,8 @@ class RenderFunc(PromptFunction[ModelConfigT]):
         }
 
         # Prepare runtime options.
-        # TODO: options are currently ignored; need to add support for it.
-
         runtime_options: RuntimeOptions = {
             'data': {
-                'metadata': {
-                    'prompt': merged_metadata.model_dump(exclude_none=True, by_alias=True),
-                    'docs': dump_models(data.docs),
-                    'messages': dump_models(data.messages),
-                },
                 **(data.context or {}),
             },
         }

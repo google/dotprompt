@@ -142,7 +142,7 @@ ALLOWLISTED_FILES = [
     'spec/variables.yaml',
     'spec/partials.yaml',
     'spec/picoschema.yaml',
-    # 'spec/metadata.yaml',
+    'spec/metadata.yaml',
 ]
 
 # Counters for test class and test method names.

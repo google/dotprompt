@@ -70,6 +70,7 @@ result = handlebars.render('formatted', {'name': 'World'})  # "Hello WORLD!"
 from __future__ import annotations
 
 import json
+import re
 import sys  # noqa
 from collections.abc import Callable
 from pathlib import Path
@@ -106,7 +107,6 @@ class RuntimeOptions(TypedDict):
     """
 
     data: dict[str, Any] | None
-    # TODO: Add other options based on supported features.
 
 
 CompiledRenderer = Callable[[Context, RuntimeOptions | None], str]
@@ -498,15 +498,35 @@ class Template:
             ValueError: If there is a syntax error in the template or a
                 rendering error.
         """
-        # TODO: options is currently ignored; need to add support for it.
         try:
-            # Serialize options if provided, focusing on the '@data' part
-            options_json = None
-            if options:
-                # Pass the whole options dict as JSON
-                options_json = json.dumps(options)
+            runtime_data = (options.get('data') if options is not None else {}) or {}
+            print('DATA BEFORE', data)
 
-            result = self._template.render_template(template_string, json.dumps(data), options_json)
+            # Merging runtime data with the data dictionary.
+            for k, v in runtime_data.items():
+                data[k] = v
+
+            print('DATA AFTER', data)
+
+            # TODO: get rid of this once the Rust library has a local variables
+            # support.
+
+            # Local variables support workaround:
+            # Context: Handlebars Rust implementation currently doesn't support
+            # local variables (e.g. {{@my_variable}}), so instead we are
+            # dynamically replacing those with global variables
+            # (e.g. {{my_variable}}) to make things work.
+            # This is of course not an ideal solution, and it comes with some
+            # overhead, but so far we weren't able to detect a use case where
+            # this could be a blocker (but time will tell).
+            matches = re.findall(r'{{@.*?}}', template_string)
+            for m in set(matches):
+                key = m.strip('{}@').split('.')[0]
+                if key in runtime_data:
+                    template_string = template_string.replace(m, m.replace('@', ''))
+
+            # Render the template.
+            result = self._template.render_template(template_string, json.dumps(data))
             logger.debug({'event': 'template_string_rendered'})
             return result
         except ValueError as e:
