@@ -499,14 +499,10 @@ class Template:
                 rendering error.
         """
         try:
-            runtime_data = (options.get('data') if options is not None else {}) or {}
-            print('DATA BEFORE', data)
-
             # Merging runtime data with the data dictionary.
+            runtime_data = (options.get('data') if options is not None else {}) or {}
             for k, v in runtime_data.items():
                 data[k] = v
-
-            print('DATA AFTER', data)
 
             # TODO: get rid of this once the Rust library has a local variables
             # support.
