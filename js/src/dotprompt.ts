@@ -16,7 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as Handlebars from 'handlebars';
+// Use pre-compiled handlebars dist to avoid webpack require.extensions warnings
+const Handlebars: typeof import('handlebars') = require('handlebars/dist/handlebars.js');
 import * as builtinHelpers from './helpers';
 import { parseDocument, toMessages } from './parse';
 import { picoschema } from './picoschema';

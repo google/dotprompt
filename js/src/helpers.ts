@@ -16,7 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SafeString } from 'handlebars';
+// Use pre-compiled handlebars dist to avoid webpack require.extensions warnings  
+const handlebars: typeof import('handlebars') = require('handlebars/dist/handlebars.js');
+const { SafeString } = handlebars;
 
 export function json(
   serializable: any,
