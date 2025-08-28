@@ -17,7 +17,15 @@
  */
 
 // Use pre-compiled handlebars dist to avoid webpack require.extensions warnings
-const Handlebars: typeof import('handlebars') = require('handlebars/dist/handlebars.js');
+// See: https://github.com/handlebars-lang/handlebars.js/issues/1174
+// Todo: Remove when Handlebar 5 is released https://github.com/handlebars-lang/handlebars.js/discussions/2047#discussioncomment-10744078
+let Handlebars: typeof import('handlebars');
+try {
+  // Try the recommended dist version first
+  Handlebars = require('handlebars/dist/handlebars.js');
+} catch (e) {
+  Handlebars = require('handlebars');
+}
 import * as builtinHelpers from './helpers';
 import { parseDocument, toMessages } from './parse';
 import { picoschema } from './picoschema';

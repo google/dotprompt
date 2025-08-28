@@ -16,8 +16,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// Use pre-compiled handlebars dist to avoid webpack require.extensions warnings  
-const handlebars: typeof import('handlebars') = require('handlebars/dist/handlebars.js');
+// Use pre-compiled handlebars dist to avoid webpack require.extensions warnings
+// See: https://github.com/handlebars-lang/handlebars.js/issues/1174
+// Todo: Remove when Handlebar 5 is released https://github.com/handlebars-lang/handlebars.js/discussions/2047#discussioncomment-10744078
+let handlebars: typeof import('handlebars');
+try {
+  // Try the recommended dist version first
+  handlebars = require('handlebars/dist/handlebars.js');
+} catch (e) {
+  handlebars = require('handlebars');
+}
 const { SafeString } = handlebars;
 
 export function json(
