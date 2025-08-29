@@ -78,9 +78,7 @@ export class Dotprompt {
   private store?: PromptStore;
 
   constructor(options?: DotpromptOptions) {
-    this.handlebars = typeof Handlebars.noConflict === 'function'
-      ? Handlebars.noConflict()
-      : Handlebars;
+    this.handlebars = Handlebars.noConflict();
     this.modelConfigs = options?.modelConfigs || this.modelConfigs;
     this.defaultModel = options?.defaultModel;
     this.tools = options?.tools || {};
@@ -434,7 +432,7 @@ export class Dotprompt {
     const partials = new Set<string>();
 
     // Create a visitor to collect partial names.
-    const visitor = new (class extends Handlebars.Visitor {
+    const visitor = new (class extends this.handlebars.Visitor {
       // Visit partial statements and add their names to our set.
       PartialStatement(partial: unknown): void {
         if (
