@@ -16,9 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// Import from handlebars/dist to avoid webpack require.extensions warnings
-// This is the cleanest approach that works universally
-import { SafeString } from 'handlebars/dist/handlebars.js';
+import handlebars from 'handlebars/dist/cjs/handlebars.js';
+const { SafeString } = handlebars;
 
 export function json(
   serializable: any,

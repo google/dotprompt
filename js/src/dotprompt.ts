@@ -16,9 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// Import from handlebars/dist to avoid webpack require.extensions warnings
-// This is the cleanest approach that works universally
-import * as Handlebars from 'handlebars/dist/handlebars.js';
+import Handlebars from 'handlebars/dist/cjs/handlebars.js';
 import * as builtinHelpers from './helpers';
 import { parseDocument, toMessages } from './parse';
 import { picoschema } from './picoschema';
@@ -436,7 +434,7 @@ export class Dotprompt {
     const partials = new Set<string>();
 
     // Create a visitor to collect partial names.
-    const visitor = new (class extends this.handlebars.Visitor {
+    const visitor = new (class extends Handlebars.Visitor {
       // Visit partial statements and add their names to our set.
       PartialStatement(partial: unknown): void {
         if (
