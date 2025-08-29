@@ -16,16 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// Use pre-compiled handlebars dist to avoid webpack require.extensions warnings
-// See: https://github.com/handlebars-lang/handlebars.js/issues/1174
-// Todo: Remove when Handlebar 5 is released https://github.com/handlebars-lang/handlebars.js/discussions/2047#discussioncomment-10744078
-let Handlebars: typeof import('handlebars');
-try {
-  // Try the recommended dist version first
-  Handlebars = require('handlebars/dist/handlebars.js');
-} catch (e) {
-  Handlebars = require('handlebars');
-}
+// Import from handlebars/dist to avoid webpack require.extensions warnings
+// This is the cleanest approach that works universally
+import * as Handlebars from 'handlebars/dist/handlebars.js';
 import * as builtinHelpers from './helpers';
 import { parseDocument, toMessages } from './parse';
 import { picoschema } from './picoschema';
@@ -87,7 +80,9 @@ export class Dotprompt {
   private store?: PromptStore;
 
   constructor(options?: DotpromptOptions) {
-    this.handlebars = Handlebars.noConflict();
+    this.handlebars = typeof Handlebars.noConflict === 'function'
+      ? Handlebars.noConflict()
+      : Handlebars;
     this.modelConfigs = options?.modelConfigs || this.modelConfigs;
     this.defaultModel = options?.defaultModel;
     this.tools = options?.tools || {};
@@ -99,6 +94,7 @@ export class Dotprompt {
     this.registerInitialHelpers(builtinHelpers, options?.helpers);
     this.registerInitialPartials(options?.partials);
   }
+
 
   /**
    * Registers a helper function for use in templates.
