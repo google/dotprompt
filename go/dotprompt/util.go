@@ -39,8 +39,8 @@ func stringOrEmpty(value any) string {
 	return ""
 }
 
-// intOrEmpty returns the int value of an any or a 0 if it's not an int
-func int64OrZero(value any) int {
+// intOrZero returns the int value of an any or a 0 if it's not an int
+func intOrZero(value any) int {
 	if value == nil {
 		return 0
 	}
