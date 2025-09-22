@@ -39,14 +39,14 @@ func stringOrEmpty(value any) string {
 	return ""
 }
 
-// intOrEmpty returns the uint64 value of an any or a 0 if it's not an uint64
-func uint64OrZero(value any) uint64 {
+// intOrEmpty returns the int value of an any or a 0 if it's not an int
+func int64OrZero(value any) int {
 	if value == nil {
 		return 0
 	}
 
 	if intValue, ok := value.(uint64); ok {
-		return intValue
+		return int(intValue)
 	}
 
 	return 0

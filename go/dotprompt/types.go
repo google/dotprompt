@@ -112,7 +112,7 @@ type PromptMetadata struct {
 	// The name of the model to use for this prompt, e.g. `vertexai/gemini-1.0-pro`
 	Model string `json:"model,omitempty"`
 	// Number of tool max turns
-	MaxTurns uint64 `json:"maxTurns,omitempty"`
+	MaxTurns int `json:"maxTurns,omitempty"`
 	// Names of tools (registered separately) to allow use of in this prompt.
 	Tools []string `json:"tools,omitempty"`
 	// Definitions of tools to allow use of in this prompt.
