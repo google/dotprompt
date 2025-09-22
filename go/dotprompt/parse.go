@@ -284,6 +284,8 @@ func ParseDocument(source string) (ParsedPrompt, error) {
 					pruned.Variant = stringOrEmpty(value)
 				case "version":
 					pruned.Version = stringOrEmpty(value)
+				case "maxTurns":
+					pruned.MaxTurns = uint64OrZero(value)
 				case "model":
 					pruned.Model = stringOrEmpty(value)
 				case "config":

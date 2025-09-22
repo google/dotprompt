@@ -19,11 +19,11 @@ package dotprompt
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 	"unicode"
 
 	"github.com/invopop/jsonschema"
-	"maps"
 )
 
 // stringOrEmpty returns the string value of an any or an empty string if it's not a string.
@@ -37,6 +37,19 @@ func stringOrEmpty(value any) string {
 	}
 
 	return ""
+}
+
+// intOrEmpty returns the uint64 value of an any or a 0 if it's not an uint64
+func uint64OrZero(value any) uint64 {
+	if value == nil {
+		return 0
+	}
+
+	if intValue, ok := value.(uint64); ok {
+		return intValue
+	}
+
+	return 0
 }
 
 // getMapOrNil returns the map value of an any or nil if it's not a map.
@@ -85,7 +98,7 @@ func trimUnicodeSpacesExceptNewlines(s string) string {
 		result.WriteRune(r)
 	}
 
-	//Trim leading and trailing spaces after the loop to handle edge cases
+	// Trim leading and trailing spaces after the loop to handle edge cases
 	return strings.TrimFunc(result.String(), func(r rune) bool {
 		return unicode.IsSpace(r) && r != '\n' && r != '\r'
 	})
