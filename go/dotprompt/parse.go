@@ -91,6 +91,7 @@ var ReservedMetadataKeywords = []string{
 	"description",
 	"ext",
 	"input",
+	"maxTurns",
 	"model",
 	"name",
 	"output",
@@ -197,7 +198,8 @@ func splitByMediaAndSectionMarkers(source string) []string {
 func convertNamespacedEntryToNestedObject(
 	key string,
 	value any,
-	obj map[string]map[string]any) map[string]map[string]any {
+	obj map[string]map[string]any,
+) map[string]map[string]any {
 	// NOTE: Goes only a single level deep.
 	if obj == nil {
 		obj = make(map[string]map[string]any)
@@ -446,7 +448,8 @@ func ToMessages(renderedString string, data *DataArgument) ([]Message, error) {
 // messageSourcesToMessages converts an array of message sources to an array of
 // messages.
 func messageSourcesToMessages(
-	messageSources []*MessageSource) ([]Message, error) {
+	messageSources []*MessageSource,
+) ([]Message, error) {
 	messages := []Message{}
 
 	for _, m := range messageSources {

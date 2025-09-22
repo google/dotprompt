@@ -153,7 +153,8 @@ func TestPicoschemaParser_parsePico(t *testing.T) {
 				Type:       "object",
 				Properties: itemsProperty,
 				Required:   []string{"props"},
-			}})
+			},
+		})
 
 		expected := &jsonschema.Schema{
 			Type:       "object",

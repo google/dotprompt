@@ -454,6 +454,7 @@ func TestRenderedPrompt(t *testing.T) {
 				Name:        "test-prompt",
 				Description: "A test prompt",
 				Model:       "test-model",
+				MaxTurns:    5,
 			},
 			Messages: []Message{
 				{
@@ -474,6 +475,7 @@ func TestRenderedPrompt(t *testing.T) {
 		assert.Equal(t, "test-prompt", renderedPrompt.Name)
 		assert.Equal(t, "A test prompt", renderedPrompt.Description)
 		assert.Equal(t, "test-model", renderedPrompt.Model)
+		assert.Equal(t, 5, renderedPrompt.MaxTurns)
 		assert.Len(t, renderedPrompt.Messages, 2)
 
 		// Check first message
