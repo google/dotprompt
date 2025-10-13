@@ -109,6 +109,36 @@ func NewDotprompt(options *DotpromptOptions) *Dotprompt {
 	return dp
 }
 
+// Clone creates a deep copy of the Dotprompt instance.
+func (dp *Dotprompt) Clone() *Dotprompt {
+	clone := &Dotprompt{
+		knownHelpers:          make(map[string]bool),
+		defaultModel:          dp.defaultModel,
+		modelConfigs:          make(map[string]any),
+		tools:                 make(map[string]ToolDefinition),
+		toolResolver:          dp.toolResolver,
+		schemaResolver:        dp.schemaResolver,
+		partialResolver:       dp.partialResolver,
+		knownPartials:         make(map[string]bool),
+		Template:              dp.Template,
+		Helpers:               make(map[string]any),
+		Partials:              make(map[string]string),
+		Schemas:               make(map[string]*jsonschema.Schema),
+		ExternalSchemaLookups: make([]func(string) any, len(dp.ExternalSchemaLookups)),
+	}
+
+	maps.Copy(clone.knownHelpers, dp.knownHelpers)
+	maps.Copy(clone.modelConfigs, dp.modelConfigs)
+	maps.Copy(clone.tools, dp.tools)
+	maps.Copy(clone.knownPartials, dp.knownPartials)
+	maps.Copy(clone.Helpers, dp.Helpers)
+	maps.Copy(clone.Partials, dp.Partials)
+	maps.Copy(clone.Schemas, dp.Schemas)
+	copy(clone.ExternalSchemaLookups, dp.ExternalSchemaLookups)
+
+	return clone
+}
+
 // DefineHelper registers a helper function.
 func (dp *Dotprompt) DefineHelper(name string, helper any, tpl *raymond.Template) error {
 	if dp.knownHelpers[name] {
