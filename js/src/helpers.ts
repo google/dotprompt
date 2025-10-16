@@ -17,6 +17,7 @@
  */
 
 import handlebars from 'handlebars/dist/cjs/handlebars.js';
+
 const { SafeString } = handlebars;
 
 export function json(

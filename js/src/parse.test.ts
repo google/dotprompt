@@ -19,13 +19,11 @@
 import { describe, expect, it } from 'vitest';
 import type { MessageSource } from './parse';
 import {
-  FRONTMATTER_AND_BODY_REGEX,
-  MEDIA_AND_SECTION_MARKER_REGEX,
-  RESERVED_METADATA_KEYWORDS,
-  ROLE_AND_HISTORY_MARKER_REGEX,
   convertNamespacedEntryToNestedObject,
   extractFrontmatterAndBody,
+  FRONTMATTER_AND_BODY_REGEX,
   insertHistory,
+  MEDIA_AND_SECTION_MARKER_REGEX,
   messageSourcesToMessages,
   messagesHaveHistory,
   parseDocument,
@@ -33,6 +31,8 @@ import {
   parsePart,
   parseSectionPart,
   parseTextPart,
+  RESERVED_METADATA_KEYWORDS,
+  ROLE_AND_HISTORY_MARKER_REGEX,
   splitByMediaAndSectionMarkers,
   splitByRegex,
   splitByRoleAndHistoryMarkers,

@@ -1,42 +1,53 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-  "organizeImports": {
-    "enabled": true
-  },
+  "$schema": "https://biomejs.dev/schemas/2.2.6/schema.json",
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "recommended": true,
+      "style": {
+        "noParameterAssign": "error",
+        "useAsConstAssertion": "error",
+        "useDefaultParameterLast": "error",
+        "useEnumInitializers": "error",
+        "useSelfClosingElements": "error",
+        "useSingleVarDeclarator": "error",
+        "noUnusedTemplateLiteral": "error",
+        "useNumberNamespace": "error",
+        "noInferrableTypes": "error",
+        "noUselessElse": "error"
+      }
     }
   },
   "files": {
     "ignoreUnknown": true,
-    "ignore": [
-      "**/.cache/**",
-      "**/.dist/**",
-      "**/.eggs/**",
-      "**/.idea/**",
-      "**/.mypy_cache/**",
-      "**/.next/**",
-      "**/.output/**",
-      "**/.pytest_cache/**",
-      "**/.ruff_cache/**",
-      "**/.venv/**",
-      "**/.wxt/**",
-      "**/__pycache__/**",
-      "**/coverage/**",
-      "**/develop-eggs/**",
-      "**/dist/**",
-      "**/manifest.*.json",
-      "**/node_modules/**",
-      ".nx/**",
-      ".trunk/**",
-      "bazel-*/**",
-      "go/**",
-      "maven_install.json",
-      "node_modules/**",
-      "python/**",
-      "third_party/**"
+    "includes": [
+      "**",
+      "!**/.cache/**",
+      "!**/.dist/**",
+      "!**/.eggs/**",
+      "!**/.idea/**",
+      "!**/.mypy_cache/**",
+      "!**/.next/**",
+      "!**/.output/**",
+      "!**/.pytest_cache/**",
+      "!**/.ruff_cache/**",
+      "!**/.venv/**",
+      "!**/.wxt/**",
+      "!**/__pycache__/**",
+      "!**/coverage/**",
+      "!**/develop-eggs/**",
+      "!**/dist/**",
+      "!**/manifest.*.json",
+      "!**/node_modules/**",
+      "!.nx/**",
+      "!.trunk/**",
+      "!bazel-*/**",
+      "!go/**",
+      "!maven_install.json",
+      "!node_modules/**",
+      "!python/**",
+      "!third_party/**"
     ]
   },
   "formatter": {

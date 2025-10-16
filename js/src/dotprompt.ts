@@ -91,7 +91,6 @@ export class Dotprompt {
     this.registerInitialPartials(options?.partials);
   }
 
-
   /**
    * Registers a helper function for use in templates.
    *

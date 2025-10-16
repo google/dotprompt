@@ -17,10 +17,11 @@
  */
 
 import { Dotprompt, DotpromptOptions } from './dotprompt.js';
+
 export {
-  picoschema,
   PicoschemaOptions,
   PicoschemaParser,
+  picoschema,
 } from './picoschema.js';
 export type * from './types.js';
 export { Dotprompt, DotpromptOptions };
