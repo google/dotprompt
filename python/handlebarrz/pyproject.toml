@@ -32,10 +32,10 @@ dependencies = [
   "structlog>=25.2.0",
 ]
 description = "Handlebars library for Python based on handlebars-rust."
-name = "dotprompt_handlebars"
+name = "handlebarrz"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "0.0.1"
+version = "0.1.0"
 
 [build-system]
 build-backend = "maturin"
