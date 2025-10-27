@@ -39,8 +39,10 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
 from dotpromptz.dotprompt import Dotprompt, _identify_partials
-from dotpromptz.typing import ModelConfigT, ParsedPrompt, PromptMetadata, ToolDefinition
+from dotpromptz.typing import (ModelConfigT, ParsedPrompt, PromptMetadata,
+                               ToolDefinition, PromptInputConfig, DataArgument)
 from handlebarrz import HelperFn
+
 
 
 @pytest.fixture
@@ -142,6 +144,25 @@ def test_define_tool(mock_handlebars: Mock) -> None:
 
     # Ensure chaining works.
     assert result == dotprompt
+
+class TestCompileRender(IsolatedAsyncioTestCase):
+    async def test_compile_render_mock(self) -> str:
+        """should compile a template string into a render function."""
+        dotprompt = Dotprompt()
+        template_source =  'hello {{name}} ({{@state.name}}, {{@auth.email}})'
+
+        render_fn = dotprompt._handlebars.compile(template_source)
+
+        result =  render_fn(
+                    data=DataArgument[dict[str, Any]](
+                    input={'name': 'foo'},
+                    context={'auth': {'email': 'a@b.c'}},
+                ),
+                options=PromptMetadata(input=PromptInputConfig()),)
+
+        assert result == "hello foo (bar, a@b.c)"  # No input provided, so name is empty string.
+
+
 
 
 @patch('dotpromptz.dotprompt.parse_document')
