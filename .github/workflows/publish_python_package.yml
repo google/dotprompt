@@ -18,34 +18,18 @@ name: Publish Python Packages to PyPI
 
 on:
   workflow_dispatch:
+    inputs:
+      target:
+        description: "Publish destination (TestPyPI or PyPI)"
+        type: choice
+        required: true
+        options:
+          - testpypi
+          - pypi
 
 permissions:
   contents: read
   id-token: write
-#    inputs:
-#      project_type:
-#        description: Type of project
-#        type: choice
-#        default: package
-#        required: true
-#        options:
-#          - packages
-#          - plugins
-#      project_name:
-#        description: Project name publishing to Pypi
-#        type: choice
-#        default: dotprompt
-#        required: true
-#        options:
-#          - genkit
-#          - compat-oai
-#          - dev-local-vectorstore
-#          - firebase
-#          - flask
-#          - google-cloud
-#          - google-genai
-#          - ollama
-#          - vertex-ai
 
 jobs:
   build:
@@ -98,6 +82,8 @@ jobs:
     name: Publish handlebarrz to PyPI
     needs: build
     runs-on: ubuntu-latest
+    env:
+      PYPI_REPOSITORY_URL: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -110,6 +96,7 @@ jobs:
         with:
           verbose: true
           packages-dir: dist/
+          repository-url: ${{ env.PYPI_REPOSITORY_URL }}
 
   # Publish dotprmptz only after handlebarrz
   publish_dotpromptz:
@@ -117,6 +104,8 @@ jobs:
     # Enforce order: This job waits until publish_handlebarz is successful
     needs: [build, publish_handlebarrz]
     runs-on: ubuntu-latest
+    env:
+      PYPI_REPOSITORY_URL: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -129,3 +118,4 @@ jobs:
         with:
           verbose: true
           packages-dir: dist/
+          repository-url: ${{ env.PYPI_REPOSITORY_URL }}
