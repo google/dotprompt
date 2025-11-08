@@ -39,15 +39,21 @@ jobs:
   build:
     name: Build distributions
     runs-on: ubuntu-latest
-    env:
-      PATH: ${{ github.workspace }}/.cargo/bin:${{ github.workspace }}/.local/\
-            bin:/usr/local/bin:/usr/bin:/bin
+#    env:
+#      PATH: ${{ github.workspace }}/.cargo/bin:${{ github.workspace }}/.local/\
+#            bin:/usr/local/bin:/usr/bin:/bin
     steps:
       - uses: actions/checkout@v4
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get isntall -y build-essential curl libffi-dev
+          sudo apt-get install -y build-essential curl libffi-dev
+
+      - name: Set up uv & Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: '3.12'
 
       - name: Set up Rust (for handlebarrz)
         uses: astral-sh/setup-uv@v5
@@ -74,7 +80,7 @@ jobs:
         run: |
           uv pip install build twine
           python -m build
-          twine check dis/*
+          twine check dist/*
 
       - name: Upload dotpromptz artifacts
         uses: actions/upload-artifact@v4
@@ -86,8 +92,8 @@ jobs:
     name: Publish handlebarrz to PyPI
     needs: build
     runs-on: ubuntu-latest
-    env:
-      PYPI_REPOSITORY_URL: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+#    env:
+#      PYPI_REPOSITORY_URL: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
     steps:
       - name: Checkout code at tag
         uses: actions/checkout@v4
@@ -113,8 +119,8 @@ jobs:
     # Enforce order: This job waits until publish_handlebarz is successful
     needs: [build, publish_handlebarrz]
     runs-on: ubuntu-latest
-    env:
-      PYPI_REPOSITORY_URL: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+#    env:
+#      PYPI_REPOSITORY_URL: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
     steps:
       - name: Checkout code at tag
         uses: actions/checkout@v4
