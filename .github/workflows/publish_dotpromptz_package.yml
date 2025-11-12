@@ -30,8 +30,8 @@ on:
         options:
           - testpypi
           - pypi
-  pull_request:
-    branches: [ main ]
+#  pull_request:
+#    branches: [ main ]
 
 permissions:
   contents: write
