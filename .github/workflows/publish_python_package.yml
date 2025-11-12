@@ -14,13 +14,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name: Publish Python Packages to PyPI
+name: Publish dotpromptz Packages to PyPI
 
 on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: "The exact release tag(handlebarrz or dotpromptz) to publish"
+        description: "The exact release tag for dotpromptz to publish"
         required: true
         type: string
       target:
@@ -32,110 +32,104 @@ on:
           - pypi
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
-  build:
-    name: Build distributions
+  check_and_build:
+    name: Dependency Check and Build
     runs-on: ubuntu-latest
-#    env:
-#      PATH: ${{ github.workspace }}/.cargo/bin:${{ github.workspace }}/.local/\
-#            bin:/usr/local/bin:/usr/bin:/bin
+    permissions:
+      contents: write
+      actions: write
+    strategy:
+      matrix:
+        python-version:
+          - ${{ matrix.python-version }}
+      fail-fast: false
+
     steps:
       - uses: actions/checkout@v4
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential curl libffi-dev
 
-      - name: Set up uv & Python
-        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
         with:
-          enable-cache: true
-          python-version: '3.12'
+          python-version: ${{ matrix.python-version }}
 
-      - name: Set up Rust (for handlebarrz)
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          python-version: '3.12'
+      # --- Dependency Check (Smoke Test) ---
+      - name: Install Dependencies for Check
+        run: pip install requests
 
-      - name: Build handlebarrz (maturin)
-        working-directory: python/handlebarrz
+      - name: Smoke Test - Check handlebarrz Dependency
+        id: check_dependency
         run: |
-          uv pip install maturin[patchelf] twine
-          maturin build --release --strip -o dist
-          maturin sdist -o dist
-          twine check dist/*
+          IS_FOUND=$(python -c '
+          import requests
+          url = "https://pypi.org/project/dotprompt-handlebars/json"
+          response = requests.get(url)
 
-      - name: Upload handlebarrz artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-handlebarrz
-          path: python/handlebarrz/dist/
+          if response.status_code == 200:
+            print("true")
+          else:
+            print("false")
+          ')
 
-      - name: Build dotpromptz(python -m build)
-        working-directory: python/dotpromptz
+                  echo "Dependency 'handlebarrz' checked. Status: $IS_FOUND"
+
+                  if [ "$IS_FOUND" = "true" ]; then
+                  echo "BUILD_SUCCESS=true" >> "$GITHUB_OUTPUT"
+                  else
+                  echo "BUILD_SUCCESS=false" >> "$GITHUB_OUTPUT"
+                  fi
+
+      - name: Dependency Check Failed - Exit
+        if: steps.check_dependency.outputs.BUILD_SUCCESS == 'false'
         run: |
+          echo "::error::Dependency 'handlebarrz' not found on PyPI. Aborting publish."
+          exit 1
+      # -------------------------------------------
+      # STEP 2: BUILD dotpromptz (Only if check passed)
+      # -------------------------------------------
+      - name: Install Build Tools
+        run: |
+          pip install uv
+          uv venv
+          source .venv/bin/activate
           uv pip install build twine
+
+      - name: Build dotpromptz distributions
+        run: |
+          source .venv/bin/activate
+          cd python/dotpromptz
           python -m build
           twine check dist/*
 
-      - name: Upload dotpromptz artifacts
+      - name: Upload build packages
         uses: actions/upload-artifact@v4
         with:
           name: dist-dotpromptz
           path: python/dotpromptz/dist/
 
-  publish_handlebarrz:
-    name: Publish handlebarrz to PyPI
-    needs: build
+  pypi_publish:
+    name: Upload to PyPI
+    needs: [check_and_build]
     runs-on: ubuntu-latest
-#    env:
-#      PYPI_REPOSITORY_URL: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+    environment:
+      name: pypi_github_publishing
+    permissions:
+      id-token: write
+
     steps:
-      - name: Checkout code at tag
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.tag_name }}
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist-handlebarrz
-          path: dist/
-
-      - name: Publish handlebarz to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          verbose: true
-          packages-dir: dist/
-          repository-url: ${{ env.PYPI_REPOSITORY_URL }}
-
-  # Publish dotprmptz only after handlebarrz
-  publish_dotpromptz:
-    name: Publish dotpromptz to PyPI
-    # Enforce order: This job waits until publish_handlebarz is successful
-    needs: [build, publish_handlebarrz]
-    runs-on: ubuntu-latest
-#    env:
-#      PYPI_REPOSITORY_URL: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
-    steps:
-      - name: Checkout code at tag
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.tag_name }}
-
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: dist-dotpromptz
           path: dist/
 
-      - name: Publish dotpromptz to PyPI
+      - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           verbose: true
           packages-dir: dist/
-          repository-url: ${{ env.PYPI_REPOSITORY_URL }}
+          repository-url: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
