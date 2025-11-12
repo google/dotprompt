@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: "The exact release tag for dotpromptz to publish"
+        description: "The exact release tag of dotpromptz to publish"
         required: true
         type: string
       target:
@@ -50,7 +50,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -119,8 +118,15 @@ jobs:
       name: pypi_github_publishing
     permissions:
       id-token: write
+    env:
+      PYPI_REPOSITORY_URL: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
 
     steps:
+      - name: Checkout code at tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag_name }}
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
