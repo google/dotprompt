@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name: Publish dotpromptz Packages to PyPI
+name: Publish dotpromptz Package to PyPI
 
 on:
   workflow_dispatch:
@@ -56,7 +56,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # --- Dependency Check (Smoke Test) ---
+      # Dependency Check (Smoke Test)
       - name: Install Dependencies for Check
         run: pip install requests
 
@@ -87,14 +87,17 @@ jobs:
         run: |
           echo "::error::Dependency 'handlebarrz' not found on PyPI. Aborting publish."
           exit 1
-      # -------------------------------------------
-      # STEP 2: BUILD dotpromptz (Only if check passed)
-      # -------------------------------------------
-      - name: Install Build Tools
+
+      # BUILD dotpromptz (Only if handlebarrz check passed)
+      - name: Set up uv and Create VENV
+        uses: astral-sh/setup-uv@v7
+        with:
+          activate-environment: true
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+
+      - name: Install Build and Publish Tools
         run: |
-          pip install uv
-          uv venv
-          source .venv/bin/activate
           uv pip install build twine
 
       - name: Build dotpromptz distributions
