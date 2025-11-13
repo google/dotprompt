@@ -297,6 +297,10 @@ jobs:
             echo "removing local wheel"
             rm -f $FILES
           fi
+      - name: Delete Corrupted macOS Wheel
+        run: |
+          echo "Searching for and deleting known corrupted macOS x86_64 wheel..."
+          find dist/ -type f -name "*macosx_10_12_x86_64.whl" -exec rm -f {} \;
 
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
