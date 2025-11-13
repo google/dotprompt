@@ -303,6 +303,7 @@ jobs:
         with:
           verbose: true
           packages-dir: dist/
+          repository-url: 'https://upload.pypi.org/legacy/'
 
       - name: Sleep for pypi server to load
         run: sleep 180
