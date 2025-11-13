@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name: Publish dotpromptz-handlebars Package
+name: Publish dotpromptz-handlebars Package to PyPI
 
 on:
   workflow_dispatch:
