@@ -18,20 +18,20 @@ name: Publish dotpromptz Package to PyPI
 
 on:
   workflow_dispatch:
-#    inputs:
-#      tag_name:
-#        description: "The exact release tag of dotpromptz to publish"
-#        required: true
-#        type: string
-#      target:
-#        description: "Publish destination (TestPyPI or PyPI)"
-#        type: choice
-#        required: true
-#        options:
-#          - testpypi
-#          - pypi
-  pull_request:
-    branches: [main]
+    inputs:
+      tag_name:
+        description: "The exact release tag of dotpromptz to publish"
+        required: true
+        type: string
+      target:
+        description: "Publish destination (TestPyPI or PyPI)"
+        type: choice
+        required: true
+        options:
+          - testpypi
+          - pypi
+#  pull_request:
+#    branches: [main]
 
 permissions:
   contents: write
