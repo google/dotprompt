@@ -263,7 +263,7 @@ jobs:
 
       - name: Build wheel
         working-directory: ./python/handlebarrz
-        run: maturin build --release --strip -o dist --target aarch64-pc-windows-msvc
+        run: maturin build --release --strip -o dist --target aarch64-pc-windows-msvc -i python
 
       - name: Upload build packages
         uses: actions/upload-artifact@v4
