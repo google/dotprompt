@@ -248,6 +248,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
+        id: setup_py
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python_version }}
@@ -263,7 +264,8 @@ jobs:
 
       - name: Build wheel
         working-directory: ./python/handlebarrz
-        run: maturin build --release --strip -o dist --target aarch64-pc-windows-msvc -i python
+        run: maturin build --release --strip -o dist --target aarch64-pc-windows-msvc -i ${{ steps.setup_py.outputs.python-path }} --features "pyo3/abi3-py${{ matrix.python_version }}"
+#        run: maturin build --release --strip -o dist --target aarch64-pc-windows-msvc -i python
 
       - name: Upload build packages
         uses: actions/upload-artifact@v4
