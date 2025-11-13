@@ -234,41 +234,41 @@ jobs:
           name: wheels-windows-x86_64-${{ matrix.python_version }}
           path: python/handlebarrz/dist
 
-  build_windows_arm64:
-    name: Build for Windows ARM64
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        python_version:
-          - "3.12"
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        id: setup_py
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          target: aarch64-pc-windows-msvc
-
-      - name: Install maturin
-        run: pip install maturin
-
-      - name: Build wheel
-        working-directory: ./python/handlebarrz
-        run: maturin build --release --strip -o dist --target aarch64-pc-windows-msvc -i ${{ steps.setup_py.outputs.python-path }} --features "pyo3/abi3-py${{ matrix.python_version }}"
-#        run: maturin build --release --strip -o dist --target aarch64-pc-windows-msvc -i python
-
-      - name: Upload build packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-windows-arm64-${{ matrix.python_version }}
-          path: python/handlebarrz/dist
+#  build_windows_arm64:
+#    name: Build for Windows ARM64
+#    runs-on: windows-latest
+#    strategy:
+#      matrix:
+#        python_version:
+#          - "3.12"
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - name: Set up Python
+#        id: setup_py
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: ${{ matrix.python_version }}
+#
+#      - name: Set up Rust
+#        uses: dtolnay/rust-toolchain@stable
+#        with:
+#          toolchain: stable
+#          target: aarch64-pc-windows-msvc
+#
+#      - name: Install maturin
+#        run: pip install maturin
+#
+#      - name: Build wheel
+#        working-directory: ./python/handlebarrz
+#        run: maturin build --release --strip -o dist --target aarch64-pc-windows-msvc -i ${{ steps.setup_py.outputs.python-path }} --features "pyo3/abi3-py${{ matrix.python_version }}"
+##        run: maturin build --release --strip -o dist --target aarch64-pc-windows-msvc -i python
+#
+#      - name: Upload build packages
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: wheels-windows-arm64-${{ matrix.python_version }}
+#          path: python/handlebarrz/dist
 
   pypi_publish:
     name: Upload to PyPI by python version
@@ -477,27 +477,27 @@ jobs:
         working-directory: ./python/handlebarrz/smoke_tests
         run: python -c "import handlebarrz; print('Import successful')"
     continue-on-error: true
-
-  smoke_test_windows_arm64:
-    name: Test for Windows ARM64
-    needs: [ pypi_publish ]
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        python_version:
-          - "3.12"
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Install package from PyPI
-        run: pip install dotpromptz-handlebars
-
-      - name: Run smoke test
-        working-directory: ./python/handlebarrz/smoke_tests
-        run: python -c "import handlebarrz; print('Import successful')"
-    continue-on-error: true
+#
+#  smoke_test_windows_arm64:
+#    name: Test for Windows ARM64
+#    needs: [ pypi_publish ]
+#    runs-on: windows-latest
+#    strategy:
+#      matrix:
+#        python_version:
+#          - "3.12"
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - name: Set up Python
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: ${{ matrix.python_version }}
+#
+#      - name: Install package from PyPI
+#        run: pip install dotpromptz-handlebars
+#
+#      - name: Run smoke test
+#        working-directory: ./python/handlebarrz/smoke_tests
+#        run: python -c "import handlebarrz; print('Import successful')"
+#    continue-on-error: true
