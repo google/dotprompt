@@ -18,8 +18,8 @@ name: Publish dotpromptz-handlebars Package
 
 on:
   workflow_dispatch:
-#  pull_request:
-#    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 
 jobs:
@@ -419,7 +419,7 @@ jobs:
           python-version: ${{ matrix.python_version }}
 
       - name: Install package from PyPI
-        run: pip install dotprompt-handlebars
+        run: pip install dotpromptz-handlebars
 
       - name: Run smoke test
         working-directory: ./python/handlebarrz/smoke_tests
@@ -445,7 +445,7 @@ jobs:
           python-version: ${{ matrix.python_version }}
 
       - name: Install package from PyPI
-        run: pip install dotprompt-handlebars
+        run: pip install dotpromptz-handlebars
 
       - name: Run smoke test
         working-directory: ./python/handlebarrz/smoke_tests
@@ -472,7 +472,7 @@ jobs:
           python-version: ${{ matrix.python_version }}
 
       - name: Install package from PyPI
-        run: pip install dotprompt-handlebars
+        run: pip install dotpromptz-handlebars
 
       - name: Run smoke test
         working-directory: ./python/handlebarrz/smoke_tests
@@ -499,8 +499,7 @@ jobs:
           python-version: ${{ matrix.python_version }}
 
       - name: Install package from PyPI
-        # This step will pull the correct ARM64 wheel uploaded by the build job
-        run: pip install dotprompt-handlebars
+        run: pip install dotpromptz-handlebars
 
       - name: Run smoke test
         working-directory: ./python/handlebarrz/smoke_tests
