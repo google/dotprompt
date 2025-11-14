@@ -152,6 +152,10 @@ jobs:
       - name: Install maturin
         run: pip install maturin
 
+      - name: Clean Cargo Target Directory
+        run: rm -rf target/
+        working-directory: ./python/handlebarrz
+
       - name: Build wheel
         working-directory: ./python/handlebarrz
         run: maturin build --release --strip -o dist
