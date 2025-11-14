@@ -15,6 +15,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# set -x # To enable tracing.
 set -euo pipefail
 
 if ((EUID == 0)); then
@@ -28,8 +29,8 @@ GO_DIR="${TOP_DIR}/go"
 # We're concerned about only the release versions of Go, not "tip", but it has
 # been included as an example in case it is needed in the future.
 GO_VERSIONS=(
-  "1.23.8"
-  "1.24.2"
+  "1.24.9"
+  "1.25.3"
   #"tip" # Fetches and builds the latest version of go from source and is slow.
 )
 
