@@ -41,10 +41,10 @@ npm = use_extension("@aspect_rules_js//npm:extensions.bzl", "npm", dev_dependenc
 npm.npm_translate_lock(
     name = "npm",
     data = [
-        "//js:package.json",
-        "//third_party/docsite:package.json",
         ":package.json",
         ":pnpm-workspace.yaml",
+        "//js:package.json",
+        "//third_party/docsite:package.json",
     ],
     npmrc = "//:.npmrc",
     pnpm_lock = "//:pnpm-lock.bazel.yaml",

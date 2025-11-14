@@ -284,8 +284,8 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata) 
 func (d *Dotprompt) identifyPartials(template string) []string {
 	// Simplified partial identification logic
 	var partials []string
-	lines := strings.Split(template, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(template, "\n")
+	for line := range lines {
 		re := regexp.MustCompile(`{{>\s*([^}]+)\s*}}`)
 		// Find all matches in the template
 		matches := re.FindAllStringSubmatch(line, -1)
