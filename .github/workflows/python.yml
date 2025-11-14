@@ -34,7 +34,7 @@ jobs:
           - "3.11"
           - "3.12"
           - "3.13"
-          - "pypy-3.10"
+          #- "pypy-3.10" Remove it as pypy 3.10 being lower than the minimum supported by PyO3 (3.11):
           - "pypy-3.11"
           #- "3.14" # This still fails.
       fail-fast: false
