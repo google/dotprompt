@@ -18,8 +18,8 @@ name: Publish dotpromptz-handlebars Package to PyPI
 
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [ main ]
+#  pull_request:
+#    branches: [ main ]
 
 
 jobs:
@@ -117,126 +117,124 @@ jobs:
           name: wheels-x86-64-${{ matrix.python_version }}
           path: python/handlebarrz/target/wheels
 
-  build_macos_arm64:
-    name: Build for macOS ARM64
-    runs-on: macos-14  # Apple Silicon
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node.js for Actions
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-#      - name: Install Node.js (Fix for Artifact Actions)
-#        run: |
-#          curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash -
-#          sudo apt-get install -y nodejs
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-
-      - name: Install maturin
-        run: pip install maturin
-
-      - name: Clean Cargo Target Directory
-        run: rm -rf target/
-        working-directory: ./python/handlebarrz
-
-      - name: Build wheel
-        working-directory: ./python/handlebarrz
-        run: maturin build --release --strip -o dist
-
-      - name: Upload build packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-macos-arm64-${{ matrix.python_version }}-${{ github.job }}
-          path: python/handlebarrz/dist
-
-  build_macos_x86_64:
-    name: Build for macOS x86_64
-    runs-on: macos-13  # Intel Silicon
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-
-      - name: Install maturin
-        run: pip install maturin
-
-      - name: Build wheel
-        working-directory: ./python/handlebarrz
-        run: maturin build --release --strip -o dist
-
-      - name: Upload build packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-macos-x86_64-${{ matrix.python_version }}-${{ github.job }}
-          path: python/handlebarrz/dist
-
-  build_windows_x86_64:
-    name: Build for Windows x86_64
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-
-      - name: Install maturin
-        run: pip install maturin
-
-      - name: Build wheel
-        working-directory: ./python/handlebarrz
-        run: maturin build --release --strip -o dist
-
-      - name: Upload build packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-windows-x86_64-${{ matrix.python_version }}
-          path: python/handlebarrz/dist
+#  build_windows_x86_64:
+#    name: Build for Windows x86_64
+#    runs-on: windows-latest
+#    strategy:
+#      matrix:
+#        python_version:
+#          - "3.10"
+#          - "3.11"
+#          - "3.12"
+#          - "3.13"
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - name: Set up Python
+#        id: setup_py
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: ${{ matrix.python_version }}
+#
+#      - name: Set up Rust
+#        uses: dtolnay/rust-toolchain@stable
+#        with:
+#          toolchain: stable
+#
+#      - name: Install maturin
+#        run: pip install maturin
+#
+#      - name: Build wheel
+#        working-directory: ./python/handlebarrz
+##        run: maturin build --release --strip -o dist
+#        run: maturin build --release --strip -o dist -i ${{ steps.setup_py.outputs.python-path }}
+#
+#      - name: Upload build packages
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: wheels-windows-x86_64-${{ matrix.python_version }}
+#          path: python/handlebarrz/dist
+#
+#  build_macos_arm64:
+#    name: Build for macOS ARM64
+#    runs-on: macos-14  # Apple Silicon
+#    strategy:
+#      matrix:
+#        python_version:
+#          - "3.10"
+#          - "3.11"
+#          - "3.12"
+#          - "3.13"
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - name: Set up Node.js for Actions
+#        uses: actions/setup-node@v4
+#        with:
+#          node-version: '20'
+#
+#      - name: Set up Python
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: ${{ matrix.python_version }}
+#
+#      - name: Set up Rust
+#        uses: dtolnay/rust-toolchain@stable
+#        with:
+#          toolchain: stable
+#
+#      - name: Install maturin
+#        run: pip install maturin
+#
+#      - name: Clean Cargo Target Directory
+#        run: rm -rf target/
+#        working-directory: ./python/handlebarrz
+#
+#      - name: Build wheel
+#        working-directory: ./python/handlebarrz
+#        run: maturin build --release --strip -o dist
+#
+#      - name: Upload build packages
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: wheels-macos-arm64-${{ matrix.python_version }}-${{ github.job }}
+#          path: python/handlebarrz/dist
+#
+#  build_macos_x86_64:
+#    name: Build for macOS x86_64
+#    runs-on: macos-13
+#    strategy:
+#      matrix:
+#        python_version:
+#          - "3.10"
+#          - "3.11"
+#          - "3.12"
+#          - "3.13"
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - name: Set up Python
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: ${{ matrix.python_version }}
+#
+#      - name: Set up Rust
+#        uses: dtolnay/rust-toolchain@stable
+#        with:
+#          toolchain: stable
+#
+#      - name: Install maturin
+#        run: pip install maturin
+#
+#      - name: Build wheel
+#        working-directory: ./python/handlebarrz
+#        run: maturin build --release --strip -o dist
+#
+#      - name: Upload build packages
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: wheels-macos-x86_64-${{ matrix.python_version }}-${{ github.job }}
+#          path: python/handlebarrz/dist
 
 #  build_windows_arm64:
 #    name: Build for Windows ARM64
@@ -276,18 +274,13 @@ jobs:
 
   pypi_publish:
     name: Upload to PyPI by python version
-    needs: [build_arm64, build_x86_64, build_alpine, build_macos_arm64, build_macos_x86_64, build_windows_x86_64]
+    needs: [build_arm64,build_x86_64,build_alpine]
     runs-on: ubuntu-latest
     environment:
       name: pypi_github_publishing
     permissions:
       id-token: write
     steps:
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
       - name: Download wheels
         uses: actions/download-artifact@v4
         with:
@@ -301,17 +294,12 @@ jobs:
             echo "removing local wheel"
             rm -f $FILES
           fi
-      - name: Delete Corrupted macOS Wheel
-        run: |
-          echo "Searching for and deleting known corrupted macOS x86_64 wheel..."
-          find dist/ -type f -name "*macosx_10_12_x86_64.whl" -exec rm -f {} \;
 
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           verbose: true
           packages-dir: dist/
-          repository-url: 'https://upload.pypi.org/legacy/'
 
       - name: Sleep for pypi server to load
         run: sleep 180
@@ -412,86 +400,86 @@ jobs:
     continue-on-error: true
 
 
-  smoke_test_macos_arm64:
-    name: Test for macOS ARM64
-    needs: [pypi_publish]
-    runs-on: macos-14
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Install package from PyPI
-        run: pip install dotpromptz-handlebars
-
-      - name: Run smoke test
-        working-directory: ./python/handlebarrz/smoke_tests
-        run: python -c "import handlebarrz; print('Import successful')"
-
-  smoke_test_macos_x86_64:
-    name: Test for macOS x86_64
-    needs: [ pypi_publish ]
-    runs-on: macos-13
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Install package from PyPI
-        run: pip install dotpromptz-handlebars
-
-      - name: Run smoke test
-        working-directory: ./python/handlebarrz/smoke_tests
-        run: python -c "import handlebarrz; print('Import successful')"
-    continue-on-error: true
-
-  smoke_test_windows_x86_64:
-    name: Test for Windows x86_64
-    needs: [pypi_publish]
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Install package from PyPI
-        run: pip install dotpromptz-handlebars
-
-      - name: Run smoke test
-        working-directory: ./python/handlebarrz/smoke_tests
-        run: python -c "import handlebarrz; print('Import successful')"
-    continue-on-error: true
+#  smoke_test_macos_arm64:
+#    name: Test for macOS ARM64
+#    needs: [pypi_publish]
+#    runs-on: macos-14
+#    strategy:
+#      matrix:
+#        python_version:
+#          - "3.10"
+#          - "3.11"
+#          - "3.12"
+#          - "3.13"
+#    steps:
+#      - uses: actions/checkout@v4
 #
+#      - name: Set up Python
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: ${{ matrix.python_version }}
+#
+#      - name: Install package from PyPI
+#        run: pip install dotpromptz-handlebars
+#
+#      - name: Run smoke test
+#        working-directory: ./python/handlebarrz/smoke_tests
+#        run: python -c "import handlebarrz; print('Import successful')"
+#
+#  smoke_test_macos_x86_64:
+#    name: Test for macOS x86_64
+#    needs: [ pypi_publish ]
+#    runs-on: macos-13
+#    strategy:
+#      matrix:
+#        python_version:
+#          - "3.10"
+#          - "3.11"
+#          - "3.12"
+#          - "3.13"
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - name: Set up Python
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: ${{ matrix.python_version }}
+#
+#      - name: Install package from PyPI
+#        run: pip install dotpromptz-handlebars
+#
+#      - name: Run smoke test
+#        working-directory: ./python/handlebarrz/smoke_tests
+#        run: python -c "import handlebarrz; print('Import successful')"
+#    continue-on-error: true
+#
+#  smoke_test_windows_x86_64:
+#    name: Test for Windows x86_64
+#    needs: [pypi_publish]
+#    runs-on: windows-latest
+#    strategy:
+#      matrix:
+#        python_version:
+#          - "3.10"
+#          - "3.11"
+#          - "3.12"
+#          - "3.13"
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - name: Set up Python
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: ${{ matrix.python_version }}
+#
+#      - name: Install package from PyPI
+#        run: pip install dotpromptz-handlebars
+#
+#      - name: Run smoke test
+#        working-directory: ./python/handlebarrz/smoke_tests
+#        run: python -c "import handlebarrz; print('Import successful')"
+#    continue-on-error: true
+##
 #  smoke_test_windows_arm64:
 #    name: Test for Windows ARM64
 #    needs: [ pypi_publish ]
