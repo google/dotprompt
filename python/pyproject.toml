@@ -67,6 +67,7 @@ fail_under = 85
 [tool.uv]
 default-groups = ["dev", "lint"]
 
+# TODO(mengqinshen): Check whether these lines require any changes.
 [tool.uv.sources]
 dotprompt-handlebars = { workspace = true }
 dotpromptz           = { workspace = true }
