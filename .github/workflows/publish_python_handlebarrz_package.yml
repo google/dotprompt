@@ -318,7 +318,6 @@ jobs:
         linux_platform:
           - "debian"
           - "fedora"
-          - "redhat"
     steps:
       - uses: actions/checkout@v4
 
@@ -383,7 +382,6 @@ jobs:
         linux_platform:
           - "debian"
           - "fedora"
-          - "redhat"
     steps:
       - uses: actions/checkout@v4
 

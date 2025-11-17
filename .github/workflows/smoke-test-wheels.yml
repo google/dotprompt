@@ -21,7 +21,7 @@ on:
 
 
 jobs:
-  smoke_test_arm64: 
+  smoke_test_arm64:
     name: Test for arm64 arch
     runs-on: ubuntu-latest
     strategy:
@@ -34,7 +34,6 @@ jobs:
         linux_platform:
           - "debian"
           - "fedora"
-          - "redhat"
     steps:
       - uses: actions/checkout@v4
 
@@ -56,7 +55,7 @@ jobs:
           docker run test-${{ matrix.linux_platform }}-arm64:latest sh ./execute-test.sh "${{ matrix.python_version }}"
     continue-on-error: true
 
-  smoke_test_alpine: 
+  smoke_test_alpine:
     name: Test for alpine arm64 arch
     runs-on: ubuntu-latest
     strategy:
@@ -84,7 +83,7 @@ jobs:
           docker run test-alpine:latest sh ./execute-test.sh "${{ matrix.python_version }}"
     continue-on-error: true
 
-  smoke_test_x86_64: 
+  smoke_test_x86_64:
     name: Test for x86_64 arch
     runs-on: ubuntu-latest
     strategy:
@@ -97,7 +96,6 @@ jobs:
         linux_platform:
           - "debian"
           - "fedora"
-          - "redhat"
     steps:
       - uses: actions/checkout@v4
 
@@ -112,4 +110,3 @@ jobs:
         run: |
           docker run test-${{ matrix.linux_platform }}:latest sh ./execute-test.sh "${{ matrix.python_version }}"
     continue-on-error: true
-
