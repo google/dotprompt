@@ -34,7 +34,7 @@ classifiers = [
 ]
 dependencies = [
   "aiofiles>=24.1.0",
-  "dotpromptz-handlebars",
+  "dotpromptz-handlebars>=0.1.2",
   "pydantic[email]>=2.10.6",
   "structlog>=25.2.0",
   "types-aiofiles>=24.1.0.20250326",
@@ -51,6 +51,9 @@ version = "0.1.2"
 [build-system]
 build-backend = "hatchling.build"
 requires      = ["hatchling"]
+
+[tool.uv.sources]
+dotpromptz-handlebars = { workspace = false }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/dotpromptz"]
