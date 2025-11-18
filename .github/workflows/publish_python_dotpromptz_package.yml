@@ -174,11 +174,11 @@ jobs:
               importlib.metadata.version('dotpromptz')
               print('Smoke test successful: Package found and imported.')
 
-              except importlib.metadata.PackageNotFoundError:
+          except importlib.metadata.PackageNotFoundError:
               print('Smoke test FAILED: Package not found in environment.')
               sys.exit(1)
 
-              except Exception as e:
+          except Exception as e:
               print(f'Smoke test FAILED due to unexpected error: {e}')
               sys.exit(1)
               "
