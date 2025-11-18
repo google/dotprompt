@@ -144,3 +144,25 @@ jobs:
           verbose: true
           packages-dir: dist/
           repository-url: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+
+  smoke_test_pypi_package:
+    name: Verify Package Usability
+    needs: [ pypi_publish ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dotpromptz from PyPI
+        run: |
+          pip install dotpromptz
+
+      - name: Run Smoke Test Script
+        run: |
+          echo "import dotpromptz; print(f'Successfully imported dotpromptz version: {dotpromptz.__version__}')" > smoke_test.py
+          python smoke_test.py
