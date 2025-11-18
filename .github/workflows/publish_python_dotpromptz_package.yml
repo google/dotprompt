@@ -114,7 +114,7 @@ jobs:
       - name: Upload build packages
         uses: actions/upload-artifact@v4
         with:
-          name: dist-dotpromptz-${{ github.run_attempt }}
+          name: dist-dotpromptz-${{ matrix.python-version }}-${{ github.run_attempt }}
           path: python/dotpromptz/dist/
 
   pypi_publish:
