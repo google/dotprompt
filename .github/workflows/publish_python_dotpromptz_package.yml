@@ -45,10 +45,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - "3.10"
-          - "3.11"
           - "3.12"
-          - "3.13"
 
       fail-fast: false
 
@@ -60,16 +57,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # Dependency Check (Smoke Test)
+      # Dependency Check of handlebars
       - name: Install Dependencies for Check
         run: pip install requests
 
-      - name: Smoke Test - Check handlebarrz Dependency
+      - name: Smoke Test - Check handlebarrz Dependency on PyPI
         id: check_dependency
         run: |
           IS_FOUND=$(python -c '
           import requests
-          url = "https://pypi.org/project/dotprompt-handlebars/json"
+          url = "https://pypi.org/project/dotpromptz-handlebars/json"
           response = requests.get(url)
 
           if response.status_code == 200:
@@ -100,21 +97,21 @@ jobs:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
 
-      - name: Install Build and Publish Tools
+      - name: Install Build Tools
         run: |
           uv pip install build twine
 
-      - name: Build dotpromptz distributions
+      - name: Build dotpromptz Distributions
         run: |
           source .venv/bin/activate
           cd python/dotpromptz
           python -m build
           twine check dist/*
 
-      - name: Upload build packages
+      - name: Upload dotpromptz Distributions for Python
         uses: actions/upload-artifact@v4
         with:
-          name: dist-dotpromptz-${{ matrix.python-version }}-${{ github.run_attempt }}
+          name: dist-dotpromptz
           path: python/dotpromptz/dist/
 
   pypi_publish:
@@ -137,10 +134,10 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: dist-dotpromptz-${{ matrix.python-version }}-${{ github.run_attempt }}
+          name: dist-dotpromptz
           path: dist/
 
-      - name: Publish distribution to PyPI
+      - name: Publish Distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           verbose: true
@@ -151,7 +148,10 @@ jobs:
     name: Verify Package Usability
     needs: [pypi_publish]
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        python-version:
+          - "3.12"
     steps:
       - uses: actions/checkout@v4
 
@@ -168,7 +168,11 @@ jobs:
         run: |
           echo "import importlib.metadata;
           import dotpromptz;
-          try: version = importlib.metadata.version('dotpromptz');
-          print(f'Successfully imported dotpromptz version: {version}');
-          except importlib.metadata.PackageNotFoundError: print('dotpromptz package not found or version metadata is missing.')" > smoke_test.py
+          try:
+            version = importlib.metadata.version('dotpromptz');
+            print(f'Successfully imported dotpromptz version: {version}');
+          except importlib.metadata.PackageNotFoundError:
+            print('dotpromptz package not found or version metadata is missing.');
+            exit 1 # Fail the step if package not found
+          " > smoke_test.py
           python smoke_test.py
