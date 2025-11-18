@@ -137,7 +137,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: dist-dotpromptz
+          name: dist-dotpromptz-${{ matrix.python-version }}-${{ github.run_attempt }}
           path: dist/
 
       - name: Publish distribution to PyPI
