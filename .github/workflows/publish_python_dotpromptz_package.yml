@@ -166,13 +166,19 @@ jobs:
 
       - name: Run Smoke Test Script
         run: |
-          echo "import importlib.metadata;
-          import dotpromptz;
+          python -c "
+          import importlib.metadata
+          import sys
+
           try:
-            version = importlib.metadata.version('dotpromptz');
-            print(f'Successfully imported dotpromptz version: {version}');
+          importlib.metadata.version('dotprompt')
+          print('Smoke test successful: Package found and imported.')
+
           except importlib.metadata.PackageNotFoundError:
-            print('dotpromptz package not found or version metadata is missing.');
-            exit 1 # Fail the step if package not found
-          " > smoke_test.py
-          python smoke_test.py
+          print('Smoke test FAILED: Package not found in environment.')
+          sys.exit(1)
+
+          except Exception as e:
+          print(f'Smoke test FAILED due to unexpected error: {e}')
+          sys.exit(1)
+          "
