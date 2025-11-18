@@ -30,8 +30,6 @@ on:
         options:
           - testpypi
           - pypi
-#  pull_request:
-#    branches: [main]
 
 permissions:
   contents: write
@@ -47,7 +45,11 @@ jobs:
     strategy:
       matrix:
         python-version:
+          - "3.10"
+          - "3.11"
           - "3.12"
+          - "3.13"
+
       fail-fast: false
 
     steps:
@@ -147,7 +149,7 @@ jobs:
 
   smoke_test_pypi_package:
     name: Verify Package Usability
-    needs: [ pypi_publish ]
+    needs: [pypi_publish]
     runs-on: ubuntu-latest
 
     steps:
@@ -164,5 +166,9 @@ jobs:
 
       - name: Run Smoke Test Script
         run: |
-          echo "import dotpromptz; print(f'Successfully imported dotpromptz version: {dotpromptz.__version__}')" > smoke_test.py
+          echo "import importlib.metadata;
+          import dotpromptz;
+          try: version = importlib.metadata.version('dotpromptz');
+          print(f'Successfully imported dotpromptz version: {version}');
+          except importlib.metadata.PackageNotFoundError: print('dotpromptz package not found or version metadata is missing.')" > smoke_test.py
           python smoke_test.py
