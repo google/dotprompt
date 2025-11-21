@@ -22,34 +22,33 @@ bazel_dep(name = "rules_jvm_external", version = "6.7")
 # Register the specific Java toolchain version.
 # See https://github.com/bazelbuild/rules_java/blob/master/toolchains.bzl
 java_toolchain = use_repo_rule("@rules_java//java:repositories.bzl", "java_toolchain")
+
 java_toolchain(
     name = "jdk",
     version = "21",
 )
 
-
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
 
 # Overriding these versions to prevent duplicate version warnings.
 maven.artifact(
+    name = "guava",
     artifact = "com.google.guava:guava:33.4.8-jre",
     group = "com.google.guava",
-    name = "guava",
     version = "33.4.8-jre",
 )
 maven.artifact(
+    name = "truth",
     artifact = "com.google.truth:truth:1.4.4",
     group = "com.google.truth",
-    name = "truth",
     version = "1.4.4",
 )
-
 maven.install(
     artifacts = [
         "junit:junit:4.13.2",
         "com.google.truth.extensions:truth-proto-extension:1.4.4",
         "com.google.truth:truth:1.4.4",
-        "com.github.jknack:handlebars:4.4.0", 
+        "com.github.jknack:handlebars:4.4.0",
         "com.google.guava:guava:33.4.8-jre",
     ],
     lock_file = "//:maven_install.json",
@@ -57,5 +56,4 @@ maven.install(
         "https://repo1.maven.org/maven2",
     ],
 )
-
 use_repo(maven, "maven")
