@@ -479,12 +479,17 @@ func (dp *Dotprompt) WrappedSchemaResolver(name string) (*jsonschema.Schema, err
 	if schema, exists := dp.Schemas[name]; exists {
 		return schema, nil
 	}
-	if dp.schemaResolver != nil {
-		return dp.schemaResolver(name)
-	}
 	schema := dp.LookupSchemaFromAnySource(name)
 	if jsonSchema, ok := schema.(*jsonschema.Schema); ok {
+		fmt.Printf("schema found in external source!!\n")
 		return jsonSchema, nil
+	}
+	if dp.schemaResolver != nil {
+		s, err := dp.schemaResolver(name)
+		if err != nil {
+			return nil, fmt.Errorf("wrappedSchemaResolver: schema with name %s not found: %v\n", name, err)
+		}
+		return s, nil
 	}
 	return nil, nil
 }
