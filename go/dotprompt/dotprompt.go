@@ -19,11 +19,10 @@ package dotprompt
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"reflect"
 	"regexp"
 	"strings"
-
-	"maps"
 
 	"github.com/invopop/jsonschema"
 	"github.com/mbleigh/raymond"
@@ -262,7 +261,6 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata) 
 		renderedString, err := dp.Template.ExecWith(inputContext, privDF, &raymond.ExecOptions{
 			NoEscape: true,
 		})
-
 		if err != nil {
 			return RenderedPrompt{}, err
 		}
@@ -483,6 +481,10 @@ func (dp *Dotprompt) WrappedSchemaResolver(name string) (*jsonschema.Schema, err
 	}
 	if dp.schemaResolver != nil {
 		return dp.schemaResolver(name)
+	}
+	schema := dp.LookupSchemaFromAnySource(name)
+	if jsonSchema, ok := schema.(*jsonschema.Schema); ok {
+		return jsonSchema, nil
 	}
 	return nil, nil
 }
