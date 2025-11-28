@@ -1,6 +1,6 @@
 module github.com/google/dotprompt/go
 
-go 1.23.8
+go 1.25.4
 
 require (
 	github.com/go-viper/mapstructure/v2 v2.4.0
