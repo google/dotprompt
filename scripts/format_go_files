@@ -23,7 +23,7 @@ if ((EUID == 0)); then
   exit
 fi
 
-GO_VERSION="1.23.8"
+GO_VERSION="1.24.11"
 
 TOP_DIR=$(git rev-parse --show-toplevel)
 GO_DIR="$TOP_DIR/go"

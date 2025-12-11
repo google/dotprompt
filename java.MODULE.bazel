@@ -16,8 +16,8 @@
 
 """Configuration for Bazel with Java dependencies."""
 
-bazel_dep(name = "rules_java", version = "8.11.0")
-bazel_dep(name = "rules_jvm_external", version = "6.7")
+bazel_dep(name = "rules_java", version = "9.3.0")
+bazel_dep(name = "rules_jvm_external", version = "6.9")
 
 # Register the specific Java toolchain version.
 # See https://github.com/bazelbuild/rules_java/blob/master/toolchains.bzl

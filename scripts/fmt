@@ -23,8 +23,6 @@ if ((EUID == 0)); then
   exit
 fi
 
-GO_VERSION="1.25.3"
-
 TOP_DIR=$(git rev-parse --show-toplevel)
 
 # Add license header to all files that don't already have it.

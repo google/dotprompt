@@ -16,9 +16,9 @@
 
 """Configuration for Bazel with Go dependencies."""
 
-GO_VERSION = "1.25.3"
+GO_VERSION = "1.24.11"
 
-bazel_dep(name = "rules_go", version = "0.58.3", repo_name = "io_bazel_rules_go")
+bazel_dep(name = "rules_go", version = "0.59.0", repo_name = "io_bazel_rules_go")
 
 go_sdk = use_extension("@io_bazel_rules_go//go:extensions.bzl", "go_sdk")
 go_sdk.download(

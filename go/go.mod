@@ -1,10 +1,10 @@
 module github.com/google/dotprompt/go
 
-go 1.23.8
+go 1.24.11
 
 require (
 	github.com/go-viper/mapstructure/v2 v2.4.0
-	github.com/goccy/go-yaml v1.18.0
+	github.com/goccy/go-yaml v1.19.0
 	github.com/invopop/jsonschema v0.13.0
 	github.com/stretchr/testify v1.10.0
 )
