@@ -27,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PATH: ${{ github.workspace }}/go/bin:${{ github.workspace }}/.cargo/bin:${{ github.workspace }}/.local/share/pnpm:${{ github.workspace }}/.local/bin:/usr/local/bin:/usr/bin:/bin
+      PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
     strategy:
       matrix:
         python-version:
@@ -36,7 +37,7 @@ jobs:
           - "3.13"
           #- "pypy-3.10" Remove it as pypy 3.10 being lower than the minimum supported by PyO3 (3.11):
           - "pypy-3.11"
-          #- "3.14" # This still fails.
+          - "3.14"
       fail-fast: false
 
     steps:

@@ -25,14 +25,12 @@ fi
 TOP_DIR=$(git rev-parse --show-toplevel)
 PY_DIR="${TOP_DIR}/python"
 PYTHON_VERSIONS=(
-  "pypy3.10"
   "pypy3.11"
   "python3.10"
   "python3.11"
   "python3.12"
   "python3.13"
-  # TODO: Wait for https://github.com/PyO3/pyo3/issues/5000 to be fixed.
-  #"python3.14" # Next version to catch breakages early.
+  "python3.14" 
 )
 
 echo "=== Running Python lint ==="
@@ -64,7 +62,7 @@ for VERSION in "${PYTHON_VERSIONS[@]}"; do
   # NOTE: Build the Rust extension for a specific Python version in an isolated
   # virtual environment; otherwise we see weird missing import errors.
   echo "Creating virtual environment for ${VERSION}..."
-  uv venv --python "${VERSION}"
+  uv venv --allow-existing --python "${VERSION}"
   uv run --python "${VERSION}" --active --isolated --directory handlebarrz maturin develop
   echo "Running tests with Python ${VERSION}..."
   uv run \

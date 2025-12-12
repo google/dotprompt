@@ -99,12 +99,11 @@ spec/
 
 from __future__ import annotations
 
-import asyncio
 import re
 import unittest
 from collections.abc import Callable, Coroutine
 from pathlib import Path
-from typing import Any, Generic, TypedDict
+from typing import Any, Generic
 
 import structlog
 import yaml
@@ -296,7 +295,7 @@ class TestSpecFiles(unittest.IsolatedAsyncioTestCase):
                 self.assertIsNotNone(data)
 
 
-class YamlSpecTestBase(unittest.IsolatedAsyncioTestCase, Generic[ModelConfigT]):
+class YamlSpecTestBase(Generic[ModelConfigT], unittest.IsolatedAsyncioTestCase):
     """A base class that is used as a template for all YAML spec test suites."""
 
     async def run_yaml_test(

@@ -351,7 +351,6 @@ class TestExtractFrontmatterAndBody(unittest.TestCase):
         Both the frontmatter and body are empty strings, when there
         is no frontmatter marker.
         """
-
         input_str = 'Hello World'
         frontmatter, body = extract_frontmatter_and_body(input_str)
         assert frontmatter == ''

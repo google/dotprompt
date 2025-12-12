@@ -16,8 +16,6 @@
 
 """Test code for smoke tests."""
 
-from typing import Any
-
 from handlebarrz import HelperOptions, Template
 
 

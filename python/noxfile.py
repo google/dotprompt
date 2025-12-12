@@ -22,13 +22,12 @@ import nox
 nox.options.default_venv_backend = 'uv|virtualenv'
 
 PYTHON_VERSIONS = [
-    'pypy-3.10',
     'pypy-3.11',
     '3.10',
     '3.11',
     '3.12',
     '3.13',
-    #'3.14', # This still fails.
+    '3.14',
 ]
 
 
@@ -53,6 +52,7 @@ def tests(session: nox.Session) -> None:
         'handlebarrz',
         'maturin',
         'develop',
+        env={'PYO3_USE_ABI3_FORWARD_COMPATIBILITY': '1'},
     )
 
     session.run(
@@ -64,8 +64,8 @@ def tests(session: nox.Session) -> None:
         '--isolated',
         'pytest',
         '-v',
-        #'-vv',
-        #'--log-level=DEBUG',
+        # '-vv',
+        # '--log-level=DEBUG',
         '.',
         *session.posargs,
         external=True,

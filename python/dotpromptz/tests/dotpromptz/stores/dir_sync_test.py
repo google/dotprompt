@@ -37,9 +37,6 @@ version but uses standard blocking I/O operations, making it suitable for
 simpler applications or those that don't require async operations.
 """
 
-import os
-import shutil
-from collections.abc import Generator
 from pathlib import Path
 
 import pytest

@@ -62,6 +62,8 @@ class ContentItem(BaseModel):
 
 
 class ToolFunction(BaseModel):
+    """Tool function."""
+
     name: str
     arguments: str
 
@@ -73,13 +75,15 @@ class ToolCallType(StrEnum):
 
 
 class ToolCall(BaseModel):
+    """Tool Call."""
+
     id: str
     type: ToolCallType
     function: ToolFunction
 
 
 class OpenAIMessage(BaseModel):
-    """Open AI Message"""
+    """Open AI Message."""
 
     role: Role
     content: str | list[ContentItem] | None = None
@@ -89,22 +93,28 @@ class OpenAIMessage(BaseModel):
 
 
 class OpenAIToolFunction(BaseModel):
+    """OpenAI Tool Function."""
+
     name: str
     description: str | None = None
     parameters: dict[str, Any] | None = None
 
 
 class OpenAIToolDefinition(BaseModel):
+    """OpenAI Tool Definition."""
+
     type: ToolCallType
     function: OpenAIToolFunction
 
 
 class ToolChoiceFunction(BaseModel):
+    """Tool Choice Function."""
+
     name: str
 
 
 class ToolChoice(BaseModel):
-    """Tool Choice"""
+    """Tool Choice."""
 
     type: ToolCallType
     function: ToolChoiceFunction
@@ -118,7 +128,7 @@ class ResponseFormatType(StrEnum):
 
 
 class ResponseFormat(BaseModel):
-    """Expected Response Format"""
+    """Expected Response Format."""
 
     type: ResponseFormatType
 
@@ -127,7 +137,7 @@ ToolChoiceOptions = Literal['none', 'auto']
 
 
 class OpenAIRequest(BaseModel):
-    """Open AI Request"""
+    """Open AI Request."""
 
     messages: list[OpenAIMessage]
     model: str

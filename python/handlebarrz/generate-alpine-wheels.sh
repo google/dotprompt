@@ -16,6 +16,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 export UV_LINK_MODE=copy
+export PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1
 
 PYTHON_VERSION="python$1"
 

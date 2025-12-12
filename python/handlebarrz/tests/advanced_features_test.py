@@ -17,7 +17,6 @@
 """Tests for advanced Handlebars features."""
 
 import unittest
-from typing import Any
 
 from handlebarrz import HelperOptions, Template
 

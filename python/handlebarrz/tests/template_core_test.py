@@ -15,7 +15,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import unittest
-from typing import Any
 
 import pytest
 

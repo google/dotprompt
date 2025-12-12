@@ -45,7 +45,6 @@ from typing import Any
 import anyio
 
 from dotpromptz.helpers import BUILTIN_HELPERS
-from dotpromptz.models import dump_models
 from dotpromptz.parse import parse_document, to_messages
 from dotpromptz.picoschema import picoschema_to_json_schema
 from dotpromptz.resolvers import resolve_json_schema, resolve_partial, resolve_tool

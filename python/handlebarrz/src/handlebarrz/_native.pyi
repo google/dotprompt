@@ -17,7 +17,6 @@
 """Stub type annotations for native Handlebars."""
 
 from collections.abc import Callable
-from typing import Any
 
 def html_escape(text: str) -> str: ...
 def no_escape(text: str) -> str: ...

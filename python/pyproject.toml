@@ -136,6 +136,10 @@ section-order = [
   "local-folder",
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"**/*_test.py" = ["D"]
+"**/tests/*"   = ["D"]
+
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
