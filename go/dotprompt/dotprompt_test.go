@@ -271,3 +271,85 @@ func TestRegisterPartialsWithResolver(t *testing.T) {
 		t.Errorf("Expected output '%s', got '%s'", expectedOutput, result)
 	}
 }
+
+// TestCompileMultiplePromptsTemplateIsolation tests that multiple compiled prompts
+// use their own templates and don't share state.
+// This is a regression test for https://github.com/google/dotprompt/issues/362
+func TestCompileMultiplePromptsTemplateIsolation(t *testing.T) {
+	dp := NewDotprompt(nil)
+
+	// Compile first prompt about weather
+	prompt1Source := "Talk about weather: {{topic}}"
+	prompt1, err := dp.Compile(prompt1Source, nil)
+	if err != nil {
+		t.Fatalf("Failed to compile prompt1: %v", err)
+	}
+
+	// Compile second prompt about programming (different template)
+	prompt2Source := "Talk about programming: {{language}}"
+	prompt2, err := dp.Compile(prompt2Source, nil)
+	if err != nil {
+		t.Fatalf("Failed to compile prompt2: %v", err)
+	}
+
+	// Execute first prompt - should use its own template
+	result1, err := prompt1(
+		&DataArgument{Input: map[string]any{"topic": "sunny day"}},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("Failed to execute prompt1: %v", err)
+	}
+
+	// Execute second prompt
+	result2, err := prompt2(
+		&DataArgument{Input: map[string]any{"language": "Go"}},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("Failed to execute prompt2: %v", err)
+	}
+
+	// Verify first prompt output contains "weather" and "sunny day"
+	if len(result1.Messages) == 0 {
+		t.Fatal("prompt1 returned no messages")
+	}
+	msg1 := result1.Messages[0]
+	if len(msg1.Content) == 0 {
+		t.Fatal("prompt1 message has no content")
+	}
+	text1, ok := msg1.Content[0].(*TextPart)
+	if !ok {
+		t.Fatalf("prompt1 content is not TextPart: %T", msg1.Content[0])
+	}
+	if !strings.Contains(text1.Text, "weather") {
+		t.Errorf("prompt1 output should contain 'weather', got: %s", text1.Text)
+	}
+	if !strings.Contains(text1.Text, "sunny day") {
+		t.Errorf("prompt1 output should contain 'sunny day', got: %s", text1.Text)
+	}
+
+	// Verify second prompt output contains "programming" and "Go"
+	if len(result2.Messages) == 0 {
+		t.Fatal("prompt2 returned no messages")
+	}
+	msg2 := result2.Messages[0]
+	if len(msg2.Content) == 0 {
+		t.Fatal("prompt2 message has no content")
+	}
+	text2, ok := msg2.Content[0].(*TextPart)
+	if !ok {
+		t.Fatalf("prompt2 content is not TextPart: %T", msg2.Content[0])
+	}
+	if !strings.Contains(text2.Text, "programming") {
+		t.Errorf("prompt2 output should contain 'programming', got: %s", text2.Text)
+	}
+	if !strings.Contains(text2.Text, "Go") {
+		t.Errorf("prompt2 output should contain 'Go', got: %s", text2.Text)
+	}
+
+	// Critical check: first prompt should NOT use second prompt's template
+	if strings.Contains(text1.Text, "programming") {
+		t.Errorf("BUG: prompt1 output contains 'programming' from prompt2's template! Got: %s", text1.Text)
+	}
+}
