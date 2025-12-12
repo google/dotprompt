@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.3](https://github.com/google/dotprompt/compare/handlebarrz-0.1.2...handlebarrz-0.1.3) (2025-12-12)
+
+
+### Features
+
+* **py:** add support for python 3.14 ([#365](https://github.com/google/dotprompt/issues/365)) ([53db722](https://github.com/google/dotprompt/commit/53db722352d360c9097028d63eb1b7e9576d3d24))
+
+
+### Bug Fixes
+
+* **py/handlebarrz:** remove redundant lock file ([#360](https://github.com/google/dotprompt/issues/360)) ([db5416a](https://github.com/google/dotprompt/commit/db5416a4f7ce508a3d684b7c56ea8a50f46ee65d))
+
 ## [0.1.2](https://github.com/google/dotprompt/compare/handlebarrz-0.1.1...handlebarrz-0.1.2) (2025-11-13)
 
 
