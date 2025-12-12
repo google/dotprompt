@@ -120,9 +120,9 @@ type PromptMetadata struct {
 	// Model configuration. Not all models support all options.
 	Config ModelConfig `json:"config,omitempty"`
 	// Configuration for input variables.
-	Input PromptMetadataInput `json:"input,omitempty"`
+	Input PromptMetadataInput `json:"input"`
 	// Defines the expected model output format.
-	Output PromptMetadataOutput `json:"output,omitempty"`
+	Output PromptMetadataOutput `json:"output"`
 	// This field will contain the raw frontmatter as parsed with no additional
 	// processing or substitutions. If your implementation requires custom
 	// fields they will be available here.
