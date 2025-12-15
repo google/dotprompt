@@ -830,7 +830,7 @@ lint = [
 
 [[package]]
 name = "dotpromptz"
-version = "0.1.3"
+version = "0.1.4"
 source = { editable = "dotpromptz" }
 dependencies = [
     { name = "aiofiles" },
