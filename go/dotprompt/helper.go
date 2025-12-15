@@ -19,6 +19,7 @@ package dotprompt
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/mbleigh/raymond"
 )
@@ -42,11 +43,11 @@ func JSON(serializable any, options *raymond.Options) raymond.SafeString {
 		jsonData, err = json.Marshal(serializable)
 	} else {
 		indent := options.HashProp("indent").(int)
-		indentStr := ""
+		var indentStr strings.Builder
 		for range indent {
-			indentStr += " "
+			indentStr.WriteString(" ")
 		}
-		jsonData, err = json.MarshalIndent(serializable, "", indentStr)
+		jsonData, err = json.MarshalIndent(serializable, "", indentStr.String())
 	}
 
 	if err != nil {
