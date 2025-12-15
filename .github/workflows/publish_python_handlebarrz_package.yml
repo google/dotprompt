@@ -18,6 +18,18 @@ name: Publish dotpromptz-handlebars Package to PyPI
 
 on:
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "The exact release tag of dotpromptz-handlebars to publish"
+        required: true
+        type: string
+      target:
+        description: "Publish destination (TestPyPI or PyPI)"
+        type: choice
+        required: true
+        options:
+          - testpypi
+          - pypi
 #  pull_request:
 #    branches: [ main ]
 
@@ -282,7 +294,14 @@ jobs:
       name: pypi_github_publishing
     permissions:
       id-token: write
+    env:
+      PYPI_REPOSITORY_URL: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
     steps:
+      - name: Checkout code at tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag_name }}
+
       - name: Download wheels
         uses: actions/download-artifact@v4
         with:
@@ -302,6 +321,7 @@ jobs:
         with:
           verbose: true
           packages-dir: dist/
+          repository-url: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
 
       - name: Sleep for pypi server to load
         run: sleep 180
