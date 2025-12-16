@@ -35,7 +35,7 @@ jobs:
           - "3.13"
           - "3.14"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up QEMU for Multi-Arch support
         uses: docker/setup-qemu-action@v3
@@ -53,7 +53,7 @@ jobs:
           docker run -v "$PWD/python/handlebarrz":/project linux-arm64:latest sh ./generate-arm-wheels.sh "${{ matrix.python_version }}"
 
       - name: Upload build packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: wheels-arm64-${{ matrix.python_version }}
           path: python/handlebarrz/target/wheels
@@ -66,7 +66,7 @@ jobs:
         python_version:
           - "3.12"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up QEMU for Multi-Arch support
         uses: docker/setup-qemu-action@v3
@@ -84,7 +84,7 @@ jobs:
           docker run -v "$PWD/python/handlebarrz":/project linux-alpine:latest sh ./generate-alpine-wheels.sh "${{ matrix.python_version }}"
 
       - name: Upload build packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: wheels-alpine-${{ matrix.python_version }}
           path: python/handlebarrz/target/wheels
@@ -102,7 +102,7 @@ jobs:
           - "3.14"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Build container
         run: |
@@ -114,7 +114,7 @@ jobs:
           docker run -v "$PWD/python/handlebarrz":/project linux-x86-64:latest sh ./generate-x86-64-wheels.sh "${{ matrix.python_version }}"
 
       - name: Upload build packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: wheels-x86-64-${{ matrix.python_version }}
           path: python/handlebarrz/target/wheels
@@ -130,11 +130,11 @@ jobs:
 #          - "3.12"
 #          - "3.13"
 #    steps:
-#      - uses: actions/checkout@v4
+#      - uses: actions/checkout@v6
 #
 #      - name: Set up Python
 #        id: setup_py
-#        uses: actions/setup-python@v5
+#        uses: actions/setup-python@v6
 #        with:
 #          python-version: ${{ matrix.python_version }}
 #
@@ -152,7 +152,7 @@ jobs:
 #        run: maturin build --release --strip -o dist -i ${{ steps.setup_py.outputs.python-path }}
 #
 #      - name: Upload build packages
-#        uses: actions/upload-artifact@v4
+#        uses: actions/upload-artifact@v6
 #        with:
 #          name: wheels-windows-x86_64-${{ matrix.python_version }}
 #          path: python/handlebarrz/dist
@@ -168,15 +168,15 @@ jobs:
 #          - "3.12"
 #          - "3.13"
 #    steps:
-#      - uses: actions/checkout@v4
+#      - uses: actions/checkout@v6
 #
 #      - name: Set up Node.js for Actions
-#        uses: actions/setup-node@v4
+#        uses: actions/setup-node@v6
 #        with:
 #          node-version: '20'
 #
 #      - name: Set up Python
-#        uses: actions/setup-python@v5
+#        uses: actions/setup-python@v6
 #        with:
 #          python-version: ${{ matrix.python_version }}
 #
@@ -197,7 +197,7 @@ jobs:
 #        run: maturin build --release --strip -o dist
 #
 #      - name: Upload build packages
-#        uses: actions/upload-artifact@v4
+#        uses: actions/upload-artifact@v6
 #        with:
 #          name: wheels-macos-arm64-${{ matrix.python_version }}-${{ github.job }}
 #          path: python/handlebarrz/dist
@@ -213,10 +213,10 @@ jobs:
 #          - "3.12"
 #          - "3.13"
 #    steps:
-#      - uses: actions/checkout@v4
+#      - uses: actions/checkout@v6
 #
 #      - name: Set up Python
-#        uses: actions/setup-python@v5
+#        uses: actions/setup-python@v6
 #        with:
 #          python-version: ${{ matrix.python_version }}
 #
@@ -233,7 +233,7 @@ jobs:
 #        run: maturin build --release --strip -o dist
 #
 #      - name: Upload build packages
-#        uses: actions/upload-artifact@v4
+#        uses: actions/upload-artifact@v6
 #        with:
 #          name: wheels-macos-x86_64-${{ matrix.python_version }}-${{ github.job }}
 #          path: python/handlebarrz/dist
@@ -246,11 +246,11 @@ jobs:
 #        python_version:
 #          - "3.12"
 #    steps:
-#      - uses: actions/checkout@v4
+#      - uses: actions/checkout@v6
 #
 #      - name: Set up Python
 #        id: setup_py
-#        uses: actions/setup-python@v5
+#        uses: actions/setup-python@v6
 #        with:
 #          python-version: ${{ matrix.python_version }}
 #
@@ -269,7 +269,7 @@ jobs:
 ##        run: maturin build --release --strip -o dist --target aarch64-pc-windows-msvc -i python
 #
 #      - name: Upload build packages
-#        uses: actions/upload-artifact@v4
+#        uses: actions/upload-artifact@v6
 #        with:
 #          name: wheels-windows-arm64-${{ matrix.python_version }}
 #          path: python/handlebarrz/dist
@@ -284,7 +284,7 @@ jobs:
       id-token: write
     steps:
       - name: Download wheels
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           merge-multiple: true
           path: dist/
@@ -322,7 +322,7 @@ jobs:
           - "debian"
           - "fedora"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up QEMU for Multi-Arch support
         uses: docker/setup-qemu-action@v3
@@ -351,7 +351,7 @@ jobs:
         python_version:
           - "3.12"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up QEMU for Multi-Arch support
         uses: docker/setup-qemu-action@v3
@@ -386,7 +386,7 @@ jobs:
           - "debian"
           - "fedora"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Build container
         run: |
@@ -413,10 +413,10 @@ jobs:
 #          - "3.12"
 #          - "3.13"
 #    steps:
-#      - uses: actions/checkout@v4
+#      - uses: actions/checkout@v6
 #
 #      - name: Set up Python
-#        uses: actions/setup-python@v5
+#        uses: actions/setup-python@v6
 #        with:
 #          python-version: ${{ matrix.python_version }}
 #
@@ -439,10 +439,10 @@ jobs:
 #          - "3.12"
 #          - "3.13"
 #    steps:
-#      - uses: actions/checkout@v4
+#      - uses: actions/checkout@v6
 #
 #      - name: Set up Python
-#        uses: actions/setup-python@v5
+#        uses: actions/setup-python@v6
 #        with:
 #          python-version: ${{ matrix.python_version }}
 #
@@ -466,10 +466,10 @@ jobs:
 #          - "3.12"
 #          - "3.13"
 #    steps:
-#      - uses: actions/checkout@v4
+#      - uses: actions/checkout@v6
 #
 #      - name: Set up Python
-#        uses: actions/setup-python@v5
+#        uses: actions/setup-python@v6
 #        with:
 #          python-version: ${{ matrix.python_version }}
 #
@@ -490,10 +490,10 @@ jobs:
 #        python_version:
 #          - "3.12"
 #    steps:
-#      - uses: actions/checkout@v4
+#      - uses: actions/checkout@v6
 #
 #      - name: Set up Python
-#        uses: actions/setup-python@v5
+#        uses: actions/setup-python@v6
 #        with:
 #          python-version: ${{ matrix.python_version }}
 #

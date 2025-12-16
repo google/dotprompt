@@ -35,10 +35,10 @@ jobs:
     name: Go ${{ matrix.go-version }} Tests
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@main
+        uses: actions/checkout@v6
 
       - name: Set up Go ${{ matrix.go-version }}
-        uses: actions/setup-go@main
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go-version }}
 

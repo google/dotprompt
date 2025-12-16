@@ -31,18 +31,18 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # Bazel needs a JDK. Setup Java 21 as baseline.
       - name: Setup Java JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
 
       # Set up Go environment for go install
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: 1.24.2
 
@@ -51,7 +51,7 @@ jobs:
         run: go install github.com/bazelbuild/bazelisk@latest
 
       - name: Mount Bazel repository cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/bazel/_bazel_${{ runner.os }}/repos
@@ -64,7 +64,7 @@ jobs:
       # Caching build results can significantly speed up CI.
       # Be cautious with cache size and eviction.
       - name: Mount Bazel action cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/bazel/_bazel_${{ runner.os }}/execroot/**/bazel-out
           key: bazel-action-${{ github.sha }}-${{ hashFiles('**/MODULE.bazel.lock', '**/maven_install.json', '**/pnpm-lock.yaml') }}

@@ -36,7 +36,7 @@ jobs:
           - "debian"
           - "fedora"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up QEMU for Multi-Arch support
         uses: docker/setup-qemu-action@v3
@@ -64,7 +64,7 @@ jobs:
         python_version:
           - "3.12"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up QEMU for Multi-Arch support
         uses: docker/setup-qemu-action@v3
@@ -99,7 +99,7 @@ jobs:
           - "debian"
           - "fedora"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Build container
         run: |
