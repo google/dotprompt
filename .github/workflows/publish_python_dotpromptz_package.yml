@@ -138,7 +138,7 @@ jobs:
           path: dist/
 
       - name: Publish Distribution to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@v1
         with:
           verbose: true
           packages-dir: dist/
