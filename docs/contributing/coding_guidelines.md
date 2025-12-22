@@ -1,77 +1,59 @@
-## Python coding guidelines
+# Instructions for Gemini
 
-This is for both bots and humans.
+You are an expert Python developer contributing to the Google Dotprompt project. When modifying or generating code, you must strictly adhere to the following guidelines.
 
-Target: Python >= 3.10
+## 1. Project Context
+- **Target Python Version**: Python 3.10 or newer. Ensure code is compatible with Python 3.10+.
+- **Language**: Python.
+- **Environment Management**: Use `uv` for packaging and environment management.
 
-### Typing & Style
+## 2. Typing & Style
+- **Type Unions**: Use the pipe operator `|` (PEP 604) for union types (e.g., `int | str`) instead of `typing.Union`. Use `| None` for optional types.
+- **Generics**: Use standard collection generics (PEP 585) like `list`, `dict`, `tuple` (lowercase) for type hints instead of `typing.List`, `typing.Dict`.
+- **Imports**: Import deprecated typing types (`Callable`, `Awaitable`, etc.) from `collections.abc` instead of `typing`.
+- **Strict Typing**: Apply type hints strictly to all function arguments and return values. Always include `-> None` for functions that do not return a value.
+- **Type Aliases**: Use standard assignment or `TypeAlias` (from `typing`) for type aliases (e.g., `MyAlias = int | str`). Do NOT use the `type` keyword (PEP 695) as it requires Python 3.12+.
+- **Enums**: Use `(str, Enum)` for string-based enums to maintain Python 3.10 compatibility. Do not use `StrEnum` until Python 3.10 support is dropped.
+- **Interfaces**: Code against interfaces (Protocols), not implementations.
+- **Design Patterns**: Use the adapter pattern for optional implementations.
+- **Comments**:
+  - Use proper punctuation.
+  - Avoid comments explaining obvious code.
+  - Add TODO comments in the format: `TODO: Fix this later.` when adding stub implementations.
 
-- Use `|` for union types instead of `Union` and `| None` instead of `Optional`.
-- Use lowercase `list`, `dict` for type hints (not `List`, `Dict`).
-- Use modern generics (PEP 585, 695).
-- Import types such as `Callable`, `Awaitable` that are deprecated in `typing`
-  from `collections.abc` instead.
-- Apply type hints strictly, including `-> None` for functions returning nothing.
-- Use the `type` keyword for type aliases.
-- Use enum types like `StrEnum` instead of `(str, Enum)` for string-based enums when we drop support for Python 3.10 at its EOL.
-- Code against interfaces, not implementations.
-- Use the adapter pattern for optional implementations.
-- Use proper punctuation in comments.
-- Avoid comments explaining obvious code or actions.
-- Add TODO comments such as `TODO: Fix this later.` when adding stub implementations.
+## 3. Documentation
+- **Docstrings**: Write comprehensive Google-style docstrings for all modules, classes, and functions.
+- **Content Requirements**:
+  - **Overview**: A one-line description followed by optional rationale.
+  - **Key Operations**: Describe the purpose.
+  - **Arguments**: Required for callables.
+  - **Returns**: Required for callables.
+  - **Examples**: Required for user-facing APIs.
+  - **Caveats**: Note any limitations or side effects.
 
-### Docstrings
+## 4. Formatting
+- **Tools**: Format code using `ruff`. See the scripts/fmt script for more details.
+- **Line Length**: Limit lines to 120 characters to distinguish vertical code flow.
+- **Configuration**: Respect rules in `.editorconfig` or `pyproject.toml`.
+- **Wrapping**: Wrap long lines and strings appropriately.
 
-- Write comprehensive Google-style docstrings for modules, classes, and
-functions.
-- Include the following sections as needed:
-  - Overview (required as a one liner description with follow-up paragraphs as
-    rationale)
-  - Key operations/purpose
-  - Arguments/attributes (required for callables)
-  - Returns (required for callables)
-  - Examples (required for user-facing API)
-  - Caveats
+## 5. Testing
+- **Frameworks**: Use `pytest` and `unittest`.
+- **Docstrings**: Add docstrings to test modules, classes, and functions explaining their scope. Use the Google Python Style Guide for docstrings.
+- **Execution**: Run tests via the scripts in `scripts/`.
+- **Parity**: If porting tests from another language, maintain 1:1 logic parity; do not invent new behavior.
+- **Purity**: Fix underlying code issues rather than special-casing tests.
 
-### Formatting
+## 6. Tooling & Ecosystem
+- **Static Analysis**: Use `ty` for static type checking.
+- **Logging**:
+  - Use `structlog` for structured logging.
+  - Use the async API (`await logger.ainfo(...)`) within coroutines.
+  - Avoid f-strings in log calls; let `structlog` handle formatting (e.g. `logger.info("msg", var=val)`).
+  - Use the sync API (`logger.exception(...)`) for exception handling.
 
-- Format code using ruff (or `bin/fmt` or `scripts/fmt` if present).
-- Max line length: 120 characters to make it easy to read code vertically.
-- Refer to the `.editorconfig` or workspace-root `pyproject.toml` for
-  other formatting rules.
-- Wrap long lines and strings appropriately.
-
-### Testing
-
-- Write comprehensive unit tests using `pytest` and `unittest`.
-- Add docstrings to test modules, classes, and functions explaining their scope.
-- Run tests via `uv run --directory ${PYTHON_WORKSPACE_DIR} pytest .` where
-  the `PYTHON_WORKSPACE_DIR` corresponds to the workspace directory.
-- Fix underlying code issues rather than special-casing tests.
-- If porting tests: Maintain 1:1 logic parity accurately; do not invent behavior.
-
-### Tooling & Environment
-
-- Use `uv` for packaging and environment management.
-- Use `ty` for static type checking.
-- Target Python 3.12 or newer. Aim for PyPy compatibility (optional).
-
-### Logging
-
-- Use `structlog` for structured logging.
-- Use `structlog`'s async API (`await logger.ainfo(...)`) within coroutines
-- Avoid f-strings for async logging.
-- For exception handling use the sync API: logger.exception(...)
-
-### Porting
-
-- If porting from another language (e.g., JS or TypeScript), maintain 1:1 logic
-parity in implementation and tests.
-
-### Licensing
-
-Include the following Apache 2.0 license header at the top of each file,
-updating the year:
+## 7. Licensing
+- **Header**: Include the following Apache 2.0 license header at the top of each file, ensuring the year is current (e.g., 2025):
 
 ```python
 # Copyright 2025 Google LLC
