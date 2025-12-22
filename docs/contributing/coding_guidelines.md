@@ -13,7 +13,7 @@ Target: Python >= 3.10
   from `collections.abc` instead.
 - Apply type hints strictly, including `-> None` for functions returning nothing.
 - Use the `type` keyword for type aliases.
-- Use enum types like `StrEnum` instead of `(str, Enum)` for string-based enums.
+- Use enum types like `StrEnum` instead of `(str, Enum)` for string-based enums when we drop support for Python 3.10 at its EOL.
 - Code against interfaces, not implementations.
 - Use the adapter pattern for optional implementations.
 - Use proper punctuation in comments.
@@ -53,7 +53,7 @@ functions.
 ### Tooling & Environment
 
 - Use `uv` for packaging and environment management.
-- Use `mypy` for static type checking.
+- Use `ty` for static type checking.
 - Target Python 3.12 or newer. Aim for PyPy compatibility (optional).
 
 ### Logging

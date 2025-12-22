@@ -29,7 +29,6 @@ classifiers = [
   "License :: OSI Approved :: Apache Software License",
 ]
 dependencies = [
-  "strenum>=0.4.15 ; python_version < '3.11'",
   "structlog>=25.2.0",
 ]
 description = "Handlebars library for Python based on handlebars-rust."

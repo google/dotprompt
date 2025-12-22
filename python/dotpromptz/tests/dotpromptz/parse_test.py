@@ -603,7 +603,7 @@ class TestInsertHistory(unittest.TestCase):
             MediaPart(
                 media=MediaContent(
                     url='https://example.com/image.jpg',
-                    contentType='image/jpeg',
+                    content_type='image/jpeg',
                 ),
             ),
         ),

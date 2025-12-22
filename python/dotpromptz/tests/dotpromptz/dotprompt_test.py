@@ -147,7 +147,7 @@ def test_define_tool(mock_handlebars: Mock) -> None:
 @patch('dotpromptz.dotprompt.parse_document')
 def test_parse(mock_parse_document: Mock, mock_handlebars: Mock) -> None:
     """Test parsing a prompt."""
-    mock_parse_document.return_value = ParsedPrompt(template='Hello {{name}}', toolDefs=None)
+    mock_parse_document.return_value = ParsedPrompt(template='Hello {{name}}', tool_defs=None)
 
     dotprompt = Dotprompt()
     result: ParsedPrompt[dict[str, Any]] = dotprompt.parse('source string')
@@ -155,7 +155,7 @@ def test_parse(mock_parse_document: Mock, mock_handlebars: Mock) -> None:
     mock_parse_document.assert_called_once_with('source string')
 
     # Ensure chaining works.
-    assert result == ParsedPrompt(template='Hello {{name}}', toolDefs=None)
+    assert result == ParsedPrompt(template='Hello {{name}}', tool_defs=None)
 
 
 def test_chainable_interface(mock_handlebars: Mock) -> None:

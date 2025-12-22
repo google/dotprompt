@@ -310,7 +310,7 @@ class PicoschemaParser:
         elif not isinstance(obj, dict):
             raise ValueError(f'Picoschema: only consists of objects and strings. Got: {obj}')
 
-        schema: JsonSchema = {
+        schema: dict[str, Any] = {
             'type': 'object',
             'properties': {},
             'required': [],

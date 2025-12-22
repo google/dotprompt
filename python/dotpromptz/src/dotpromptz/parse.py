@@ -227,7 +227,7 @@ def parse_document(source: str) -> ParsedPrompt[T]:
     frontmatter, body = extract_frontmatter_and_body(source)
     if not frontmatter:
         # No frontmatter, return a basic ParsedPrompt with just the template
-        return ParsedPrompt(ext={}, config=None, metadata={}, toolDefs=None, template=source)
+        return ParsedPrompt(ext={}, config=None, metadata={}, tool_defs=None, template=source)
 
     try:
         parsed_metadata = yaml.safe_load(frontmatter)
@@ -253,7 +253,7 @@ def parse_document(source: str) -> ParsedPrompt[T]:
                 version=raw.get('version'),
                 input=raw.get('input'),
                 output=raw.get('output'),
-                toolDefs=raw.get('toolDefs'),
+                tool_defs=raw.get('toolDefs'),
                 tools=raw.get('tools'),
                 ext=ext,
                 config=pruned.get('config'),
@@ -268,7 +268,7 @@ def parse_document(source: str) -> ParsedPrompt[T]:
                 ext={},
                 config=None,
                 metadata={},
-                toolDefs=None,
+                tool_defs=None,
                 template=body.strip(),
             )
     except Exception as e:
@@ -279,7 +279,7 @@ def parse_document(source: str) -> ParsedPrompt[T]:
             ext={},
             config=None,
             metadata={},
-            toolDefs=None,
+            tool_defs=None,
             template=source.strip(),
         )
 
@@ -502,7 +502,7 @@ def parse_media_part(piece: str) -> MediaPart:
 
     media_content = MediaContent(
         url=url,
-        contentType=(content_type if content_type and content_type.strip() else None),
+        content_type=(content_type if content_type and content_type.strip() else None),
     )
     return MediaPart(media=media_content)
 

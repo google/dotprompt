@@ -42,7 +42,7 @@ import inspect
 from collections.abc import Awaitable, Callable
 from typing import Any, TypeVar
 
-import anyio
+from anyio.to_thread import run_sync
 
 from dotpromptz.errors import ResolverFailedError
 from dotpromptz.typing import (
@@ -133,7 +133,7 @@ async def resolve(name: str, kind: str, resolver: ResolverT | None) -> Definitio
             # type after calling, as we don't know it yet. It might still return
             # an awaitable (e.g. sync function returning `asyncio.Future`) but
             # calling it sync first is necessary to check.
-            result_or_awaitable = await anyio.to_thread.run_sync(resolver, name)
+            result_or_awaitable = await run_sync(resolver, name)
             if inspect.isawaitable(result_or_awaitable):
                 obj = await result_or_awaitable
             else:

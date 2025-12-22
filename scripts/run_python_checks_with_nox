@@ -29,7 +29,7 @@ PY_DIR="$TOP_DIR/python"
 
 echo "=== Running Python lint ==="
 uv run --directory "${PY_DIR}" ruff check --select I --fix --preview --unsafe-fixes .
-uv run --directory "${PY_DIR}" mypy .
+uv run --directory "${PY_DIR}" ty check
 
 echo "=== Running Python tests (nox) ==="
 echo "Project root: ${TOP_DIR}"

@@ -16,21 +16,15 @@
 
 """Data models and interfaces type definitions using Pydantic v2."""
 
-import sys  # noqa
-
+from enum import Enum
 from typing import Any, Literal
 
 from pydantic import BaseModel
 
 from dotpromptz.typing import Role
 
-if sys.version_info < (3, 11):  # noqa
-    from strenum import StrEnum  # noqa
-else:  # noqa
-    from enum import StrEnum  # noqa
 
-
-class DetailKind(StrEnum):
+class DetailKind(str, Enum):
     """The kind of Image URL detail."""
 
     AUTO = 'auto'
@@ -46,7 +40,7 @@ class ImageURLDetail(BaseModel):
     detail: DetailKind | None = None
 
 
-class ContentItemType(StrEnum):
+class ContentItemType(str, Enum):
     """Enumveration variants for content item type."""
 
     TEXT = 'text'
@@ -68,7 +62,7 @@ class ToolFunction(BaseModel):
     arguments: str
 
 
-class ToolCallType(StrEnum):
+class ToolCallType(str, Enum):
     """Enumeration variants for tool call type."""
 
     FUNCTION = 'function'
@@ -120,7 +114,7 @@ class ToolChoice(BaseModel):
     function: ToolChoiceFunction
 
 
-class ResponseFormatType(StrEnum):
+class ResponseFormatType(str, Enum):
     """Enum variants for response format type."""
 
     TEXT = 'text'

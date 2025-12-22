@@ -26,9 +26,9 @@ TOP_DIR=$(git rev-parse --show-toplevel)
 PY_DIR="${TOP_DIR}/python"
 
 uv run --directory "${PY_DIR}" ruff check --select I --fix --preview --unsafe-fixes .
-uv run --directory "${PY_DIR}" mypy .
+# uv run --directory "${PY_DIR}" mypy .
 
 # Add pylyzer, ty, and pyrefly
 #uv run --directory "${PY_DIR}" pylyzer --check .
-#uv run --directory "${PY_DIR}" ty check
+uv run --directory "${PY_DIR}" ty check
 #uv run --directory "${PY_DIR}" pyrefly check

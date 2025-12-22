@@ -39,7 +39,6 @@ dependencies = [
   "dotpromptz-handlebars>=0.1.3",
   "pydantic[email]>=2.10.6",
   "pyyaml>=6.0.2",
-  "strenum>=0.4.15 ; python_version < '3.11'",
   "structlog>=25.2.0",
   "types-aiofiles>=24.1.0.20250326",
   "types-pyyaml>=6.0.12.20241230",

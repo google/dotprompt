@@ -73,15 +73,11 @@ import json
 import re
 import sys  # noqa
 from collections.abc import Callable
+from enum import Enum
 from pathlib import Path
 from typing import Any, TypedDict
 
 import structlog
-
-if sys.version_info < (3, 11):  # noqa
-    from strenum import StrEnum  # noqa
-else:  # noqa
-    from enum import StrEnum  # noqa
 
 from ._native import (
     HandlebarrzHelperOptions,
@@ -112,7 +108,7 @@ class RuntimeOptions(TypedDict):
 CompiledRenderer = Callable[[Context, RuntimeOptions | None], str]
 
 
-class EscapeFunction(StrEnum):
+class EscapeFunction(str, Enum):
     """Enumeration of built-in escape functions for Handlebars templates.
 
     These constants define how content is escaped when rendered in templates.
