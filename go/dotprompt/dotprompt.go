@@ -19,11 +19,10 @@ package dotprompt
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"reflect"
 	"regexp"
 	"strings"
-
-	"maps"
 
 	"github.com/invopop/jsonschema"
 	"github.com/mbleigh/raymond"
@@ -262,7 +261,6 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata) 
 		renderedString, err := dp.Template.ExecWith(inputContext, privDF, &raymond.ExecOptions{
 			NoEscape: true,
 		})
-
 		if err != nil {
 			return RenderedPrompt{}, err
 		}
@@ -481,8 +479,17 @@ func (dp *Dotprompt) WrappedSchemaResolver(name string) (*jsonschema.Schema, err
 	if schema, exists := dp.Schemas[name]; exists {
 		return schema, nil
 	}
+	schema := dp.LookupSchemaFromAnySource(name)
+	if jsonSchema, ok := schema.(*jsonschema.Schema); ok {
+		fmt.Printf("schema found in external source!!\n")
+		return jsonSchema, nil
+	}
 	if dp.schemaResolver != nil {
-		return dp.schemaResolver(name)
+		s, err := dp.schemaResolver(name)
+		if err != nil {
+			return nil, fmt.Errorf("wrappedSchemaResolver: schema with name %s not found: %v\n", name, err)
+		}
+		return s, nil
 	}
 	return nil, nil
 }
