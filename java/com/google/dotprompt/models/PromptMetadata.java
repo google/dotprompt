@@ -121,8 +121,7 @@ public record PromptMetadata(
     }
 
     Map<String, Object> raw = (Map<String, Object>) config.get("raw");
-    Map<String, Map<String, Object>> ext =
-        (Map<String, Map<String, Object>>) config.get("ext");
+    Map<String, Map<String, Object>> ext = (Map<String, Map<String, Object>>) config.get("ext");
     Map<String, Object> metadata = (Map<String, Object>) config.get("metadata");
 
     return new PromptMetadata(
