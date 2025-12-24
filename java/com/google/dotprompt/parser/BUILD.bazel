@@ -15,30 +15,41 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@rules_java//java:defs.bzl", "java_library", "java_test")
-load("@rules_kotlin//kotlin:jvm.bzl", "kt_jvm_test")
 
-kt_jvm_test(
-    name = "KotlinSmokeTest",
-    srcs = ["KotlinSmokeTest.kt"],
-    test_class = "com.google.dotprompt.smoke.KotlinSmokeTest",
+java_library(
+    name = "parser",
+    srcs = [
+        "Parser.java",
+        "Picoschema.java",
+    ],
+    visibility = ["//visibility:public"],
     deps = [
-        "//java/com/google/dotprompt",
         "//java/com/google/dotprompt/models",
-        "@maven//:com_google_guava_guava",
+        "//java/com/google/dotprompt/resolvers",
+        "@maven//:com_fasterxml_jackson_core_jackson_databind",
+        "@maven//:com_fasterxml_jackson_dataformat_jackson_dataformat_yaml",
+    ],
+)
+
+java_test(
+    name = "ParserTest",
+    srcs = ["ParserTest.java"],
+    test_class = "com.google.dotprompt.parser.ParserTest",
+    deps = [
+        ":parser",
+        "//java/com/google/dotprompt/models",
         "@maven//:com_google_truth_truth",
         "@maven//:junit_junit",
     ],
 )
 
 java_test(
-    name = "SmokeTest",
-    srcs = ["SmokeTest.java"],
-    test_class = "com.google.dotprompt.smoke.SmokeTest",
+    name = "PicoschemaTest",
+    srcs = ["PicoschemaTest.java"],
+    test_class = "com.google.dotprompt.parser.PicoschemaTest",
     deps = [
-        "//java/com/google/dotprompt",
-        "//java/com/google/dotprompt/models",
-        "@maven//:com_github_jknack_handlebars",
-        "@maven//:com_google_guava_guava",
+        ":parser",
+        "//java/com/google/dotprompt/resolvers",
         "@maven//:com_google_truth_truth",
         "@maven//:junit_junit",
     ],

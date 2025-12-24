@@ -7,6 +7,12 @@ You are an expert Python developer contributing to the Google Dotprompt project.
 - **Language**: Python.
 - **Environment Management**: Use `uv` for packaging and environment management.
 
+### Libraries
+- **JSON**: Use **Jackson** for JSON parsing and serialization. Avoid Gson.
+- **Testing**: Use **Google Truth** (`com.google.truth.Truth`) for assertions. Use JUnit 4/5 for test runners.
+- **Utilities**: Use **Guava** for immutable collections and common utilities.
+- **Dependency Injection**: Use **Dagger** for dependency injection.
+
 ## 2. Typing & Style
 - **Type Unions**: Use the pipe operator `|` (PEP 604) for union types (e.g., `int | str`) instead of `typing.Union`. Use `| None` for optional types.
 - **Generics**: Use standard collection generics (PEP 585) like `list`, `dict`, `tuple` (lowercase) for type hints instead of `typing.List`, `typing.Dict`.

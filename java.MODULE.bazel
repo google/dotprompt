@@ -25,31 +25,19 @@ java_toolchain = use_repo_rule("@rules_java//java:repositories.bzl", "java_toolc
 
 java_toolchain(
     name = "jdk",
-    version = "21",
+    version = "17",
 )
 
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
-
-# Overriding these versions to prevent duplicate version warnings.
-maven.artifact(
-    name = "guava",
-    artifact = "com.google.guava:guava:33.4.8-jre",
-    group = "com.google.guava",
-    version = "33.4.8-jre",
-)
-maven.artifact(
-    name = "truth",
-    artifact = "com.google.truth:truth:1.4.4",
-    group = "com.google.truth",
-    version = "1.4.4",
-)
 maven.install(
     artifacts = [
         "junit:junit:4.13.2",
         "com.google.truth.extensions:truth-proto-extension:1.4.4",
         "com.google.truth:truth:1.4.4",
         "com.github.jknack:handlebars:4.4.0",
-        "com.google.guava:guava:33.4.8-jre",
+        "com.google.guava:guava:33.5.0-jre",
+        "com.fasterxml.jackson.core:jackson-databind:2.20.1",
+        "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.20.1",
     ],
     lock_file = "//:maven_install.json",
     repositories = [

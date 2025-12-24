@@ -13,3 +13,90 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+
+load("@rules_java//java:defs.bzl", "java_library", "java_test")
+load("@rules_jvm_external//:defs.bzl", "java_export")
+
+java_library(
+    name = "dotprompt",
+    srcs = [
+        "Dotprompt.java",
+        "Helpers.java",
+        "PromptLoader.java",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//java/com/google/dotprompt/models",
+        "//java/com/google/dotprompt/parser",
+        "//java/com/google/dotprompt/resolvers",
+        "//java/com/google/dotprompt/store",
+        "@maven//:com_fasterxml_jackson_core_jackson_annotations",
+        "@maven//:com_fasterxml_jackson_core_jackson_core",
+        "@maven//:com_fasterxml_jackson_core_jackson_databind",
+        "@maven//:com_fasterxml_jackson_dataformat_jackson_dataformat_yaml",
+        "@maven//:com_github_jknack_handlebars",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_export(
+    name = "dotprompt_pkg",
+    maven_coordinates = "com.google.dotprompt:dotprompt:0.1.0",
+    pom_template = "pom_template.xml",
+    visibility = ["//visibility:public"],
+    runtime_deps = [":dotprompt"],
+)
+
+java_test(
+    name = "DotpromptTest",
+    srcs = ["DotpromptTest.java"],
+    test_class = "com.google.dotprompt.DotpromptTest",
+    deps = [
+        ":dotprompt",
+        "//java/com/google/dotprompt/models",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_test(
+    name = "SpecTest",
+    srcs = ["SpecTest.java"],
+    data = ["//spec"],
+    test_class = "com.google.dotprompt.SpecTest",
+    deps = [
+        ":dotprompt",
+        "//java/com/google/dotprompt/models",
+        "@maven//:com_fasterxml_jackson_core_jackson_databind",
+        "@maven//:com_fasterxml_jackson_dataformat_jackson_dataformat_yaml",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_test(
+    name = "PromptLoaderTest",
+    srcs = ["PromptLoaderTest.java"],
+    test_class = "com.google.dotprompt.PromptLoaderTest",
+    deps = [
+        ":dotprompt",
+        "//java/com/google/dotprompt/models",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_test(
+    name = "HelpersTest",
+    srcs = ["HelpersTest.java"],
+    test_class = "com.google.dotprompt.HelpersTest",
+    deps = [
+        ":dotprompt",
+        "//java/com/google/dotprompt/models",
+        "@maven//:com_github_jknack_handlebars",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)

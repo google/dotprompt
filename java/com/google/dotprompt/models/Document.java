@@ -16,18 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.google.dotprompt.smoke;
+package com.google.dotprompt.models;
 
-/** An example of a smoke test to ensure that Java builds work. */
-public final class Smoke {
+import java.util.List;
+import java.util.Map;
 
-  /**
-   * Calculates the square of a integer.
-   *
-   * @param n The integer.
-   * @return The square of the integer.
-   */
-  public static int square(int n) {
-    return n * n;
-  }
-}
+/**
+ * Represents an external document, often used for context.
+ *
+ * @param content The list of parts making up the document content.
+ * @param metadata Arbitrary metadata.
+ */
+public record Document(List<Part> content, Map<String, Object> metadata) {}

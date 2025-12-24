@@ -18,13 +18,15 @@
 
 package com.google.dotprompt.smoke;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.truth.Truth.assertThat;
 
-import com.github.jknack.handlebars.Context;
-import com.github.jknack.handlebars.Handlebars;
-import com.github.jknack.handlebars.Template;
-import java.io.IOException;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.dotprompt.Dotprompt;
+import com.google.dotprompt.PromptLoader;
+import com.google.dotprompt.models.Prompt;
+import com.google.dotprompt.models.RenderedPrompt;
+import com.google.dotprompt.models.TextPart;
 import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,27 +37,23 @@ import org.junit.runners.JUnit4;
 public final class SmokeTest {
 
   @Test
-  public void square_calculatesSquare() {
-    assertThat(Smoke.square(0)).isEqualTo(0);
-    assertThat(Smoke.square(1)).isEqualTo(1);
-    assertThat(Smoke.square(2)).isEqualTo(4);
-    assertThat(Smoke.square(3)).isEqualTo(9);
-    assertThat(Smoke.square(-4)).isEqualTo(16);
-  }
+  public void dotprompt_rendersSimpleTemplate() throws Exception {
+    PromptLoader loader =
+        new PromptLoader() {
+          @Override
+          public ListenableFuture<Prompt> load(String name) {
+            if ("hello".equals(name)) {
+              return Futures.immediateFuture(new Prompt("Hello {{name}}!", Map.of()));
+            }
+            return super.load(name);
+          }
+        };
 
-  @Test
-  public void guava_isNullOrEmpty() {
-    assertThat(isNullOrEmpty(null)).isTrue();
-    assertThat(isNullOrEmpty("")).isTrue();
-    assertThat(isNullOrEmpty("hello")).isFalse();
-  }
+    Dotprompt dotprompt = new Dotprompt(loader);
+    RenderedPrompt result = dotprompt.render("hello", Map.of("name", "World")).get();
 
-  @Test
-  public void handlebars_rendersTemplate() throws IOException {
-    Handlebars handlebars = new Handlebars();
-    Template template = handlebars.compileInline("Hello {{name}}!");
-    Context context = Context.newContext(Map.of("name", "World"));
-    String result = template.apply(context);
-    assertThat(result).isEqualTo("Hello World!");
+    assertThat(result.messages()).hasSize(1);
+    assertThat(((TextPart) result.messages().get(0).content().get(0)).text())
+        .isEqualTo("Hello World!");
   }
 }
