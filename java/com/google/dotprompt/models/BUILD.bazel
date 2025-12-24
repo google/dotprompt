@@ -1,0 +1,97 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_java//java:defs.bzl", "java_library", "java_test")
+
+package(default_visibility = ["//visibility:public"])
+
+java_library(
+    name = "models",
+    srcs = [
+        "DataArgument.java",
+        "DataPart.java",
+        "DeletePromptOrPartialOptions.java",
+        "Document.java",
+        "ListPartialsOptions.java",
+        "ListPromptsOptions.java",
+        "LoadPartialOptions.java",
+        "LoadPromptOptions.java",
+        "MediaContent.java",
+        "MediaPart.java",
+        "Message.java",
+        "PaginatedPartials.java",
+        "PaginatedPrompts.java",
+        "PaginatedResponse.java",
+        "Part.java",
+        "PartialData.java",
+        "PartialRef.java",
+        "PendingPart.java",
+        "Prompt.java",
+        "PromptBundle.java",
+        "PromptData.java",
+        "PromptFunction.java",
+        "PromptMetadata.java",
+        "PromptRef.java",
+        "PromptRefFunction.java",
+        "RenderedPrompt.java",
+        "Role.java",
+        "TextPart.java",
+        "ToolArgument.java",
+        "ToolDefinition.java",
+        "ToolRequestPart.java",
+        "ToolResponsePart.java",
+    ],
+    deps = [
+        "@maven//:com_fasterxml_jackson_core_jackson_annotations",
+        "@maven//:com_fasterxml_jackson_core_jackson_databind",
+    ],
+)
+
+java_test(
+    name = "TypeParityTest",
+    srcs = ["TypeParityTest.java"],
+    test_class = "com.google.dotprompt.models.TypeParityTest",
+    deps = [
+        ":models",
+        "@maven//:com_fasterxml_jackson_core_jackson_databind",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_test(
+    name = "ModelTest",
+    srcs = ["ModelTest.java"],
+    test_class = "com.google.dotprompt.models.ModelTest",
+    deps = [
+        ":models",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_test(
+    name = "JsonSerializationTest",
+    srcs = ["JsonSerializationTest.java"],
+    test_class = "com.google.dotprompt.models.JsonSerializationTest",
+    deps = [
+        ":models",
+        "@maven//:com_fasterxml_jackson_core_jackson_annotations",
+        "@maven//:com_fasterxml_jackson_core_jackson_databind",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
