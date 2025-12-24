@@ -8,7 +8,12 @@ common:java21 --tool_java_language_version=21
 common:java21 --java_runtime_version=remotejdk_21
 common:java21 --tool_java_runtime_version=remotejdk_21
 
-common --config=java21
+common:java24 --java_language_version=24
+common:java24 --tool_java_language_version=24
+common:java24 --java_runtime_version=remotejdk_24
+common:java24 --tool_java_runtime_version=remotejdk_24
+
+common --config=java17
 
 # =============================================================================
 # junit_test is incompatible with JDK 18+ -

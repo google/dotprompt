@@ -1,0 +1,69 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Publish Java Package
+#
+# Requirements for this workflow:
+#
+# 1. Secrets must be configured in the repository settings:
+#    - OSSRH_USERNAME: The username for Sonatype OSSRH (Maven Central).
+#    - OSSRH_TOKEN: The password or token for Sonatype OSSRH.
+#    - MAVEN_GPG_PRIVATE_KEY: The ASCII-armored GPG private key for signing artifacts.
+#    - MAVEN_GPG_PASSPHRASE: The passphrase for the GPG private key.
+#
+# 2. GPG Key Formatting:
+#    - The private key should be exported using: `gpg --armor --export-secret-keys <ID>`
+#    - Ensure the key has no empty lines or formatting issues when pasted into GitHub Secrets.
+#
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  publish-java:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          
+      - name: Setup Bazel
+        uses: bazelbuild/setup-bazelisk@v3
+        
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+
+      - name: Publish to Maven Central
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+        run: |
+          ./scripts/publish-java.sh \
+            "${{ steps.import_gpg.outputs.keyring }}" \
+            "${{ secrets.MAVEN_GPG_PASSPHRASE }}" \
+            "$MAVEN_USERNAME" \
+            "$MAVEN_PASSWORD"
