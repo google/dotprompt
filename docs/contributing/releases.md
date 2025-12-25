@@ -15,6 +15,7 @@ packages:
 * `python/dotpromptz/` - Python implementation of dotprompt
 * `python/handlebarrz/` - Python implementation of handlebarrz
 * `go/` - Go implementation of dotprompt
+* `java/` - Java implementation of dotprompt
 
 ## How It Works
 
@@ -62,6 +63,7 @@ To target specific packages, use these scopes:
 * `py/dotpromptz`: For changes to the Python dotpromptz package
 * `py/handlebarrz`: For changes to the Python handlebarrz package
 * `go`: For changes to the Go implementation
+* `java`: For changes to the Java implementation
 * `deps`: For dependency updates
 
 ### Examples

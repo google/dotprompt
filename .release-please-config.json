@@ -84,7 +84,13 @@
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
       "prerelease": false,
-      "path": "java/**"
+      "path": "java/**",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "java/com/google/dotprompt/BUILD.bazel"
+        }
+      ]
     }
   },
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"

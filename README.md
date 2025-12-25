@@ -1,6 +1,7 @@
 [![Go checks](https://github.com/google/dotprompt/actions/workflows/go.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/go.yml)
 [![Python checks](https://github.com/google/dotprompt/actions/workflows/python.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/python.yml)
 [![JS checks](https://github.com/google/dotprompt/actions/workflows/test.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/test.yml)
+[![Java checks](https://github.com/google/dotprompt/actions/workflows/java.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/java.yml)
 [![Ask Codewiki](https://codewiki.google/github.com/google/dotprompt)](https://codewiki.google/github.com/google/dotprompt)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/google/dotprompt)
 
