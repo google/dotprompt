@@ -21,6 +21,7 @@ java_library(
     srcs = [
         "Parser.java",
         "Picoschema.java",
+        "package-info.java",
     ],
     visibility = ["//visibility:public"],
     deps = [

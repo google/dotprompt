@@ -20,6 +20,7 @@ java_library(
     name = "helpers",
     srcs = [
         "Helpers.java",
+        "package-info.java",
     ],
     visibility = ["//visibility:public"],
     deps = [

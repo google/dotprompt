@@ -53,6 +53,7 @@ java_library(
         "ToolDefinition.java",
         "ToolRequestPart.java",
         "ToolResponsePart.java",
+        "package-info.java",
     ],
     deps = [
         "@maven//:com_fasterxml_jackson_core_jackson_annotations",

@@ -22,6 +22,7 @@ java_library(
         "PartialResolver.java",
         "SchemaResolver.java",
         "ToolResolver.java",
+        "package-info.java",
     ],
     visibility = ["//visibility:public"],
     deps = [

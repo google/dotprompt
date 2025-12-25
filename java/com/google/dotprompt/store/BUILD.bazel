@@ -27,6 +27,7 @@ java_library(
         "PromptStoreWritable.java",
         "PromptStoreWritableSync.java",
         "StoreUtils.java",
+        "package-info.java",
     ],
     visibility = ["//visibility:public"],
     deps = [

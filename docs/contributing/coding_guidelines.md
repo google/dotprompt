@@ -7,11 +7,22 @@ You are an expert Python developer contributing to the Google Dotprompt project.
 - **Language**: Python.
 - **Environment Management**: Use `uv` for packaging and environment management.
 
-### Libraries
+### Python Libraries
+- **JSON**: Use the built-in `json` module or `pydantic` for serialization.
+- **Testing**: Use `pytest` and `unittest` for testing.
+
+### Java Libraries
 - **JSON**: Use **Jackson** for JSON parsing and serialization. Avoid Gson.
 - **Testing**: Use **Google Truth** (`com.google.truth.Truth`) for assertions. Use JUnit 4/5 for test runners.
 - **Utilities**: Use **Guava** for immutable collections and common utilities.
 - **Dependency Injection**: Use **Dagger** for dependency injection.
+
+### Java Style Guidelines
+- **Imports**: Always use proper imports instead of fully qualified type names. Never write `com.github.jknack.handlebars.Context` inline; instead, add an `import` statement and use `Context`.
+- **Formatting**: Use `google-java-format` for code formatting.
+- **Javadoc**: Write comprehensive Javadoc for all public classes and methods.
+- **Doc Sync**: Keep Javadoc comments in sync with the code. When modifying method signatures, parameters, or return types, update the corresponding Javadoc.
+- **Method Chaining**: Fluent builder methods should return `this` for chaining.
 
 ## 2. Typing & Style
 - **Type Unions**: Use the pipe operator `|` (PEP 604) for union types (e.g., `int | str`) instead of `typing.Union`. Use `| None` for optional types.
