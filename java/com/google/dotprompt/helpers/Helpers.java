@@ -18,6 +18,9 @@
 
 package com.google.dotprompt.helpers;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.jknack.handlebars.Handlebars;
@@ -74,21 +77,21 @@ public class Helpers {
 
     Integer indent = options.hash("indent", null);
     if (indent != null) {
-      com.fasterxml.jackson.core.util.DefaultPrettyPrinter printer =
-          new com.fasterxml.jackson.core.util.DefaultPrettyPrinter();
-      printer.indentObjectsWith(new com.fasterxml.jackson.core.util.DefaultIndenter("  ", "\n"));
+      DefaultPrettyPrinter printer =
+          new DefaultPrettyPrinter();
+      printer.indentObjectsWith(new DefaultIndenter("  ", "\n"));
 
       localMapper =
           mapper
               .copy()
               .setDefaultPrettyPrinter(
-                  new com.fasterxml.jackson.core.util.DefaultPrettyPrinter() {
+                  new DefaultPrettyPrinter() {
                     @Override
-                    public com.fasterxml.jackson.core.util.DefaultPrettyPrinter createInstance() {
-                      return new com.fasterxml.jackson.core.util.DefaultPrettyPrinter(this) {
+                    public DefaultPrettyPrinter createInstance() {
+                      return new DefaultPrettyPrinter(this) {
                         @Override
                         public void writeObjectFieldValueSeparator(
-                            com.fasterxml.jackson.core.JsonGenerator g) throws IOException {
+                            JsonGenerator g) throws IOException {
                           g.writeRaw(": ");
                         }
                       };
@@ -96,7 +99,7 @@ public class Helpers {
 
                     @Override
                     public void writeObjectFieldValueSeparator(
-                        com.fasterxml.jackson.core.JsonGenerator g) throws IOException {
+                        JsonGenerator g) throws IOException {
                       g.writeRaw(": ");
                     }
                   })

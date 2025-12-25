@@ -14,19 +14,4 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@aspect_rules_js//js:defs.bzl", "js_library")
-
-# Export individual YAML spec files for granular test targets
-exports_files(glob(["**/*.yaml"]))
-
-filegroup(
-    name = "spec",
-    srcs = glob(["**/*.yaml"]),
-    visibility = ["//visibility:public"],
-)
-
-js_library(
-    name = "spec_js_lib",
-    srcs = glob(["**/*.yaml"]),
-    visibility = ["//visibility:public"],
-)
+# This package provides Bazel macros for Java spec tests.
