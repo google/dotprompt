@@ -19,11 +19,49 @@ load("@rules_java//java:defs.bzl", "java_library")
 java_library(
     name = "store",
     srcs = [
+        "DirStore.java",
+        "DirStoreOptions.java",
+        "DirStoreSync.java",
         "PromptStore.java",
+        "PromptStoreSync.java",
         "PromptStoreWritable.java",
+        "PromptStoreWritableSync.java",
+        "StoreUtils.java",
     ],
     visibility = ["//visibility:public"],
     deps = [
         "//java/com/google/dotprompt/models",
+    ],
+)
+
+java_test(
+    name = "DirStoreSyncTest",
+    srcs = ["DirStoreSyncTest.java"],
+    deps = [
+        ":store",
+        "//java/com/google/dotprompt/models",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_test(
+    name = "DirStoreTest",
+    srcs = ["DirStoreTest.java"],
+    deps = [
+        ":store",
+        "//java/com/google/dotprompt/models",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_test(
+    name = "StoreUtilsTest",
+    srcs = ["StoreUtilsTest.java"],
+    deps = [
+        ":store",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
     ],
 )

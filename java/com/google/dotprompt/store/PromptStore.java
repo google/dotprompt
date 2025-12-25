@@ -27,7 +27,34 @@ import com.google.dotprompt.models.PaginatedPrompts;
 import com.google.dotprompt.models.PromptData;
 import java.util.concurrent.CompletableFuture;
 
-/** Interface for reading prompts and partials from a store. */
+/**
+ * Asynchronous interface for reading prompts and partials from a store.
+ *
+ * <p>A prompt store provides methods for listing and loading prompt templates and partials. Prompts
+ * are template files containing prompt definitions with optional frontmatter configuration, while
+ * partials are reusable fragments that can be included in prompts using Handlebars syntax.
+ *
+ * <p>All methods return {@link CompletableFuture} for non-blocking operations. For synchronous
+ * access, use {@link PromptStoreSync} instead.
+ *
+ * <h2>Core Operations</h2>
+ *
+ * <ul>
+ *   <li>{@link #list} - List all available prompts with their versions
+ *   <li>{@link #listPartials} - List all available partials
+ *   <li>{@link #load} - Load a specific prompt by name
+ *   <li>{@link #loadPartial} - Load a specific partial by name
+ * </ul>
+ *
+ * <h2>Implementations</h2>
+ *
+ * <ul>
+ *   <li>{@link DirStore} - Filesystem-based implementation
+ * </ul>
+ *
+ * @see PromptStoreSync for synchronous operations
+ * @see PromptStoreWritable for write operations (save, delete)
+ */
 public interface PromptStore {
   /**
    * Lists prompts in the store.

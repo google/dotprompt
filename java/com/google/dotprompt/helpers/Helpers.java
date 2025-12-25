@@ -77,8 +77,7 @@ public class Helpers {
 
     Integer indent = options.hash("indent", null);
     if (indent != null) {
-      DefaultPrettyPrinter printer =
-          new DefaultPrettyPrinter();
+      DefaultPrettyPrinter printer = new DefaultPrettyPrinter();
       printer.indentObjectsWith(new DefaultIndenter("  ", "\n"));
 
       localMapper =
@@ -90,16 +89,15 @@ public class Helpers {
                     public DefaultPrettyPrinter createInstance() {
                       return new DefaultPrettyPrinter(this) {
                         @Override
-                        public void writeObjectFieldValueSeparator(
-                            JsonGenerator g) throws IOException {
+                        public void writeObjectFieldValueSeparator(JsonGenerator g)
+                            throws IOException {
                           g.writeRaw(": ");
                         }
                       };
                     }
 
                     @Override
-                    public void writeObjectFieldValueSeparator(
-                        JsonGenerator g) throws IOException {
+                    public void writeObjectFieldValueSeparator(JsonGenerator g) throws IOException {
                       g.writeRaw(": ");
                     }
                   })

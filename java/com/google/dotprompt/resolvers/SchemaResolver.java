@@ -20,6 +20,7 @@ package com.google.dotprompt.resolvers;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 /**
  * Resolves a provided schema name to an underlying JSON schema.
@@ -86,8 +87,7 @@ public interface SchemaResolver {
    *     corresponding JSON Schema, or {@code null}.
    * @return An async {@link SchemaResolver} wrapping the synchronous function.
    */
-  static SchemaResolver fromSync(
-      java.util.function.Function<String, Map<String, Object>> syncResolver) {
+  static SchemaResolver fromSync(Function<String, Map<String, Object>> syncResolver) {
     return schemaName -> CompletableFuture.completedFuture(syncResolver.apply(schemaName));
   }
 }
