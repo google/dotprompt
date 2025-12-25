@@ -28,11 +28,55 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      py_dotpromptz_release_created: ${{ steps.release.outputs['python/dotpromptz--release_created'] }}
+      py_handlebarrz_release_created: ${{ steps.release.outputs['python/handlebarrz--release_created'] }}
+      pr: ${{ steps.release.outputs.pr }}
     steps:
       - uses: google-github-actions/release-please-action@v4
         id: release
         with:
-          #token: ${{ secrets.GITHUB_TOKEN }}
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
+
+  update-uv-lock:
+    runs-on: ubuntu-latest
+    needs: release-please
+    # Run when release-please creates/updates a PR (not when releases are created)
+    if: ${{ needs.release-please.outputs.pr != '' && needs.release-please.outputs.releases_created != 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ fromJson(needs.release-please.outputs.pr).headBranchName }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Update uv.lock
+        working-directory: python
+        run: |
+          uv lock
+          
+      - name: Check for changes
+        id: changes
+        working-directory: python
+        run: |
+          if git diff --quiet uv.lock; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit uv.lock
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add python/uv.lock
+          git commit -m "chore(py): update uv.lock"
+          git push

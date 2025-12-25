@@ -23,6 +23,21 @@ on:
       - "spec/**"
       - ".github/workflows/python.yml"
 jobs:
+  uv-lock-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Check uv.lock is up to date
+        working-directory: python
+        run: |
+          uv lock --check
+
   python-checks:
     runs-on: ubuntu-latest
     env:
