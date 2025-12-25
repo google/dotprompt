@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/google/dotprompt/compare/handlebarrz-0.1.3...handlebarrz-0.1.4) (2025-12-25)
+
+
+### Features
+
+* **py:** switch to using ty for type checking ([#376](https://github.com/google/dotprompt/issues/376)) ([7f1c026](https://github.com/google/dotprompt/commit/7f1c0268e5de5a2d6d887ac590d110dea7d3ed07))
+
 ## [0.1.3](https://github.com/google/dotprompt/compare/handlebarrz-0.1.2...handlebarrz-0.1.3) (2025-12-12)
 
 
