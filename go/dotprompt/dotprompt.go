@@ -242,6 +242,12 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata) 
 		return nil, err
 	}
 
+	// Capture the current template for this closure to avoid sharing issues.
+	// Without this, all compiled PromptFunctions would share the same dp.Template,
+	// causing wrong template execution when multiple prompts are compiled.
+	// See: https://github.com/google/dotprompt/issues/362
+	localTemplate := dp.Template
+
 	renderFunc := func(data *DataArgument, options *PromptMetadata) (RenderedPrompt, error) {
 		mergedMetadata, err := dp.RenderMetadata(parsedPrompt, options)
 		if err != nil {
@@ -259,7 +265,7 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata) 
 			privDF.Set(k, v)
 		}
 
-		renderedString, err := dp.Template.ExecWith(inputContext, privDF, &raymond.ExecOptions{
+		renderedString, err := localTemplate.ExecWith(inputContext, privDF, &raymond.ExecOptions{
 			NoEscape: true,
 		})
 
