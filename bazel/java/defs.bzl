@@ -41,6 +41,7 @@ def java_spec_test(name, spec_file):
         deps = [
             "//java/com/google/dotprompt:dotprompt",
             "//java/com/google/dotprompt/models",
+            "//java/com/google/dotprompt/resolvers",
             "@maven//:com_fasterxml_jackson_core_jackson_databind",
             "@maven//:com_fasterxml_jackson_dataformat_jackson_dataformat_yaml",
             "@maven//:com_google_guava_guava",

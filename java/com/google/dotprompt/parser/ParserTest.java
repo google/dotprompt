@@ -520,4 +520,109 @@ public class ParserTest {
     TextPart result = Parser.parseTextPart("Hello World");
     assertThat(result.text()).isEqualTo("Hello World");
   }
+
+  @Test
+  public void testMessageSourcesToMessages_emptyArray() {
+    List<Message> result = Parser.messageSourcesToMessages(List.of());
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  public void testMessageSourcesToMessages_singleSource() {
+    List<MessageSource> sources = List.of(new MessageSource(Role.USER, "Hello"));
+    List<Message> result = Parser.messageSourcesToMessages(sources);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).role()).isEqualTo(Role.USER);
+    assertThat(((TextPart) result.get(0).content().get(0)).text()).isEqualTo("Hello");
+  }
+
+  @Test
+  public void testMessageSourcesToMessages_withContent() {
+    List<MessageSource> sources =
+        List.of(new MessageSource(Role.USER, List.of(new TextPart("Existing content")), null));
+    List<Message> result = Parser.messageSourcesToMessages(sources);
+
+    assertThat(result).hasSize(1);
+    assertThat(((TextPart) result.get(0).content().get(0)).text()).isEqualTo("Existing content");
+  }
+
+  @Test
+  public void testMessageSourcesToMessages_withMetadata() {
+    List<MessageSource> sources =
+        List.of(new MessageSource(Role.USER, List.of(new TextPart("Hello")), Map.of("foo", "bar")));
+    List<Message> result = Parser.messageSourcesToMessages(sources);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).metadata()).containsEntry("foo", "bar");
+  }
+
+  @Test
+  public void testMessageSourcesToMessages_multipleMessages() {
+    List<MessageSource> sources =
+        List.of(
+            new MessageSource(Role.USER, "Hello"),
+            new MessageSource(Role.MODEL, "Hi there!"),
+            new MessageSource(Role.USER, "How are you?"));
+    List<Message> result = Parser.messageSourcesToMessages(sources);
+
+    assertThat(result).hasSize(3);
+    assertThat(((TextPart) result.get(0).content().get(0)).text()).isEqualTo("Hello");
+    assertThat(((TextPart) result.get(1).content().get(0)).text()).isEqualTo("Hi there!");
+    assertThat(((TextPart) result.get(2).content().get(0)).text()).isEqualTo("How are you?");
+  }
+
+  @Test
+  public void testParseDocument_withFrontmatterAndTemplate() throws IOException {
+    String source = "---\nname: test\ndescription: test description\n---\nTemplate content";
+
+    var result = Parser.parseDocument(source);
+
+    assertThat(result.name()).isEqualTo("test");
+    assertThat(result.description()).isEqualTo("test description");
+    assertThat(result.template()).isEqualTo("Template content");
+  }
+
+  @Test
+  public void testParseDocument_withExtensionFields() throws IOException {
+    String source = "---\nfoo.bar: value\n---\nTemplate content";
+
+    var result = Parser.parseDocument(source);
+
+    assertThat(result.template()).isEqualTo("Template content");
+    assertThat(result.ext()).isNotNull();
+    @SuppressWarnings("unchecked")
+    Map<String, Object> foo = (Map<String, Object>) result.ext().get("foo");
+    assertThat(foo).containsEntry("bar", "value");
+  }
+
+  @Test
+  public void testParseDocument_withoutFrontmatter() throws IOException {
+    String source = "Just template content";
+
+    var result = Parser.parseDocument(source);
+
+    assertThat(result.template()).isEqualTo("Just template content");
+    assertThat(result.name()).isNull();
+  }
+
+  @Test
+  public void testParseDocument_emptyFrontmatter() throws IOException {
+    String source = "---\n---\nTemplate content";
+
+    var result = Parser.parseDocument(source);
+
+    assertThat(result.template()).isEqualTo("Template content");
+    assertThat(result.name()).isNull();
+  }
+
+  @Test
+  public void testParseDocument_withModelConfig() throws IOException {
+    String source = "---\nmodel: gemini-1.5-pro\n---\nTemplate content";
+
+    var result = Parser.parseDocument(source);
+
+    assertThat(result.model()).isEqualTo("gemini-1.5-pro");
+    assertThat(result.template()).isEqualTo("Template content");
+  }
 }

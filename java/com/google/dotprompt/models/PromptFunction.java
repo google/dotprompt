@@ -65,5 +65,5 @@ public interface PromptFunction {
    *
    * @return The parsed prompt containing the template and configuration.
    */
-  Prompt getPrompt();
+  ParsedPrompt getPrompt();
 }

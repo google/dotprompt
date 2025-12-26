@@ -104,20 +104,29 @@ public record PromptMetadata(
     Map<String, Object> modelConfig = (Map<String, Object>) config.get("config");
 
     InputConfig input = null;
-    Map<String, Object> inputMap = (Map<String, Object>) config.get("input");
-    if (inputMap != null) {
-      input =
-          new InputConfig(
-              (Map<String, Object>) inputMap.get("default"),
-              (Map<String, Object>) inputMap.get("schema"));
+    Object inputRaw = config.get("input");
+    if (inputRaw instanceof Map) {
+      @SuppressWarnings("unchecked")
+      Map<String, Object> inputMap = (Map<String, Object>) inputRaw;
+      // Schema can be a Map (JSON Schema) or other type (picoschema String)
+      Object inputSchemaRaw = inputMap.get("schema");
+      @SuppressWarnings("unchecked")
+      Map<String, Object> inputSchema =
+          inputSchemaRaw instanceof Map ? (Map<String, Object>) inputSchemaRaw : null;
+      input = new InputConfig((Map<String, Object>) inputMap.get("default"), inputSchema);
     }
 
     OutputConfig output = null;
-    Map<String, Object> outputMap = (Map<String, Object>) config.get("output");
-    if (outputMap != null) {
-      output =
-          new OutputConfig(
-              (String) outputMap.get("format"), (Map<String, Object>) outputMap.get("schema"));
+    Object outputRaw = config.get("output");
+    if (outputRaw instanceof Map) {
+      @SuppressWarnings("unchecked")
+      Map<String, Object> outputMap = (Map<String, Object>) outputRaw;
+      // Schema can be a Map (JSON Schema) or other type (picoschema String)
+      Object outputSchemaRaw = outputMap.get("schema");
+      @SuppressWarnings("unchecked")
+      Map<String, Object> outputSchema =
+          outputSchemaRaw instanceof Map ? (Map<String, Object>) outputSchemaRaw : null;
+      output = new OutputConfig((String) outputMap.get("format"), outputSchema);
     }
 
     Map<String, Object> raw = (Map<String, Object>) config.get("raw");
