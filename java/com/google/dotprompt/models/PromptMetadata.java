@@ -18,6 +18,7 @@
 
 package com.google.dotprompt.models;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -62,7 +63,7 @@ public record PromptMetadata(
    * @param defaultValues Default input variable values to use if none are provided.
    * @param schema Schema definition for input variables.
    */
-  public record InputConfig(Map<String, Object> defaultValues, Map<String, Object> schema) {
+  public record InputConfig(Map<String, Object> defaultValues, Object schema) {
     /** Alias for defaultValues to match JS naming. */
     public Map<String, Object> getDefault() {
       return defaultValues;
@@ -75,7 +76,7 @@ public record PromptMetadata(
    * @param format Desired output format ("json", "text", or custom).
    * @param schema Schema defining the output structure.
    */
-  public record OutputConfig(String format, Map<String, Object> schema) {}
+  public record OutputConfig(String format, Object schema) {}
 
   /** Creates empty metadata. */
   public PromptMetadata() {
@@ -100,24 +101,31 @@ public record PromptMetadata(
     String description = (String) config.get("description");
     String model = (String) config.get("model");
     List<String> tools = (List<String>) config.get("tools");
-    List<ToolDefinition> toolDefs = null; // Would need conversion
+    List<ToolDefinition> toolDefs = null;
+    Object toolDefsRaw = config.get("toolDefs");
+    if (toolDefsRaw instanceof List) {
+      toolDefs = (List<ToolDefinition>) toolDefsRaw;
+    }
     Map<String, Object> modelConfig = (Map<String, Object>) config.get("config");
 
     InputConfig input = null;
-    Map<String, Object> inputMap = (Map<String, Object>) config.get("input");
-    if (inputMap != null) {
-      input =
-          new InputConfig(
-              (Map<String, Object>) inputMap.get("default"),
-              (Map<String, Object>) inputMap.get("schema"));
+    Object inputRaw = config.get("input");
+    if (inputRaw instanceof Map) {
+      @SuppressWarnings("unchecked")
+      Map<String, Object> inputMap = (Map<String, Object>) inputRaw;
+      // Schema can be a Map (JSON Schema) or other type (picoschema String)
+      Object inputSchema = inputMap.get("schema");
+      input = new InputConfig((Map<String, Object>) inputMap.get("default"), inputSchema);
     }
 
     OutputConfig output = null;
-    Map<String, Object> outputMap = (Map<String, Object>) config.get("output");
-    if (outputMap != null) {
-      output =
-          new OutputConfig(
-              (String) outputMap.get("format"), (Map<String, Object>) outputMap.get("schema"));
+    Object outputRaw = config.get("output");
+    if (outputRaw instanceof Map) {
+      @SuppressWarnings("unchecked")
+      Map<String, Object> outputMap = (Map<String, Object>) outputRaw;
+      // Schema can be a Map (JSON Schema) or other type (picoschema String)
+      Object outputSchema = outputMap.get("schema");
+      output = new OutputConfig((String) outputMap.get("format"), outputSchema);
     }
 
     Map<String, Object> raw = (Map<String, Object>) config.get("raw");
@@ -138,5 +146,46 @@ public record PromptMetadata(
         raw,
         ext,
         metadata);
+  }
+
+  /**
+   * Converts this metadata to a config map (inverse of fromConfig).
+   *
+   * <p>This is useful when the metadata needs to be passed to methods that accept Map-based
+   * configuration, such as the internal renderMetadata implementation.
+   *
+   * @return A map representation of this metadata.
+   */
+  public Map<String, Object> toConfig() {
+    Map<String, Object> map = new HashMap<>();
+
+    if (name != null) map.put("name", name);
+    if (variant != null) map.put("variant", variant);
+    if (version != null) map.put("version", version);
+    if (description != null) map.put("description", description);
+    if (model != null) map.put("model", model);
+    if (tools != null) map.put("tools", tools);
+    if (toolDefs != null) map.put("toolDefs", toolDefs);
+    if (config != null) map.put("config", config);
+
+    if (input != null) {
+      Map<String, Object> inputMap = new HashMap<>();
+      if (input.defaultValues() != null) inputMap.put("default", input.defaultValues());
+      if (input.schema() != null) inputMap.put("schema", input.schema());
+      map.put("input", inputMap);
+    }
+
+    if (output != null) {
+      Map<String, Object> outputMap = new HashMap<>();
+      if (output.format() != null) outputMap.put("format", output.format());
+      if (output.schema() != null) outputMap.put("schema", output.schema());
+      map.put("output", outputMap);
+    }
+
+    if (raw != null) map.put("raw", raw);
+    if (ext != null) map.put("ext", ext);
+    if (metadata != null) map.put("metadata", metadata);
+
+    return map;
   }
 }

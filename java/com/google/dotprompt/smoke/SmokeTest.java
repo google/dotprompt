@@ -18,44 +18,30 @@
 
 package com.google.dotprompt.smoke;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.truth.Truth.assertThat;
 
-import com.github.jknack.handlebars.Context;
-import com.github.jknack.handlebars.Handlebars;
-import com.github.jknack.handlebars.Template;
-import java.io.IOException;
+import com.google.dotprompt.Dotprompt;
+import com.google.dotprompt.models.PromptFunction;
+import com.google.dotprompt.models.RenderedPrompt;
+import com.google.dotprompt.models.TextPart;
 import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Tests for {@link Smoke}. */
+/** Smoke tests for Dotprompt. */
 @RunWith(JUnit4.class)
 public final class SmokeTest {
 
   @Test
-  public void square_calculatesSquare() {
-    assertThat(Smoke.square(0)).isEqualTo(0);
-    assertThat(Smoke.square(1)).isEqualTo(1);
-    assertThat(Smoke.square(2)).isEqualTo(4);
-    assertThat(Smoke.square(3)).isEqualTo(9);
-    assertThat(Smoke.square(-4)).isEqualTo(16);
-  }
+  public void dotprompt_rendersSimpleTemplate() throws Exception {
+    Dotprompt dotprompt = new Dotprompt();
+    PromptFunction promptFn = dotprompt.compile("Hello {{name}}!").get();
 
-  @Test
-  public void guava_isNullOrEmpty() {
-    assertThat(isNullOrEmpty(null)).isTrue();
-    assertThat(isNullOrEmpty("")).isTrue();
-    assertThat(isNullOrEmpty("hello")).isFalse();
-  }
+    RenderedPrompt result = promptFn.render(Map.of("name", "World")).get();
 
-  @Test
-  public void handlebars_rendersTemplate() throws IOException {
-    Handlebars handlebars = new Handlebars();
-    Template template = handlebars.compileInline("Hello {{name}}!");
-    Context context = Context.newContext(Map.of("name", "World"));
-    String result = template.apply(context);
-    assertThat(result).isEqualTo("Hello World!");
+    assertThat(result.messages()).hasSize(1);
+    assertThat(((TextPart) result.messages().get(0).content().get(0)).text())
+        .isEqualTo("Hello World!");
   }
 }

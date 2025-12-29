@@ -19,6 +19,7 @@ load("@rules_java//java:defs.bzl", "java_library", "java_test")
 java_library(
     name = "parser",
     srcs = [
+        "MessageSource.java",
         "Parser.java",
         "Picoschema.java",
         "package-info.java",

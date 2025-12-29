@@ -13,3 +13,123 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+
+load("@rules_java//java:defs.bzl", "java_library", "java_test")
+load("@rules_jvm_external//:defs.bzl", "java_export")
+load("//bazel/java:defs.bzl", "java_spec_test")
+
+java_library(
+    name = "dotprompt",
+    srcs = [
+        "Dotprompt.java",
+        "DotpromptOptions.java",
+        "package-info.java",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//java/com/google/dotprompt/helpers",
+        "//java/com/google/dotprompt/models",
+        "//java/com/google/dotprompt/parser",
+        "//java/com/google/dotprompt/resolvers",
+        "//java/com/google/dotprompt/store",
+        "@maven//:com_fasterxml_jackson_core_jackson_annotations",
+        "@maven//:com_fasterxml_jackson_core_jackson_core",
+        "@maven//:com_fasterxml_jackson_core_jackson_databind",
+        "@maven//:com_fasterxml_jackson_dataformat_jackson_dataformat_yaml",
+        "@maven//:com_github_jknack_handlebars",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_export(
+    name = "dotprompt_pkg",
+    # x-release-please-start-version
+    maven_coordinates = "com.google.dotprompt:dotprompt:0.1.0",
+    # x-release-please-end
+    pom_template = "pom_template.xml",
+    visibility = ["//visibility:public"],
+    runtime_deps = [":dotprompt"],
+)
+
+java_test(
+    name = "DotpromptTest",
+    srcs = ["DotpromptTest.java"],
+    test_class = "com.google.dotprompt.DotpromptTest",
+    deps = [
+        ":dotprompt",
+        "//java/com/google/dotprompt/models",
+        "@maven//:com_github_jknack_handlebars",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_test(
+    name = "DotpromptOptionsTest",
+    srcs = ["DotpromptOptionsTest.java"],
+    test_class = "com.google.dotprompt.DotpromptOptionsTest",
+    deps = [
+        ":dotprompt",
+        "//java/com/google/dotprompt/models",
+        "@maven//:com_github_jknack_handlebars",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+# Individual spec tests for each YAML file
+java_spec_test(
+    name = "SpecTest_metadata",
+    spec_file = "//spec:metadata.yaml",
+)
+
+java_spec_test(
+    name = "SpecTest_partials",
+    spec_file = "//spec:partials.yaml",
+)
+
+java_spec_test(
+    name = "SpecTest_picoschema",
+    spec_file = "//spec:picoschema.yaml",
+)
+
+java_spec_test(
+    name = "SpecTest_variables",
+    spec_file = "//spec:variables.yaml",
+)
+
+java_spec_test(
+    name = "SpecTest_history",
+    spec_file = "//spec:helpers/history.yaml",
+)
+
+java_spec_test(
+    name = "SpecTest_ifEquals",
+    spec_file = "//spec:helpers/ifEquals.yaml",
+)
+
+java_spec_test(
+    name = "SpecTest_json",
+    spec_file = "//spec:helpers/json.yaml",
+)
+
+java_spec_test(
+    name = "SpecTest_media",
+    spec_file = "//spec:helpers/media.yaml",
+)
+
+java_spec_test(
+    name = "SpecTest_role",
+    spec_file = "//spec:helpers/role.yaml",
+)
+
+java_spec_test(
+    name = "SpecTest_section",
+    spec_file = "//spec:helpers/section.yaml",
+)
+
+java_spec_test(
+    name = "SpecTest_unlessEquals",
+    spec_file = "//spec:helpers/unlessEquals.yaml",
+)

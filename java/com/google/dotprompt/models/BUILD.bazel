@@ -35,6 +35,7 @@ java_library(
         "PaginatedPartials.java",
         "PaginatedPrompts.java",
         "PaginatedResponse.java",
+        "ParsedPrompt.java",
         "Part.java",
         "PartialData.java",
         "PartialRef.java",

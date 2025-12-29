@@ -23,6 +23,7 @@ You are an expert Python developer contributing to the Google Dotprompt project.
 - **Javadoc**: Write comprehensive Javadoc for all public classes and methods.
 - **Doc Sync**: Keep Javadoc comments in sync with the code. When modifying method signatures, parameters, or return types, update the corresponding Javadoc.
 - **Method Chaining**: Fluent builder methods should return `this` for chaining.
+- Please don't add section marker comments.
 
 ## 2. Typing & Style
 - **Type Unions**: Use the pipe operator `|` (PEP 604) for union types (e.g., `int | str`) instead of `typing.Union`. Use `| None` for optional types.

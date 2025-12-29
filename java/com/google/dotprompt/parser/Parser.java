@@ -24,9 +24,11 @@ import com.google.dotprompt.models.DataArgument;
 import com.google.dotprompt.models.MediaContent;
 import com.google.dotprompt.models.MediaPart;
 import com.google.dotprompt.models.Message;
+import com.google.dotprompt.models.ParsedPrompt;
 import com.google.dotprompt.models.Part;
 import com.google.dotprompt.models.PendingPart;
 import com.google.dotprompt.models.Prompt;
+import com.google.dotprompt.models.PromptMetadata;
 import com.google.dotprompt.models.Role;
 import com.google.dotprompt.models.TextPart;
 import java.io.IOException;
@@ -142,6 +144,19 @@ public class Parser {
     } else {
       return new Prompt(content, Map.of());
     }
+  }
+
+  /**
+   * Parses a document containing YAML frontmatter and template content into a ParsedPrompt.
+   *
+   * @param source The source document containing frontmatter and template.
+   * @return A ParsedPrompt with metadata and template content.
+   * @throws IOException If parsing the YAML frontmatter fails.
+   */
+  public static ParsedPrompt parseDocument(String source) throws IOException {
+    Prompt prompt = parse(source);
+    PromptMetadata metadata = PromptMetadata.fromConfig(prompt.config());
+    return ParsedPrompt.fromMetadata(prompt.template(), metadata);
   }
 
   /**
@@ -431,7 +446,7 @@ public class Parser {
    * @param messageSources List of message sources.
    * @return List of structured messages.
    */
-  private static List<Message> messageSourcesToMessages(List<MessageSource> messageSources) {
+  public static List<Message> messageSourcesToMessages(List<MessageSource> messageSources) {
     List<Message> messages = new ArrayList<>();
     for (MessageSource m : messageSources) {
       if (m.content != null || (m.source != null && !m.source.isEmpty())) {
@@ -496,28 +511,6 @@ public class Parser {
         root.put(parentKey, new HashMap<String, Object>());
       }
       ((Map<String, Object>) root.get(parentKey)).put(childKey, value);
-    }
-  }
-
-  /** Internal class to represent a message source during parsing. */
-  private static class MessageSource {
-    Role role;
-    String source;
-    List<Part> content;
-    Map<String, Object> metadata;
-
-    MessageSource(Role role, String source) {
-      this.role = role;
-      this.source = source;
-      this.content = null;
-      this.metadata = null;
-    }
-
-    MessageSource(Role role, List<Part> content, Map<String, Object> metadata) {
-      this.role = role;
-      this.source = null;
-      this.content = content;
-      this.metadata = metadata;
     }
   }
 }
