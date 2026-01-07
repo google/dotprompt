@@ -25,6 +25,12 @@ You are an expert Python developer contributing to the Google Dotprompt project.
 - **Method Chaining**: Fluent builder methods should return `this` for chaining.
 - Please don't add section marker comments.
 
+### Rust Style Guidelines
+- **Section Comments**: Do not add section marker comments (e.g., `// ==== Section ====`). Use module organization and doc comments instead.
+- **Documentation**: Write comprehensive rustdoc comments for all public types and functions.
+- **Error Handling**: Use Result types for fallible operations; avoid `unwrap()` and `expect()` in library code.
+- **Clippy**: Follow `clippy::pedantic` lints. Use `#[allow(...)]` annotations sparingly and with justification.
+
 ## 2. Typing & Style
 - **Type Unions**: Use the pipe operator `|` (PEP 604) for union types (e.g., `int | str`) instead of `typing.Union`. Use `| None` for optional types.
 - **Generics**: Use standard collection generics (PEP 585) like `list`, `dict`, `tuple` (lowercase) for type hints instead of `typing.List`, `typing.Dict`.
@@ -74,7 +80,7 @@ You are an expert Python developer contributing to the Google Dotprompt project.
 - **Header**: Include the following Apache 2.0 license header at the top of each file, ensuring the year is current (e.g., 2025):
 
 ```python
-# Copyright 2025 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.

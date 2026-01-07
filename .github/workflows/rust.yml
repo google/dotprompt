@@ -1,4 +1,4 @@
-# Copyright 2025 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,36 @@ on:
       - ".github/workflows/rust.yml"
 
 jobs:
+  format-check:
+    name: Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+  clippy-lint:
+    name: Clippy Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --workspace -- -D warnings
+
   check-build-test:
     name: Check, Build & Test (${{ matrix.toolchain }}, ${{ matrix.os_config.os }}-${{ matrix.os_config.arch }})
     runs-on: ${{ matrix.os_config.os }}
@@ -67,6 +97,17 @@ jobs:
           RUST_BACKTRACE: 1
         run: cargo test --all-targets --workspace
         # Allow nightly tests to fail
+        continue-on-error: ${{ matrix.toolchain == 'nightly' }}
+
+      - name: Verify SPEC_FILE support
+        env:
+          RUST_BACKTRACE: 1
+        run: |
+          find spec -name "*.yaml" | while read -r spec_file; do
+            relative_spec_file="../../$spec_file"
+            echo "Testing SPEC_FILE=$relative_spec_file"
+            SPEC_FILE="$relative_spec_file" cargo test --test spec_test -- --nocapture > /dev/null || exit 1
+          done
         continue-on-error: ${{ matrix.toolchain == 'nightly' }}
 
   #check-build-test-musl-matrix:
@@ -136,3 +177,4 @@ jobs:
   #      run: cargo test --all-targets --workspace --target ${{ matrix.target }}
   #      # Allow nightly tests to fail
   #      continue-on-error: ${{ matrix.toolchain == 'nightly' }}
+

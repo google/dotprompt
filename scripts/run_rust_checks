@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2025 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -79,6 +79,15 @@ echo "--- Running clippy with +stable toolchain ---"
 # Run tests with stable toolchain.
 echo "--- Running tests with +stable toolchain ---"
 "${CARGO}" +stable test --all-targets --workspace || error_exit "Tests failed with stable toolchain"
+
+# Verify SPEC_FILE environment variable support (run all specs individually)
+# Note: Path must be relative to rs/dotprompt package dir where the test runs
+echo "--- Verifying SPEC_FILE environment variable support ---"
+find spec -name "*.yaml" | while read -r spec_file; do
+  relative_spec_file="../../$spec_file"
+  echo "Testing SPEC_FILE=$relative_spec_file"
+  SPEC_FILE="$relative_spec_file" "${CARGO}" +stable test --test spec_test -- --nocapture > /dev/null || error_exit "SPEC_FILE verification failed for $spec_file"
+done
 
 # Format check with nightly toolchain.
 echo "--- Checking formatting with +nightly toolchain ---"

@@ -15,13 +15,23 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [package]
-edition = "2024"
-name    = "dotprompt"
-version = "0.1.0"
+categories  = ["template-engine", "development-tools"]
+description = "Dotprompt: Executable GenAI Prompt Templates for Rust"
+edition     = "2024"
+keywords    = ["genai", "prompting", "llms", "templating"]
+license     = "Apache-2.0"
+name        = "dotprompt"
+readme      = "README.md"
+repository  = "https://github.com/google/dotprompt"
+version     = "0.1.0"
 
 [dependencies]
+handlebars.workspace = true
+regex                = "1.11"
 serde.workspace      = true
 serde_json.workspace = true
+serde_yaml           = "0.9"
+thiserror            = "2.0"
 
 [lints]
 workspace = true

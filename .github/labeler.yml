@@ -20,6 +20,35 @@ root:
   - changed-files:
       - any-glob-to-any-file: "*"
 
+bazel:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.bazel"
+          - "**/*.bzl"
+          - "**/.bazel*"
+          - "**/MODULE.bazel*"
+          - "**/maven_install.json"
+
+java:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.java"
+          - "java/**"
+          - "**/maven_install.json"
+
+kotlin:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.kt"
+
+rust:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.rs"
+          - "**/Cargo.toml"
+          - "**/Cargo.lock"
+          - "rs/**"
+
 go:
   - changed-files:
       - any-glob-to-any-file:
