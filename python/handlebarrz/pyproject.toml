@@ -26,7 +26,7 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
   "Programming Language :: Rust",
   "Topic :: Text Processing :: Markup",
-  "License :: OSI Approved :: Apache Software License",
+
 ]
 dependencies = [
   "structlog>=25.2.0",
