@@ -7,9 +7,9 @@ Dotprompt implementations are not required to conform to any specific structured
 
 In the future, a Dotprompt "spec test" will be made available that exercises the various parts of Dotprompt and compares the results to this common model request format.
 
-## GenerateRequest
+## `GenerateRequest`
 
-### Full Example
+### Full example
 
 ```json
 {
@@ -113,132 +113,159 @@ In the future, a Dotprompt "spec test" will be made available that exercises the
   ]
 }
 ```
+
 ### Properties
 
 #### `messages`
+
 - **Type:** `array` of [Message](#message) objects.
 - **Description:** The conversation history and current prompt.
 
 #### `config`
+
 - **Type:** [ModelConfig](#modelconfig)
 - **Description:** Configuration options for the model.
 
 #### `tools`
+
 - **Type:** `array` of [ToolDefinition](#tooldefinition)
 - **Description:** Definitions of tools available to the model.
 
 #### `output`
+
 - **Type:** [Output](#output)
 - **Description:** Specification for the desired output format.
 
 #### `context`
+
 - **Type:** `array` of [Document](#document)
 - **Description:** Grounding context documents for the model.
 
-## Message
+## `Message`
 
 A message represents a single "turn" in a multi-turn conversation. Each message must have a role and specified content.
 
 ### Properties
 
 #### `role`
+
 - **Type:** `string`
 - **Description:** The role of the message sender. Can be "system", "user", "model", or "tool".
 
 #### `content`
+
 - **Type:** `array` of [Part](#part)
 - **Description:** The content of the message, which can include text, media, tool requests, and tool responses.
 
 #### `metadata`
+
 - **Type:** `object`
 - **Description:** Optional. Additional metadata for the message.
 
-## Part
+## `Part`
 
 A `Part` object can be one of the following types:
 
-### TextPart
+### `TextPart`
 
 #### `text`
+
 - **Type:** `string`
 - **Description:** The text content of the message.
 
-### MediaPart
+### `MediaPart`
 
 #### `media`
+
 - **Type:** `object`
 - **Description:** Contains media information.
 
 #### `media.contentType`
+
 - **Type:** `string`
 - **Description:** Optional. The media content type. Inferred from data URI if not provided.
 
 #### `media.url`
+
 - **Type:** `string`
 - **Description:** A `data:` or `https:` URI containing the media content.
 
-### ToolRequestPart
+### `ToolRequestPart`
 
 #### `toolRequest`
+
 - **Type:** `object`
 - **Description:** A request for a tool to be executed.
 
 #### `toolRequest.ref`
+
 - **Type:** `string`
 - **Description:** Optional. The call ID or reference for a specific request.
 
 #### `toolRequest.name`
+
 - **Type:** `string`
 - **Description:** The name of the tool to call.
 
 #### `toolRequest.input`
+
 - **Type:** `any`
 - **Description:** Optional. The input parameters for the tool, usually a JSON object.
 
-### ToolResponsePart
+### `ToolResponsePart`
 
 #### `toolResponse`
+
 - **Type:** `object`
 - **Description:** A provided response to a tool call.
 
 #### `toolResponse.ref`
+
 - **Type:** `string`
 - **Description:** Optional. The call ID or reference for a specific request.
 
 #### `toolResponse.name`
+
 - **Type:** `string`
 - **Description:** The name of the tool.
 
 #### `toolResponse.output`
+
 - **Type:** `any`
 - **Description:** Optional. The output data returned from the tool, usually a JSON object.
 
-## ModelConfig
+## `ModelConfig`
 
 `ModelConfig` is an arbitrary `Map<string,any>` that depends on the specific implementation of the underlying model. However, the following common configuration options should be respected in implementation whenever applicable:
 
-### Common Config Properties
+### Common config properties
+
 #### `temperature`
+
 - **Type:** `number`
 - **Description:** Optional. Controls the randomness of the model's output.
 
 #### `maxOutputTokens`
+
 - **Type:** `number`
 - **Description:** Optional. Limits the maximum number of tokens in the model's response.
 
 #### `topK`
+
 - **Type:** `number`
 - **Description:** Optional. Limits the number of highest probability vocabulary tokens to consider at each step.
 
 #### `topP`
+
 - **Type:** `number`
 - **Description:** Optional. Sets a probability threshold for token selection.
 
 #### `stopSequences`
+
 - **Type:** `array` of `string`
 - **Description:** Optional. Sequences that, if encountered, will cause the model to stop generating further output.
 
-## Tool Object
+## `Tool` object
 
 ### `name`
 - **Type:** `string`
@@ -256,27 +283,32 @@ A `Part` object can be one of the following types:
 - **Type:** `object`
 - **Description:** Optional. A JSON Schema object describing the expected output from the tool.
 
-## Output Object
+## `OutputOptions` object
 
 ### `format`
+
 - **Type:** `string`
 - **Description:** Optional. The desired output format. All implementations should support `json` and `text` at a minimum.
 
 ### `schema`
+
 - **Type:** `object`
 - **Description:** Optional. A JSON Schema object describing the expected structure of the output.
 
-## Document Object
+## `Document` Object
 
 ### `id`
+
 - **Type:** `string`
 - **Description:** A unique identifier for the document.
 
 ### `content`
+
 - **Type:** `string`
 - **Description:** The text content of the document.
 
 ### `metadata`
+
 - **Type:** `object`
 - **Description:** Optional. Additional metadata for the document.
 

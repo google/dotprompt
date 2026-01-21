@@ -1,11 +1,11 @@
 ---
-title: Template Content
+title: Template content
 sort_order: 3
 ---
 
 Dotprompt uses a template syntax based on [Handlebars](https://handlebarsjs.com/guide/), the popular templating language with existing implementations in several programming languages. This syntax allows for dynamic content insertion and basic logic within prompts.
 
-## Language Basics
+## Language basics
 
 All Dotprompt implementations **MUST** implement the Handlebars features specified in these docs, but **MAY** also implement additional capabilities as documented in the [Handlebars language specification](https://handlebarsjs.com/guide/expressions.html).
 
@@ -13,23 +13,23 @@ All Dotprompt implementations **MUST** implement the Handlebars features specifi
 
 Handlebars expressions are contained within `{{}}` tags.
 
-#### Variable Interpolation
+#### Variable interpolation
 
 - **Syntax:** `{{variableName}}` or `{{object.propertyName}}`
 - **Description:** Inserts the value of the specified variable.
 - **Example:** `Hello, {{name}} from {{address.city}}!`
 
-#### Escaped Expressions
+#### Escaped expressions
 
 - **Syntax:** `\{{variableName}}` (escaped expression), `{{{variableName}}}`
 - **Description:** Renders the literal text `{{variableName}}` without interpolation.
 - **Example:** `This is how you show a variable: \{{variableName}}`
 
-## Built-in Helpers
+## Built-in helpers
 
 Dotprompt provides several built-in helpers to enhance template functionality.
 
-### Conditional Blocks
+### Conditional blocks
 
 #### `#if`
 
@@ -79,7 +79,7 @@ Dotprompt provides several built-in helpers to enhance template functionality.
   {{/each}}
   ```
 
-## Dotprompt Helpers
+## Dotprompt helpers
 
 The following helpers **MUST** be included in all implementations of Dotprompt and provide the tools to manage multi-message and multi-modal prompting.
 
@@ -155,7 +155,7 @@ Partials are reusable template snippets that can be included in other templates.
   {{>footer}}
   ```
 
-### Partial with Arguments
+### Partial with arguments
 
 - **Syntax:** `{{>partialName arg1=value1 arg2=value2}}`
 - **Description:** Includes a partial with specific arguments.
@@ -164,7 +164,7 @@ Partials are reusable template snippets that can be included in other templates.
   {{>greeting name=userName style=greetingStyle}}
   ```
 
-### Partial with Context
+### Partial with context
 
 - **Syntax:** `{{>partialName this}}`
 - **Description:** Passes the current context to the partial.
@@ -175,14 +175,14 @@ Partials are reusable template snippets that can be included in other templates.
   {{/each}}
   ```
 
-## Custom Helpers
+## Custom helpers
 
 All Dotprompt implementations **MUST** allow for the definition of custom helpers to extend Dotprompt syntax. The specific mechanism of custom helper registration is up to the specific implementation. Custom helpers are used in the following manner:
 
 - **Basic Custom Helper:** `{{customHelperName arg1 "arg2"}}`
 - **Named Arguments:** `{{customHelperName arg1=var1 arg2="var2"}}`
 
-## Context Variables
+## Context variables
 
 When rendering a template, additional contextual information is provided as variables with a special `@` prefix. Some of these are built-in:
 

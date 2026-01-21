@@ -13,7 +13,7 @@ const { class: className } = Astro.props;
 {
   hasToC && (
     <div class:list={["relative", className]}>
-      <h2 class="text-xl border-none">On This Page</h2>
+      <h2 class="text-xl border-none">On this page</h2>
       <ul class="list-none m-0">
         {toc.map((heading) => (
           <li class=`${heading.depth === 2 ? "font-semibold" : "text-muted-foreground"}${heading.depth > 3 ? " pl-4" : ""}`>

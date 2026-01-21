@@ -7,7 +7,7 @@ Picoschema is a compact, YAML-optimized schema definition format specifically de
 
 Picoschema compiles to JSON Schema and is a subset of JSON Schema capabilities.
 
-## Full Example
+## Full example
 
 ```yaml
 product:
@@ -29,49 +29,55 @@ product:
     price: number, Price of the variant
 ```
 
-## Picoschema Reference
+## Picoschema reference
 
-### Basic Types
+### Basic types
 
 Picoschema supports the following scalar types:
 
 #### **string**
+
 - **Syntax:** `fieldName: string[, optional description]`
 - **Description:** Represents a string value.
 - **Example:** `title: string`
 
 #### **number**
+
 - **Syntax:** `fieldName: number[, optional description]`
 - **Description:** Represents a numeric value (integer or float).
 - **Example:** `price: number`
 
 #### **integer**
+
 - **Syntax:** `fieldName: integer[, optional description]`
 - **Description:** Represents an integer value.
 - **Example:** `age: integer`
 
 #### **boolean**
+
 - **Syntax:** `fieldName: boolean[, optional description]`
 - **Description:** Represents a boolean value.
 - **Example:** `isActive: boolean`
 
 #### **null**
+
 - **Syntax:** `fieldName: null[, optional description]`
 - **Description:** Represents a null value.
 - **Example:** `emptyField: null`
 
 #### **any**
+
 - **Syntax:** `fieldName: any[, optional description]`
 - **Description:** Represents a value of any type.
 - **Example:** `data: any`
 
-### Optional Fields
+### Optional fields
 
 - **Syntax:** Add `?` after the field name.
 - **Description:** Marks a field as optional. Optional fields are also automatically nullable.
 - **Example:** `subtitle?: string`
 
-### Field Descriptions
+### Field descriptions
 
 - **Syntax:** Add a comma followed by the description after the type.
 - **Description:** Provides additional information about the field.
@@ -102,13 +108,13 @@ Picoschema supports the following scalar types:
 - **Description:** Defines a field with a fixed set of possible values.
 - **Example:** `status(enum): [PENDING, APPROVED, REJECTED]`
 
-### Wildcard Fields
+### Wildcard fields
 
 - **Syntax:** `(*): type[, optional description]`
 - **Description:** Allows additional properties of a specified type in an object.
 - **Example:** `(*): string`
 
-### Additional Notes
+### Additional notes
 
 1. By default, all fields are required unless marked as optional with `?`.
 2. Objects defined using Picoschema do not allow additional properties unless a wildcard `(*)` is added.
@@ -131,7 +137,7 @@ output:
 ---
 ```
 
-## Error Handling
+## Error handling
 
 Picoschema will throw errors in the following cases:
 1. If an unsupported scalar type is used.

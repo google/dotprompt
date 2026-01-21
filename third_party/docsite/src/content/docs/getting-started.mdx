@@ -1,5 +1,5 @@
 ---
-title: Getting Started
+title: Get started
 hide_breadcrumbs: true
 ---
 import Callout from "@/components/Callout.astro";
@@ -24,9 +24,9 @@ An executable prompt template is a file that contains not only the text of a pro
 
 This combination of features makes it possible to treat a Dotprompt file as an executable unit, streamlining the process of working with AI models and ensuring consistency across different uses of the same prompt.
 
-## Example `.prompt` file
+## Example file
 
-Here's an example of a Dotprompt file that extracts structured data from provided text:
+Here's an example of a Dotprompt file that extracts structured data from the provided text:
 
 ```handlebars
 ---
@@ -39,7 +39,7 @@ output:
   schema:
     title?: string, the title of the article if it has one
     summary: string, a 3-sentence summary of the text
-    tags?(array, a list of string tag category for the text): string, 
+    tags?(array, a list of string tag category for the text): string,
 ---
 
 Extract the requested information from the given text. If a piece of information is not present, omit that field from the output.
@@ -57,7 +57,7 @@ This Dotprompt file:
 
 When executed, this prompt would take a text input, analyze it using the specified AI model, and return a structured JSON object with the extracted information.
 
-## Installation
+## Install and set up
 
 The remainder of this getting started guide will use the reference Dotprompt implementation included as part of the [Firebase Genkit](https://github.com/firebase/genkit) GenAI framework. To use other implementations of Dotprompt, see the [list of Implementations](/implementations).
 

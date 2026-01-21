@@ -1,5 +1,5 @@
 ---
-title: Prompt Frontmatter
+title: Prompt frontmatter
 sort_order: 1
 ---
 
@@ -17,7 +17,7 @@ Prompt template goes here.
 
 All frontmatter fields are considered optional in a given `.prompt` file, as Dotprompt implementations may provide default values for any or all of them. If no frontmatter fields need to be specified in a given file, the frontmatter may be omitted entirely and only a prompt template provided.
 
-## Full Example
+## Full example
 
 Here's an example of a Dotprompt frontmatter:
 
@@ -26,7 +26,7 @@ Here's an example of a Dotprompt frontmatter:
 name: greetingPrompt
 variant: formal
 model: googleai/gemini-1.5-flash
-tools: 
+tools:
   - timeOfDay
 config:
   version: gemini-1.5-flash-latest
@@ -52,25 +52,30 @@ metadata:
 ---
 ```
 
-## Available Fields
+## Available fields
 
 ### `name`
+
 - **Type:** `string`
 - **Description:** The name of the prompt. If unspecified, inferred by the filename of the loaded prompt (e.g. `myPrompt.prompt` has an inferred name of `myPrompt`).
 
 ### `variant`
+
 - **Type:** `string`
 - **Description:** The variant name for the prompt. If unspecified, inferred by the filename of the loaded prompt (e.g. `myPrompt.variant1.prompt` has inferred name of `myPrompt` and inferred variant of `variant1`).
 
 ### `model`
+
 - **Type:** `string` or `ModelArgument<Options>`
 - **Description:** The name of the model to use for this prompt, e.g., `googleai/gemini-1.5-flash-latest`. The Dotprompt implementation is responsible for resolving a string model name to an executable model.
 
 ### `tools`
+
 - **Type:** `string[]`
 - **Description:** Names of tools (registered in the Dotprompt implementation) to allow use of in this prompt.
 
 ### `config`
+
 - **Type:** `object`
 - **Description:** Configuration to be passed to the model implementation as a `Map<string,any>`. The specific configuration options vary depending on the model implementation.
 - **Common Config:** Model implementations should respect the following config properties where applicable:
@@ -107,6 +112,7 @@ metadata:
     - **Example:**  `["END", "\n\n", "User:"]`
 
 ### `input`
+
 - **Type:** `object`
 - **Description:** Defines the input variables the prompt. If `input` is not specified, the implementation should accept any `Map<string,any>` values as input and pass them to the prompt template.
 - **Properties:**
@@ -118,22 +124,24 @@ metadata:
     - **Description:** Schema representing the input values for the prompt. Must correspond to a JSON Schema `object` type.
 
 ### `output`
+
 - **Type:** `object`
 - **Description:** Defines the expected model output format.
 - **Properties:**
   - `format`:
     - **Type:** `string`
     - **Common Values:** `json`, `text`
-    - **Description:** Desired output format for this prompt. Output formats are implementation-specific, but 
+    - **Description:** Desired output format for this prompt. Output formats are implementation-specific, but
   - `schema`:
     - **Type:** [Schema](schema)
     - **Description:** Schema representing the expected output from the prompt. Must correspond to a JSON Schema `object` type.
 
 ### `metadata`
+
 - **Type:** `Map<string, any>`
 - **Description:** Arbitrary metadata to be used by code, tools, and libraries.
 
-## Frontmatter Extensions
+## Frontmatter extensions
 
 In the frontmatter, Dotprompt implementations will automatically collect namespaced fields (i.e. fields with a `.` in them) into a special `ext` property on the resulting metadata. For example, the following frontmatter:
 
