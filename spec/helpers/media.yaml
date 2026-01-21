@@ -14,10 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-
-# Tests for the {{media}} helper which formats media URLs with content type
-# information in message content.
-
 # Tests that media URLs are properly formatted with content type in the
 # message content array.
 - name: basic
@@ -34,3 +30,35 @@
                   media: { "contentType": "image/jpeg", "url": "http://a/b/c" },
                 },
               ]
+
+# Tests media URL without content type to ensure optional parameter handling
+# is consistent across runtimes.
+- name: url_only
+  template: "{{media url=url}}"
+  tests:
+    - desc: renders media part with url only
+      data: { input: { url: "http://example.com/image.png" } }
+      expect:
+        messages:
+          - role: user
+            content:
+              - media: { url: "http://example.com/image.png" }
+
+# Tests various content types to ensure proper handling across runtimes.
+- name: content_types
+  template: "{{media contentType=contentType url=url}}"
+  tests:
+    - desc: renders video content type
+      data: { input: { contentType: "video/mp4", url: "http://example.com/video.mp4" } }
+      expect:
+        messages:
+          - role: user
+            content:
+              - media: { contentType: "video/mp4", url: "http://example.com/video.mp4" }
+    - desc: renders audio content type
+      data: { input: { contentType: "audio/mpeg", url: "http://example.com/audio.mp3" } }
+      expect:
+        messages:
+          - role: user
+            content:
+              - media: { contentType: "audio/mpeg", url: "http://example.com/audio.mp3" }

@@ -239,4 +239,118 @@ public class HelpersTest {
     context.put("b", "test");
     assertThat(template.apply(context)).isEqualTo("no");
   }
+
+  // Edge case tests for cross-runtime parity
+
+  @Test
+  public void testJsonHelper_with4SpaceIndent() throws IOException {
+    Map<String, Object> data = new HashMap<>();
+    data.put("test", true);
+
+    Template template = handlebars.compileInline("{{json data indent=4}}");
+    Map<String, Object> context = new HashMap<>();
+    context.put("data", data);
+
+    String result = template.apply(context);
+    // Should have 4-space indentation
+    assertThat(result).contains("    ");
+    assertThat(result).contains("\n");
+  }
+
+  @Test
+  public void testJsonHelper_nestedObjects() throws IOException {
+    Map<String, Object> inner = new HashMap<>();
+    inner.put("value", 42);
+    Map<String, Object> middle = new HashMap<>();
+    middle.put("inner", inner);
+    Map<String, Object> outer = new HashMap<>();
+    outer.put("outer", middle);
+
+    Template template = handlebars.compileInline("{{json data}}");
+    Map<String, Object> context = new HashMap<>();
+    context.put("data", outer);
+
+    String result = template.apply(context);
+    assertThat(result).contains("\"outer\"");
+    assertThat(result).contains("\"inner\"");
+    assertThat(result).contains("\"value\":42");
+  }
+
+  @Test
+  public void testJsonHelper_emptyObject() throws IOException {
+    Template template = handlebars.compileInline("{{json data}}");
+    Map<String, Object> context = new HashMap<>();
+    context.put("data", new HashMap<>());
+
+    String result = template.apply(context);
+    assertThat(result).isEqualTo("{}");
+  }
+
+  @Test
+  public void testIfEquals_typeSafety_intVsString() throws IOException {
+    // Tests that 5 (Integer) != "5" (String) - strict type equality
+    Template template =
+        handlebars.compileInline("{{#ifEquals a b}}equal{{else}}not equal{{/ifEquals}}");
+
+    Map<String, Object> context = new HashMap<>();
+    context.put("a", 5);
+    context.put("b", "5");
+    assertThat(template.apply(context)).isEqualTo("not equal");
+  }
+
+  @Test
+  public void testIfEquals_booleanComparison_equal() throws IOException {
+    Template template =
+        handlebars.compileInline("{{#ifEquals a b}}equal{{else}}not equal{{/ifEquals}}");
+
+    Map<String, Object> context = new HashMap<>();
+    context.put("a", true);
+    context.put("b", true);
+    assertThat(template.apply(context)).isEqualTo("equal");
+  }
+
+  @Test
+  public void testIfEquals_booleanComparison_unequal() throws IOException {
+    Template template =
+        handlebars.compileInline("{{#ifEquals a b}}equal{{else}}not equal{{/ifEquals}}");
+
+    Map<String, Object> context = new HashMap<>();
+    context.put("a", true);
+    context.put("b", false);
+    assertThat(template.apply(context)).isEqualTo("not equal");
+  }
+
+  @Test
+  public void testIfEquals_nullComparison_bothNull() throws IOException {
+    Template template =
+        handlebars.compileInline("{{#ifEquals a b}}equal{{else}}not equal{{/ifEquals}}");
+
+    Map<String, Object> context = new HashMap<>();
+    context.put("a", null);
+    context.put("b", null);
+    assertThat(template.apply(context)).isEqualTo("equal");
+  }
+
+  @Test
+  public void testIfEquals_nullComparison_nullVsZero() throws IOException {
+    Template template =
+        handlebars.compileInline("{{#ifEquals a b}}equal{{else}}not equal{{/ifEquals}}");
+
+    Map<String, Object> context = new HashMap<>();
+    context.put("a", null);
+    context.put("b", 0);
+    assertThat(template.apply(context)).isEqualTo("not equal");
+  }
+
+  @Test
+  public void testUnlessEquals_typeSafety_intVsString() throws IOException {
+    // Tests that 5 (Integer) != "5" (String) - strict type inequality
+    Template template =
+        handlebars.compileInline("{{#unlessEquals a b}}not equal{{else}}equal{{/unlessEquals}}");
+
+    Map<String, Object> context = new HashMap<>();
+    context.put("a", 5);
+    context.put("b", "5");
+    assertThat(template.apply(context)).isEqualTo("not equal");
+  }
 }

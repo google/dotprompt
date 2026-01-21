@@ -611,12 +611,12 @@ func parseMediaPart(piece string) (*MediaPart, error) {
 
 	mediaPart := &MediaPart{
 		Media: Media{
-			URL:         url,
-			ContentType: contentType,
+			URL: url,
 		},
 		HasMetadata: HasMetadata{},
 	}
 
+	// Only set ContentType if it's not empty (for JSON omitempty to work)
 	if contentType != "" && strings.TrimSpace(contentType) != "" {
 		mediaPart.Media.ContentType = contentType
 	}

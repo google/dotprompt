@@ -56,6 +56,8 @@ fn json_helper(
     _: &mut RenderContext,
     out: &mut dyn Output,
 ) -> HelperResult {
+    use serde::Serialize;
+
     let value = h.param(0).ok_or_else(|| {
         handlebars::RenderErrorReason::Other(
             "json helper requires at least one parameter".to_string(),
@@ -68,8 +70,18 @@ fn json_helper(
         .unwrap_or(0);
 
     let json_str = if indent > 0 {
-        serde_json::to_string_pretty(value.value()).map_err(|e| {
+        // Create custom formatter with specified indent (N spaces)
+        // Note: indent values are always small (typically 2-4), so truncation is safe
+        #[allow(clippy::cast_possible_truncation)]
+        let indent_str = " ".repeat(indent as usize);
+        let mut buf = Vec::new();
+        let formatter = serde_json::ser::PrettyFormatter::with_indent(indent_str.as_bytes());
+        let mut ser = serde_json::Serializer::with_formatter(&mut buf, formatter);
+        value.value().serialize(&mut ser).map_err(|e| {
             handlebars::RenderErrorReason::Other(format!("JSON serialization failed: {e}"))
+        })?;
+        String::from_utf8(buf).map_err(|e| {
+            handlebars::RenderErrorReason::Other(format!("UTF-8 conversion failed: {e}"))
         })?
     } else {
         serde_json::to_string(value.value()).map_err(|e| {
@@ -281,8 +293,10 @@ mod tests {
     use super::*;
     use serde_json::json;
 
+    // JSON helper tests
+
     #[test]
-    fn test_json_helper() {
+    fn test_json_helper_basic_object() {
         let mut hbs = Handlebars::new();
         register_builtin_helpers(&mut hbs);
 
@@ -291,11 +305,96 @@ mod tests {
         let result = hbs
             .render_template(template, &data)
             .expect("render should succeed");
-        assert!(result.contains(r#""foo"#));
+        assert_eq!(result, r#"{"foo":"bar"}"#);
     }
 
     #[test]
-    fn test_role_helper() {
+    fn test_json_helper_with_2_space_indent() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = "{{json obj indent=2}}";
+        let data = json!({"obj": {"test": true}});
+        let result = hbs
+            .render_template(template, &data)
+            .expect("render should succeed");
+        // Should have 2-space indentation and newlines
+        assert!(result.contains('\n'));
+        assert!(result.contains("  "));
+        assert!(result.contains("\"test\""));
+    }
+
+    #[test]
+    fn test_json_helper_with_4_space_indent() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = "{{json obj indent=4}}";
+        let data = json!({"obj": {"test": true}});
+        let result = hbs
+            .render_template(template, &data)
+            .expect("render should succeed");
+        // Should have 4-space indentation
+        assert!(result.contains("    "));
+        assert!(result.contains('\n'));
+    }
+
+    #[test]
+    fn test_json_helper_nested_objects() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = "{{json obj}}";
+        let data = json!({"obj": {"outer": {"inner": {"value": 42}}}});
+        let result = hbs
+            .render_template(template, &data)
+            .expect("render should succeed");
+        assert_eq!(result, r#"{"outer":{"inner":{"value":42}}}"#);
+    }
+
+    #[test]
+    fn test_json_helper_array() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = "{{json arr}}";
+        let data = json!({"arr": [1, 2, 3]});
+        let result = hbs
+            .render_template(template, &data)
+            .expect("render should succeed");
+        assert_eq!(result, "[1,2,3]");
+    }
+
+    #[test]
+    fn test_json_helper_empty_object() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = "{{json obj}}";
+        let data = json!({"obj": {}});
+        let result = hbs
+            .render_template(template, &data)
+            .expect("render should succeed");
+        assert_eq!(result, "{}");
+    }
+
+    #[test]
+    fn test_json_helper_empty_array() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = "{{json arr}}";
+        let data = json!({"arr": []});
+        let result = hbs
+            .render_template(template, &data)
+            .expect("render should succeed");
+        assert_eq!(result, "[]");
+    }
+
+    // Role helper tests
+
+    #[test]
+    fn test_role_helper_system() {
         let mut hbs = Handlebars::new();
         register_builtin_helpers(&mut hbs);
 
@@ -304,5 +403,230 @@ mod tests {
             .render_template(template, &json!({}))
             .expect("render should succeed");
         assert_eq!(result, "<<<dotprompt:role:system>>>");
+    }
+
+    #[test]
+    fn test_role_helper_user() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = "{{role \"user\"}}";
+        let result = hbs
+            .render_template(template, &json!({}))
+            .expect("render should succeed");
+        assert_eq!(result, "<<<dotprompt:role:user>>>");
+    }
+
+    #[test]
+    fn test_role_helper_model() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = "{{role \"model\"}}";
+        let result = hbs
+            .render_template(template, &json!({}))
+            .expect("render should succeed");
+        assert_eq!(result, "<<<dotprompt:role:model>>>");
+    }
+
+    // History helper tests
+
+    #[test]
+    fn test_history_helper() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = "{{history}}";
+        let result = hbs
+            .render_template(template, &json!({}))
+            .expect("render should succeed");
+        assert_eq!(result, "<<<dotprompt:history>>>");
+    }
+
+    // Section helper tests
+
+    #[test]
+    fn test_section_helper() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = "{{section \"examples\"}}";
+        let result = hbs
+            .render_template(template, &json!({}))
+            .expect("render should succeed");
+        assert_eq!(result, "<<<dotprompt:section examples>>>");
+    }
+
+    // Media helper tests
+
+    #[test]
+    fn test_media_helper_url_only() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = r#"{{media url="https://example.com/image.png"}}"#;
+        let result = hbs
+            .render_template(template, &json!({}))
+            .expect("render should succeed");
+        assert_eq!(
+            result,
+            "<<<dotprompt:media:url https://example.com/image.png>>>"
+        );
+    }
+
+    #[test]
+    fn test_media_helper_url_and_content_type() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = r#"{{media url="https://example.com/image.png" contentType="image/png"}}"#;
+        let result = hbs
+            .render_template(template, &json!({}))
+            .expect("render should succeed");
+        assert_eq!(
+            result,
+            "<<<dotprompt:media:url https://example.com/image.png image/png>>>"
+        );
+    }
+
+    // ifEquals helper tests
+
+    #[test]
+    fn test_if_equals_equal_int_values() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = "{{#ifEquals a b}}yes{{else}}no{{/ifEquals}}";
+        let data = json!({"a": 1, "b": 1});
+        let result = hbs
+            .render_template(template, &data)
+            .expect("render should succeed");
+        assert_eq!(result, "yes");
+    }
+
+    #[test]
+    fn test_if_equals_unequal_int_values() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = "{{#ifEquals a b}}yes{{else}}no{{/ifEquals}}";
+        let data = json!({"a": 1, "b": 2});
+        let result = hbs
+            .render_template(template, &data)
+            .expect("render should succeed");
+        assert_eq!(result, "no");
+    }
+
+    #[test]
+    fn test_if_equals_equal_string_values() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = "{{#ifEquals a b}}yes{{else}}no{{/ifEquals}}";
+        let data = json!({"a": "test", "b": "test"});
+        let result = hbs
+            .render_template(template, &data)
+            .expect("render should succeed");
+        assert_eq!(result, "yes");
+    }
+
+    #[test]
+    fn test_if_equals_type_safety_int_vs_string() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        // Test that 5 (int) != "5" (string) - strict type equality
+        let template = "{{#ifEquals a b}}equal{{else}}not equal{{/ifEquals}}";
+        let data = json!({"a": 5, "b": "5"});
+        let result = hbs
+            .render_template(template, &data)
+            .expect("render should succeed");
+        assert_eq!(result, "not equal");
+    }
+
+    #[test]
+    fn test_if_equals_boolean_comparison() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = "{{#ifEquals a b}}equal{{else}}not equal{{/ifEquals}}";
+
+        // true == true
+        let data = json!({"a": true, "b": true});
+        let result = hbs
+            .render_template(template, &data)
+            .expect("render should succeed");
+        assert_eq!(result, "equal");
+
+        // true != false
+        let data = json!({"a": true, "b": false});
+        let result = hbs
+            .render_template(template, &data)
+            .expect("render should succeed");
+        assert_eq!(result, "not equal");
+    }
+
+    #[test]
+    fn test_if_equals_null_comparison() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = "{{#ifEquals a b}}equal{{else}}not equal{{/ifEquals}}";
+
+        // null == null
+        let data = json!({"a": null, "b": null});
+        let result = hbs
+            .render_template(template, &data)
+            .expect("render should succeed");
+        assert_eq!(result, "equal");
+
+        // null != 0
+        let data = json!({"a": null, "b": 0});
+        let result = hbs
+            .render_template(template, &data)
+            .expect("render should succeed");
+        assert_eq!(result, "not equal");
+    }
+
+    // unlessEquals helper tests
+
+    #[test]
+    fn test_unless_equals_unequal_values() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = "{{#unlessEquals a b}}yes{{else}}no{{/unlessEquals}}";
+        let data = json!({"a": 1, "b": 2});
+        let result = hbs
+            .render_template(template, &data)
+            .expect("render should succeed");
+        assert_eq!(result, "yes");
+    }
+
+    #[test]
+    fn test_unless_equals_equal_values() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        let template = "{{#unlessEquals a b}}yes{{else}}no{{/unlessEquals}}";
+        let data = json!({"a": 1, "b": 1});
+        let result = hbs
+            .render_template(template, &data)
+            .expect("render should succeed");
+        assert_eq!(result, "no");
+    }
+
+    #[test]
+    fn test_unless_equals_type_safety_int_vs_string() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+
+        // Test that 5 (int) != "5" (string) - strict type inequality
+        let template = "{{#unlessEquals a b}}not equal{{else}}equal{{/unlessEquals}}";
+        let data = json!({"a": 5, "b": "5"});
+        let result = hbs
+            .render_template(template, &data)
+            .expect("render should succeed");
+        assert_eq!(result, "not equal");
     }
 }

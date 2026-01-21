@@ -172,6 +172,97 @@ class TestDotpromptHelpers(unittest.TestCase):
         result = self.handlebars.render('unless_equals_test', {'arg1': 'test', 'arg2': 'test'})
         self.assertEqual(result, 'no')
 
+    # Edge case tests for cross-runtime parity
+
+    def test_json_helper_4_space_indent(self) -> None:
+        """Test json helper with 4-space indentation."""
+        self.handlebars.register_template('test5', '{{json data indent=4}}')
+        result = self.handlebars.render('test5', {'data': {'test': True}})
+        expected = '{\n    "test": true\n}'
+        self.assertEqual(result, expected)
+
+    def test_json_helper_nested_objects(self) -> None:
+        """Test json helper with nested objects."""
+        self.handlebars.register_template('nested_test', '{{json data}}')
+        result = self.handlebars.render('nested_test', {'data': {'outer': {'inner': {'value': 42}}}})
+        self.assertEqual(result, '{"outer":{"inner":{"value":42}}}')
+
+    def test_json_helper_empty_object(self) -> None:
+        """Test json helper with empty object."""
+        self.handlebars.register_template('empty_test', '{{json data}}')
+        result = self.handlebars.render('empty_test', {'data': {}})
+        self.assertEqual(result, '{}')
+
+    def test_json_helper_raises_on_non_serializable(self) -> None:
+        """Test json helper raises TypeError on non-serializable objects.
+
+        This test documents the fail-fast behavior that matches JavaScript's
+        JSON.stringify which throws on non-serializable values.
+        """
+
+        # Create a non-serializable object
+        class NonSerializable:
+            pass
+
+        self.handlebars.register_template('non_serial', '{{json data}}')
+
+        with self.assertRaises((TypeError, Exception)):
+            self.handlebars.render('non_serial', {'data': NonSerializable()})
+
+    def test_if_equals_type_safety_int_vs_string(self) -> None:
+        """Test ifEquals uses strict equality (int 5 != string '5').
+
+        This test documents that the comparison uses strict equality,
+        matching JavaScript's === operator behavior.
+        """
+        self.handlebars.register_template(
+            'type_test',
+            '{{#ifEquals arg1 arg2}}equal{{else}}not equal{{/ifEquals}}',
+        )
+        # 5 (int) should not equal "5" (string)
+        result = self.handlebars.render('type_test', {'arg1': 5, 'arg2': '5'})
+        self.assertEqual(result, 'not equal')
+
+    def test_if_equals_boolean_comparison(self) -> None:
+        """Test ifEquals with boolean values."""
+        self.handlebars.register_template(
+            'bool_test',
+            '{{#ifEquals arg1 arg2}}equal{{else}}not equal{{/ifEquals}}',
+        )
+        # true == true
+        result = self.handlebars.render('bool_test', {'arg1': True, 'arg2': True})
+        self.assertEqual(result, 'equal')
+        # true != false
+        result = self.handlebars.render('bool_test', {'arg1': True, 'arg2': False})
+        self.assertEqual(result, 'not equal')
+
+    def test_if_equals_null_comparison(self) -> None:
+        """Test ifEquals with null values."""
+        self.handlebars.register_template(
+            'null_test',
+            '{{#ifEquals arg1 arg2}}equal{{else}}not equal{{/ifEquals}}',
+        )
+        # null == null
+        result = self.handlebars.render('null_test', {'arg1': None, 'arg2': None})
+        self.assertEqual(result, 'equal')
+        # null != 0
+        result = self.handlebars.render('null_test', {'arg1': None, 'arg2': 0})
+        self.assertEqual(result, 'not equal')
+
+    def test_unless_equals_type_safety_int_vs_string(self) -> None:
+        """Test unlessEquals uses strict inequality (int 5 != string '5').
+
+        This test documents that the comparison uses strict inequality,
+        matching JavaScript's !== operator behavior.
+        """
+        self.handlebars.register_template(
+            'type_test2',
+            '{{#unlessEquals arg1 arg2}}not equal{{else}}equal{{/unlessEquals}}',
+        )
+        # 5 (int) should not equal "5" (string)
+        result = self.handlebars.render('type_test2', {'arg1': 5, 'arg2': '5'})
+        self.assertEqual(result, 'not equal')
+
 
 if __name__ == '__main__':
     unittest.main()

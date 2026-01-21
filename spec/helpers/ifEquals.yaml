@@ -67,3 +67,58 @@
         messages:
           - role: user
             content: [{ text: "Values are not equal\n" }]
+
+# Tests boolean value comparisons to ensure consistent handling across runtimes.
+- name: boolean_comparison
+  template: |
+    {{#ifEquals value1 value2}}
+    Values are equal
+    {{else}}
+    Values are not equal
+    {{/ifEquals}}
+  tests:
+    - desc: correctly compares true values
+      data:
+        input: { value1: true, value2: true }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Values are equal\n" }]
+    - desc: correctly compares false values
+      data:
+        input: { value1: false, value2: false }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Values are equal\n" }]
+    - desc: correctly compares different boolean values
+      data:
+        input: { value1: true, value2: false }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Values are not equal\n" }]
+
+# Tests null value comparisons to ensure consistent handling across runtimes.
+- name: null_comparison
+  template: |
+    {{#ifEquals value1 value2}}
+    Values are equal
+    {{else}}
+    Values are not equal
+    {{/ifEquals}}
+  tests:
+    - desc: correctly compares null values
+      data:
+        input: { value1: null, value2: null }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Values are equal\n" }]
+    - desc: correctly compares null with non-null
+      data:
+        input: { value1: null, value2: 0 }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Values are not equal\n" }]

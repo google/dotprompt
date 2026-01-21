@@ -18,11 +18,10 @@
 
 package com.google.dotprompt.helpers;
 
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.core.util.Separators;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Options;
 import java.io.IOException;
@@ -73,38 +72,26 @@ public class Helpers {
   public static Object json(Object context, Options options) throws IOException {
     Object target = (options.params.length > 0) ? options.param(0) : context;
 
-    ObjectMapper localMapper = mapper;
-
     Integer indent = options.hash("indent", null);
-    if (indent != null) {
-      DefaultPrettyPrinter printer = new DefaultPrettyPrinter();
-      printer.indentObjectsWith(new DefaultIndenter("  ", "\n"));
+    if (indent != null && indent > 0) {
+      // Create custom indent string with specified number of spaces
+      String indentString = " ".repeat(indent);
+      DefaultIndenter indenter = new DefaultIndenter(indentString, "\n");
 
-      localMapper =
-          mapper
-              .copy()
-              .setDefaultPrettyPrinter(
-                  new DefaultPrettyPrinter() {
-                    @Override
-                    public DefaultPrettyPrinter createInstance() {
-                      return new DefaultPrettyPrinter(this) {
-                        @Override
-                        public void writeObjectFieldValueSeparator(JsonGenerator g)
-                            throws IOException {
-                          g.writeRaw(": ");
-                        }
-                      };
-                    }
+      // Create separators with colon-space (": ") like JavaScript JSON.stringify
+      Separators customSeparators =
+          Separators.createDefaultInstance().withObjectFieldValueSpacing(Separators.Spacing.AFTER);
 
-                    @Override
-                    public void writeObjectFieldValueSeparator(JsonGenerator g) throws IOException {
-                      g.writeRaw(": ");
-                    }
-                  })
-              .enable(SerializationFeature.INDENT_OUTPUT);
+      // Create a custom pretty printer with the separators
+      DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter(customSeparators);
+      prettyPrinter.indentObjectsWith(indenter);
+      prettyPrinter.indentArraysWith(indenter);
+
+      // Use writer() with the pretty printer
+      return mapper.writer(prettyPrinter).writeValueAsString(target);
     }
 
-    return localMapper.writeValueAsString(target);
+    return mapper.writeValueAsString(target);
   }
 
   /**

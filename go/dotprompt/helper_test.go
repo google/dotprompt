@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// JSON, Media, IfEquals and UnlessEquals functions cannot be tested directly.
-// These functions are tested as part of spec tests present under go/test dir.
+// Tests for role helper
+
 func TestRoleFn(t *testing.T) {
 	role := "admin"
 	expected := "<<<dotprompt:role:admin>>>"
@@ -32,11 +32,30 @@ func TestRoleFn(t *testing.T) {
 	assert.Equal(t, raymond.SafeString(expected), result)
 }
 
+func TestRoleFn_system(t *testing.T) {
+	result := RoleFn("system")
+	assert.Equal(t, raymond.SafeString("<<<dotprompt:role:system>>>"), result)
+}
+
+func TestRoleFn_user(t *testing.T) {
+	result := RoleFn("user")
+	assert.Equal(t, raymond.SafeString("<<<dotprompt:role:user>>>"), result)
+}
+
+func TestRoleFn_model(t *testing.T) {
+	result := RoleFn("model")
+	assert.Equal(t, raymond.SafeString("<<<dotprompt:role:model>>>"), result)
+}
+
+// Tests for history helper
+
 func TestHistory(t *testing.T) {
 	expected := "<<<dotprompt:history>>>"
 	result := History()
 	assert.Equal(t, raymond.SafeString(expected), result)
 }
+
+// Tests for section helper
 
 func TestSection(t *testing.T) {
 	name := "Introduction"
@@ -44,3 +63,18 @@ func TestSection(t *testing.T) {
 	result := Section(name)
 	assert.Equal(t, raymond.SafeString(expected), result)
 }
+
+func TestSection_examples(t *testing.T) {
+	result := Section("examples")
+	assert.Equal(t, raymond.SafeString("<<<dotprompt:section examples>>>"), result)
+}
+
+// Note: JSON, Media, IfEquals, UnlessEquals helpers require raymond.Options
+// which is complex to mock in unit tests. These functions are thoroughly tested
+// via the spec tests in go/test/spec_test.go which exercise them through the
+// full template rendering pipeline.
+//
+// The spec tests cover:
+// - json: basic objects, arrays, indent variations, nested objects, empty values
+// - media: url only, url + contentType
+// - ifEquals/unlessEquals: int/string equality, boolean, null comparisons, type safety

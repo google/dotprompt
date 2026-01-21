@@ -24,10 +24,11 @@ import (
 	"reflect"
 	"testing"
 
+	"maps"
+
 	"github.com/go-viper/mapstructure/v2"
 	. "github.com/google/dotprompt/go/dotprompt"
 	"github.com/invopop/jsonschema"
-	"maps"
 )
 
 const SpecDir = "../../../spec"
@@ -300,10 +301,14 @@ func pruneContent(content []Part) []map[string]any {
 			}
 		case *MediaPart:
 			if p.Media.URL != "" || p.Media.ContentType != "" {
-				prunedPart["media"] = map[string]any{
-					"url":         p.Media.URL,
-					"contentType": p.Media.ContentType,
+				mediaMap := map[string]any{
+					"url": p.Media.URL,
 				}
+				// Only include contentType if it's not empty (matches JSON omitempty behavior)
+				if p.Media.ContentType != "" {
+					mediaMap["contentType"] = p.Media.ContentType
+				}
+				prunedPart["media"] = mediaMap
 			}
 		case *ToolRequestPart:
 			if len(p.ToolRequest) > 0 {

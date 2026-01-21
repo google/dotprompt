@@ -36,6 +36,7 @@ var templateHelpers = map[string]any{
 
 // TODO: Add pending: true for section helper
 // JSON serializes the given data to a JSON string with optional indentation.
+// Panics on serialization errors to match JavaScript's JSON.stringify fail-fast behavior.
 func JSON(serializable any, options *raymond.Options) raymond.SafeString {
 	var jsonData []byte
 	var err error
@@ -51,7 +52,7 @@ func JSON(serializable any, options *raymond.Options) raymond.SafeString {
 	}
 
 	if err != nil {
-		return ""
+		panic(fmt.Sprintf("json helper: serialization failed: %v", err))
 	}
 	return raymond.SafeString(string(jsonData))
 }

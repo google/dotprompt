@@ -51,6 +51,10 @@ def json_helper(params: list[Any], options: HelperOptions) -> str:
 
     Returns:
         JSON string representation of the value.
+
+    Raises:
+        TypeError: If the value cannot be serialized to JSON.
+        ValueError: If the value contains invalid data for JSON serialization.
     """
     if not params or len(params) < 1:
         return ''
@@ -63,12 +67,10 @@ def json_helper(params: list[Any], options: HelperOptions) -> str:
     except (ValueError, TypeError):
         indent = 0
 
-    try:
-        if indent == 0:
-            return json.dumps(obj, separators=(',', ':'))
-        return json.dumps(obj, indent=indent)
-    except (TypeError, ValueError):
-        return '{}'
+    # Let serialization errors propagate like JS JSON.stringify
+    if indent == 0:
+        return json.dumps(obj, separators=(',', ':'))
+    return json.dumps(obj, indent=indent)
 
 
 def role_helper(params: list[Any], options: HelperOptions) -> str:

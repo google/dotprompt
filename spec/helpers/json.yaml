@@ -41,3 +41,49 @@
         messages:
           - role: user
             content: [{ text: "{\n  \"test\": true\n}" }]
+
+# Tests 4-space indentation to ensure indent parameter is properly respected
+# across all runtime implementations.
+- name: indented_4_spaces
+  template: "{{json this indent=4}}"
+  tests:
+    - desc: renders json with 4-space indentation
+      data: { input: { test: true } }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "{\n    \"test\": true\n}" }]
+
+# Tests nested object serialization to ensure complex structures are handled
+# consistently across runtimes.
+- name: nested_objects
+  template: "{{json this}}"
+  tests:
+    - desc: renders nested objects correctly
+      data: { input: { outer: { inner: { value: 42 } } } }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: '{"outer":{"inner":{"value":42}}}' }]
+
+# Tests array serialization
+- name: arrays
+  template: "{{json this}}"
+  tests:
+    - desc: renders arrays correctly
+      data: { input: { items: [1, 2, 3] } }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: '{"items":[1,2,3]}' }]
+
+# Tests empty value serialization
+- name: empty_values
+  template: "{{json this}}"
+  tests:
+    - desc: renders empty object
+      data: { input: {} }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: '{}' }]
