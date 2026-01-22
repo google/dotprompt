@@ -183,7 +183,13 @@ function processSpecFiles(dotpromptFactory: (suite: SpecSuite) => Dotprompt) {
   for (const file of files.filter(
     (file) => !file.isDirectory() && file.name.endsWith('.yaml')
   )) {
-    processSpecFile(file, readFileSync, dotpromptFactory);
+    // Use parentPath (Node.js 20.12+/21.0+) with fallback to deprecated path for older versions
+    const filePath = file.parentPath ?? (file as { path?: string }).path ?? '';
+    processSpecFile(
+      { path: filePath, name: file.name },
+      readFileSync,
+      dotpromptFactory
+    );
   }
 }
 

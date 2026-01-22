@@ -52,7 +52,7 @@
           "run": "scripts/run_python_checks_with_nox -s tests"
         },
         {
-          "run": "scripts/run_js_checks"
+          "run": "scripts/test_js_matrix --force-install"
         },
         {
           "run": "scripts/run_go_checks"
@@ -107,7 +107,7 @@
           "run": "scripts/run_python_checks_with_nox -s tests"
         },
         {
-          "run": "scripts/run_js_checks"
+          "run": "scripts/test_js_matrix --force-install"
         },
         {
           "run": "scripts/run_go_checks"

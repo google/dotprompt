@@ -24,11 +24,12 @@ on:
       - ".github/workflows/test.yml"
 jobs:
   test:
-    name: Run tests (Node ${{ matrix.node-version }})
+    name: Run tests (Node ${{ matrix.node-version }}, ${{ matrix.typescript-compiler }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ["20", "21", "22", "23"]
+        node-version: ["20", "21", "22", "23", "24"]
+        typescript-compiler: ["tsc", "tsgo"]
     steps:
       - uses: actions/checkout@v6
 
@@ -48,5 +49,10 @@ jobs:
       - name: Run tests
         run: pnpm -C js test
 
-      - name: Build
+      - name: Build (tsc)
+        if: matrix.typescript-compiler == 'tsc'
         run: pnpm -C js build
+
+      - name: Build (tsgo)
+        if: matrix.typescript-compiler == 'tsgo'
+        run: pnpm -C js build:native
