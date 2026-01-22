@@ -1,0 +1,32 @@
+---
+input:
+  schema:
+    type: object
+    properties:
+      userName: string
+      items:
+        type: array
+        items:
+          type: string
+---
+{{! 
+  PARTIALS DEMO
+  
+  This file demonstrates syntax highlighting for Handlebars partials.
+  The `{{> partialName }}` syntax should be distinct from standard tags.
+}}
+
+<<<dotprompt:role:system>>>
+You are a helpful assistant.
+
+<<<dotprompt:role:user>>>
+Hello {{userName}}.
+
+Here are your items:
+{{#each items}}
+  {{! This is a partial inclusion }}
+  {{> listItem}}
+{{/each}}
+
+{{! Another partial example with parameters }}
+{{> footer year=2025 author="Google"}}

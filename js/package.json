@@ -41,11 +41,5 @@
     "handlebars": "^4.7.8",
     "yaml": "^2.8.2"
   },
-  "packageManager": "pnpm@10.2.0",
-  "pnpm": {
-    "overrides": {
-      "rollup@>=4.0.0 <4.22.4": ">=4.22.4",
-      "cross-spawn@>=7.0.0 <7.0.5": ">=7.0.5"
-    }
-  }
+  "packageManager": "pnpm@10.2.0"
 }

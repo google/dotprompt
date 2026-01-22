@@ -1,0 +1,41 @@
+---
+model: googleai/gemini-pro
+input:
+  schema:
+    type: object
+    properties:
+      name: string
+      items:
+        type: array
+        items: string
+      context: string
+      imageUrl: string
+config:
+  temperature: 0.7
+  topK: 40
+  topP: 0.95
+---
+<<<dotprompt:role:system>>>
+You are a helpful AI assistant. You are an expert in {{context}}.
+Here are some rules:
+{{#each items}}
+- {{this}}
+{{/each}}
+
+<<<dotprompt:role:user>>>
+Hello, my name is {{name}}.
+Can you analyze this image?
+<<<dotprompt:media:url {{imageUrl}} image/jpeg>>>
+
+<<<dotprompt:role:model>>>
+I see an image. Let me think about it.
+<<<dotprompt:section thought>>>
+The user wants me to analyze the image provided at {{imageUrl}}.
+I should look for key details.
+
+<<<dotprompt:role:user>>>
+Also, remember our past conversation:
+<<<dotprompt:history>>>
+
+Please output the result in JSON format.
+{{json this indent=2}}

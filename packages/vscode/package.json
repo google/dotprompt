@@ -1,0 +1,59 @@
+{
+  "name": "dotprompt-vscode",
+  "displayName": "Dotprompt Support",
+  "description": "Syntax highlighting and language support for Dotprompt files",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/google/dotprompt.git"
+  },
+  "version": "0.0.1",
+  "publisher": "Google",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onLanguage:dotprompt"
+  ],
+  "scripts": {
+    "vscode:prepublish": "pnpm run build",
+    "build": "tsup src/extension.ts --format cjs --external vscode --sourcemap",
+    "watch": "tsup src/extension.ts --format cjs --external vscode --sourcemap --watch",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@secretlint/secretlint-rule-no-dotenv": "^11.3.0",
+    "@secretlint/secretlint-rule-preset-recommend": "^11.3.0",
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "@vscode/vsce": "^3.7.1",
+    "secretlint": "^11.3.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "dotprompt",
+        "aliases": [
+          "Dotprompt",
+          "dotprompt"
+        ],
+        "extensions": [
+          ".prompt"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "dotprompt",
+        "scopeName": "source.dotprompt",
+        "path": "./syntaxes/dotprompt.tmLanguage.json"
+      }
+    ]
+  }
+}

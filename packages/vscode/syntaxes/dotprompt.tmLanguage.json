@@ -1,0 +1,132 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Dotprompt",
+  "scopeName": "source.dotprompt",
+  "patterns": [
+    {
+      "include": "#frontmatter"
+    },
+    {
+      "include": "#markers"
+    },
+    {
+      "include": "#handlebars"
+    },
+    {
+      "include": "text.html.basic"
+    }
+  ],
+  "repository": {
+    "frontmatter": {
+      "begin": "\\A---",
+      "end": "---",
+      "beginCaptures": {
+        "0": {
+          "name": "comment.block.frontmatter.dotprompt"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "comment.block.frontmatter.dotprompt"
+        }
+      },
+      "patterns": [
+        {
+          "include": "source.yaml"
+        }
+      ]
+    },
+    "markers": {
+      "patterns": [
+        {
+          "match": "(<<<dotprompt:role:[a-z]+>>>)",
+          "name": "keyword.control.directive.role.dotprompt"
+        },
+        {
+          "match": "(<<<dotprompt:history>>>)",
+          "name": "keyword.control.directive.history.dotprompt"
+        },
+        {
+          "match": "(<<<dotprompt:media:.*?>>>)",
+          "name": "keyword.control.directive.media.dotprompt"
+        },
+        {
+          "match": "(<<<dotprompt:section.*?>>>)",
+          "name": "keyword.control.directive.section.dotprompt"
+        }
+      ]
+    },
+    "handlebars": {
+      "patterns": [
+        {
+          "begin": "{{!--",
+          "end": "--}}",
+          "name": "comment.block.handlebars"
+        },
+        {
+          "begin": "{{!",
+          "end": "}}",
+          "name": "comment.block.handlebars"
+        },
+        {
+          "begin": "{{>",
+          "end": "}}",
+          "beginCaptures": {
+            "0": {
+              "name": "keyword.control.partials.handlebars"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "keyword.control.partials.handlebars"
+            }
+          },
+          "contentName": "entity.name.function.partials.handlebars",
+          "patterns": [
+            {
+              "match": "[\"'].*?[\"']",
+              "name": "string.quoted.handlebars"
+            }
+          ]
+        },
+        {
+          "begin": "{{",
+          "end": "}}",
+          "beginCaptures": {
+            "0": {
+              "name": "entity.name.tag.handlebars"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "entity.name.tag.handlebars"
+            }
+          },
+          "contentName": "variable.parameter.handlebars",
+          "patterns": [
+            {
+              "match": "\\b(if|unless|each|with|log|lookup|else)\\b",
+              "name": "keyword.control.handlebars"
+            },
+            {
+              "match": "\\b(json|role|history|section|media|ifEquals|unlessEquals)\\b",
+              "name": "support.function.dotprompt"
+            },
+            {
+              "match": "[\"'].*?[\"']",
+              "name": "string.quoted.handlebars"
+            },
+            {
+              "match": "[0-9]+",
+              "name": "constant.numeric.handlebars"
+            },
+            {
+              "match": "(true|false|null|undefined)",
+              "name": "constant.language.handlebars"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

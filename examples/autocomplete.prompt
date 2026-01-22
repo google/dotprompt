@@ -1,0 +1,28 @@
+---
+input:
+  schema:
+    type: object
+    properties:
+      userName: string
+      isActive: boolean
+---
+<<<dotprompt:role:system>>>
+You are a helper.
+
+<<<dotprompt:role:user>>>
+Hello {{userName}}!
+
+{{! 
+  TESTING AUTOCOMPLETE:
+  1. Place your cursor after the opening braces below.
+  2. Press Ctrl+Space (or Cmd+Space) to trigger suggestions.
+  3. You should see Handlebars helpers (if, unless, etc.) and Dotprompt helpers (json, role, etc.).
+}}
+
+Type here: {{
+
+{{! Try built-in helpers }}
+{{#
+
+{{! Try Dotprompt helpers }}
+{{

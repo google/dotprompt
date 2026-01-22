@@ -1,0 +1,6 @@
+.gitignore
+.tsconfig.json
+src/
+**/*.map
+node_modules/
+.DS_Store
