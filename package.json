@@ -21,7 +21,9 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "js"
+      "esbuild",
+      "js",
+      "sharp"
     ],
     "overrides": {
       "rollup@>=4.0.0 <4.22.4": ">=4.22.4",
