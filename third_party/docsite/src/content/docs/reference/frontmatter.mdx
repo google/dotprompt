@@ -121,7 +121,7 @@ metadata:
     - **Description:** Defines the default input variable values to use if none are provided. Input values passed from the implementation should be merged into these values with a shallow merge strategy.
   - `schema`:
     - **Type:** [Schema](schema)
-    - **Description:** Schema representing the input values for the prompt. Must correspond to a JSON Schema `object` type.
+    - **Description:** Schema representing the input values for the prompt. Schemas use [Picoschema](/reference/picoschema/) syntax—a compact YAML format that compiles to JSON Schema.
 
 ### `output`
 
@@ -134,7 +134,7 @@ metadata:
     - **Description:** Desired output format for this prompt. Output formats are implementation-specific, but
   - `schema`:
     - **Type:** [Schema](schema)
-    - **Description:** Schema representing the expected output from the prompt. Must correspond to a JSON Schema `object` type.
+    - **Description:** Schema representing the expected output from the prompt. Schemas use [Picoschema](/reference/picoschema/) syntax—a compact YAML format that compiles to JSON Schema.
 
 ### `metadata`
 
