@@ -117,7 +117,7 @@ metadata:
 - **Description:** Defines the input variables the prompt. If `input` is not specified, the implementation should accept any `Map<string,any>` values as input and pass them to the prompt template.
 - **Properties:**
   - `default`:
-    - **Type:** `any`
+    - **Type:** `Map<string,any>`
     - **Description:** Defines the default input variable values to use if none are provided. Input values passed from the implementation should be merged into these values with a shallow merge strategy.
   - `schema`:
     - **Type:** [Schema](schema)
