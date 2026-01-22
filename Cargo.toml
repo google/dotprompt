@@ -15,10 +15,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [workspace]
-exclude = [
-  "python/handlebarrz", # TODO: Fix linker errors.
-]
-members = ["rs/smoke", "rs/dotprompt"]
+exclude  = []
+members  = ["rs/smoke", "rs/dotprompt", "python/handlebarrz"]
 resolver = "3"
 
 [workspace.dependencies]

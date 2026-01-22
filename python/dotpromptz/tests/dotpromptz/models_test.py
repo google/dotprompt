@@ -23,7 +23,7 @@ from pydantic import BaseModel
 from dotpromptz.models import dump_models
 
 
-class TestModel(BaseModel):
+class ModelForTesting(BaseModel):
     """Test model."""
 
     name: str
@@ -36,8 +36,8 @@ class TestDumpList(unittest.TestCase):
     def test_dump_list(self) -> None:
         """Test that dump_list returns the correct output."""
         self.assertEqual(dump_models([]), [])
-        self.assertEqual(dump_models([TestModel(name='test', age=1)]), [{'name': 'test', 'age': 1}])
+        self.assertEqual(dump_models([ModelForTesting(name='test', age=1)]), [{'name': 'test', 'age': 1}])
         self.assertEqual(
-            dump_models([TestModel(name='test', age=1), TestModel(name='test2', age=2)]),
+            dump_models([ModelForTesting(name='test', age=1), ModelForTesting(name='test2', age=2)]),
             [{'name': 'test', 'age': 1}, {'name': 'test2', 'age': 2}],
         )

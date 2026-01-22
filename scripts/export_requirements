@@ -1,0 +1,10 @@
+#!/bin/bash
+set -e
+
+# Exports Python dependencies to requirements.txt using uv.
+cd "$(dirname "$0")/../python"
+uv export --format requirements-txt --output-file requirements.txt --hashes
+
+# Remove editable installs (local workspace packages) so Bazel can manage them as targets.
+# Using python to avoid sed issues across platforms
+python3 -c "import sys; lines = [l for l in open('requirements.txt') if not l.startswith('-e .')]; open('requirements.txt', 'w').writelines(lines)"

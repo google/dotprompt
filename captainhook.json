@@ -65,6 +65,9 @@
         },
         {
           "run": "scripts/build_dists"
+        },
+        {
+          "run": "scripts/export_requirements"
         }
       ]
     },

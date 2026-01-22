@@ -58,6 +58,9 @@ jobs:
   check-build-test:
     name: Check, Build & Test (${{ matrix.toolchain }}, ${{ matrix.os_config.os }}-${{ matrix.os_config.arch }})
     runs-on: ${{ matrix.os_config.os }}
+    env:
+      # Fix for PyO3 forward compatibility with newer Python versions (e.g., 3.14 on macOS runner)
+      PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
     strategy:
       fail-fast: false # Keep running other jobs even if one fails
       matrix:

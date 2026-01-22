@@ -38,6 +38,11 @@ jobs:
         run: |
           uv lock --check
 
+      - name: Check requirements.txt is up to date
+        run: |
+          scripts/export_requirements
+          git diff --exit-code python/requirements.txt
+
   python-checks:
     runs-on: ubuntu-latest
     env:

@@ -1,4 +1,4 @@
-# Copyright 2025 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,20 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Google Dotprompt."""
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "link-arg=-undefined", "-C", "link-arg=dynamic_lookup"]
 
-module(
-    name = "dotprompt",
-    version = "0.0.1",
-)
-
-bazel_dep(name = "bazel_skylib", version = "1.8.2")
-bazel_dep(name = "gazelle", version = "0.47.0")
-bazel_dep(name = "platforms", version = "1.0.0")
-
-include("//:go.MODULE.bazel")
-include("//:java.MODULE.bazel")
-include("//:rust.MODULE.bazel")
-include("//:kotlin.MODULE.bazel")
-include("//:python.MODULE.bazel")
-include("//:ts.MODULE.bazel")
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "link-arg=-undefined", "-C", "link-arg=dynamic_lookup"]

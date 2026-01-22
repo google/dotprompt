@@ -61,6 +61,10 @@ log_cli_format                     = "%(asctime)s [%(levelname)8s] %(message)s (
 log_cli_level                      = "DEBUG"
 python_files                       = ["**/*_test.py"]
 
+[tool.coverage.run]
+omit   = ["tests/*", "**/tests/*", "**/*_test.py"]
+source = ["dotpromptz", "handlebarrz"]
+
 [tool.coverage.report]
 fail_under = 85
 
