@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+EMACS_PKG_DIR="$REPO_ROOT/packages/emacs"
+
+# Default target directory
+EMACS_LISP_DIR="$HOME/.emacs.d/lisp"
+
+usage() {
+  echo "Usage: $0 [options]"
+  echo "Options:"
+  echo "  -d, --dest DIR    Destination directory (default: ~/.emacs.d/lisp)"
+  echo "  -f, --force       Overwrite existing files without prompting"
+  echo "  -h, --help        Show this help message"
+  exit 1
+}
+
+# Parse arguments
+DEST_DIR=""
+FORCE=false
+
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    -d|--dest) DEST_DIR="$2"; shift ;;
+    -f|--force) FORCE=true ;;
+    -h|--help) usage ;;
+    *) echo "Unknown parameter passed: $1"; usage ;;
+  esac
+  shift
+done
+
+# Determine destination if not specified
+if [[ -z "$DEST_DIR" ]]; then
+  DEST_DIR="$EMACS_LISP_DIR"
+fi
+
+echo "Installing Dotprompt Emacs mode to: $DEST_DIR"
+
+# Create directory
+mkdir -p "$DEST_DIR"
+
+# Copy file
+echo "Copying dotprompt-mode.el..."
+if [ -f "$DEST_DIR/dotprompt-mode.el" ] && [ "$FORCE" = false ]; then
+  read -p "File '$DEST_DIR/dotprompt-mode.el' exists. Overwrite? (y/N) " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Skipping file copy."
+  else
+    cp "$EMACS_PKG_DIR/dotprompt-mode.el" "$DEST_DIR/"
+  fi
+else
+  cp "$EMACS_PKG_DIR/dotprompt-mode.el" "$DEST_DIR/"
+fi
+
+echo "Installation complete!"
+echo ""
+echo "Add the following to your Emacs initialization file (~/.emacs or ~/.emacs.d/init.el):"
+echo ""
+echo "(add-to-list 'load-path \"$DEST_DIR\")"
+echo "(require 'dotprompt-mode)"

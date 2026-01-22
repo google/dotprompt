@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VIM_PKG_DIR="$REPO_ROOT/packages/vim"
+
+# Default target directories
+VIM_DIR="$HOME/.vim"
+NVIM_DIR="$HOME/.config/nvim"
+
+usage() {
+  echo "Usage: $0 [options]"
+  echo "Options:"
+  echo "  -d, --dest DIR    Destination directory (default: tries ~/.vim, then ~/.config/nvim)"
+  echo "  -f, --force       Overwrite existing files without prompting"
+  echo "  -h, --help        Show this help message"
+  exit 1
+}
+
+# Parse arguments
+DEST_DIR=""
+FORCE=false
+
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    -d|--dest) DEST_DIR="$2"; shift ;;
+    -f|--force) FORCE=true ;;
+    -h|--help) usage ;;
+    *) echo "Unknown parameter passed: $1"; usage ;;
+  esac
+  shift
+done
+
+# Determine destination if not specified
+if [[ -z "$DEST_DIR" ]]; then
+  if [[ -d "$VIM_DIR" ]]; then
+    DEST_DIR="$VIM_DIR"
+  elif [[ -d "$NVIM_DIR" ]]; then
+    DEST_DIR="$NVIM_DIR"
+  else
+    echo "No standard Vim/Neovim directory found."
+    echo "Creating ~/.vim..."
+    mkdir -p "$VIM_DIR"
+    DEST_DIR="$VIM_DIR"
+  fi
+fi
+
+echo "Installing Dotprompt Vim plugin to: $DEST_DIR"
+
+# Create directories
+mkdir -p "$DEST_DIR/syntax"
+mkdir -p "$DEST_DIR/ftdetect"
+
+# Copy files
+echo "Copying syntax/dotprompt.vim..."
+if [ -f "$DEST_DIR/syntax/dotprompt.vim" ] && [ "$FORCE" = false ]; then
+  read -p "File '$DEST_DIR/syntax/dotprompt.vim' exists. Overwrite? (y/N) " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Skipping syntax file."
+  else
+    cp "$VIM_PKG_DIR/syntax/dotprompt.vim" "$DEST_DIR/syntax/"
+  fi
+else
+  cp "$VIM_PKG_DIR/syntax/dotprompt.vim" "$DEST_DIR/syntax/"
+fi
+
+echo "Copying ftdetect/dotprompt.vim..."
+if [ -f "$DEST_DIR/ftdetect/dotprompt.vim" ] && [ "$FORCE" = false ]; then
+  read -p "File '$DEST_DIR/ftdetect/dotprompt.vim' exists. Overwrite? (y/N) " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Skipping ftdetect file."
+  else
+    cp "$VIM_PKG_DIR/ftdetect/dotprompt.vim" "$DEST_DIR/ftdetect/"
+  fi
+else
+  cp "$VIM_PKG_DIR/ftdetect/dotprompt.vim" "$DEST_DIR/ftdetect/"
+fi
+
+echo "Installation complete!"
