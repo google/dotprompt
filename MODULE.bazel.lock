@@ -925,9 +925,9 @@
         "bzlTransitiveDigest": "gPGJjdrLRKgXLlXMK6kWseKkOlOC/yBSHtYUgLe2bCk=",
         "usagesDigest": "rmeKzp9KwMVMdk5RcVAq9YDdn2cPjEPkQFioiPD6lL4=",
         "recordedFileInputs": {
-          "@@//Cargo.lock": "7133c67e858f9b032d89d4b3b8ad2020c65f0f3a82db81b0a32a8127d25749dc",
+          "@@//Cargo.lock": "9456bfdf56946bcd885bdd6c0981f4cc1662524314ffa2cf13f16397aff3b2ec",
           "@@//Cargo.toml": "a29afc728c96a710baa613c7ff19070887634aa9cd0d2802af8b08aee4b2de09",
-          "@@//python/handlebarrz/Cargo.toml": "18d1e969715750539b8892b11603d0b917675b39b3f71a4c6c7d03bfcfeafa56",
+          "@@//python/handlebarrz/Cargo.toml": "53ace199a7fd2c232917e959dc51666ab58b9f8236eff01bc090b4c38b90c79b",
           "@@//rs/dotprompt/Cargo.toml": "e2275f179edc5295cb76a2a6c7f5aa32d357b457ece75e94ef3f19415e44c96d",
           "@@//rs/smoke/Cargo.toml": "51477545fc6e886055844a37683b02ba8cbfb5704936354455dfb045a4ba6141"
         },

@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.3](https://github.com/google/dotprompt/compare/handlebarrz-0.1.2...handlebarrz-0.1.3) (2026-01-22)
+
+
+### Features
+
+* **py:** add bazel build/test support and automate requirements ([#399](https://github.com/google/dotprompt/issues/399)) ([efd7fe0](https://github.com/google/dotprompt/commit/efd7fe0592e2491c34e8fd399e756de375c802eb))
+* **py:** add support for python 3.14 ([#365](https://github.com/google/dotprompt/issues/365)) ([53db722](https://github.com/google/dotprompt/commit/53db722352d360c9097028d63eb1b7e9576d3d24))
+* **py:** switch to using ty for type checking ([#376](https://github.com/google/dotprompt/issues/376)) ([7f1c026](https://github.com/google/dotprompt/commit/7f1c0268e5de5a2d6d887ac590d110dea7d3ed07))
+
+
+### Bug Fixes
+
+* **py/handlebarrz:** remove redundant lock file ([#360](https://github.com/google/dotprompt/issues/360)) ([db5416a](https://github.com/google/dotprompt/commit/db5416a4f7ce508a3d684b7c56ea8a50f46ee65d))
+* update package name references to dotpromptz-handlebars ([#403](https://github.com/google/dotprompt/issues/403)) ([8bbd99d](https://github.com/google/dotprompt/commit/8bbd99debe511a5b7327d80aeb40b6a854d57630)), closes [#344](https://github.com/google/dotprompt/issues/344)
+
 ## [0.1.3](https://github.com/google/dotprompt/compare/handlebarrz-0.1.2...handlebarrz-0.1.3) (2025-12-12)
 
 
