@@ -142,9 +142,23 @@ public class SpecTest {
       Map<String, Object> options = (Map<String, Object>) test.get("options");
       Map<String, Object> expect = (Map<String, Object>) test.get("expect");
 
-      Map<String, Object> renderData = data;
+      // Build render data: merge input values into top-level, but also preserve context
+      // for @-prefixed variable access and messages for history helper
+      Map<String, Object> renderData = new HashMap<>();
       if (data != null && data.containsKey("input")) {
-        renderData = (Map<String, Object>) data.get("input");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> inputData = (Map<String, Object>) data.get("input");
+        if (inputData != null) {
+          renderData.putAll(inputData);
+        }
+      }
+      // Preserve context for @-prefixed variables (e.g., @auth, @state, @user)
+      if (data != null && data.containsKey("context")) {
+        renderData.put("context", data.get("context"));
+      }
+      // Preserve messages for {{history}} helper
+      if (data != null && data.containsKey("messages")) {
+        renderData.put("messages", data.get("messages"));
       }
 
       try {

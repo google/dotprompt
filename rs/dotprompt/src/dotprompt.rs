@@ -341,41 +341,37 @@ impl Dotprompt {
             },
         );
 
-        // Add @state from context.state if available
+        // Add all context variables as @-prefixed variables
+        // Each key in context becomes accessible as @key in templates
+        // e.g., context: {state: {...}, auth: {...}} creates @state and @auth
+        let mut template_to_render = parsed.template.clone();
         if let (serde_json::Value::Object(map), Some(context)) =
             (&mut render_context, &data.context)
         {
-            // context is HashMap<String, Value>, get "state" key
-            // Add state as __state (workaround for Handlebars @ prefix)
-            if let Some(state) = context.get("state") {
-                if let Some(state_obj) = state.as_object() {
-                    for (k, v) in state_obj {
-                        // Add each state field as __state.field
-                        let at_state = map
-                            .entry("__state".to_string())
-                            .or_insert(serde_json::Value::Object(serde_json::Map::new()));
-                        if let serde_json::Value::Object(at_state_map) = at_state {
-                            at_state_map.insert(k.clone(), v.clone());
-                        }
-                    }
-                } else {
-                    // If state is not an object, just insert it directly
-                    map.insert("__state".to_string(), state.clone());
-                }
+            for (key, value) in context {
+                // Use __ctx_{key} as workaround since Handlebars treats @ as private data prefix
+                let internal_key = format!("__ctx_{key}");
+                map.insert(internal_key.clone(), value.clone());
+
+                // Replace all occurrences of @{key} with __ctx_{key} in template
+                template_to_render = template_to_render
+                    .replace(&format!("{{{{@{key}."), &format!("{{{{__{key}."))
+                    .replace(&format!("{{{{ @{key}."), &format!("{{{{ __{key}."));
+
+                // Also handle shortcut for just the key (e.g., {{@isAdmin}})
+                template_to_render = template_to_render
+                    .replace(&format!("{{{{@{key}}}}}"), &format!("{{{{__{key}}}}}"))
+                    .replace(&format!("{{{{ @{key} }}}}"), &format!("{{{{ __{key} }}}}"));
+
+                // Insert with __ prefix for template access
+                map.insert(format!("__{key}"), value.clone());
             }
         }
-
-        // Preprocess template to replace @state with __state for Handlebars compatibility
-        // Handlebars treats @ as special prefix for private data, so we use __state as workaround
-        let preprocessed_template = parsed
-            .template
-            .replace("{{@state.", "{{__state.")
-            .replace("{{ @state.", "{{ __state.");
 
         // Render template
         let rendered_string = self
             .handlebars
-            .render_template(&preprocessed_template, &render_context)
+            .render_template(&template_to_render, &render_context)
             .map_err(|e| DotpromptError::RenderError(e.to_string()))?;
 
         // Convert to messages (passing data for history)

@@ -700,12 +700,16 @@ public class Dotprompt {
       mergedData.putAll(data);
     }
 
-    // Context handling
+    // Context handling: Add all context entries as @-prefixed variables
+    // Each key in context becomes accessible as @key in templates
+    // e.g., context: {state: {...}, auth: {...}} creates @state and @auth
     Map<String, Object> contextData = new HashMap<>();
     if (data != null && data.containsKey("context")) {
+      @SuppressWarnings("unchecked")
       Map<String, Object> ctx = (Map<String, Object>) data.get("context");
-      if (ctx.containsKey("state")) {
-        contextData.put("state", ctx.get("state"));
+      if (ctx != null) {
+        // Add all context entries, not just state
+        contextData.putAll(ctx);
       }
     }
 

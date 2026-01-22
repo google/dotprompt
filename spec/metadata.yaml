@@ -59,6 +59,55 @@
           - role: user
             content: [{ text: "Current count is 100\nStatus is pending\n" }]
 
+# Tests accessing arbitrary context variables beyond @state, such as
+# @auth and @user. Any key in the context object should be accessible
+# as an @ variable in the template.
+- name: metadata_context_variables
+  template: |
+    Hello {{name}} ({{@auth.email}}, {{@user.role}})
+  tests:
+    - desc: accesses arbitrary context variables
+      data:
+        input:
+          name: "Alice"
+        context:
+          auth:
+            email: "alice@example.com"
+          user:
+            role: "admin"
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello Alice (alice@example.com, admin)\n" }]
+
+    - desc: handles missing context variables gracefully
+      data:
+        input:
+          name: "Bob"
+        context:
+          auth:
+            email: "bob@example.com"
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello Bob (bob@example.com, )\n" }]
+
+    - desc: handles deeply nested context variables
+      data:
+        input:
+          name: "Carol"
+        context:
+          auth:
+            email: "carol@example.com"
+            permissions:
+              canEdit: true
+          user:
+            role: "editor"
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello Carol (carol@example.com, editor)\n" }]
+
 # Tests that raw frontmatter is preserved alongside parsed frontmatter,
 # allowing access to both structured and unstructured metadata.
 - name: raw

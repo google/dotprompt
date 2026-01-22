@@ -39,7 +39,12 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
 from dotpromptz.dotprompt import Dotprompt, _identify_partials
-from dotpromptz.typing import ModelConfigT, ParsedPrompt, PromptMetadata, ToolDefinition
+from dotpromptz.typing import (
+    ModelConfigT,
+    ParsedPrompt,
+    PromptMetadata,
+    ToolDefinition,
+)
 from handlebarrz import HelperFn, HelperOptions
 
 
@@ -142,6 +147,29 @@ def test_define_tool(mock_handlebars: Mock) -> None:
 
     # Ensure chaining works.
     assert result == dotprompt
+
+
+class TestCompileRender(IsolatedAsyncioTestCase):
+    async def test_compile_render_mock(self) -> None:
+        """Test that handlebarrz compile produces a working render function.
+
+        The handlebarrz.compile() method returns a function that takes:
+        - context: A dict with the template variables
+        - options: RuntimeOptions with a 'data' key for @ variables
+        """
+        dotprompt = Dotprompt()
+        template_source = 'hello {{name}} ({{@state.name}}, {{@auth.email}})'
+
+        render_fn = dotprompt._handlebars.compile(template_source)
+
+        # Call with positional args as the compiled function expects
+        # context dict for regular variables, RuntimeOptions for @ variables
+        result = render_fn(
+            {'name': 'foo'},  # context - accessed as {{name}}
+            {'data': {'state': {'name': 'bar'}, 'auth': {'email': 'a@b.c'}}},  # RuntimeOptions - accessed as {{@...}}
+        )
+
+        assert result == 'hello foo (bar, a@b.c)'
 
 
 @patch('dotpromptz.dotprompt.parse_document')
