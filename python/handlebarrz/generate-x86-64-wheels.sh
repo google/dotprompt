@@ -24,24 +24,14 @@ echo "building for python version $PYTHON_VERSION"
 
 # linux
 echo "building with maturin for linux"
+uv venv .venv --python $1
+. .venv/bin/activate
+uv pip install "maturin[patchelf]"
 for i in $(seq 40 -1 24); do
-    uv run --python $1 maturin build --release --target x86_64-unknown-linux-gnu -i "$PYTHON_VERSION" --compatibility manylinux_2_$i --auditwheel=skip
+    maturin build --release --target x86_64-unknown-linux-gnu -i "$PYTHON_VERSION" --compatibility manylinux_2_$i --auditwheel=skip
 done
-uv run --python $1 maturin build --release --target x86_64-unknown-linux-gnu -i $PYTHON_VERSION
+maturin build --release --target x86_64-unknown-linux-gnu -i $PYTHON_VERSION
 
-# windows 
-echo "building with maturin for windows"
-uv run --python $1 maturin  build --target x86_64-pc-windows-msvc -i $1
 
-# macos
-echo "building with maturin for macos"
-uv run --python $1 maturin build --target x86_64-apple-darwin -i $1 --zig
 
-DIRECTORY="target/wheels/"
-
-FILES=$(find "$DIRECTORY" -type f -name "*linux_x86_64*")
-if [ -n "$FILES" ]; then 
-    echo "removing local wheel"
-    rm -f $FILES
-fi
 

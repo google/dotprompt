@@ -23,13 +23,13 @@ on:
         description: "The exact release tag of dotpromptz to publish"
         required: true
         type: string
-      target:
-        description: "Publish destination (TestPyPI or PyPI)"
+      repository_url:
+        description: "The PyPI repository URL to publish to"
         type: choice
-        required: true
         options:
-          - testpypi
-          - pypi
+          - 'https://upload.pypi.org/legacy/'
+          - 'https://test.pypi.org/legacy/'
+        default: 'https://test.pypi.org/legacy/'
 
 permissions:
   contents: write
@@ -123,7 +123,7 @@ jobs:
     permissions:
       id-token: write
     env:
-      PYPI_REPOSITORY_URL: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+      PYPI_REPOSITORY_URL: ${{ inputs.repository_url }}
 
     steps:
       - name: Checkout code at tag
@@ -142,7 +142,7 @@ jobs:
         with:
           verbose: true
           packages-dir: dist/
-          repository-url: ${{ inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+          repository-url: ${{ inputs.repository_url }}
 
   smoke_test_pypi_package:
     name: Verify Package Usability

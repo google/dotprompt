@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM --platform=linux/arm64 debian:bookworm
+FROM ubuntu:latest
 
 # Install tools
 RUN apt-get update && apt-get install -y python3 \ 

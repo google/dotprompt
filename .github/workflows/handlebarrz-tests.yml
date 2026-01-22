@@ -1,0 +1,90 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: "Handlebarrz Tests"
+
+on:
+  pull_request:
+    paths:
+      - "python/handlebarrz/**"
+      - ".github/workflows/handlebarrz-tests.yml"
+
+jobs:
+  handlebarrz_linux:
+    name: Build Handlebarrz Linux (Ubuntu/Alpine)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        target: 
+          - { name: "Ubuntu ARM64", dockerfile: "dockerfile-arm64", script: "generate-arm-wheels.sh", platform: "linux/arm64", tag: "ubuntu-arm64" }
+          - { name: "Ubuntu x86_64", dockerfile: "dockerfile-x86-64", script: "generate-x86-64-wheels.sh", platform: "linux/amd64", tag: "ubuntu-x86-64" }
+          - { name: "Alpine ARM64", dockerfile: "dockerfile-alpine", script: "generate-alpine-wheels.sh", platform: "linux/arm64", tag: "alpine-arm64" }
+          - { name: "Alpine x86_64", dockerfile: "dockerfile-alpine-x86-64", script: "generate-alpine-wheels-x86-64.sh", platform: "linux/amd64", tag: "alpine-amd64" }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build container
+        run: |
+          cd python/handlebarrz
+          docker build --platform ${{ matrix.target.platform }} -t ${{ matrix.target.tag }} -f ${{ matrix.target.dockerfile }} .
+      - name: Build wheels
+        run: |
+          docker run -v "$PWD/python/handlebarrz":/project ${{ matrix.target.tag }}:latest sh ./${{ matrix.target.script }} "${{ matrix.python_version }}"
+
+  handlebarrz_native:
+    name: Build Handlebarrz Native
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        config:
+          - { os: "macos-14", target: "aarch64-apple-darwin", name: "macOS ARM64", python_arch: "arm64" }
+          - { os: "macos-14", target: "x86_64-apple-darwin", name: "macOS x86_64", python_arch: "x64" }
+          - { os: "windows-latest", target: "x86_64-pc-windows-msvc", name: "Windows x86_64", python_arch: "x64" }
+#          - { os: "windows-latest", target: "aarch64-pc-windows-msvc", name: "Windows ARM64", python_arch: "arm64" }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python_version }}
+          architecture: ${{ matrix.config.python_arch }}
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          target: ${{ matrix.config.target }}
+      - run: pip install maturin
+      - name: Build wheel
+        working-directory: ./python/handlebarrz
+        # For Windows x64, we need to point to python lib usually, but for cross (arm64 on win x64) we definetely need it or not?
+        # In publish workflow: 
+        # Win x64: maturin build ... -i python-path
+        # Win Arm64: maturin build ... --target ... -i python-path
+        # macOS: maturin build ...
+        # So I will just use -i everywhere if possible, or conditional.
+        # Maturin -i works on all platforms to bind to specific python.
+        run: maturin build --release --strip -o dist --target ${{ matrix.config.target }}
+      - name: Install built wheel
+        working-directory: ./python/handlebarrz
+        shell: bash
+        run: |
+          pip install dist/*.whl
+          pip install pytest
+      - name: Run tests
+        working-directory: ./python/handlebarrz
+        shell: bash
+        run: pytest

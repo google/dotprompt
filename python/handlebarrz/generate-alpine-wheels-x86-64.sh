@@ -23,15 +23,9 @@ PYTHON_VERSION="python$1"
 echo "building for python version $PYTHON_VERSION"
 
 # linux
-echo "building with maturin for linux"
+echo "building with maturin for linux alpine"
 uv venv .venv --python $1
 . .venv/bin/activate
 uv pip install "maturin[patchelf]"
-for i in $(seq 40 -1 24); do
-    maturin build --release --target aarch64-unknown-linux-gnu -i "$PYTHON_VERSION" --compatibility manylinux_2_$i --auditwheel=skip
-done
-maturin build --release --target aarch64-unknown-linux-gnu -i $PYTHON_VERSION
-
-
-
+maturin build --release --target x86_64-unknown-linux-musl -i $PYTHON_VERSION
 

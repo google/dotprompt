@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-FROM --platform=linux/arm64 alpine:latest
+FROM alpine:latest
 
 RUN apk add --no-cache python3 py3-pip \
     build-base gcc musl-dev curl bash 

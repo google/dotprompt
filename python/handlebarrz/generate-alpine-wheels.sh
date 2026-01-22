@@ -24,13 +24,9 @@ echo "building for python version $PYTHON_VERSION"
 
 # linux
 echo "building with maturin for linux alpine"
-uv run --python $1 maturin build --release --target aarch64-unknown-linux-musl -i $PYTHON_VERSION
+uv venv .venv --python $1
+. .venv/bin/activate
+uv pip install "maturin[patchelf]"
+maturin build --release --target aarch64-unknown-linux-musl -i $PYTHON_VERSION
 
-DIRECTORY="target/wheels/"
-
-FILES=$(find "$DIRECTORY" -type f -name "*linux_aarch64*")
-if [[ -n "$FILES" ]]; then 
-    echo "removing local wheel"
-    rm -f $FILES
-fi
 
