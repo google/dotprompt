@@ -40,6 +40,11 @@ maven.install(
         "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.20.1",
     ],
     lock_file = "//:maven_install.json",
+    known_contributing_modules = [
+        "bazel_worker_java",
+        "dotprompt",
+        "protobuf",
+    ],
     repositories = [
         "https://repo1.maven.org/maven2",
     ],
