@@ -56,7 +56,7 @@ jobs:
         run: pnpm -C packages/vscode run package
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: dotprompt-vscode
           path: packages/vscode/*.vsix

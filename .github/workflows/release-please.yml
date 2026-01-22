@@ -47,7 +47,7 @@ jobs:
     # Run when release-please creates/updates a PR (not when releases are created)
     if: ${{ needs.release-please.outputs.pr != '' && needs.release-please.outputs.releases_created != 'true' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ fromJson(needs.release-please.outputs.pr).headBranchName }}
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
