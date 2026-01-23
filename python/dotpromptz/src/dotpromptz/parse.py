@@ -37,6 +37,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, TypeVar
 
+import structlog
 import yaml
 
 from dotpromptz.typing import (
@@ -53,6 +54,8 @@ from dotpromptz.typing import (
 )
 
 T = TypeVar('T')
+
+logger = structlog.get_logger(__name__)
 
 
 @dataclass
@@ -262,7 +265,7 @@ def parse_document(source: str) -> ParsedPrompt[T]:
                 template=body.strip(),
             )
         except Exception as e:
-            print(f'Dotprompt: Error building a parsed prompt object: {e}')
+            logger.error('Error building a parsed prompt object', error=str(e))
             # Return a basic ParsedPrompt with just the template
             return ParsedPrompt(
                 ext={},
@@ -273,7 +276,7 @@ def parse_document(source: str) -> ParsedPrompt[T]:
             )
     except Exception as e:
         # TODO: Should this be an error?
-        print(f'Dotprompt: Error parsing YAML frontmatter: {e}')
+        logger.error('Error parsing YAML frontmatter', error=str(e))
         # Return a basic ParsedPrompt with just the template
         return ParsedPrompt(
             ext={},

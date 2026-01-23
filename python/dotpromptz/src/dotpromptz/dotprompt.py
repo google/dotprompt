@@ -379,10 +379,32 @@ class Dotprompt:
             delattr(out, 'template')
 
         out = remove_undefined_fields(out)
-        # TODO: can this be done concurrently?
-        out = await self._resolve_tools(out)
-        out = await self._render_picoschema(out)
+
+        async with anyio.create_task_group() as tg:
+            tg.start_soon(self._resolve_tools_in_place, out)
+            tg.start_soon(self._render_picoschema_in_place, out)
+
         return out
+
+    async def _resolve_tools_in_place(self, out: PromptMetadata[ModelConfigT]) -> None:
+        """Resolve tools in place.
+
+        Args:
+            out: The metadata object to update.
+        """
+        resolved = await self._resolve_tools(out)
+        out.tools = resolved.tools
+        out.tool_defs = resolved.tool_defs
+
+    async def _render_picoschema_in_place(self, out: PromptMetadata[ModelConfigT]) -> None:
+        """Render picoschema in place.
+
+        Args:
+            out: The metadata object to update.
+        """
+        resolved = await self._render_picoschema(out)
+        out.input = resolved.input
+        out.output = resolved.output
 
     async def _render_picoschema(self, meta: PromptMetadata[ModelConfigT]) -> PromptMetadata[ModelConfigT]:
         """Render a Picoschema prompt.
@@ -417,10 +439,8 @@ class Dotprompt:
 
         async with anyio.create_task_group() as tg:
             if needs_input_processing and meta.input is not None:
-                # TODO: use meta.input.model_dump(exclude_none=True)?
                 tg.start_soon(_process_input_schema, meta.input.schema_)
             if needs_output_processing and meta.output is not None:
-                # TODO: use meta.output.model_dump(exclude_none=True)?
                 tg.start_soon(_process_output_schema, meta.output.schema_)
 
         return new_meta
