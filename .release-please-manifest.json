@@ -1,7 +1,7 @@
 {
   "js": "0.2.9",
   "dotpromptz": "0.1.4",
-  "dotpromptz-handlebars": "0.1.4",
+  "dotpromptz-handlebars": "0.1.3",
   "go": "0.2.0",
   "java": "0.1.0",
   "rs": "0.1.0",

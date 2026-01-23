@@ -31,7 +31,7 @@ classifiers = [
 dependencies = [
   "structlog>=25.2.0",
 ]
-description = "Handlebars library for Python based on handlebars-rust."
+description = "Handlebars library for Python dotpromptz based on handlebars-rust."
 name = "dotpromptz-handlebars"
 readme = "README.md"
 requires-python = ">=3.10"
