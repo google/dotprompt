@@ -353,3 +353,58 @@ func TestCompileMultiplePromptsTemplateIsolation(t *testing.T) {
 		t.Errorf("BUG: prompt1 output contains 'programming' from prompt2's template! Got: %s", text1.Text)
 	}
 }
+
+// TestResolvePartialsCycleDetection tests that resolvePartials handles cycles
+// in partial references without infinite recursion.
+func TestResolvePartialsCycleDetection(t *testing.T) {
+	// Track how many times each partial is resolved
+	callCounts := map[string]int{"partialA": 0, "partialB": 0}
+
+	resolver := func(name string) (string, error) {
+		callCounts[name]++
+		switch name {
+		case "partialA":
+			// partialA references partialB
+			return "Content A {{> partialB}}", nil
+		case "partialB":
+			// partialB references partialA (cycle!)
+			return "Content B {{> partialA}}", nil
+		default:
+			return "", fmt.Errorf("unknown partial: %s", name)
+		}
+	}
+
+	options := &DotpromptOptions{
+		PartialResolver: resolver,
+	}
+	dp := NewDotprompt(options)
+
+	// Template that starts the cycle
+	templateString := "Start {{> partialA}} End"
+	tpl, err := raymond.Parse(templateString)
+	if err != nil {
+		t.Fatalf("Failed to parse template: %v", err)
+	}
+
+	// Register partials - this should NOT hang due to cycle detection
+	err = dp.RegisterPartials(tpl, templateString)
+	if err != nil {
+		t.Fatalf("RegisterPartials failed: %v", err)
+	}
+
+	// Each partial should only be resolved once despite the cycle
+	if callCounts["partialA"] != 1 {
+		t.Errorf("Expected partialA to be resolved exactly once, got %d", callCounts["partialA"])
+	}
+	if callCounts["partialB"] != 1 {
+		t.Errorf("Expected partialB to be resolved exactly once, got %d", callCounts["partialB"])
+	}
+
+	// Both partials should be registered
+	if !dp.knownPartials["partialA"] {
+		t.Errorf("partialA was not marked as known")
+	}
+	if !dp.knownPartials["partialB"] {
+		t.Errorf("partialB was not marked as known")
+	}
+}

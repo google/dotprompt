@@ -564,6 +564,10 @@ impl Dotprompt {
 
     /// Resolves and registers all partials referenced in a template.
     ///
+    /// This method recursively resolves partials, meaning if a partial itself
+    /// contains partial references, those will also be resolved. Cycle detection
+    /// prevents infinite loops when partials reference each other.
+    ///
     /// # Arguments
     ///
     /// * `template` - The template containing partial references
@@ -572,6 +576,25 @@ impl Dotprompt {
     ///
     /// Returns error if a partial cannot be resolved.
     pub fn resolve_partials(&mut self, template: &str) -> Result<()> {
+        let mut visited = std::collections::HashSet::new();
+        self.resolve_partials_recursive(template, &mut visited)
+    }
+
+    /// Internal recursive implementation of partial resolution.
+    ///
+    /// # Arguments
+    ///
+    /// * `template` - The template containing partial references
+    /// * `visited` - Set of partial names already being processed (for cycle detection)
+    ///
+    /// # Errors
+    ///
+    /// Returns error if a partial cannot be resolved or compiled.
+    fn resolve_partials_recursive(
+        &mut self,
+        template: &str,
+        visited: &mut std::collections::HashSet<String>,
+    ) -> Result<()> {
         let partial_names = self.identify_partials(template);
 
         for name in partial_names {
@@ -580,13 +603,24 @@ impl Dotprompt {
                 continue;
             }
 
+            // Skip if we're already processing this partial (cycle detection)
+            if visited.contains(&name) {
+                continue;
+            }
+
+            // Mark as being processed
+            visited.insert(name.clone());
+
             // Try resolver
             #[allow(clippy::collapsible_if)]
             if let Some(resolver) = &self.partial_resolver {
                 if let Some(source) = resolver.resolve(&name) {
                     self.handlebars
-                        .register_template_string(&name, source)
+                        .register_template_string(&name, source.clone())
                         .map_err(|e| DotpromptError::CompilationError(e.to_string()))?;
+
+                    // Recursively resolve partials in the resolved content
+                    self.resolve_partials_recursive(&source, visited)?;
                 }
             }
         }
@@ -683,5 +717,80 @@ mod tests {
         };
         dp.define_tool(tool);
         assert!(dp.tools.contains_key("test"));
+    }
+
+    #[test]
+    fn test_resolve_partials_cycle_detection() {
+        use std::sync::{Arc, Mutex};
+
+        // Define the resolver struct first (before any statements)
+        struct CyclicResolver {
+            counts: Arc<Mutex<HashMap<String, i32>>>,
+        }
+
+        impl crate::types::PartialResolver for CyclicResolver {
+            fn resolve(&self, name: &str) -> Option<String> {
+                *self
+                    .counts
+                    .lock()
+                    .expect("lock should not be poisoned")
+                    .get_mut(name)
+                    .expect("partial name should exist in counts") += 1;
+                match name {
+                    "partialA" => Some("Content A {{> partialB}}".to_string()),
+                    "partialB" => Some("Content B {{> partialA}}".to_string()),
+                    _ => None,
+                }
+            }
+        }
+
+        // Track how many times each partial is resolved
+        let call_counts: Arc<Mutex<HashMap<String, i32>>> = Arc::new(Mutex::new(HashMap::new()));
+        call_counts
+            .lock()
+            .expect("lock should not be poisoned")
+            .insert("partialA".to_string(), 0);
+        call_counts
+            .lock()
+            .expect("lock should not be poisoned")
+            .insert("partialB".to_string(), 0);
+
+        let counts_clone = Arc::clone(&call_counts);
+
+        let resolver = CyclicResolver {
+            counts: counts_clone,
+        };
+
+        let options = DotpromptOptions {
+            partial_resolver: Some(Box::new(resolver)),
+            ..Default::default()
+        };
+
+        let mut dp = Dotprompt::new(Some(options));
+
+        // Template that starts the cycle
+        let template = "Start {{> partialA}} End";
+
+        // This should complete without infinite recursion
+        dp.resolve_partials(template)
+            .expect("resolve_partials should succeed");
+
+        // Each partial should only be resolved once despite the cycle
+        let counts = call_counts.lock().expect("lock should not be poisoned");
+        assert_eq!(
+            *counts
+                .get("partialA")
+                .expect("partialA should exist in counts"),
+            1,
+            "partialA should be resolved exactly once"
+        );
+        assert_eq!(
+            *counts
+                .get("partialB")
+                .expect("partialB should exist in counts"),
+            1,
+            "partialB should be resolved exactly once"
+        );
+        drop(counts);
     }
 }

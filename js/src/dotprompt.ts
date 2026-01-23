@@ -455,10 +455,18 @@ export class Dotprompt {
   /**
    * Resolves and registers all partials referenced in a template.
    *
+   * This method recursively resolves partials, meaning if a partial itself
+   * contains partial references, those will also be resolved. Cycle detection
+   * prevents infinite loops when partials reference each other.
+   *
    * @param template The template containing partial references
+   * @param visited Set of partial names currently being processed (for cycle detection)
    * @return A promise that resolves when all partials are registered
    */
-  private async resolvePartials(template: string): Promise<void> {
+  private async resolvePartials(
+    template: string,
+    visited: Set<string> = new Set()
+  ): Promise<void> {
     if (!this.partialResolver && !this.store) {
       return;
     }
@@ -468,23 +476,34 @@ export class Dotprompt {
     // Resolve and register each partial.
     await Promise.all(
       Array.from(names).map(async (name: string) => {
-        if (!this.handlebars.partials[name]) {
-          let content: string | null | undefined = null;
+        // Skip if already registered
+        if (this.handlebars.partials[name]) {
+          return;
+        }
 
-          if (this.partialResolver) {
-            content = await this.partialResolver(name);
-          }
+        // Skip if we're already processing this partial (cycle detection)
+        if (visited.has(name)) {
+          return;
+        }
 
-          if (!content && this.store) {
-            const partial = await this.store.loadPartial(name);
-            content = partial?.source;
-          }
+        // Mark as being processed
+        visited.add(name);
 
-          if (content) {
-            this.definePartial(name, content);
-            // Recursively resolve partials in the partial content.
-            await this.resolvePartials(content);
-          }
+        let content: string | null | undefined = null;
+
+        if (this.partialResolver) {
+          content = await this.partialResolver(name);
+        }
+
+        if (!content && this.store) {
+          const partial = await this.store.loadPartial(name);
+          content = partial?.source;
+        }
+
+        if (content) {
+          this.definePartial(name, content);
+          // Recursively resolve partials in the partial content.
+          await this.resolvePartials(content, visited);
         }
       })
     );

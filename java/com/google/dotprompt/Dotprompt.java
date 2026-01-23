@@ -578,12 +578,24 @@ public class Dotprompt {
    * Resolves all partials referenced in a template asynchronously.
    *
    * <p>This method identifies all partial references ({{> partialName}}) in the template and
-   * resolves them using the configured partialResolver or store.
+   * resolves them using the configured partialResolver or store. Cycle detection prevents infinite
+   * loops when partials reference each other.
    *
    * @param template The template string to scan for partial references.
    * @return A future that completes when all partials are resolved.
    */
   private CompletableFuture<Void> resolvePartialsAsync(String template) {
+    return resolvePartialsAsync(template, ConcurrentHashMap.newKeySet());
+  }
+
+  /**
+   * Internal recursive implementation of partial resolution with cycle detection.
+   *
+   * @param template The template string to scan for partial references.
+   * @param visited Set of partial names currently being processed (for cycle detection).
+   * @return A future that completes when all partials are resolved.
+   */
+  private CompletableFuture<Void> resolvePartialsAsync(String template, Set<String> visited) {
     if (partialResolver == null && store == null) {
       return CompletableFuture.completedFuture(null);
     }
@@ -601,6 +613,11 @@ public class Dotprompt {
         continue;
       }
 
+      // Skip if we're already processing this partial (cycle detection)
+      if (!visited.add(name)) {
+        continue;
+      }
+
       CompletableFuture<Void> resolution = CompletableFuture.completedFuture(null);
 
       if (partialResolver != null) {
@@ -612,7 +629,7 @@ public class Dotprompt {
                       if (content != null) {
                         definePartial(name, content);
                         // Recursively resolve partials in the content
-                        return resolvePartialsAsync(content);
+                        return resolvePartialsAsync(content, visited);
                       } else if (store != null) {
                         // Try store as fallback
                         return store
@@ -621,7 +638,7 @@ public class Dotprompt {
                                 data -> {
                                   if (data != null && data.source() != null) {
                                     definePartial(name, data.source());
-                                    return resolvePartialsAsync(data.source());
+                                    return resolvePartialsAsync(data.source(), visited);
                                   }
                                   return CompletableFuture.completedFuture(null);
                                 });
@@ -636,7 +653,7 @@ public class Dotprompt {
                     data -> {
                       if (data != null && data.source() != null) {
                         definePartial(name, data.source());
-                        return resolvePartialsAsync(data.source());
+                        return resolvePartialsAsync(data.source(), visited);
                       }
                       return CompletableFuture.completedFuture(null);
                     });

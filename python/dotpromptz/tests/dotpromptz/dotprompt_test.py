@@ -587,5 +587,70 @@ def test_use_available_model_config() -> None:
         assert result.config == {'temperature': 0.7}
 
 
+class TestResolvePartialsCycleDetection(IsolatedAsyncioTestCase):
+    """Test cycle detection in _resolve_partials."""
+
+    async def test_handles_cycles_without_infinite_recursion(self) -> None:
+        """Should handle cycles in partial references without infinite recursion.
+
+        Setup partials that reference each other: A -> B -> A
+        The resolver should only be called once per partial.
+        """
+        call_counts: dict[str, int] = {'partialA': 0, 'partialB': 0}
+
+        async def partial_resolver(name: str) -> str | None:
+            """Track how many times each partial is resolved."""
+            if name == 'partialA':
+                call_counts['partialA'] += 1
+                return 'Content A {{> partialB}}'
+            if name == 'partialB':
+                call_counts['partialB'] += 1
+                return 'Content B {{> partialA}}'
+            return None
+
+        dotprompt = Dotprompt(partial_resolver=partial_resolver)
+
+        # Start with a template that references partialA
+        template = '{{> partialA}}'
+
+        # This should complete without infinite recursion
+        await dotprompt._resolve_partials(template)
+
+        # Each partial should only be resolved once despite the cycle
+        self.assertEqual(call_counts['partialA'], 1)
+        self.assertEqual(call_counts['partialB'], 1)
+
+    async def test_deep_chain_resolution_without_cycles(self) -> None:
+        """Should resolve deep chains of partials correctly.
+
+        Setup a chain: A -> B -> C (no cycle)
+        All partials should be resolved.
+        """
+        resolved_partials: list[str] = []
+
+        async def partial_resolver(name: str) -> str | None:
+            """Track resolution order."""
+            resolved_partials.append(name)
+            if name == 'partialA':
+                return 'A content {{> partialB}}'
+            if name == 'partialB':
+                return 'B content {{> partialC}}'
+            if name == 'partialC':
+                return 'C content'
+            return None
+
+        dotprompt = Dotprompt(partial_resolver=partial_resolver)
+
+        template = '{{> partialA}}'
+        await dotprompt._resolve_partials(template)
+
+        # All three partials should be resolved
+        self.assertIn('partialA', resolved_partials)
+        self.assertIn('partialB', resolved_partials)
+        self.assertIn('partialC', resolved_partials)
+        # Each should only be resolved once
+        self.assertEqual(len(resolved_partials), 3)
+
+
 if __name__ == '__main__':
     unittest.main()

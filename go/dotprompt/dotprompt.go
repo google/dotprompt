@@ -307,26 +307,48 @@ func (d *Dotprompt) identifyPartials(template string) []string {
 }
 
 // resolvePartials resolves and registers partials in the template.
+//
+// This method recursively resolves partials, meaning if a partial itself
+// contains partial references, those will also be resolved. Cycle detection
+// prevents infinite loops when partials reference each other.
 func (dp *Dotprompt) resolvePartials(template string, tpl *raymond.Template) error {
+	visited := make(map[string]bool)
+	return dp.resolvePartialsRecursive(template, tpl, visited)
+}
+
+// resolvePartialsRecursive is the internal recursive implementation of partial resolution.
+func (dp *Dotprompt) resolvePartialsRecursive(template string, tpl *raymond.Template, visited map[string]bool) error {
 	if dp.partialResolver == nil {
 		return nil
 	}
 
 	partials := dp.identifyPartials(template)
 	for _, partial := range partials {
-		if _, exists := dp.knownPartials[partial]; !exists {
-			content, err := dp.partialResolver(partial)
-			if err != nil {
+		// Skip if already registered
+		if _, exists := dp.knownPartials[partial]; exists {
+			continue
+		}
+
+		// Skip if we're already processing this partial (cycle detection)
+		if visited[partial] {
+			continue
+		}
+
+		// Mark as being processed
+		visited[partial] = true
+
+		content, err := dp.partialResolver(partial)
+		if err != nil {
+			return err
+		}
+		if content != "" {
+			if err = dp.DefinePartial(partial, content, tpl); err != nil {
 				return err
 			}
-			if content != "" {
-				if err = dp.DefinePartial(partial, content, tpl); err != nil {
-					return err
-				}
-				err = dp.resolvePartials(content, tpl)
-				if err != nil {
-					return err
-				}
+			// Recursively resolve partials in the resolved content
+			err = dp.resolvePartialsRecursive(content, tpl, visited)
+			if err != nil {
+				return err
 			}
 		}
 	}

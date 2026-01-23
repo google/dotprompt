@@ -39,8 +39,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Concurrency test for resolveTools method. This test attempts to trigger race conditions
- * by calling resolveTools/renderMetadata concurrently from multiple threads.
+ * Concurrency test for resolveTools method. This test attempts to trigger race conditions by
+ * calling resolveTools/renderMetadata concurrently from multiple threads.
  */
 @RunWith(JUnit4.class)
 public class ResolveToolsConcurrencyTest {
@@ -197,10 +197,7 @@ public class ResolveToolsConcurrencyTest {
 
     Dotprompt dp =
         new Dotprompt(
-            DotpromptOptions.builder()
-                .setTools(staticTools)
-                .setToolResolver(mockResolver)
-                .build());
+            DotpromptOptions.builder().setTools(staticTools).setToolResolver(mockResolver).build());
 
     ExecutorService executor = Executors.newFixedThreadPool(numThreads);
     CountDownLatch startLatch = new CountDownLatch(1);

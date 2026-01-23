@@ -359,4 +359,40 @@ public class DotpromptTest {
     PromptMetadata metadata = dp.renderMetadata(source).get();
     assertThat(metadata.config()).containsEntry("temperature", 0.7);
   }
+
+  @Test
+  public void resolvePartials_handlesCyclesWithoutInfiniteRecursion() throws Exception {
+    // Track how many times each partial is resolved using atomic counters
+    java.util.concurrent.atomic.AtomicInteger partialACount =
+        new java.util.concurrent.atomic.AtomicInteger(0);
+    java.util.concurrent.atomic.AtomicInteger partialBCount =
+        new java.util.concurrent.atomic.AtomicInteger(0);
+
+    DotpromptOptions options =
+        DotpromptOptions.builder()
+            .setPartialResolver(
+                name -> {
+                  if ("partialA".equals(name)) {
+                    partialACount.incrementAndGet();
+                    // partialA references partialB
+                    return CompletableFuture.completedFuture("Content A {{> partialB}}");
+                  }
+                  if ("partialB".equals(name)) {
+                    partialBCount.incrementAndGet();
+                    // partialB references partialA (cycle!)
+                    return CompletableFuture.completedFuture("Content B {{> partialA}}");
+                  }
+                  return CompletableFuture.completedFuture(null);
+                })
+            .build();
+    Dotprompt dp = new Dotprompt(options);
+
+    // This should complete without infinite recursion
+    PromptFunction promptFn = dp.compile("{{> partialA}}").get();
+    assertThat(promptFn).isNotNull();
+
+    // Each partial should only be resolved once despite the cycle
+    assertThat(partialACount.get()).isEqualTo(1);
+    assertThat(partialBCount.get()).isEqualTo(1);
+  }
 }

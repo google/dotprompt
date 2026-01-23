@@ -40,8 +40,8 @@ import org.junit.runners.JUnit4;
 
 /**
  * Concurrency test for resolveTools method targeting specific race conditions: 1. Line 450:
- * toolDefs.add() without synchronization (when tool is registered) 2. Lines 557-558, 565-566: config
- * map modification without synchronization 3. Data consistency issues between toolDefs and
+ * toolDefs.add() without synchronization (when tool is registered) 2. Lines 557-558, 565-566:
+ * config map modification without synchronization 3. Data consistency issues between toolDefs and
  * unresolvedTools
  */
 @RunWith(JUnit4.class)
@@ -58,10 +58,11 @@ public class ResolveToolsRaceConditionTest {
     int numThreads = 50;
     int iterationsPerThread = 50;
 
-    Map<String, ToolDefinition> tools = Map.of(
-        "tool1", new ToolDefinition("tool1", "Tool 1", Map.of(), null),
-        "tool2", new ToolDefinition("tool2", "Tool 2", Map.of(), null),
-        "tool3", new ToolDefinition("tool3", "Tool 3", Map.of(), null));
+    Map<String, ToolDefinition> tools =
+        Map.of(
+            "tool1", new ToolDefinition("tool1", "Tool 1", Map.of(), null),
+            "tool2", new ToolDefinition("tool2", "Tool 2", Map.of(), null),
+            "tool3", new ToolDefinition("tool3", "Tool 3", Map.of(), null));
 
     Dotprompt dp = new Dotprompt(DotpromptOptions.builder().setTools(tools).build());
 
@@ -258,7 +259,8 @@ public class ResolveToolsRaceConditionTest {
 
               for (int j = 0; j < iterationsPerThread; j++) {
                 try {
-                  List<String> toolsList = List.of("static1", "dyn_tool_a", "dyn_tool_b", "unknown");
+                  List<String> toolsList =
+                      List.of("static1", "dyn_tool_a", "dyn_tool_b", "unknown");
 
                   Map<String, Object> config = new java.util.HashMap<>();
                   config.put("tools", toolsList);
@@ -315,9 +317,7 @@ public class ResolveToolsRaceConditionTest {
     assertThat(errors.get()).isEqualTo(0);
   }
 
-  /**
-   * Extreme stress test: same Dotprompt, many threads, all hitting resolveTools simultaneously.
-   */
+  /** Extreme stress test: same Dotprompt, many threads, all hitting resolveTools simultaneously. */
   @Test
   public void testExtremeStress() throws Exception {
     int numThreads = 100;
@@ -392,7 +392,7 @@ public class ResolveToolsRaceConditionTest {
    * Test the specific case that might trigger ConcurrentModificationException: iterating over a
    * shared ArrayList while modifications happen.
    *
-   * Note: This is actually testing if the ParsedPrompt.tools() list could cause issues. The
+   * <p>Note: This is actually testing if the ParsedPrompt.tools() list could cause issues. The
    * resolveTools method creates its own ArrayList from the input, so it should be safe.
    */
   @Test

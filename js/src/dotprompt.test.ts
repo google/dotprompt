@@ -688,6 +688,31 @@ describe('Dotprompt', () => {
         'Partial from store'
       );
     });
+
+    it('should handle cycles in partial references without infinite recursion', async () => {
+      // Setup partials that reference each other: A -> B -> A
+      const partialResolver = vi.fn().mockImplementation((name: string) => {
+        if (name === 'partialA') return 'Content A {{> partialB}}';
+        if (name === 'partialB') return 'Content B {{> partialA}}';
+        return null;
+      });
+
+      const dp = new Dotprompt({ partialResolver });
+
+      // @ts-ignore Creating a partials mock.
+      Handlebars.partials = {};
+
+      const template = '{{> partialA}}';
+
+      // @ts-ignore Accessing private method for testing
+      await dp.resolvePartials(template);
+
+      // Each partial should only be resolved once despite the cycle
+      expect(partialResolver).toHaveBeenCalledWith('partialA');
+      expect(partialResolver).toHaveBeenCalledWith('partialB');
+      // partialA should NOT be called a second time due to cycle detection
+      expect(partialResolver).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('renderMetadata', () => {

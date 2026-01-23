@@ -510,11 +510,16 @@ class Dotprompt:
         out.tools = unregistered_names
         return out
 
-    async def _resolve_partials(self, template: str) -> None:
+    async def _resolve_partials(self, template: str, visited: set[str] | None = None) -> None:
         """Resolve all partials in a template.
+
+        This method recursively resolves partials, meaning if a partial itself
+        contains partial references, those will also be resolved. Cycle detection
+        prevents infinite loops when partials reference each other.
 
         Args:
             template: The template to resolve partials in.
+            visited: Set of partial names currently being processed (for cycle detection).
 
         Returns:
             None
@@ -522,8 +527,14 @@ class Dotprompt:
         if self._partial_resolver is None and self._store is None:
             return
 
+        if visited is None:
+            visited = set()
+
         names = _identify_partials(template)
-        unregistered_names: list[str] = [name for name in names if not self._handlebars.has_partial(name)]
+        # Skip partials that are already registered OR currently being processed (cycle detection)
+        unregistered_names: list[str] = [
+            name for name in names if not self._handlebars.has_partial(name) and name not in visited
+        ]
 
         async def resolve_and_register(name: str) -> None:
             """Resolve a partial from the resolver or store and register it.
@@ -551,7 +562,11 @@ class Dotprompt:
                 self.define_partial(name, content)
 
                 # Recursively resolve partials in the content.
-                await self._resolve_partials(content)
+                await self._resolve_partials(content, visited)
+
+        # Mark all partials as being processed before starting resolution
+        for name in unregistered_names:
+            visited.add(name)
 
         async with anyio.create_task_group() as tg:
             for name in unregistered_names:
