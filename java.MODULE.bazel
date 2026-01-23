@@ -21,12 +21,7 @@ bazel_dep(name = "rules_jvm_external", version = "6.9")
 
 # Register the specific Java toolchain version.
 # See https://github.com/bazelbuild/rules_java/blob/master/toolchains.bzl
-java_toolchain = use_repo_rule("@rules_java//java:repositories.bzl", "java_toolchain")
-
-java_toolchain(
-    name = "jdk",
-    version = "17",
-)
+use_extension("@rules_java//java:extensions.bzl", "toolchains")
 
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
 maven.install(
