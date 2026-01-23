@@ -20,6 +20,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -41,7 +42,7 @@ jobs:
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
 
-  update-uv-lock:
+  update-lockfiles:
     runs-on: ubuntu-latest
     needs: release-please
     # Run when release-please creates/updates a PR (not when releases are created)
@@ -57,23 +58,49 @@ jobs:
         with:
           version: "latest"
 
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.24.x"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
       - name: Update uv.lock
         working-directory: python
         run: |
           uv sync
+          uv export --format requirements-txt --output-file requirements.txt --hashes
 
       - name: Update Cargo.lock
         run: |
           cargo update -p handlebarrz
 
-      - name: Update MODULE.bazel.lock
+      - name: Update Go lockfile
         run: |
+          go mod tidy -C go
+
+      - name: Update pnpm lockfiles
+        run: |
+          pnpm install --lockfile-only
+
+      - name: Update Bazel lockfiles
+        run: |
+          bazel mod tidy
+          bazel run @maven//:pin || echo "Maven pin failed, skipping..."
           bazel build ...
           
       - name: Check for changes
         id: changes
         run: |
-          if git diff --quiet python/uv.lock Cargo.lock MODULE.bazel.lock; then
+          if git diff --quiet python/uv.lock python/requirements.txt Cargo.lock python/handlebarrz/Cargo.lock MODULE.bazel.lock go/go.mod go/go.sum pnpm-lock.yaml js/pnpm-lock.yaml maven_install.json; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
             echo "changed=true" >> $GITHUB_OUTPUT
@@ -84,6 +111,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add python/uv.lock Cargo.lock MODULE.bazel.lock
-          git commit -m "chore(py): update lockfiles"
+          git add python/uv.lock python/requirements.txt Cargo.lock python/handlebarrz/Cargo.lock MODULE.bazel.lock go/go.mod go/go.sum pnpm-lock.yaml js/pnpm-lock.yaml maven_install.json
+          git commit -m "chore: update lockfiles"
           git push

@@ -20,7 +20,7 @@
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
       "prerelease": false,
-      "path": "js/**"
+      "path": "js"
     },
     "python/dotpromptz": {
       "release-type": "python",
@@ -79,7 +79,7 @@
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
       "prerelease": false,
-      "path": "go/**"
+      "path": "go"
     },
     "rs": {
       "release-type": "rust",
@@ -89,7 +89,14 @@
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
       "prerelease": false,
-      "path": "rs/**"
+      "path": "rs",
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "smoke/Cargo.toml",
+          "jsonpath": "$.package.version"
+        }
+      ]
     },
     "java": {
       "release-type": "java",
@@ -99,7 +106,7 @@
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
       "prerelease": false,
-      "path": "java/**",
+      "path": "java",
       "extra-files": [
         {
           "type": "generic",
@@ -115,7 +122,7 @@
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
       "prerelease": false,
-      "path": "packages/vscode/**"
+      "path": "packages/vscode"
     },
     "packages/vim": {
       "release-type": "simple",
@@ -125,7 +132,7 @@
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
       "prerelease": false,
-      "path": "packages/vim/**"
+      "path": "packages/vim"
     },
     "packages/emacs": {
       "release-type": "simple",
@@ -135,7 +142,7 @@
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
       "prerelease": false,
-      "path": "packages/emacs/**"
+      "path": "packages/emacs"
     }
   },
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
