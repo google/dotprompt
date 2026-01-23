@@ -39,7 +39,7 @@
         },
         {
           "type": "toml",
-          "path": "../tests/smoke/pyproject.toml",
+          "path": "tests/smoke/pyproject.toml",
           "jsonpath": "$.project.version"
         }
       ]
@@ -110,7 +110,7 @@
       "extra-files": [
         {
           "type": "generic",
-          "path": "java/com/google/dotprompt/BUILD.bazel"
+          "path": "com/google/dotprompt/BUILD.bazel"
         }
       ]
     },
