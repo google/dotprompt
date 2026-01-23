@@ -27,5 +27,6 @@ TOP_DIR=$(git rev-parse --show-toplevel)
 
 # Format all TypeScript code.
 pushd "${TOP_DIR}"
+pnpm dlx @biomejs/biome migrate --write
 pnpm run format || exit 1
 popd

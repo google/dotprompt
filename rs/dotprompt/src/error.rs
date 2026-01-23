@@ -28,6 +28,10 @@ pub enum DotpromptError {
     #[error("failed to parse frontmatter: {0}")]
     FrontmatterParseError(#[from] serde_yaml::Error),
 
+    /// I/O error.
+    #[error("I/O error: {0}")]
+    IoError(#[from] std::io::Error),
+
     /// Failed to parse JSON data.
     #[error("failed to parse JSON: {0}")]
     JsonParseError(#[from] serde_json::Error),
@@ -67,4 +71,12 @@ pub enum DotpromptError {
     /// Handlebars error.
     #[error("handlebars error: {0}")]
     HandlebarsError(#[from] handlebars::RenderError),
+
+    /// Invalid prompt name (e.g. path traversal)
+    #[error("invalid prompt name: {0}")]
+    InvalidPromptName(String),
+
+    /// Store error.
+    #[error("store error: {0}")]
+    StoreError(String),
 }

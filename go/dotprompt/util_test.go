@@ -152,3 +152,68 @@ func TestCreateCopy(t *testing.T) {
 	assert.NotEqual(t, original.Title, copy.Title)
 	assert.Equal(t, "Original Schema", original.Title)
 }
+
+func TestValidatePromptName(t *testing.T) {
+	tests := []struct {
+		name      string
+		prompt    string
+		shouldErr bool
+	}{
+		{"Empty string", "", true},
+		{"Whitespace only", "   ", true},
+		{"Null byte", "valid-name\x00.prompt", true},
+		{"Escaped null byte", `valid-name\0.prompt`, true},
+
+		// Basic Traversal
+		{"Double dot", "..", true},
+		{"Start double dot", "../etc/passwd", true},
+		{"Embedded double dot", "subdir/../escape", true},
+
+		// Windows/Mixed Sep
+		{"Windows slash", `..\windows\system32`, true},
+		{"Mixed slash", `..\../etc/passwd`, true},
+
+		// Absolute Paths
+		{"Absolute path", "/absolute/path.attack", true},
+		{"Windows absolute C:", "C:/Windows/System32", true},
+		{"Windows absolute backslash", `C:\Windows`, true},
+		{"UNC path", `\\server\share`, true},
+
+		// URL Encoded
+		{"URL encoded ..", "%2e%2e/etc/passwd", true},
+		{"URL encoded dot", "foo/%2e%2e/bar", true},
+		{"Double URL encoded", "%252e%252e/etc/passwd", true},
+		{"Double URL nested", "%25252e%25252e", true},
+
+		// Homographs (if normalized correctly)
+		// U+FF0E is Fullwidth Full Stop
+		{"Fullwidth dot homograph", "\uff0e\uff0e/etc/passwd", false},
+
+		// Current Directory
+		{"Current dir ./", "./config", true},
+		{"Current dir .\\", `.\config`, true},
+
+		// Valid cases
+		{"Simple name", "simple", false},
+		{"Hyphenated", "my-prompt", false},
+		{"Underscored", "my_prompt", false},
+		{"Dots in middle", "a..b", false},
+		{"Version dots", "version..2", false},
+		{"Subdirectory", "subdir/nested", false},
+		{"Deep nesting", "subdir/deeply/nested/prompt", false},
+		{"Multiple dots", "a.b.c", false},
+		{"Triple dot start", "...test", false},
+		{"Triple dot end", "test...", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidatePromptName(tt.prompt)
+			if tt.shouldErr {
+				assert.Error(t, err, "expected error for prompt: %s", tt.prompt)
+			} else {
+				assert.NoError(t, err, "expected no error for prompt: %s", tt.prompt)
+			}
+		})
+	}
+}

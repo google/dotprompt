@@ -177,7 +177,8 @@ public final class StoreUtils {
     }
     // Check for remaining encoded characters (potential double-encoding bypass)
     if (decoded.contains("%")) {
-      throw new IllegalArgumentException("Invalid prompt name: encoded characters not allowed: '" + name + "'");
+      throw new IllegalArgumentException(
+          "Invalid prompt name: encoded characters not allowed: '" + name + "'");
     }
     name = decoded;
 
@@ -188,12 +189,14 @@ public final class StoreUtils {
 
     // BLOCK UNC NETWORK PATHS - Prevent Windows network path access
     if (name.startsWith("\\\\")) {
-      throw new IllegalArgumentException("Invalid path: UNC network paths not allowed: '" + name + "'");
+      throw new IllegalArgumentException(
+          "Invalid path: UNC network paths not allowed: '" + name + "'");
     }
 
     // Check for current directory reference patterns
     if (name.contains("./") || name.contains(".\\")) {
-      throw new IllegalArgumentException("Invalid path: current directory reference not allowed: '" + name + "'");
+      throw new IllegalArgumentException(
+          "Invalid path: current directory reference not allowed: '" + name + "'");
     }
 
     // Check for path traversal - block segments with ".." patterns
@@ -213,7 +216,10 @@ public final class StoreUtils {
       // Check if segment STARTS with ".." (potential bypass: "..config", "..hidden")
       // Allow segments starting with 3+ dots like "...test" which are legitimate filenames
       // Block only if it starts with exactly ".." (2 dots) not "...", "...." etc
-      if (segment.length() > 2 && segment.charAt(0) == '.' && segment.charAt(1) == '.' && segment.charAt(2) != '.') {
+      if (segment.length() > 2
+          && segment.charAt(0) == '.'
+          && segment.charAt(1) == '.'
+          && segment.charAt(2) != '.') {
         // Starts with exactly ".." followed by non-dot - check if valid pattern
         if (!segment.matches("^[a-zA-Z0-9]+\\.\\.[a-zA-Z0-9]+$")) {
           throw new IllegalArgumentException("Path traversal not allowed: '" + name + "'");
@@ -243,12 +249,14 @@ public final class StoreUtils {
     // Check for the literal "\0" pattern (backslash followed by zero)
     // This catches suspicious escape sequences even if not actual null bytes
     if (name.contains("\\0")) {
-      throw new IllegalArgumentException("Invalid prompt name: null byte escape sequence not allowed: '" + name + "'");
+      throw new IllegalArgumentException(
+          "Invalid prompt name: null byte escape sequence not allowed: '" + name + "'");
     }
 
     // Check for absolute paths - Unix-style leading slash
     if (name.startsWith("/")) {
-      throw new IllegalArgumentException("Invalid path: absolute paths not allowed: '" + name + "'");
+      throw new IllegalArgumentException(
+          "Invalid path: absolute paths not allowed: '" + name + "'");
     }
 
     // Block trailing slashes - prevents directory access ambiguity
@@ -261,7 +269,8 @@ public final class StoreUtils {
     // This specifically targets Windows drive letter patterns, not general colons in names
     if (name.length() == 2 || (name.length() > 2 && !Character.isLetterOrDigit(name.charAt(2)))) {
       if (name.charAt(1) == ':' && Character.isLetter(name.charAt(0))) {
-        throw new IllegalArgumentException("Invalid path: Windows drive paths not allowed: '" + name + "'");
+        throw new IllegalArgumentException(
+            "Invalid path: Windows drive paths not allowed: '" + name + "'");
       }
     }
   }

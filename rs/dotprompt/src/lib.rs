@@ -42,7 +42,7 @@
 //! let mut data = DataArgument::default();
 //! data.input = Some(serde_json::json!({"name": "World"}));
 //!
-//! let rendered: RenderedPrompt = dotprompt.render(template, data, None)?;
+//! let rendered: RenderedPrompt = dotprompt.render(template, &data, None)?;
 //! # Ok(())
 //! # }
 //! ```
@@ -57,7 +57,9 @@ pub mod helpers;
 pub mod parse;
 pub mod picoschema;
 pub mod store;
+pub mod stores;
 pub mod types;
+pub mod util;
 
 // Re-export main types for convenience
 pub use dotprompt::{Dotprompt, DotpromptOptions};

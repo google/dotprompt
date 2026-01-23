@@ -32,7 +32,9 @@ export function validatePromptName(name: string): void {
   // Check for null byte escape sequence pattern (backslash followed by zero)
   // This catches suspicious escape sequences even if not actual null bytes
   if (name.includes('\\0')) {
-    throw new Error(`Null byte escape sequence not allowed in prompt name: '${name}'`);
+    throw new Error(
+      `Null byte escape sequence not allowed in prompt name: '${name}'`
+    );
   }
 
   // DECODE URL-ENCODED INPUT BEFORE VALIDATION
@@ -54,7 +56,9 @@ export function validatePromptName(name: string): void {
   }
   // Check for remaining encoded characters (potential double-encoding bypass)
   if (decoded.includes('%')) {
-    throw new Error(`Invalid prompt name: encoded characters not allowed: '${name}'`);
+    throw new Error(
+      `Invalid prompt name: encoded characters not allowed: '${name}'`
+    );
   }
 
   // UNICODE NORMALIZATION TO CATCH HOMOGRAPH ATTACKS
@@ -67,7 +71,9 @@ export function validatePromptName(name: string): void {
   // Only printable ASCII characters (U+0020 to U+007E) are allowed
   // SECURITY: Check 'normalizedDecoded' not 'name' to catch URL-encoded Unicode bypasses
   if (/[^\u0020-\u007E]/u.test(normalizedDecoded)) {
-    throw new Error(`Non-ASCII characters not allowed in prompt name: '${name}'`);
+    throw new Error(
+      `Non-ASCII characters not allowed in prompt name: '${name}'`
+    );
   }
 
   // Normalize backslashes to forward slashes for consistent validation
@@ -108,7 +114,12 @@ export function validatePromptName(name: string): void {
     // Check if segment STARTS with ".." (potential bypass: "..config", "..hidden")
     // Allow segments starting with 3+ dots like "...test" which are legitimate filenames
     // Block only if it starts with exactly ".." (2 dots) not "...", "...." etc
-    if (segment.length > 2 && segment[0] === '.' && segment[1] === '.' && segment[2] !== '.') {
+    if (
+      segment.length > 2 &&
+      segment[0] === '.' &&
+      segment[1] === '.' &&
+      segment[2] !== '.'
+    ) {
       // Starts with exactly ".." followed by non-dot - check if valid pattern
       if (!/^[a-zA-Z0-9]+\.\.[a-zA-Z0-9]+$/.test(segment)) {
         throw new Error(`Path traversal not allowed: '${name}'`);
@@ -121,7 +132,10 @@ export function validatePromptName(name: string): void {
     if (segment.endsWith('..') && segment.length > 2) {
       // Allow if: alphanumeric..alphanumeric (has chars after ..) OR ends with 3+ dots
       const hasCharsAfterDots = /^[a-zA-Z0-9]+\.\.[a-zA-Z0-9]+$/.test(segment);
-      const hasTrailingTripleDots = /\.\.+$/.test(segment) && segment.length >= 3 && segment.slice(-3).startsWith('...');
+      const hasTrailingTripleDots =
+        /\.\.+$/.test(segment) &&
+        segment.length >= 3 &&
+        segment.slice(-3).startsWith('...');
       if (!hasCharsAfterDots && !hasTrailingTripleDots) {
         throw new Error(`Path traversal not allowed: '${name}'`);
       }

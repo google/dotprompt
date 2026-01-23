@@ -438,6 +438,10 @@ pub struct ListPromptsOptions {
     /// Maximum number of items to return.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
+
+    /// Specific variant to filter.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub variant: Option<String>,
 }
 
 /// Options for listing partials with pagination.
@@ -450,6 +454,10 @@ pub struct ListPartialsOptions {
     /// Maximum number of items to return.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<usize>,
+
+    /// Specific variant to filter.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub variant: Option<String>,
 }
 
 /// Options for loading a prompt.

@@ -299,8 +299,9 @@ type PartialData struct {
 
 // ListPromptsOptions represents options for listing prompts or partials.
 type ListPromptsOptions struct {
-	Cursor string
-	Limit  int
+	Cursor  string
+	Limit   int
+	Variant string
 }
 
 // ListPromptsResult represents a list of items and a cursor.
@@ -311,8 +312,9 @@ type ListPromptsResult[T any] struct {
 
 // ListPartialsOptions represents options for listing partials.
 type ListPartialsOptions struct {
-	Cursor string
-	Limit  int
+	Cursor  string
+	Limit   int
+	Variant string
 }
 
 // ListPartialsResult represents a list of partials and a cursor.

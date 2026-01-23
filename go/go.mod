@@ -17,6 +17,7 @@ require (
 require (
 	github.com/mbleigh/raymond v0.0.0-20250414171441-6b3a58ab9e0a
 	github.com/wk8/go-ordered-map/v2 v2.1.8
+	golang.org/x/text v0.33.0
 )
 
 require (

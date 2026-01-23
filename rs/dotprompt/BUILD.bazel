@@ -25,11 +25,16 @@ rust_library(
     visibility = ["//visibility:public"],
     deps = [
         "@crates//:handlebars",
+        "@crates//:hex",
         "@crates//:regex",
         "@crates//:serde",
         "@crates//:serde_json",
         "@crates//:serde_yaml",
+        "@crates//:sha1",
         "@crates//:thiserror",
+        "@crates//:unicode-normalization",
+        "@crates//:urlencoding",
+        "@crates//:walkdir",
     ],
 )
 

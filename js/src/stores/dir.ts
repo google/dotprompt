@@ -19,7 +19,6 @@
 import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { validatePromptName } from '../util';
 import type {
   DeletePromptOrPartialOptions,
   ListPartialsOptions,
@@ -33,6 +32,7 @@ import type {
   PromptRef,
   PromptStoreWritable,
 } from '../types';
+import { validatePromptName } from '../util';
 
 /**
  * Options for configuring the DirStore.
@@ -196,7 +196,10 @@ export class DirStore implements PromptStoreWritable {
     // Validate path containment to prevent directory traversal attacks.
     const resolved = path.resolve(fullPath);
     const baseResolved = path.resolve(this.directory);
-    if (resolved !== baseResolved && !resolved.startsWith(baseResolved + path.sep)) {
+    if (
+      resolved !== baseResolved &&
+      !resolved.startsWith(baseResolved + path.sep)
+    ) {
       throw new Error(`Path traversal attempt in scanDirectory: '${dir}'`);
     }
 
