@@ -17,8 +17,14 @@
 name: Publish dotpromptz-handlebars Package to PyPI
 
 on:
+  release:
+    types: [created]
   workflow_dispatch:
     inputs:
+      tag_name:
+        description: "The exact release tag of handlebarrz to publish"
+        required: true
+        type: string
       repository_url:
         description: 'The PyPI repository URL to publish to'
         type: choice
@@ -34,6 +40,7 @@ jobs:
   build_ubuntu_arm64:
     name: Build for Ubuntu ARM64
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'dotpromptz-handlebars-v'))
     strategy:
       matrix:
         python_version:
@@ -362,7 +369,7 @@ jobs:
         with:
           verbose: true
           packages-dir: dist/
-          repository-url: ${{ inputs.repository_url || 'https://upload.pypi.org/legacy/' }}
+          repository-url: ${{ github.event_name == 'release' && 'https://upload.pypi.org/legacy/' || inputs.repository_url || 'https://upload.pypi.org/legacy/' }}
 
       - name: Sleep for pypi server to load
         run: sleep 180

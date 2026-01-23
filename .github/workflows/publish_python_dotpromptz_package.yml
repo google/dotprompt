@@ -17,6 +17,8 @@
 name: Publish dotpromptz Package to PyPI
 
 on:
+  release:
+    types: [created]
   workflow_dispatch:
     inputs:
       tag_name:
@@ -39,6 +41,7 @@ jobs:
   check_and_build:
     name: Dependency Check and Build
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'dotpromptz-v'))
     permissions:
       contents: write
       actions: write
@@ -123,13 +126,13 @@ jobs:
     permissions:
       id-token: write
     env:
-      PYPI_REPOSITORY_URL: ${{ inputs.repository_url }}
+      PYPI_REPOSITORY_URL: ${{ inputs.repository_url || 'https://upload.pypi.org/legacy/' }}
 
     steps:
       - name: Checkout code at tag
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.inputs.tag_name }}
+          ref: ${{ github.event.inputs.tag_name || github.event.release.tag_name }}
 
       - name: Download artifacts
         uses: actions/download-artifact@v7

@@ -31,8 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
-      py_dotpromptz_release_created: ${{ steps.release.outputs['python/dotpromptz--release_created'] }}
-      py_handlebarrz_release_created: ${{ steps.release.outputs['python/handlebarrz--release_created'] }}
+      dotpromptz_release_created: ${{ steps.release.outputs['dotpromptz--release_created'] }}
+      handlebarrz_release_created: ${{ steps.release.outputs['dotpromptz-handlebars--release_created'] }}
       pr: ${{ steps.release.outputs.pr }}
     steps:
       - uses: googleapis/release-please-action@v4
@@ -57,7 +57,6 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
-
       - name: Setup Go
         uses: actions/setup-go@v6
         with:

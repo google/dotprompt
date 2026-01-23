@@ -22,7 +22,7 @@
       "prerelease": false,
       "path": "js"
     },
-    "python/dotpromptz": {
+    "dotpromptz": {
       "release-type": "python",
       "package-name": "dotpromptz",
       "changelog-path": "CHANGELOG.md",
@@ -44,9 +44,9 @@
         }
       ]
     },
-    "python/handlebarrz": {
+    "dotpromptz-handlebars": {
       "release-type": "python",
-      "package-name": "handlebarrz",
+      "package-name": "dotpromptz-handlebars",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
