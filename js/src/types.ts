@@ -238,6 +238,10 @@ export interface ListPromptsOptions {
    * The maximum number of items to return.
    */
   limit?: number;
+  /**
+   * Optional variant filter to only list prompts with this variant.
+   */
+  variant?: string;
 }
 
 /**
@@ -252,6 +256,10 @@ export interface ListPartialsOptions {
    * The maximum number of items to return.
    */
   limit?: number;
+  /**
+   * Optional variant filter to only list partials with this variant.
+   */
+  variant?: string;
 }
 
 /**

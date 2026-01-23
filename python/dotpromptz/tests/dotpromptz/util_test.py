@@ -21,6 +21,7 @@ import unittest
 from dotpromptz.util import (
     remove_undefined_fields,
     unquote,
+    validate_prompt_name,
 )
 
 
@@ -137,6 +138,97 @@ class TestUnquote(unittest.TestCase):
         """Test that unquote only removes one level of quotes."""
         self.assertEqual(unquote('""test\'test""'), '"test\'test"')
         self.assertEqual(unquote("''test\"test''"), "'test\"test'")
+
+
+class TestValidatePromptName(unittest.TestCase):
+    """Tests for validate_prompt_name."""
+
+    def test_rejects_double_dot_traversal(self) -> None:
+        """Should reject names with '..' for path traversal."""
+        with self.assertRaises(ValueError):
+            validate_prompt_name('../../../etc/passwd')
+
+    def test_rejects_double_dot_only(self) -> None:
+        """Should reject '..' as a name."""
+        with self.assertRaises(ValueError):
+            validate_prompt_name('..')
+
+    def test_rejects_absolute_paths(self) -> None:
+        """Should reject absolute paths."""
+        with self.assertRaises(ValueError):
+            validate_prompt_name('/absolute/path.attack')
+
+    def test_rejects_windows_absolute_paths(self) -> None:
+        """Should reject Windows absolute paths."""
+        with self.assertRaises(ValueError):
+            validate_prompt_name('C:/Windows/System32')
+
+    def test_rejects_embedded_traversal(self) -> None:
+        """Should reject embedded traversal sequences."""
+        with self.assertRaises(ValueError):
+            validate_prompt_name('subdir/../../../escape')
+
+    def test_rejects_windows_style_traversal(self) -> None:
+        """Should reject Windows backslash traversal."""
+        with self.assertRaises(ValueError):
+            validate_prompt_name('..\\windows\\system32')
+
+    def test_rejects_mixed_slash_traversal(self) -> None:
+        """Should reject mixed forward/backslash traversal."""
+        with self.assertRaises(ValueError):
+            validate_prompt_name('..\\../etc/passwd')
+
+    def test_rejects_empty_string(self) -> None:
+        """Should reject empty string."""
+        with self.assertRaises(ValueError):
+            validate_prompt_name('')
+
+    def test_rejects_whitespace_only(self) -> None:
+        """Should reject whitespace-only names."""
+        with self.assertRaises(ValueError):
+            validate_prompt_name('   ')
+
+    def test_rejects_trailing_slash(self) -> None:
+        """Should reject trailing slash."""
+        with self.assertRaises(ValueError):
+            validate_prompt_name('prompt/')
+
+    def test_rejects_leading_slash(self) -> None:
+        """Should reject leading slash indicating absolute path."""
+        with self.assertRaises(ValueError):
+            validate_prompt_name('/subdir/prompt')
+
+    def test_allows_simple_name(self) -> None:
+        """Should allow simple alphanumeric names."""
+        validate_prompt_name('simple')
+
+    def test_allows_hyphenated_name(self) -> None:
+        """Should allow hyphenated names."""
+        validate_prompt_name('my-prompt')
+
+    def test_allows_underscored_name(self) -> None:
+        """Should allow underscored names."""
+        validate_prompt_name('my_prompt')
+
+    def test_allows_dots_in_middle_of_name(self) -> None:
+        """Should allow dots within the name (not as traversal)."""
+        validate_prompt_name('a..b')
+
+    def test_allows_version_with_dots(self) -> None:
+        """Should allow version-style naming with dots."""
+        validate_prompt_name('version..2')
+
+    def test_allows_subdirectory_paths(self) -> None:
+        """Should allow legitimate subdirectory paths."""
+        validate_prompt_name('subdir/nested')
+
+    def test_allows_deep_nesting(self) -> None:
+        """Should allow deeply nested legitimate paths."""
+        validate_prompt_name('subdir/deeply/nested/prompt')
+
+    def test_allows_multiple_dots_in_name(self) -> None:
+        """Should allow multiple consecutive dots in name."""
+        validate_prompt_name('a.b.c')
 
 
 if __name__ == '__main__':

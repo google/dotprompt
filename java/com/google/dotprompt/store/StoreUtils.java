@@ -19,11 +19,13 @@
 package com.google.dotprompt.store;
 
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -141,6 +143,127 @@ public final class StoreUtils {
               });
     }
     return results;
+  }
+
+  /**
+   * Validates that a prompt name doesn't contain path traversal sequences.
+   *
+   * @param name the prompt name to validate.
+   * @throws IllegalArgumentException if name contains path traversal attempts.
+   */
+  public static void validatePromptName(String name) {
+    if (name == null || name.isEmpty() || name.trim().isEmpty()) {
+      throw new IllegalArgumentException("Invalid prompt name: name cannot be empty or whitespace");
+    }
+
+    // DECODE URL-ENCODED INPUT BEFORE VALIDATION
+    // This prevents bypass attempts using URL-encoded path traversal sequences
+    // e.g., "%2e%2e/%2e%2e" would decode to "../.." before validation checks
+    // SECURITY: Decode iteratively to catch double-encoding bypasses (%252e%252e)
+    String decoded = name;
+    int iterations = 0;
+    final int MAX_DECODE_ITERATIONS = 3; // Prevent DoS via infinite decoding loop
+    while (iterations < MAX_DECODE_ITERATIONS) {
+      try {
+        String newDecoded = URLDecoder.decode(decoded, StandardCharsets.UTF_8.name());
+        if (newDecoded.equals(decoded)) {
+          break; // No change, fully decoded
+        }
+        decoded = newDecoded;
+        iterations++;
+      } catch (Exception e) {
+        throw new IllegalArgumentException("Invalid URL encoding in prompt name");
+      }
+    }
+    // Check for remaining encoded characters (potential double-encoding bypass)
+    if (decoded.contains("%")) {
+      throw new IllegalArgumentException("Invalid prompt name: encoded characters not allowed: '" + name + "'");
+    }
+    name = decoded;
+
+    // NORMALIZE UNICODE TO CATCH HOMOGRAPH ATTACKS
+    // This prevents bypass attempts using visually similar characters
+    // Note: NFC doesn't convert all Unicode dots (U+FF0E, U+2024, U+2025), so we check for those
+    name = Normalizer.normalize(name, Normalizer.Form.NFC);
+
+    // BLOCK UNC NETWORK PATHS - Prevent Windows network path access
+    if (name.startsWith("\\\\")) {
+      throw new IllegalArgumentException("Invalid path: UNC network paths not allowed: '" + name + "'");
+    }
+
+    // Check for current directory reference patterns
+    if (name.contains("./") || name.contains(".\\")) {
+      throw new IllegalArgumentException("Invalid path: current directory reference not allowed: '" + name + "'");
+    }
+
+    // Check for path traversal - block segments with ".." patterns
+    // This catches:
+    // - Segments that are only dots: "..", "...", "....", etc.
+    // - Segments STARTING with "..": "..config", "..hidden" (leading parent reference)
+    // - Segments ENDING with ".." when followed by non-alphanumeric: "safe..", "0.."
+    // Allows: "a..b", "file..txt", "...test", "test..." (legitimate filename patterns)
+    String normalized = name.replace('\\', '/');
+    String[] segments = normalized.split("/");
+    for (String segment : segments) {
+      // Check if segment is ONLY dots (2 or more)
+      if (segment.length() >= 2 && segment.matches("^\\.+$")) {
+        throw new IllegalArgumentException("Path traversal not allowed: '" + name + "'");
+      }
+
+      // Check if segment STARTS with ".." (potential bypass: "..config", "..hidden")
+      // Allow segments starting with 3+ dots like "...test" which are legitimate filenames
+      // Block only if it starts with exactly ".." (2 dots) not "...", "...." etc
+      if (segment.length() > 2 && segment.charAt(0) == '.' && segment.charAt(1) == '.' && segment.charAt(2) != '.') {
+        // Starts with exactly ".." followed by non-dot - check if valid pattern
+        if (!segment.matches("^[a-zA-Z0-9]+\\.\\.[a-zA-Z0-9]+$")) {
+          throw new IllegalArgumentException("Path traversal not allowed: '" + name + "'");
+        }
+      }
+
+      // Check if segment ENDS with ".." (potential bypass: "safe..", "0..", "test..")
+      // But allow alphanumeric..alphanumeric patterns like "a..b" or "file..txt"
+      // Also allow trailing three-or-more dots like "test..." (valid filename pattern)
+      if (segment.endsWith("..") && segment.length() > 2) {
+        // Allow if: alphanumeric..alphanumeric (has chars after ..) OR ends with 3+ dots
+        boolean hasCharsAfterDots = segment.matches("^[a-zA-Z0-9]+\\.\\.[a-zA-Z0-9]+$");
+        boolean hasTrailingTripleDots = segment.matches(".*\\.\\.\\.+$");
+        if (!hasCharsAfterDots && !hasTrailingTripleDots) {
+          throw new IllegalArgumentException("Path traversal not allowed: '" + name + "'");
+        }
+      }
+    }
+
+    // BLOCK NULL BYTES - Check after path traversal to catch null bytes in any form
+    if (name.indexOf('\0') >= 0) {
+      throw new IllegalArgumentException(
+          "Invalid prompt name: null bytes not allowed for security");
+    }
+
+    // BLOCK NULL BYTE ESCAPE SEQUENCE PATTERN
+    // Check for the literal "\0" pattern (backslash followed by zero)
+    // This catches suspicious escape sequences even if not actual null bytes
+    if (name.contains("\\0")) {
+      throw new IllegalArgumentException("Invalid prompt name: null byte escape sequence not allowed: '" + name + "'");
+    }
+
+    // Check for absolute paths - Unix-style leading slash
+    if (name.startsWith("/")) {
+      throw new IllegalArgumentException("Invalid path: absolute paths not allowed: '" + name + "'");
+    }
+
+    // Block trailing slashes - prevents directory access ambiguity
+    if (name.endsWith("/") || name.endsWith("\\")) {
+      throw new IllegalArgumentException(
+          "Invalid path: trailing slash not allowed: '" + name + "'");
+    }
+
+    // Check for Windows absolute paths - single letter followed by colon (e.g., C:, D:)
+    // This specifically targets Windows drive letter patterns, not general colons in names
+    if (name.length() == 2 || (name.length() > 2 && !Character.isLetterOrDigit(name.charAt(2)))) {
+      if (name.charAt(1) == ':' && Character.isLetter(name.charAt(0))) {
+        throw new IllegalArgumentException("Invalid path: Windows drive paths not allowed: '" + name + "'");
+      }
+    }
   }
 
   /**

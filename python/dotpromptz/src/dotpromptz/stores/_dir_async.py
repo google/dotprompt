@@ -75,6 +75,7 @@ from dotpromptz.typing import (
     PromptRef,
     PromptStoreWritable,
 )
+from dotpromptz.util import validate_prompt_name
 
 from ._io import (
     calculate_version,
@@ -146,6 +147,32 @@ class DirStore(PromptStoreWritable):
         os.makedirs(self._directory, exist_ok=True)
         logger.debug('Async DirStore initialized', directory=str(self._directory))
 
+    def _verify_path_containment(self, file_path: Path, name: str) -> None:
+        """Verify that file_path is within the store directory.
+
+        This is a defense-in-depth measure to prevent path traversal attacks.
+
+        Args:
+            file_path: The path to verify.
+            name: The logical prompt/partial name (for logging).
+
+        Raises:
+            ValueError: If the path is outside the store directory.
+        """
+        resolved = file_path.resolve()
+        base = self._directory.resolve()
+
+        # Python 3.8+ has is_relative_to(), but for compatibility use try/except
+        try:
+            resolved.relative_to(base)
+        except ValueError:
+            logger.warning(
+                'path_containment_failed',
+                name=name,
+                attempted_path=str(file_path),
+            )
+            raise ValueError(f"Path traversal attempt detected: '{name}'") from None
+
     async def list(self, options: ListPromptsOptions | None = None) -> PaginatedPrompts:
         """Asynchronously lists available prompts (excluding partials).
 
@@ -158,6 +185,9 @@ class DirStore(PromptStoreWritable):
         Returns:
             A PaginatedPrompts object containing all found prompt references.
         """
+        # Validate variant if provided
+        if options and options.variant:
+            validate_prompt_name(options.variant)
         await logger.adebug('Listing prompts', options=options)
         files = await scan_directory(self._directory)
         prompts: list[PromptRef] = []
@@ -217,6 +247,9 @@ class DirStore(PromptStoreWritable):
         Returns:
             A PaginatedPartials object containing all found partial references.
         """
+        # Validate variant if provided
+        if options and options.variant:
+            validate_prompt_name(options.variant)
         await logger.adebug('Listing partials', options=options)
         files = await scan_directory(self._directory)
         partials: list[PartialRef] = []
@@ -281,12 +314,18 @@ class DirStore(PromptStoreWritable):
             ValueError: If the requested version does not match.
             OSError: If there's an error reading the file.
         """
+        validate_prompt_name(name)
         variant = options.variant if options else None
+        if variant:
+            validate_prompt_name(variant)
         version_opt = options.version if options else None
         dir_name = os.path.dirname(name)
         base_name = os.path.basename(name)
         file_name = f'{base_name}.{variant}.prompt' if variant else f'{base_name}.prompt'
         file_path = self._directory / dir_name / file_name if dir_name else self._directory / file_name
+
+        # Verify path containment (defense in depth)
+        self._verify_path_containment(file_path, name)
 
         await logger.adebug('Loading prompt', name=name, variant=variant, path=str(file_path))
 
@@ -340,13 +379,19 @@ class DirStore(PromptStoreWritable):
             ValueError: If the requested version does not match.
             OSError: If there's an error reading the file.
         """
+        validate_prompt_name(name)
         variant = options.variant if options else None
+        if variant:
+            validate_prompt_name(variant)
         version_opt = options.version if options else None
         dir_name = os.path.dirname(name)
         base_name = os.path.basename(name)
         # Partials have leading underscore
         file_name = f'_{base_name}.{variant}.prompt' if variant else f'_{base_name}.prompt'
         file_path = self._directory / dir_name / file_name if dir_name else self._directory / file_name
+
+        # Verify path containment (defense in depth)
+        self._verify_path_containment(file_path, name)
 
         await logger.adebug('Loading partial', name=name, variant=variant, path=str(file_path))
 
@@ -401,6 +446,9 @@ class DirStore(PromptStoreWritable):
         if not prompt.name:
             await logger.aerror('Save failed: prompt name is required')
             raise ValueError('Prompt name is required for saving.')
+        validate_prompt_name(prompt.name)
+        if prompt.variant:
+            validate_prompt_name(prompt.variant)
         if prompt.source is None:
             await logger.aerror('Save failed: prompt source is required')
             raise ValueError('Prompt source content is required for saving.')
@@ -410,6 +458,9 @@ class DirStore(PromptStoreWritable):
         file_name = f'{base_name}.{prompt.variant}.prompt' if prompt.variant else f'{base_name}.prompt'
         file_path = self._directory / dir_name / file_name if dir_name else self._directory / file_name
         file_dir = file_path.parent
+
+        # Verify path containment (defense in depth)
+        self._verify_path_containment(file_path, prompt.name)
 
         await logger.adebug(
             'Saving prompt',
@@ -452,7 +503,10 @@ class DirStore(PromptStoreWritable):
             FileNotFoundError: If neither the prompt nor partial file exists.
             OSError: If there's an error deleting the file.
         """
+        validate_prompt_name(name)
         variant = options.variant if options else None
+        if variant:
+            validate_prompt_name(variant)
         dir_name = os.path.dirname(name)
         base_name = os.path.basename(name)
 
@@ -465,6 +519,10 @@ class DirStore(PromptStoreWritable):
         partial_file_path = (
             self._directory / dir_name / partial_file_name if dir_name else self._directory / partial_file_name
         )
+
+        # Verify path containment for both potential paths (defense in depth)
+        self._verify_path_containment(prompt_file_path, name)
+        self._verify_path_containment(partial_file_path, name)
 
         file_to_delete: Path | None = None
         item_type = 'item'

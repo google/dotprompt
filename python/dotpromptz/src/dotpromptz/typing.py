@@ -649,10 +649,12 @@ class ListPromptsOptions(BaseModel):
     Attributes:
         cursor: The pagination cursor from a previous response.
         limit: The maximum number of references to return per page.
+        variant: Optional variant filter to only list prompts with this variant.
     """
 
     cursor: str | None = None
     limit: int | None = None
+    variant: str | None = None
 
 
 class ListPartialsOptions(BaseModel):
@@ -661,10 +663,12 @@ class ListPartialsOptions(BaseModel):
     Attributes:
         cursor: The pagination cursor from a previous response.
         limit: The maximum number of references to return per page.
+        variant: Optional variant filter to only list partials with this variant.
     """
 
     cursor: str | None = None
     limit: int | None = None
+    variant: str | None = None
 
 
 class LoadPromptOptions(BaseModel):

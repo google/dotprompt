@@ -16,7 +16,14 @@
 
 """Utility functions for dotpromptz."""
 
+import re
+import unicodedata
 from typing import Any
+from urllib.parse import unquote as url_unquote
+
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 
 def remove_undefined_fields(obj: Any) -> Any:
@@ -71,3 +78,107 @@ def unquote(value: str, pairs: set[tuple[str, str]] | None = None) -> str:
             return str_value[len(start) : -len(end)]
 
     return str_value
+
+
+def validate_prompt_name(name: str) -> None:
+    """Validate that a prompt name doesn't contain path traversal sequences.
+
+    This function implements multiple layers of validation to prevent path
+    traversal attacks (CWE-22):
+    1. URL decoding - catches %2e%2e encoded dots
+    2. Unicode normalization - catches homograph bypass attempts
+    3. Segment-based validation - checks each path component for leading dots
+
+    Args:
+        name: The prompt name to validate
+
+    Raises:
+        ValueError: If name contains path traversal attempts
+    """
+    if not name:
+        raise ValueError('Prompt name cannot be empty')
+
+    # Check for whitespace-only names
+    if not name.strip():
+        raise ValueError(f"Invalid prompt name: '{name}'")
+
+    # Check for null bytes
+    if '\x00' in name:
+        raise ValueError(f"Invalid prompt name: '{name}'")
+
+    # Check for null byte escape sequence pattern (backslash followed by zero)
+    # This catches suspicious escape sequences even if not actual null bytes
+    if r'\0' in name:
+        raise ValueError(f"Invalid prompt name: null byte escape sequence not allowed: '{name}'")
+
+    # SECURITY FIX 1: Decode URL-encoded input BEFORE validation
+    # This catches bypasses like %2e%2e which decodes to ..
+    # SECURITY: Decode iteratively to catch double-encoding bypasses (%252e%252e)
+    decoded = name
+    for _ in range(3):  # Max 3 iterations to prevent DoS
+        new_decoded = url_unquote(decoded)
+        if new_decoded == decoded:
+            break
+        decoded = new_decoded
+    # Check for remaining encoded characters (potential double-encoding bypass)
+    if '%' in decoded:
+        raise ValueError(f"Invalid prompt name: encoded characters not allowed: '{name}'")
+    name = decoded
+
+    # SECURITY FIX 2: Normalize Unicode BEFORE validation
+    # This catches homograph attacks where visually similar characters
+    # are used to bypass validation
+    # Note: NFC doesn't convert all Unicode dots, so we check for suspicious patterns
+    normalized = unicodedata.normalize('NFC', name)
+
+    # Check for current directory reference patterns
+    if './' in normalized or '.\\' in normalized:
+        raise ValueError(f"Invalid path: current directory reference not allowed: '{name}'")
+
+    # SECURITY FIX 3: Check for path traversal using segment-based validation
+    # This catches:
+    # - Segments that are only dots: "..", "...", "....", etc.
+    # - Segments STARTING with "..": "..config", "..hidden" (leading parent reference)
+    # - Segments ENDING with ".." when followed by non-alphanumeric: "safe..", "0.."
+    # Allows: "a..b", "file..txt", "...test", "test..." (legitimate filename patterns)
+    segments = normalized.replace('\\', '/').split('/')
+    for seg in segments:
+        # Check if segment is ONLY dots (2 or more)
+        if len(seg) >= 2 and all(c == '.' for c in seg):
+            raise ValueError(f"Path traversal not allowed: '{name}'")
+
+        # Check if segment STARTS with ".." (potential bypass: "..config", "..hidden")
+        # Allow segments starting with 3+ dots like "...test" which are legitimate filenames
+        # Block only if it starts with exactly ".." (2 dots) not "...", "...." etc
+        if len(seg) > 2 and seg[0] == '.' and seg[1] == '.' and seg[2] != '.':
+            # Starts with exactly ".." followed by non-dot - check if valid pattern
+            if not re.match(r'^[a-zA-Z0-9]+\.\.[a-zA-Z0-9]+$', seg):
+                raise ValueError(f"Path traversal not allowed: '{name}'")
+
+        # Check if segment ENDS with ".." (potential bypass: "safe..", "0..", "test..")
+        # But allow alphanumeric..alphanumeric patterns like "a..b" or "file..txt"
+        # Also allow trailing three-or-more dots like "test..." (valid filename pattern)
+        if seg.endswith('..') and len(seg) > 2:
+            # Allow if: alphanumeric..alphanumeric (has chars after ..) OR ends with 3+ dots
+            has_chars_after = bool(re.match(r'^[a-zA-Z0-9]+\.\.[a-zA-Z0-9]+$', seg))
+            has_trailing_triple = bool(re.match(r'.*\.\.\.+$', seg))
+            if not has_chars_after and not has_trailing_triple:
+                raise ValueError(f"Path traversal not allowed: '{name}'")
+
+    # Check for absolute paths (Unix-style) - use normalized to catch URL-encoded
+    if normalized.startswith('/'):
+        raise ValueError(f"Invalid path: absolute paths not allowed: '{name}'")
+
+    # Check for trailing slash (after normalization to catch both / and \)
+    normalized_for_slash_check = normalized.replace('\\', '/')
+    if normalized_for_slash_check.endswith('/'):
+        raise ValueError(f"Invalid path: trailing slash not allowed: '{name}'")
+
+    # Check for Windows absolute paths (e.g., C:/, C:\) - use normalized to catch URL-encoded
+    # Only block when first char is a letter AND second is : (avoids false positive on 'a:b')
+    if len(normalized) > 1 and normalized[1] == ':' and normalized[0].isalpha():
+        raise ValueError(f"Invalid prompt name: '{name}'")
+
+    # Check for UNC network paths (\\server\share) - use normalized to catch URL-encoded
+    if normalized.startswith('\\\\'):
+        raise ValueError(f"Invalid prompt name: '{name}'")

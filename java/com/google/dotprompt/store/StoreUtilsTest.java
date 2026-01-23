@@ -19,8 +19,10 @@
 package com.google.dotprompt.store;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -169,5 +171,254 @@ public class StoreUtilsTest {
     List<String> results = StoreUtils.scanDirectory(baseDir);
 
     assertThat(results).isEmpty();
+  }
+
+  // ========== PATH VALIDATION TESTS ==========
+
+  @Test
+  public void validatePromptName_rejectsDoubleDotTraversal() {
+    assertValidationThrows("../../../etc/passwd");
+  }
+
+  @Test
+  public void validatePromptName_rejectsDoubleDotOnly() {
+    assertValidationThrows("..");
+  }
+
+  @Test
+  public void validatePromptName_rejectsTripleDots() {
+    assertValidationThrows(".../...");
+  }
+
+  @Test
+  public void validatePromptName_rejectsAbsolutePaths() {
+    assertValidationThrows("/absolute/path.attack");
+  }
+
+  @Test
+  public void validatePromptName_rejectsWindowsAbsolutePaths() {
+    assertValidationThrows("C:/Windows/System32");
+  }
+
+  @Test
+  public void validatePromptName_rejectsNetworkPaths() {
+    assertValidationThrows("\\\\network\\share");
+  }
+
+  @Test
+  public void validatePromptName_rejectsEmbeddedTraversal() {
+    assertValidationThrows("subdir/../../../escape");
+  }
+
+  @Test
+  public void validatePromptName_rejectsWindowsStyleTraversal() {
+    assertValidationThrows("..\\windows\\system32");
+  }
+
+  @Test
+  public void validatePromptName_rejectsMixedSlashTraversal() {
+    assertValidationThrows("..\\../etc/passwd");
+  }
+
+  @Test
+  public void validatePromptName_rejectsUrlEncodedDots() {
+    assertValidationThrows("%2e%2e/%2e%2e");
+  }
+
+  @Test
+  public void validatePromptName_rejectsEmptyString() {
+    assertValidationThrows("");
+  }
+
+  @Test
+  public void validatePromptName_rejectsWhitespaceOnly() {
+    assertValidationThrows("   ");
+  }
+
+  @Test
+  public void validatePromptName_rejectsNullByteInjection() {
+    // Null byte injection - attacker tries to truncate validation
+    assertValidationThrows("safe..\\0../etc/passwd");
+    assertValidationThrows("prompt\\0.trigger");
+    assertValidationThrows("a\\0../escape");
+  }
+
+  @Test
+  public void validatePromptName_rejectsUncNetworkPaths() {
+    // UNC network paths for Windows
+    assertValidationThrows("\\\\network\\share");
+    assertValidationThrows("\\\\?\\C:\\Windows");
+    assertValidationThrows("\\\\192.168.1.1\\share");
+  }
+
+  @Test
+  public void validatePromptName_allowsColonNotFollowedByDriveLetter() {
+    // Names with colons that are NOT Windows drive letters should be allowed
+    // The old implementation would reject "a:b" incorrectly
+    assertValidationPasses("a:b");
+    assertValidationPasses("time:12:30");
+    assertValidationPasses("label:value");
+  }
+
+  @Test
+  public void validatePromptName_rejectsTrailingSlash() {
+    assertValidationThrows("prompt/");
+  }
+
+  @Test
+  public void validatePromptName_rejectsLeadingSlashInSubdir() {
+    assertValidationThrows("/subdir/prompt");
+  }
+
+  @Test
+  public void validatePromptName_rejectsNormalizedTraversal() {
+    assertValidationThrows("./..");
+    assertValidationThrows("subdir/./../escape");
+  }
+
+  @Test
+  public void validatePromptName_allowsSimpleName() {
+    assertValidationPasses("simple");
+  }
+
+  @Test
+  public void validatePromptName_allowsHyphenatedName() {
+    assertValidationPasses("my-prompt");
+  }
+
+  @Test
+  public void validatePromptName_allowsUnderscoredName() {
+    assertValidationPasses("my_prompt");
+  }
+
+  @Test
+  public void validatePromptName_allowsDotsInMiddleOfName() {
+    // Key distinction: 'a..b' has dots in the middle, not at path segment start
+    assertValidationPasses("a..b");
+  }
+
+  @Test
+  public void validatePromptName_allowsVersionWithDots() {
+    assertValidationPasses("version..2");
+  }
+
+  @Test
+  public void validatePromptName_allowsSubdirectoryPaths() {
+    assertValidationPasses("subdir/nested");
+  }
+
+  @Test
+  public void validatePromptName_allowsDeepNesting() {
+    assertValidationPasses("subdir/deeply/nested/prompt");
+  }
+
+  @Test
+  public void validatePromptName_allowsMultipleDotsInName() {
+    assertValidationPasses("a.b.c");
+  }
+
+  @Test
+  public void validatePromptName_allowsComplexLegitimateNames() {
+    String[] legitimateNames = {
+      "simple",
+      "my-prompt",
+      "my_prompt",
+      "a..b",
+      "subdir/nested",
+      "version..2",
+      "a.b.c",
+      "subdir/deeply/nested/prompt",
+      "prompt-with-multiple.dots.v2",
+      "underscore_name",
+      "kebab-case-name",
+      "CamelCase",
+      "123numeric",
+      "sub.dir/file.name",
+      "a:b", // Colon NOT followed by drive letter pattern - should be allowed
+      "time:12:30",
+      "label:value",
+    };
+
+    for (String name : legitimateNames) {
+      assertValidationPasses(name);
+    }
+  }
+
+  @Test
+  public void validatePromptName_rejectsAllMaliciousPatterns() {
+    String[] maliciousNames = {
+      "../../../etc/passwd",
+      "/absolute/path.attack",
+      "subdir/../../../escape",
+      "..",
+      ".../...",
+      "./../../etc/passwd",
+      "normal/../../../escape",
+      "../sibling",
+      "....//etc/passwd",
+      "..\\windows\\system32",
+      "%2e%2e/%2e%2e",
+      "..\\../etc",
+      "/etc/passwd",
+      "C:/Windows/System32",
+      "\\\\network\\share",
+      "./..",
+      // Null byte injection attacks
+      "safe..\\0../etc/passwd",
+      "prompt\\0.trigger",
+      "a\\0../escape",
+    };
+
+    for (String name : maliciousNames) {
+      assertValidationThrows(name);
+    }
+  }
+
+  // ========== HELPER METHODS ==========
+
+  /** Helper method to call validatePromptName via reflection. */
+  private void validatePromptName(String name) {
+    try {
+      Method method = StoreUtils.class.getMethod("validatePromptName", String.class);
+      method.invoke(null, name);
+    } catch (NoSuchMethodException e) {
+      fail(
+          "validatePromptName method not found in StoreUtils. "
+              + "This method must be implemented to prevent path traversal attacks.");
+    } catch (ReflectiveOperationException e) {
+      Throwable cause = e.getCause();
+      if (cause instanceof IllegalArgumentException) {
+        throw (IllegalArgumentException) cause;
+      }
+      throw new RuntimeException("Unexpected error calling validatePromptName", e);
+    }
+  }
+
+  /** Assert that validation passes for the given name. */
+  private void assertValidationPasses(String name) {
+    try {
+      validatePromptName(name);
+    } catch (IllegalArgumentException e) {
+      fail("Expected validation to pass for '" + name + "' but got: " + e.getMessage());
+    }
+  }
+
+  /** Assert that validation throws for the given name. */
+  private void assertValidationThrows(String name) {
+    try {
+      validatePromptName(name);
+      fail("Expected validation to throw for '" + name + "'");
+    } catch (IllegalArgumentException expected) {
+      // Expected - validation worked
+      String message = expected.getMessage().toLowerCase();
+      boolean hasRelevantKeyword =
+          message.contains("path")
+              || message.contains("traversal")
+              || message.contains("invalid")
+              || message.contains("security")
+              || message.contains("..");
+      // Error message should mention path, traversal, or security
+      assertThat(hasRelevantKeyword).isTrue();
+    }
   }
 }

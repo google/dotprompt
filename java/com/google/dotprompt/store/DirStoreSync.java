@@ -18,6 +18,8 @@
 
 package com.google.dotprompt.store;
 
+import static com.google.dotprompt.store.StoreUtils.validatePromptName;
+
 import com.google.dotprompt.models.DeletePromptOrPartialOptions;
 import com.google.dotprompt.models.ListPartialsOptions;
 import com.google.dotprompt.models.ListPromptsOptions;
@@ -154,13 +156,34 @@ public class DirStoreSync implements PromptStoreWritableSync {
     }
   }
 
+  /**
+   * Verifies that the file path is within the store directory.
+   *
+   * @param filePath the path to verify
+   * @param name the prompt name (for error messages)
+   * @throws IllegalArgumentException if path escapes the directory
+   */
+  private void verifyPathContainment(Path filePath, String name) {
+    Path resolved = directory.resolve(filePath).normalize();
+    Path base = directory.toAbsolutePath().normalize();
+
+    if (!resolved.startsWith(base)) {
+      throw new IllegalArgumentException("Path traversal attempt detected: '" + name + "'");
+    }
+  }
+
   @Override
   public PromptData load(String name, LoadPromptOptions options) {
+    validatePromptName(name);
     String variant = options != null ? options.variant() : null;
+    if (variant != null) {
+      validatePromptName(variant);
+    }
     String requestedVersion = options != null ? options.version() : null;
 
     String filename = StoreUtils.buildFilename(name, variant, false);
     Path filePath = directory.resolve(filename);
+    verifyPathContainment(filePath, name);
 
     try {
       String content = Files.readString(filePath, StandardCharsets.UTF_8);
@@ -182,11 +205,16 @@ public class DirStoreSync implements PromptStoreWritableSync {
 
   @Override
   public PromptData loadPartial(String name, LoadPartialOptions options) {
+    validatePromptName(name);
     String variant = options != null ? options.variant() : null;
+    if (variant != null) {
+      validatePromptName(variant);
+    }
     String requestedVersion = options != null ? options.version() : null;
 
     String filename = StoreUtils.buildFilename(name, variant, true);
     Path filePath = directory.resolve(filename);
+    verifyPathContainment(filePath, name);
 
     try {
       String content = Files.readString(filePath, StandardCharsets.UTF_8);
@@ -215,12 +243,18 @@ public class DirStoreSync implements PromptStoreWritableSync {
       throw new IllegalArgumentException("Prompt source is required");
     }
 
+    validatePromptName(prompt.name());
+    if (prompt.variant() != null) {
+      validatePromptName(prompt.variant());
+    }
+
     // Determine if this is a partial (name starts with _)
     boolean isPartial = prompt.name().startsWith("_");
     String name = isPartial ? prompt.name().substring(1) : prompt.name();
 
     String filename = StoreUtils.buildFilename(name, prompt.variant(), isPartial);
     Path filePath = directory.resolve(filename);
+    verifyPathContainment(filePath, name);
 
     try {
       Files.createDirectories(filePath.getParent());
@@ -232,11 +266,16 @@ public class DirStoreSync implements PromptStoreWritableSync {
 
   @Override
   public void delete(String name, DeletePromptOrPartialOptions options) {
+    validatePromptName(name);
     String variant = options != null ? options.variant() : null;
+    if (variant != null) {
+      validatePromptName(variant);
+    }
 
     // Try deleting as a prompt first
     String promptFilename = StoreUtils.buildFilename(name, variant, false);
     Path promptPath = directory.resolve(promptFilename);
+    verifyPathContainment(promptPath, name);
 
     if (Files.exists(promptPath)) {
       try {
@@ -250,6 +289,7 @@ public class DirStoreSync implements PromptStoreWritableSync {
     // Try deleting as a partial
     String partialFilename = StoreUtils.buildFilename(name, variant, true);
     Path partialPath = directory.resolve(partialFilename);
+    verifyPathContainment(partialPath, name);
 
     if (Files.exists(partialPath)) {
       try {

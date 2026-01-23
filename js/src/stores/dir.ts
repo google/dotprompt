@@ -19,6 +19,7 @@
 import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { validatePromptName } from '../util';
 import type {
   DeletePromptOrPartialOptions,
   ListPartialsOptions,
@@ -101,36 +102,62 @@ export class DirStore implements PromptStoreWritable {
   }
 
   /**
+   * Verifies that a given file path is contained within the store's base
+   * directory. This is a defense-in-depth measure to prevent path traversal
+   * attacks.
+   *
+   * @param filePath The file path to verify.
+   * @param name The logical prompt/partial name being accessed (for error messages).
+   * @private
+   * @throws If the resolved path escapes the base directory.
+   */
+  private verifyPathContainment(filePath: string, name: string): void {
+    const resolved = path.resolve(filePath);
+    const baseResolved = path.resolve(this.directory);
+
+    if (!resolved.startsWith(baseResolved + path.sep)) {
+      throw new Error(`Path traversal attempt detected: '${name}'`);
+    }
+  }
+
+  /**
    * Parses a prompt filename (excluding any leading underscore for partials)
    * to extract its base name and optional variant identifier. Expects the
    * filename to end with the `.prompt` extension.
    *
+   * The filename format is `name[.variant].prompt` where:
+   * - `name` can contain dots
+   * - `variant` is the last segment before `.prompt` (if more than one segment)
+   *
    * @param filename The filename part (e.g., "myPrompt.variant.prompt" or
-   * "myPrompt.prompt").
+   * "myPrompt.prompt" or "a.b.c.prompt").
    *
    * @return An object containing the base `name` and optional `variant` string.
    *
-   * @throws If the filename does not match the expected format
-   * `name[.variant].prompt`.
+   * @throws If the filename does not end with `.prompt`.
    * @private
    */
   private parsePromptFilename(filename: string): {
     name: string;
     variant?: string;
   } {
-    // Regex breakdown:
-    // ^([^.]+)     Capture group 1: One or more chars not a dot (base name)
-    // (?:\.([^.]+))? Optional non-capturing group for variant:
-    //   \.         Literal dot separator
-    //   ([^.]+)    Capture group 2: One or more chars not a dot (variant)
-    // \.prompt$    Literal ".prompt" at the end
-    const match = filename.match(/^([^.]+)(?:\.([^.]+))?\.prompt$/);
-    if (!match) {
+    // Remove the .prompt extension
+    if (!filename.endsWith('.prompt')) {
       throw new Error(`Invalid prompt filename format: ${filename}`);
     }
 
-    const [, name, variant] = match;
-    return { name, variant };
+    const withoutExt = filename.replace(/\.prompt$/, '');
+    const segments = withoutExt.split('.');
+
+    if (segments.length === 1) {
+      return { name: segments[0] };
+    }
+
+    // Last segment is variant, everything else joined is name
+    return {
+      name: segments.slice(0, -1).join('.'),
+      variant: segments[segments.length - 1],
+    };
   }
 
   /**
@@ -165,6 +192,14 @@ export class DirStore implements PromptStoreWritable {
     results: string[] = []
   ): Promise<string[]> {
     const fullPath = path.join(this.directory, dir);
+
+    // Validate path containment to prevent directory traversal attacks.
+    const resolved = path.resolve(fullPath);
+    const baseResolved = path.resolve(this.directory);
+    if (resolved !== baseResolved && !resolved.startsWith(baseResolved + path.sep)) {
+      throw new Error(`Path traversal attempt in scanDirectory: '${dir}'`);
+    }
+
     const entries = await fs.readdir(fullPath, { withFileTypes: true });
 
     for (const entry of entries) {
@@ -196,6 +231,10 @@ export class DirStore implements PromptStoreWritable {
    * references (`PromptRef[]`) and no cursor (`undefined`).
    */
   async list(options?: ListPromptsOptions): Promise<PaginatedPrompts> {
+    // Validate variant if provided
+    if (options?.variant) {
+      validatePromptName(options.variant);
+    }
     const files = await this.scanDirectory();
     const prompts: PromptRef[] = [];
 
@@ -251,6 +290,10 @@ export class DirStore implements PromptStoreWritable {
   async listPartials(
     options?: ListPartialsOptions
   ): Promise<PaginatedPartials> {
+    // Validate variant if provided
+    if (options?.variant) {
+      validatePromptName(options.variant);
+    }
     const files = await this.scanDirectory();
     const partials: PartialRef[] = [];
 
@@ -308,7 +351,11 @@ export class DirStore implements PromptStoreWritable {
    * requested `version` does not match the actual calculated version.
    */
   async load(name: string, options?: LoadPromptOptions): Promise<PromptData> {
+    validatePromptName(name);
     const variant = options?.variant;
+    if (variant) {
+      validatePromptName(variant);
+    }
     const dirName = path.dirname(name); // Relative dir path or ".".
     const baseName = path.basename(name); // The logical name part.
 
@@ -318,6 +365,9 @@ export class DirStore implements PromptStoreWritable {
       : `${baseName}.prompt`;
     // Construct the full path relative to the store's base directory.
     const filePath = path.join(this.directory, dirName, fileName);
+
+    // Verify path containment (defense in depth against path traversal).
+    this.verifyPathContainment(filePath, name);
 
     try {
       const source = await this.readPromptFile(filePath);
@@ -379,7 +429,11 @@ export class DirStore implements PromptStoreWritable {
     name: string,
     options?: LoadPartialOptions
   ): Promise<PromptData> {
+    validatePromptName(name);
     const variant = options?.variant;
+    if (variant) {
+      validatePromptName(variant);
+    }
     const dirName = path.dirname(name); // Relative dir path or ".".
     const baseName = path.basename(name); // Logical name part.
 
@@ -389,6 +443,9 @@ export class DirStore implements PromptStoreWritable {
       : `_${baseName}.prompt`;
     // Construct the full path relative to the store's base directory.
     const filePath = path.join(this.directory, dirName, fileName);
+
+    // Verify path containment (defense in depth against path traversal).
+    this.verifyPathContainment(filePath, name);
 
     try {
       const source = await this.readPromptFile(filePath);
@@ -455,6 +512,10 @@ export class DirStore implements PromptStoreWritable {
     if (!prompt.name) {
       throw new Error('Prompt name is required for saving.');
     }
+    validatePromptName(prompt.name);
+    if (prompt.variant) {
+      validatePromptName(prompt.variant);
+    }
     if (prompt.source === undefined || prompt.source === null) {
       throw new Error('Prompt source content is required for saving.');
     }
@@ -469,6 +530,9 @@ export class DirStore implements PromptStoreWritable {
       : `${baseName}.prompt`;
     const filePath = path.join(this.directory, dirName, fileName);
     const fileDir = path.dirname(filePath); // Full path to directory needed.
+
+    // Verify path containment (defense in depth against path traversal).
+    this.verifyPathContainment(filePath, prompt.name);
 
     try {
       // Ensure the target directory exists, creating it if necessary.
@@ -504,7 +568,11 @@ export class DirStore implements PromptStoreWritable {
     name: string,
     options?: DeletePromptOrPartialOptions
   ): Promise<void> {
+    validatePromptName(name);
     const variant = options?.variant;
+    if (variant) {
+      validatePromptName(variant);
+    }
     const dirName = path.dirname(name);
     const baseName = path.basename(name);
 
@@ -519,6 +587,10 @@ export class DirStore implements PromptStoreWritable {
       ? `_${baseName}.${variant}.prompt`
       : `_${baseName}.prompt`;
     const partialFilePath = path.join(this.directory, dirName, partialFileName);
+
+    // Verify path containment for both potential paths (defense in depth against path traversal).
+    this.verifyPathContainment(promptFilePath, name);
+    this.verifyPathContainment(partialFilePath, name);
 
     let filePathToDelete: string | null = null;
     let fileType = 'item'; // Generic term for error messages.
