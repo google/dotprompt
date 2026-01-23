@@ -440,6 +440,8 @@ public class Dotprompt {
       return CompletableFuture.completedFuture(config);
     }
 
+    // Single lock for atomicity between toolDefs and unresolvedTools
+    final Object resolveLock = new Object();
     List<ToolDefinition> toolDefs = new ArrayList<>();
     List<String> unresolvedTools = new ArrayList<>();
     List<CompletableFuture<Void>> futures = new ArrayList<>();
@@ -447,7 +449,9 @@ public class Dotprompt {
     for (String toolName : tools) {
       // 1. Check registered definitions
       if (toolDefinitions.containsKey(toolName)) {
-        toolDefs.add(toolDefinitions.get(toolName));
+        synchronized (resolveLock) {
+          toolDefs.add(toolDefinitions.get(toolName));
+        }
         continue;
       }
 
@@ -460,7 +464,7 @@ public class Dotprompt {
                 .thenCompose(
                     toolDef -> {
                       if (toolDef != null) {
-                        synchronized (toolDefs) {
+                        synchronized (resolveLock) {
                           toolDefs.add(toolDef);
                         }
                         return CompletableFuture.completedFuture(null);
@@ -474,34 +478,34 @@ public class Dotprompt {
                                       ParsedPrompt parsedPrompt = parse(promptData.source());
                                       if (parsedPrompt.toolDefs() != null
                                           && !parsedPrompt.toolDefs().isEmpty()) {
-                                        synchronized (toolDefs) {
+                                        synchronized (resolveLock) {
                                           toolDefs.addAll(parsedPrompt.toolDefs());
                                         }
                                       } else {
-                                        synchronized (unresolvedTools) {
+                                        synchronized (resolveLock) {
                                           unresolvedTools.add(toolName);
                                         }
                                       }
                                     } catch (IOException e) {
-                                      synchronized (unresolvedTools) {
+                                      synchronized (resolveLock) {
                                         unresolvedTools.add(toolName);
                                       }
                                     }
                                   } else {
-                                    synchronized (unresolvedTools) {
+                                    synchronized (resolveLock) {
                                       unresolvedTools.add(toolName);
                                     }
                                   }
                                 })
                             .exceptionally(
                                 e -> {
-                                  synchronized (unresolvedTools) {
+                                  synchronized (resolveLock) {
                                     unresolvedTools.add(toolName);
                                   }
                                   return null;
                                 });
                       } else {
-                        synchronized (unresolvedTools) {
+                        synchronized (resolveLock) {
                           unresolvedTools.add(toolName);
                         }
                         return CompletableFuture.completedFuture(null);
@@ -521,35 +525,37 @@ public class Dotprompt {
                           ParsedPrompt parsedPrompt = parse(promptData.source());
                           if (parsedPrompt.toolDefs() != null
                               && !parsedPrompt.toolDefs().isEmpty()) {
-                            synchronized (toolDefs) {
+                            synchronized (resolveLock) {
                               toolDefs.addAll(parsedPrompt.toolDefs());
                             }
                           } else {
-                            synchronized (unresolvedTools) {
+                            synchronized (resolveLock) {
                               unresolvedTools.add(toolName);
                             }
                           }
                         } catch (IOException e) {
-                          synchronized (unresolvedTools) {
+                          synchronized (resolveLock) {
                             unresolvedTools.add(toolName);
                           }
                         }
                       } else {
-                        synchronized (unresolvedTools) {
+                        synchronized (resolveLock) {
                           unresolvedTools.add(toolName);
                         }
                       }
                     })
                 .exceptionally(
                     e -> {
-                      synchronized (unresolvedTools) {
+                      synchronized (resolveLock) {
                         unresolvedTools.add(toolName);
                       }
                       return null;
                     });
         futures.add(chain);
       } else {
-        unresolvedTools.add(toolName);
+        synchronized (resolveLock) {
+          unresolvedTools.add(toolName);
+        }
       }
     }
 

@@ -133,3 +133,33 @@ java_spec_test(
     name = "SpecTest_unlessEquals",
     spec_file = "//spec:helpers/unlessEquals.yaml",
 )
+
+java_test(
+    name = "ResolveToolsConcurrencyTest",
+    srcs = ["ResolveToolsConcurrencyTest.java"],
+    test_class = "com.google.dotprompt.ResolveToolsConcurrencyTest",
+    deps = [
+        ":dotprompt",
+        "//java/com/google/dotprompt/models",
+        "//java/com/google/dotprompt/resolvers",
+        "@maven//:com_github_jknack_handlebars",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_test(
+    name = "ResolveToolsRaceConditionTest",
+    srcs = ["ResolveToolsRaceConditionTest.java"],
+    test_class = "com.google.dotprompt.ResolveToolsRaceConditionTest",
+    deps = [
+        ":dotprompt",
+        "//java/com/google/dotprompt/models",
+        "//java/com/google/dotprompt/resolvers",
+        "@maven//:com_github_jknack_handlebars",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
