@@ -26,13 +26,12 @@ use_extension("@rules_java//java:extensions.bzl", "toolchains")
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
 maven.install(
     artifacts = [
-        "junit:junit:4.13.2",
-        "com.google.truth.extensions:truth-proto-extension:1.4.4",
-        "com.google.truth:truth:1.4.4",
         "com.github.jknack:handlebars:4.4.0",
         "com.google.guava:guava:33.5.0-jre",
         "com.fasterxml.jackson.core:jackson-databind:2.20.1",
         "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.20.1",
+        "com.google.code.gson:gson:2.10.1",
+        "com.google.errorprone:error_prone_annotations:2.23.0",
     ],
     known_contributing_modules = [
         "bazel_worker_java",
@@ -43,5 +42,42 @@ maven.install(
     repositories = [
         "https://repo1.maven.org/maven2",
     ],
+)
+maven.artifact(
+    testonly = True,
+    artifact = "junit",
+    group = "junit",
+    version = "4.13.2",
+)
+maven.artifact(
+    testonly = True,
+    artifact = "truth-proto-extension",
+    group = "com.google.truth.extensions",
+    version = "1.4.4",
+)
+maven.artifact(
+    artifact = "guava",
+    force_version = True,
+    group = "com.google.guava",
+    version = "33.5.0-jre",
+)
+maven.artifact(
+    testonly = True,
+    artifact = "truth",
+    force_version = True,
+    group = "com.google.truth",
+    version = "1.4.4",
+)
+maven.artifact(
+    artifact = "gson",
+    force_version = True,
+    group = "com.google.code.gson",
+    version = "2.10.1",
+)
+maven.artifact(
+    artifact = "error_prone_annotations",
+    force_version = True,
+    group = "com.google.errorprone",
+    version = "2.23.0",
 )
 use_repo(maven, "maven")

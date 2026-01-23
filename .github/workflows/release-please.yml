@@ -76,7 +76,7 @@ jobs:
         working-directory: python
         run: |
           uv sync
-          uv export --format requirements-txt --output-file requirements.txt --hashes
+          uv export --format requirements-txt --output-file requirements.txt --hashes --no-emit-workspace
 
       - name: Update Cargo.lock
         run: |
@@ -93,7 +93,7 @@ jobs:
       - name: Update Bazel lockfiles
         run: |
           bazel mod tidy
-          bazel run @maven//:pin || echo "Maven pin failed, skipping..."
+          REPIN=1 bazel run @maven//:pin || echo "Maven pin failed, skipping..."
           bazel build ...
           
       - name: Check for changes
