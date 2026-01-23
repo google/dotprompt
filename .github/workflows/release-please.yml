@@ -60,23 +60,30 @@ jobs:
       - name: Update uv.lock
         working-directory: python
         run: |
-          uv lock
+          uv sync
+
+      - name: Update Cargo.lock
+        run: |
+          cargo update -p handlebarrz
+
+      - name: Update MODULE.bazel.lock
+        run: |
+          bazel build ...
           
       - name: Check for changes
         id: changes
-        working-directory: python
         run: |
-          if git diff --quiet uv.lock; then
+          if git diff --quiet python/uv.lock Cargo.lock MODULE.bazel.lock; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit uv.lock
+      - name: Commit changes
         if: steps.changes.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add python/uv.lock
-          git commit -m "chore(py): update uv.lock"
+          git add python/uv.lock Cargo.lock MODULE.bazel.lock
+          git commit -m "chore(py): update lockfiles"
           git push

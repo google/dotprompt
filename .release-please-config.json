@@ -30,11 +30,16 @@
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
       "prerelease": false,
-      "path": "python/dotpromptz/**",
+      "path": "python/dotpromptz",
       "extra-files": [
         {
           "type": "toml",
           "path": "pyproject.toml",
+          "jsonpath": "$.project.version"
+        },
+        {
+          "type": "toml",
+          "path": "../tests/smoke/pyproject.toml",
           "jsonpath": "$.project.version"
         }
       ]
@@ -47,11 +52,21 @@
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
       "prerelease": false,
-      "path": "python/handlebarrz/**",
+      "path": "python/handlebarrz",
       "extra-files": [
         {
           "type": "toml",
           "path": "pyproject.toml",
+          "jsonpath": "$.project.version"
+        },
+        {
+          "type": "toml",
+          "path": "Cargo.toml",
+          "jsonpath": "$.package.version"
+        },
+        {
+          "type": "toml",
+          "path": "smoke_tests/pyproject.toml",
           "jsonpath": "$.project.version"
         }
       ]
