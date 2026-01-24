@@ -1,0 +1,6 @@
+---
+model: gemini-2.0-flash
+---
+This partial includes the first partial, creating a cycle.
+
+{{>circular-partial-a}}

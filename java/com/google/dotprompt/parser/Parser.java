@@ -72,10 +72,12 @@ public class Parser {
    * Pattern to match YAML frontmatter in the input string.
    *
    * <p>Matches a YAML frontmatter block between "---" markers. Handles different line endings
-   * (CRLF, LF, CR) and optional trailing whitespace on the marker lines.
+   * (CRLF, LF, CR) and optional trailing whitespace on the marker lines. Allows blank lines and
+   * license headers (lines starting with #) before the first --- marker.
    */
   private static final Pattern FRONTMATTER_PATTERN =
-      Pattern.compile("(?ms)^\\s*---[ \\t]*[\\r\\n]+(.*?)^[ \\t]*---[ \\t]*[\\r\\n]+");
+      Pattern.compile(
+          "(?ms)^(?:(?:#[^\\n]*|[ \\t]*)\\n)*---[ \\t]*[\\r\\n]+(.*?)^[ \\t]*---[ \\t]*[\\r\\n]+");
 
   /**
    * Pattern to match role and history markers.

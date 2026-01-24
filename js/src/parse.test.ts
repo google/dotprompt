@@ -903,4 +903,40 @@ Template content`;
       template: 'Template content',
     });
   });
+
+  it('should handle license header before frontmatter', () => {
+    const source = `# Copyright 2025 Google LLC
+# License: Apache 2.0
+---
+model: gemini-pro
+---
+Hello!`;
+    const result = parseDocument(source);
+    expect(result.model).toBe('gemini-pro');
+    expect(result.template).toBe('Hello!');
+  });
+
+  it('should handle shebang before frontmatter', () => {
+    const source = `#!/usr/bin/env promptly
+---
+model: gemini-flash
+---
+Hello shebang!`;
+    const result = parseDocument(source);
+    expect(result.model).toBe('gemini-flash');
+    expect(result.template).toBe('Hello shebang!');
+  });
+
+  it('should handle shebang and license header before frontmatter', () => {
+    const source = `#!/usr/bin/env promptly
+# Copyright 2025 Google
+# SPDX: Apache-2.0
+---
+model: gemini-2.0
+---
+Hello combined!`;
+    const result = parseDocument(source);
+    expect(result.model).toBe('gemini-2.0');
+    expect(result.template).toBe('Hello combined!');
+  });
 });

@@ -1,0 +1,26 @@
+---
+model: gemini-2.0-flash
+config:
+  temperature: 0.9
+input:
+  schema:
+    topic: string
+output:
+  format: json
+  schema:
+    title: string
+    outline: string[]
+    summary: string
+---
+{{#role "system"}}
+You are a technical writer. Generate structured content.
+{{/role}}
+
+{{#role "user"}}
+Write a blog post about: {{ topic }}
+
+Return the response as JSON with:
+- title: The blog post title
+- outline: Array of section headings
+- summary: A 2-3 sentence summary
+{{/role}}

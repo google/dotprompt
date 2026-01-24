@@ -9,9 +9,9 @@ input:
         items:
           type: string
 ---
-{{! 
+{{!
   PARTIALS DEMO
-  
+
   This file demonstrates syntax highlighting for Handlebars partials.
   The `{{> partialName }}` syntax should be distinct from standard tags.
 }}

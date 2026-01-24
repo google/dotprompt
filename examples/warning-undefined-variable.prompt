@@ -1,0 +1,15 @@
+---
+model: gemini-2.0-flash
+config:
+  temperature: 0.7
+input:
+  schema:
+    name: string
+---
+Hello, {{ name }}!
+
+Your email is: {{ email }}
+Your age is: {{ age }}
+
+This prompt uses 'email' and 'age' but they are not defined in the schema.
+The linter should warn about undefined variables.

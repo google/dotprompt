@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+JETBRAINS_DIR="$REPO_ROOT/packages/jetbrains"
+
+usage() {
+  echo "Usage: $0 [options]"
+  echo "Options:"
+  echo "  --no-lsp          Skip building promptly LSP server"
+  echo "  --run-ide         Run IDE with plugin for testing after build"
+  echo "  -h, --help        Show this help message"
+  exit 1
+}
+
+BUILD_LSP=true
+RUN_IDE=false
+
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --no-lsp) BUILD_LSP=false ;;
+    --run-ide) RUN_IDE=true ;;
+    -h|--help) usage ;;
+    *) echo "Unknown parameter passed: $1"; usage ;;
+  esac
+  shift
+done
+
+echo "=========================================="
+echo "Dotprompt JetBrains Plugin Builder"
+echo "=========================================="
+
+# Check for prerequisites
+if ! command -v java &> /dev/null; then
+  echo "Error: Java is required but not installed."
+  echo "Install JDK 17+ from https://adoptium.net/"
+  exit 1
+fi
+
+JAVA_VERSION=$(java -version 2>&1 | head -1 | cut -d'"' -f2 | cut -d'.' -f1)
+if [[ "$JAVA_VERSION" -lt 17 ]]; then
+  echo "Error: JDK 17 or later is required. Found: $JAVA_VERSION"
+  exit 1
+fi
+
+# Build promptly LSP server
+if [ "$BUILD_LSP" = true ]; then
+  echo ""
+  echo "Step 1: Building promptly LSP server..."
+  if command -v cargo &> /dev/null; then
+    cd "$REPO_ROOT"
+    cargo build --release -p promptly
+    PROMPTLY_BIN="$REPO_ROOT/target/release/promptly"
+    if [ -f "$PROMPTLY_BIN" ]; then
+      echo "  ✓ promptly built successfully"
+    fi
+  else
+    echo "  ⚠ cargo not found. Skipping LSP build."
+    echo "    Install Rust (https://rustup.rs) for LSP features."
+  fi
+fi
+
+# Build the plugin
+echo ""
+echo "Step 2: Building JetBrains plugin..."
+cd "$JETBRAINS_DIR"
+
+if [ -f "./gradlew" ]; then
+  ./gradlew buildPlugin
+else
+  # Download gradle wrapper if not present
+  gradle wrapper
+  ./gradlew buildPlugin
+fi
+
+# Find the built plugin
+PLUGIN_ZIP=$(find build/distributions -name "*.zip" | head -1)
+
+if [ -z "$PLUGIN_ZIP" ]; then
+  echo ""
+  echo "Error: Plugin build failed. No ZIP file found."
+  exit 1
+fi
+
+echo ""
+echo "=========================================="
+echo "Build Complete!"
+echo "=========================================="
+echo ""
+echo "Plugin built: $PLUGIN_ZIP"
+echo ""
+echo "To install:"
+echo "  1. Open your JetBrains IDE"
+echo "  2. Go to Settings/Preferences → Plugins → ⚙️ → Install Plugin from Disk..."
+echo "  3. Select: $JETBRAINS_DIR/$PLUGIN_ZIP"
+echo ""
+
+# Optionally run the IDE for testing
+if [ "$RUN_IDE" = true ]; then
+  echo "Launching IDE with plugin for testing..."
+  ./gradlew runIde
+fi

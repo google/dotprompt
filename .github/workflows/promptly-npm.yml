@@ -1,0 +1,166 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Promptly npm Packages
+
+on:
+  push:
+    tags:
+      - "promptly-v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (skip publishing)"
+        type: boolean
+        default: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-14
+            npm_package: promptly-darwin-arm64
+          - target: x86_64-apple-darwin
+            os: macos-13
+            npm_package: promptly-darwin-x64
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            npm_package: promptly-linux-arm64
+            use_cross: true
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            npm_package: promptly-linux-x64
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            npm_package: promptly-win32-x64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross (for cross-compilation)
+        if: matrix.use_cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
+      - name: Build (native)
+        if: "!matrix.use_cross"
+        run: cargo build --release --package promptly --target ${{ matrix.target }}
+
+      - name: Build (cross)
+        if: matrix.use_cross
+        run: cross build --release --package promptly --target ${{ matrix.target }}
+
+      - name: Prepare npm package (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p packages/${{ matrix.npm_package }}/bin
+          cp target/${{ matrix.target }}/release/promptly packages/${{ matrix.npm_package }}/bin/
+          chmod +x packages/${{ matrix.npm_package }}/bin/promptly
+
+      - name: Prepare npm package (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          New-Item -ItemType Directory -Force -Path packages/${{ matrix.npm_package }}/bin
+          Copy-Item target/${{ matrix.target }}/release/promptly.exe packages/${{ matrix.npm_package }}/bin/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.npm_package }}
+          path: packages/${{ matrix.npm_package }}
+
+  publish:
+    name: Publish to npm
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/promptly-v') || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare packages
+        run: |
+          # Copy platform binaries to their packages
+          for pkg in promptly-darwin-arm64 promptly-darwin-x64 promptly-linux-arm64 promptly-linux-x64 promptly-win32-x64; do
+            if [ -d "artifacts/$pkg" ]; then
+              cp -r artifacts/$pkg/* packages/$pkg/
+            fi
+          done
+
+      - name: Publish platform packages (dry run)
+        if: inputs.dry_run == true
+        run: |
+          for pkg in promptly-darwin-arm64 promptly-darwin-x64 promptly-linux-arm64 promptly-linux-x64 promptly-win32-x64; do
+            echo "Would publish @dotprompt/$pkg"
+            cd packages/$pkg
+            npm pack
+            cd ../..
+          done
+
+      - name: Publish platform packages
+        if: inputs.dry_run != true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          for pkg in promptly-darwin-arm64 promptly-darwin-x64 promptly-linux-arm64 promptly-linux-x64 promptly-win32-x64; do
+            cd packages/$pkg
+            npm publish --access public || true
+            cd ../..
+          done
+
+      - name: Publish main package (dry run)
+        if: inputs.dry_run == true
+        run: |
+          echo "Would publish @dotprompt/promptly"
+          cd packages/promptly
+          npm pack
+
+      - name: Publish main package
+        if: inputs.dry_run != true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          cd packages/promptly
+          npm publish --access public

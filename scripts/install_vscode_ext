@@ -20,25 +20,57 @@ set -euo pipefail
 # Get the root directory of the repository
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 VSCODE_DIR="${ROOT_DIR}/packages/vscode"
+PROMPTLY_DIR="${ROOT_DIR}/rs/promptly"
 
-echo "Installing VS Code Extension from ${VSCODE_DIR}..."
+echo "=========================================="
+echo "Dotprompt VS Code Extension Installer"
+echo "=========================================="
 
+# Build promptly LSP server for local development
+echo ""
+echo "Step 1: Building promptly LSP server..."
+if [ -d "${PROMPTLY_DIR}" ]; then
+  cd "${ROOT_DIR}"
+  
+  # Check if cargo is available
+  if command -v cargo &> /dev/null; then
+    echo "  Building promptly in release mode..."
+    cargo build --release -p promptly
+    
+    PROMPTLY_BIN="${ROOT_DIR}/target/release/promptly"
+    if [ -f "${PROMPTLY_BIN}" ]; then
+      echo "  ✓ promptly built successfully: ${PROMPTLY_BIN}"
+      echo ""
+      echo "  TIP: Add to PATH or configure in VS Code settings:"
+      echo "       \"dotprompt.promptlyPath\": \"${PROMPTLY_BIN}\""
+    fi
+  else
+    echo "  ⚠ cargo not found. Skipping promptly build."
+    echo "    Install Rust (https://rustup.rs) for LSP features."
+  fi
+else
+  echo "  ⚠ promptly directory not found. Skipping LSP build."
+fi
+
+# Install VS Code extension
+echo ""
+echo "Step 2: Installing VS Code Extension..."
 cd "${VSCODE_DIR}"
 
 # Install dependencies
-echo "Installing dependencies..."
+echo "  Installing dependencies..."
 pnpm install
 
 # Build the extension
-echo "Building extension..."
+echo "  Building extension..."
 pnpm run build
 
 # Package the extension
-echo "Packaging extension..."
+echo "  Packaging extension..."
 pnpm run package
 
 # Find the latest VSIX file
-VSIX_FILE=$(ls *.vsix | head -n 1)
+VSIX_FILE=$(ls -t *.vsix 2>/dev/null | head -n 1)
 
 if [ -z "${VSIX_FILE}" ]; then
   echo "Error: No VSIX file found!"
@@ -46,7 +78,79 @@ if [ -z "${VSIX_FILE}" ]; then
 fi
 
 # Install the extension
-echo "Installing ${VSIX_FILE}..."
+echo "  Installing ${VSIX_FILE}..."
 code --install-extension "${VSIX_FILE}" --force
 
-echo "Done! reload VS Code to verify."
+# Configure VS Code settings if promptly was built
+PROMPTLY_BIN="${ROOT_DIR}/target/release/promptly"
+if [ -f "${PROMPTLY_BIN}" ]; then
+  echo ""
+  echo "Step 3: Configuring VS Code settings..."
+  
+  # Determine the VS Code settings directory
+  if [ -d "${HOME}/Library/Application Support/Code/User" ]; then
+    # macOS
+    VSCODE_SETTINGS_DIR="${HOME}/Library/Application Support/Code/User"
+  elif [ -d "${HOME}/.config/Code/User" ]; then
+    # Linux
+    VSCODE_SETTINGS_DIR="${HOME}/.config/Code/User"
+  elif [ -d "${APPDATA}/Code/User" ]; then
+    # Windows (Git Bash)
+    VSCODE_SETTINGS_DIR="${APPDATA}/Code/User"
+  else
+    VSCODE_SETTINGS_DIR=""
+  fi
+
+  if [ -n "${VSCODE_SETTINGS_DIR}" ]; then
+    SETTINGS_FILE="${VSCODE_SETTINGS_DIR}/settings.json"
+    
+    # Create settings.json if it doesn't exist
+    if [ ! -f "${SETTINGS_FILE}" ]; then
+      echo "{}" > "${SETTINGS_FILE}"
+    fi
+    
+    # Check if jq is available for proper JSON editing
+    if command -v jq &> /dev/null; then
+      # Use jq to update settings
+      TMP_FILE=$(mktemp)
+      jq --arg path "${PROMPTLY_BIN}" '. + {"dotprompt.promptlyPath": $path}' "${SETTINGS_FILE}" > "${TMP_FILE}" && mv "${TMP_FILE}" "${SETTINGS_FILE}"
+      echo "  ✓ Configured dotprompt.promptlyPath in VS Code settings"
+    else
+      # Check if setting already exists
+      if grep -q "dotprompt.promptlyPath" "${SETTINGS_FILE}" 2>/dev/null; then
+        echo "  ⚠ dotprompt.promptlyPath already exists in settings.json"
+        echo "    Update manually if needed: \"dotprompt.promptlyPath\": \"${PROMPTLY_BIN}\""
+      else
+        echo "  ⚠ jq not found. Add this to your VS Code settings manually:"
+        echo "    \"dotprompt.promptlyPath\": \"${PROMPTLY_BIN}\""
+      fi
+    fi
+  else
+    echo "  ⚠ Could not find VS Code settings directory."
+    echo "    Add this to your VS Code settings manually:"
+    echo "    \"dotprompt.promptlyPath\": \"${PROMPTLY_BIN}\""
+  fi
+fi
+
+echo ""
+echo "==========================================="
+echo "Installation Complete!"
+echo "==========================================="
+echo ""
+echo "Next steps:"
+echo "  1. Reload VS Code (Cmd+Shift+P > 'Developer: Reload Window')"
+echo "  2. Open a .prompt file from examples/ to test the extension"
+echo ""
+if [ -f "${ROOT_DIR}/target/release/promptly" ]; then
+  echo "LSP features enabled! You should see:"
+  echo "  - Real-time diagnostics for YAML and Handlebars errors"
+  echo "  - Document formatting (Shift+Alt+F)"
+  echo "  - Hover documentation for helpers and frontmatter fields"
+  echo ""
+  echo "Test files:"
+  echo "  - examples/error-invalid-yaml.prompt (should show errors)"
+  echo "  - examples/valid-greeting.prompt (should be clean)"
+else
+  echo "Note: LSP features are disabled (promptly not built)."
+  echo "Run 'cargo build --release -p promptly' to enable them."
+fi

@@ -1292,4 +1292,28 @@ Template content`
 			assert.Equal(t, "value-"+keyword, result.Raw[keyword])
 		}
 	})
+
+	t.Run("should handle license header before frontmatter", func(t *testing.T) {
+		source := "# Copyright 2025 Google LLC\n# License: Apache 2.0\n---\nmodel: gemini-pro\n---\nHello!"
+		result, err := ParseDocument(source)
+		assert.NoError(t, err)
+		assert.Equal(t, "gemini-pro", result.Model)
+		assert.Equal(t, "Hello!", result.Template)
+	})
+
+	t.Run("should handle shebang before frontmatter", func(t *testing.T) {
+		source := "#!/usr/bin/env promptly\n---\nmodel: gemini-flash\n---\nHello shebang!"
+		result, err := ParseDocument(source)
+		assert.NoError(t, err)
+		assert.Equal(t, "gemini-flash", result.Model)
+		assert.Equal(t, "Hello shebang!", result.Template)
+	})
+
+	t.Run("should handle shebang and license header before frontmatter", func(t *testing.T) {
+		source := "#!/usr/bin/env promptly\n# Copyright 2025 Google\n# SPDX: Apache-2.0\n---\nmodel: gemini-2.0\n---\nHello combined!"
+		result, err := ParseDocument(source)
+		assert.NoError(t, err)
+		assert.Equal(t, "gemini-2.0", result.Model)
+		assert.Equal(t, "Hello combined!", result.Template)
+	})
 }

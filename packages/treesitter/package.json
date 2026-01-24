@@ -1,0 +1,60 @@
+{
+  "name": "tree-sitter-dotprompt",
+  "version": "0.1.0",
+  "description": "Tree-sitter grammar for Dotprompt files",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/google/dotprompt.git",
+    "directory": "packages/treesitter"
+  },
+  "license": "Apache-2.0",
+  "author": "Google",
+  "main": "bindings/node",
+  "types": "bindings/node",
+  "keywords": [
+    "parser",
+    "tree-sitter",
+    "dotprompt",
+    "prompt",
+    "llm"
+  ],
+  "files": [
+    "grammar.js",
+    "binding.gyp",
+    "prebuilds/**",
+    "bindings/node/*",
+    "queries/*",
+    "src/**"
+  ],
+  "dependencies": {
+    "node-addon-api": "^7.1.0",
+    "node-gyp-build": "^4.8.0"
+  },
+  "peerDependencies": {
+    "tree-sitter": "^0.21.0"
+  },
+  "peerDependenciesMeta": {
+    "tree_sitter": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "tree-sitter-cli": "^0.22.0"
+  },
+  "scripts": {
+    "generate": "tree-sitter generate",
+    "test": "tree-sitter test",
+    "build": "tree-sitter generate && node-gyp rebuild",
+    "install": "node-gyp-build"
+  },
+  "tree-sitter": [
+    {
+      "scope": "source.dotprompt",
+      "file-types": [
+        "prompt"
+      ],
+      "highlights": "queries/highlights.scm",
+      "injection-regex": "^dotprompt$"
+    }
+  ]
+}

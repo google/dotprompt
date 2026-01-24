@@ -43,6 +43,36 @@ maven.install(
         "https://repo1.maven.org/maven2",
     ],
 )
+
+# IntelliJ Platform SDK dependencies for JetBrains plugin development.
+# These are fetched from JetBrains' Maven repositories.
+# Version 241.18968.26 corresponds to IntelliJ IDEA 2024.1.4
+INTELLIJ_VERSION = "241.18968.26"
+
+maven.install(
+    name = "intellij_maven",
+    artifacts = [
+        "com.jetbrains.intellij.platform:util:" + INTELLIJ_VERSION,
+        "com.jetbrains.intellij.platform:util-ui:" + INTELLIJ_VERSION,
+        "com.jetbrains.intellij.platform:core:" + INTELLIJ_VERSION,
+        "com.jetbrains.intellij.platform:core-ui:" + INTELLIJ_VERSION,
+        "com.jetbrains.intellij.platform:core-impl:" + INTELLIJ_VERSION,
+        "com.jetbrains.intellij.platform:ide-core:" + INTELLIJ_VERSION,
+        "com.jetbrains.intellij.platform:ide-core-impl:" + INTELLIJ_VERSION,
+        "com.jetbrains.intellij.platform:analysis:" + INTELLIJ_VERSION,
+        "com.jetbrains.intellij.platform:analysis-impl:" + INTELLIJ_VERSION,
+        "com.jetbrains.intellij.platform:editor:" + INTELLIJ_VERSION,
+        "com.jetbrains.intellij.platform:lang:" + INTELLIJ_VERSION,
+        "com.jetbrains.intellij.platform:lang-impl:" + INTELLIJ_VERSION,
+        "com.jetbrains.intellij.platform:indexing:" + INTELLIJ_VERSION,
+        "com.jetbrains.intellij.platform:indexing-impl:" + INTELLIJ_VERSION,
+    ],
+    repositories = [
+        "https://www.jetbrains.com/intellij-repository/releases",
+        "https://cache-redirector.jetbrains.com/intellij-dependencies",
+        "https://repo1.maven.org/maven2",
+    ],
+)
 maven.artifact(
     testonly = True,
     artifact = "junit",
@@ -80,4 +110,4 @@ maven.artifact(
     group = "com.google.errorprone",
     version = "2.23.0",
 )
-use_repo(maven, "maven")
+use_repo(maven, "intellij_maven", "maven")

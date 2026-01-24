@@ -46,3 +46,11 @@ scopes:
   - py/dotpromptz
   - py/handlebarrz
   - rs
+  - rs/promptly
+  - vscode
+  - emacs
+  - vim
+  - jetbrains
+  - treesitter
+  - editors
+

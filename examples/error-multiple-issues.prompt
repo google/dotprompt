@@ -1,0 +1,29 @@
+---
+model: gemini-2.0-flash
+config:
+  temperature: 0.5
+input:
+  schema:
+    code: string
+    language: string
+---
+{{#role "system"}}
+You are a code reviewer. Analyze the following {{ language }} code and provide feedback.
+{{/role}}
+
+{{#role "user"}}
+Please review this code:
+
+```{{ language }}
+{{ code }}
+```
+
+{{#each reviewCriteria}}
+- Check for: {{ this }}
+{{/each}}
+
+{{! This block is unclosed intentionally }}
+{{#if detailed
+Provide detailed explanations for each issue found.
+
+{{/role}}

@@ -24,8 +24,35 @@ on:
       - ".github/workflows/go.yml"
 
 jobs:
+  format-check:
+    runs-on: ubuntu-latest
+    name: Go Format Check
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: stable
+
+      - name: Check formatting with gofmt
+        run: |
+          # gofmt -d returns diff output if files need formatting
+          # Use find to get all .go files excluding vendor
+          UNFORMATTED=$(gofmt -l go/)
+          if [ -n "${UNFORMATTED}" ]; then
+            echo "❌ The following Go files need formatting:"
+            echo "${UNFORMATTED}"
+            echo ""
+            echo "Run 'gofmt -w go/' or 'scripts/format_go_files' to fix."
+            exit 1
+          fi
+          echo "✅ All Go files are properly formatted."
+
   tests:
     runs-on: ubuntu-latest
+    needs: format-check
     strategy:
       matrix:
         # Track only the latest 2 stable versions of Go.

@@ -77,9 +77,11 @@ MEDIA_MARKER_PREFIX = '<<<dotprompt:media:'
 # Prefixes for the section markers in the template.
 SECTION_MARKER_PREFIX = '<<<dotprompt:section'
 
-# Regular expression to match YAML frontmatter delineated by `---` markers at
-# the start of a .prompt content block.
-FRONTMATTER_AND_BODY_REGEX = re.compile(r'^---\s*(?:\r\n|\r|\n)([\s\S]*?)(?:\r\n|\r|\n)---\s*(?:\r\n|\r|\n)([\s\S]*)$')
+# Regular expression to match YAML frontmatter delineated by `---` markers.
+# Allows blank lines and license headers (lines starting with #) before the first ---.
+FRONTMATTER_AND_BODY_REGEX = re.compile(
+    r'^(?:(?:#[^\n]*|[ \t]*)\n)*---\s*(?:\r\n|\r|\n)([\s\S]*?)(?:\r\n|\r|\n)---\s*(?:\r\n|\r|\n)([\s\S]*)$'
+)
 
 # Regular expression to match <<<dotprompt:role:xxx>>> and
 # <<<dotprompt:history>>> markers in the template.

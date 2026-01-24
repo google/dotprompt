@@ -1,0 +1,54 @@
+{
+  "name": "@dotprompt/promptly",
+  "version": "0.1.0",
+  "description": "Promptly: Cargo for prompts - lint, format, and validate .prompt files",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/google/dotprompt.git",
+    "directory": "packages/promptly"
+  },
+  "homepage": "https://github.com/google/dotprompt/tree/main/packages/promptly",
+  "bugs": {
+    "url": "https://github.com/google/dotprompt/issues"
+  },
+  "keywords": [
+    "dotprompt",
+    "prompt",
+    "llm",
+    "genai",
+    "linter",
+    "formatter",
+    "cli"
+  ],
+  "type": "module",
+  "bin": {
+    "promptly": "dist/bin/promptly.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "postinstall": "node dist/scripts/postinstall.js",
+    "prepublishOnly": "pnpm run build"
+  },
+  "optionalDependencies": {
+    "@dotprompt/promptly-darwin-arm64": "0.1.0",
+    "@dotprompt/promptly-darwin-x64": "0.1.0",
+    "@dotprompt/promptly-linux-arm64": "0.1.0",
+    "@dotprompt/promptly-linux-x64": "0.1.0",
+    "@dotprompt/promptly-win32-x64": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

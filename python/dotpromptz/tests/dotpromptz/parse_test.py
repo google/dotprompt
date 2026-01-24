@@ -766,3 +766,48 @@ Template content"""
         #    self.assertEqual(getattr(result, keyword), f'value-{keyword}')
 
         self.assertEqual(result.template, 'Template content')
+
+    def test_handle_license_header_before_frontmatter(self) -> None:
+        """Test handling license header before frontmatter."""
+        source = """# Copyright 2025 Google LLC
+# License: Apache 2.0
+---
+model: gemini-pro
+---
+Hello!"""
+
+        result: ParsedPrompt[dict[str, str]] = parse_document(source)
+
+        self.assertIsInstance(result, ParsedPrompt)
+        self.assertEqual(result.raw.get('model'), 'gemini-pro')
+        self.assertEqual(result.template, 'Hello!')
+
+    def test_handle_shebang_before_frontmatter(self) -> None:
+        """Test handling shebang before frontmatter."""
+        source = """#!/usr/bin/env promptly
+---
+model: gemini-flash
+---
+Hello shebang!"""
+
+        result: ParsedPrompt[dict[str, str]] = parse_document(source)
+
+        self.assertIsInstance(result, ParsedPrompt)
+        self.assertEqual(result.raw.get('model'), 'gemini-flash')
+        self.assertEqual(result.template, 'Hello shebang!')
+
+    def test_handle_shebang_and_license_header_before_frontmatter(self) -> None:
+        """Test handling shebang and license header before frontmatter."""
+        source = """#!/usr/bin/env promptly
+# Copyright 2025 Google
+# SPDX: Apache-2.0
+---
+model: gemini-2.0
+---
+Hello combined!"""
+
+        result: ParsedPrompt[dict[str, str]] = parse_document(source)
+
+        self.assertIsInstance(result, ParsedPrompt)
+        self.assertEqual(result.raw.get('model'), 'gemini-2.0')
+        self.assertEqual(result.template, 'Hello combined!')

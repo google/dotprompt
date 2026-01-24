@@ -1,0 +1,168 @@
+{
+  "Frontmatter": {
+    "prefix": ["frontmatter", "---"],
+    "body": [
+      "---",
+      "model: ${1:gemini-2.0-flash}",
+      "config:",
+      "  temperature: ${2:0.7}",
+      "input:",
+      "  schema:",
+      "    ${3:name}: ${4:string}",
+      "output:",
+      "  format: ${5|text,json|}",
+      "---",
+      "",
+      "$0"
+    ],
+    "description": "Insert YAML frontmatter template"
+  },
+  "Role Block": {
+    "prefix": ["role", "#role"],
+    "body": ["{{#role \"${1|system,user,model|}\"}}", "$0", "{{/role}}"],
+    "description": "Insert a role block (system, user, or model)"
+  },
+  "System Role": {
+    "prefix": ["system", "sysrole"],
+    "body": ["{{#role \"system\"}}", "$0", "{{/role}}"],
+    "description": "Insert a system role block"
+  },
+  "User Role": {
+    "prefix": ["user", "userrole"],
+    "body": ["{{#role \"user\"}}", "$0", "{{/role}}"],
+    "description": "Insert a user role block"
+  },
+  "Model Role": {
+    "prefix": ["model", "modelrole"],
+    "body": ["{{#role \"model\"}}", "$0", "{{/role}}"],
+    "description": "Insert a model role block"
+  },
+  "If Block": {
+    "prefix": ["if", "#if"],
+    "body": ["{{#if ${1:condition}}}", "$0", "{{/if}}"],
+    "description": "Insert an if conditional block"
+  },
+  "If Else Block": {
+    "prefix": ["ifelse", "#ifelse"],
+    "body": ["{{#if ${1:condition}}}", "$2", "{{else}}", "$0", "{{/if}}"],
+    "description": "Insert an if/else conditional block"
+  },
+  "Unless Block": {
+    "prefix": ["unless", "#unless"],
+    "body": ["{{#unless ${1:condition}}}", "$0", "{{/unless}}"],
+    "description": "Insert an unless conditional block"
+  },
+  "Each Block": {
+    "prefix": ["each", "#each"],
+    "body": ["{{#each ${1:items}}}", "- {{this}}$0", "{{/each}}"],
+    "description": "Insert an each loop block"
+  },
+  "Each with Index": {
+    "prefix": ["eachi", "#eachi"],
+    "body": ["{{#each ${1:items}}}", "{{@index}}. {{this}}$0", "{{/each}}"],
+    "description": "Insert an each loop with index"
+  },
+  "With Block": {
+    "prefix": ["with", "#with"],
+    "body": ["{{#with ${1:object}}}", "$0", "{{/with}}"],
+    "description": "Insert a with context block"
+  },
+  "JSON Helper": {
+    "prefix": ["json"],
+    "body": ["{{json ${1:value}}}"],
+    "description": "Insert JSON serialization helper"
+  },
+  "JSON with Indent": {
+    "prefix": ["jsoni", "jsonindent"],
+    "body": ["{{json ${1:value} indent=${2:2}}}"],
+    "description": "Insert JSON helper with indentation"
+  },
+  "Media Helper": {
+    "prefix": ["media"],
+    "body": ["{{media url=\"${1:https://example.com/image.png}\"}}"],
+    "description": "Insert media helper for images/videos"
+  },
+  "Media with ContentType": {
+    "prefix": ["mediac", "mediatype"],
+    "body": [
+      "{{media url=\"${1:https://example.com/file}\" contentType=\"${2:image/png}\"}}"
+    ],
+    "description": "Insert media helper with content type"
+  },
+  "Partial": {
+    "prefix": ["partial", ">"],
+    "body": ["{{> ${1:partialName}}}"],
+    "description": "Insert a partial reference"
+  },
+  "Partial with Context": {
+    "prefix": ["partialc", ">c"],
+    "body": ["{{> ${1:partialName} ${2:contextVar}}}"],
+    "description": "Insert a partial with context"
+  },
+  "Section": {
+    "prefix": ["section", "#section"],
+    "body": ["{{#section \"${1:sectionName}\"}}", "$0", "{{/section}}"],
+    "description": "Insert a section block"
+  },
+  "History": {
+    "prefix": ["history"],
+    "body": ["{{history}}"],
+    "description": "Insert conversation history"
+  },
+  "Comment": {
+    "prefix": ["comment", "!"],
+    "body": ["{{! ${1:comment} }}"],
+    "description": "Insert a Handlebars comment"
+  },
+  "Block Comment": {
+    "prefix": ["blockcomment", "!--"],
+    "body": ["{{!-- ${1:comment} --}}"],
+    "description": "Insert a block comment"
+  },
+  "ifEquals": {
+    "prefix": ["ifeq", "ifEquals"],
+    "body": ["{{#ifEquals ${1:value1} ${2:value2}}}", "$0", "{{/ifEquals}}"],
+    "description": "Insert ifEquals helper"
+  },
+  "unlessEquals": {
+    "prefix": ["unlesseq", "unlessEquals"],
+    "body": [
+      "{{#unlessEquals ${1:value1} ${2:value2}}}",
+      "$0",
+      "{{/unlessEquals}}"
+    ],
+    "description": "Insert unlessEquals helper"
+  },
+  "Dotprompt Marker": {
+    "prefix": ["marker", "<<<"],
+    "body": [
+      "<<<dotprompt:${1|role:system,role:user,role:model,section:preamble|}>>>"
+    ],
+    "description": "Insert a Dotprompt marker"
+  },
+  "Complete Prompt Template": {
+    "prefix": ["prompt", "newprompt"],
+    "body": [
+      "---",
+      "model: ${1:gemini-2.0-flash}",
+      "config:",
+      "  temperature: ${2:0.7}",
+      "input:",
+      "  schema:",
+      "    ${3:query}: string",
+      "output:",
+      "  format: ${4|text,json|}",
+      "---",
+      "",
+      "{{#role \"system\"}}",
+      "${5:You are a helpful assistant.}",
+      "{{/role}}",
+      "",
+      "{{#role \"user\"}}",
+      "${6:{{query}}}",
+      "{{/role}}",
+      ""
+    ],
+    "description": "Insert a complete prompt template"
+  }
+}

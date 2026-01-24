@@ -28,6 +28,7 @@ usage() {
   echo "Options:"
   echo "  -d, --dest DIR    Destination directory (default: ~/.emacs.d/lisp)"
   echo "  -f, --force       Overwrite existing files without prompting"
+  echo "  --no-lsp          Skip building promptly LSP server"
   echo "  -h, --help        Show this help message"
   exit 1
 }
@@ -35,11 +36,13 @@ usage() {
 # Parse arguments
 DEST_DIR=""
 FORCE=false
+BUILD_LSP=true
 
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     -d|--dest) DEST_DIR="$2"; shift ;;
     -f|--force) FORCE=true ;;
+    --no-lsp) BUILD_LSP=false ;;
     -h|--help) usage ;;
     *) echo "Unknown parameter passed: $1"; usage ;;
   esac
@@ -51,18 +54,40 @@ if [[ -z "$DEST_DIR" ]]; then
   DEST_DIR="$EMACS_LISP_DIR"
 fi
 
-echo "Installing Dotprompt Emacs mode to: $DEST_DIR"
+echo "=========================================="
+echo "Dotprompt Emacs Mode Installer"
+echo "=========================================="
+
+# Build promptly LSP server
+if [ "$BUILD_LSP" = true ]; then
+  echo ""
+  echo "Step 1: Building promptly LSP server..."
+  if command -v cargo &> /dev/null; then
+    cd "$REPO_ROOT"
+    cargo build --release -p promptly
+    PROMPTLY_BIN="$REPO_ROOT/target/release/promptly"
+    if [ -f "$PROMPTLY_BIN" ]; then
+      echo "  ✓ promptly built successfully"
+    fi
+  else
+    echo "  ⚠ cargo not found. Skipping LSP build."
+    echo "    Install Rust (https://rustup.rs) for LSP features."
+  fi
+fi
+
+echo ""
+echo "Step 2: Installing Emacs mode to: $DEST_DIR"
 
 # Create directory
 mkdir -p "$DEST_DIR"
 
 # Copy file
-echo "Copying dotprompt-mode.el..."
+echo "  Copying dotprompt-mode.el..."
 if [ -f "$DEST_DIR/dotprompt-mode.el" ] && [ "$FORCE" = false ]; then
-  read -p "File '$DEST_DIR/dotprompt-mode.el' exists. Overwrite? (y/N) " -n 1 -r
+  read -p "  File '$DEST_DIR/dotprompt-mode.el' exists. Overwrite? (y/N) " -n 1 -r
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Skipping file copy."
+    echo "  Skipping file copy."
   else
     cp "$EMACS_PKG_DIR/dotprompt-mode.el" "$DEST_DIR/"
   fi
@@ -70,9 +95,22 @@ else
   cp "$EMACS_PKG_DIR/dotprompt-mode.el" "$DEST_DIR/"
 fi
 
-echo "Installation complete!"
 echo ""
-echo "Add the following to your Emacs initialization file (~/.emacs or ~/.emacs.d/init.el):"
+echo "=========================================="
+echo "Installation Complete!"
+echo "=========================================="
 echo ""
-echo "(add-to-list 'load-path \"$DEST_DIR\")"
-echo "(require 'dotprompt-mode)"
+echo "Add the following to your Emacs init file (~/.emacs or ~/.emacs.d/init.el):"
+echo ""
+echo "  (add-to-list 'load-path \"$DEST_DIR\")"
+echo "  (require 'dotprompt-mode)"
+echo ""
+echo "For LSP support with eglot (Emacs 29+), also add:"
+echo ""
+echo "  (add-hook 'dotprompt-mode-hook 'eglot-ensure)"
+echo ""
+if [ "$BUILD_LSP" = true ] && [ -f "$REPO_ROOT/target/release/promptly" ]; then
+  echo "If promptly is not in your PATH, add:"
+  echo ""
+  echo "  (setq dotprompt-promptly-path \"$REPO_ROOT/target/release/promptly\")"
+fi

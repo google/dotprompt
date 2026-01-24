@@ -625,4 +625,62 @@ public class ParserTest {
     assertThat(result.model()).isEqualTo("gemini-1.5-pro");
     assertThat(result.template()).isEqualTo("Template content");
   }
+
+  @Test
+  public void testParseWithLicenseHeader() throws IOException {
+    String content =
+        "# Copyright 2025 Google LLC\n"
+            + "# License: Apache 2.0\n"
+            + "---\n"
+            + "model: gemini-pro\n"
+            + "---\n"
+            + "Hello!";
+    Prompt prompt = Parser.parse(content);
+    assertThat(prompt.template()).isEqualTo("Hello!");
+    assertThat(prompt.config()).containsEntry("model", "gemini-pro");
+  }
+
+  @Test
+  public void testParseWithShebang() throws IOException {
+    String content =
+        "#!/usr/bin/env promptly\n"
+            + "---\n"
+            + "model: gemini-flash\n"
+            + "---\n"
+            + "Hello shebang!";
+    Prompt prompt = Parser.parse(content);
+    assertThat(prompt.template()).isEqualTo("Hello shebang!");
+    assertThat(prompt.config()).containsEntry("model", "gemini-flash");
+  }
+
+  @Test
+  public void testParseWithShebangAndLicenseHeader() throws IOException {
+    String content =
+        "#!/usr/bin/env promptly\n"
+            + "# Copyright 2025 Google\n"
+            + "# SPDX: Apache-2.0\n"
+            + "---\n"
+            + "model: gemini-2.0\n"
+            + "---\n"
+            + "Hello combined!";
+    Prompt prompt = Parser.parse(content);
+    assertThat(prompt.template()).isEqualTo("Hello combined!");
+    assertThat(prompt.config()).containsEntry("model", "gemini-2.0");
+  }
+
+  @Test
+  public void testParseWithBlankLinesBeforeFrontmatter() throws IOException {
+    String content =
+        "# License header\n"
+            + "\n"
+            + "# More comments\n"
+            + "\n"
+            + "---\n"
+            + "model: gemini-pro\n"
+            + "---\n"
+            + "Hello!";
+    Prompt prompt = Parser.parse(content);
+    assertThat(prompt.template()).isEqualTo("Hello!");
+    assertThat(prompt.config()).containsEntry("model", "gemini-pro");
+  }
 }

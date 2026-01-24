@@ -1,18 +1,39 @@
 {
   "name": "dotprompt-vscode",
-  "displayName": "Dotprompt Support",
-  "description": "Syntax highlighting and language support for Dotprompt files",
+  "displayName": "Dotprompt",
+  "description": "Syntax highlighting, LSP diagnostics, formatting, and code snippets for Dotprompt (.prompt) files",
+  "version": "0.1.0",
+  "publisher": "google",
+  "license": "Apache-2.0",
+  "icon": "images/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/google/dotprompt.git"
+    "url": "https://github.com/google/dotprompt.git",
+    "directory": "packages/vscode"
   },
-  "version": "0.0.1",
-  "publisher": "Google",
+  "bugs": {
+    "url": "https://github.com/google/dotprompt/issues"
+  },
+  "homepage": "https://github.com/google/dotprompt/tree/main/packages/vscode#readme",
   "engines": {
     "vscode": "^1.80.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Linters",
+    "Formatters",
+    "Snippets"
+  ],
+  "keywords": [
+    "dotprompt",
+    "prompt",
+    "llm",
+    "ai",
+    "genai",
+    "gemini",
+    "handlebars",
+    "template",
+    "genkit"
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
@@ -23,6 +44,9 @@
     "build": "tsup src/extension.ts --format cjs --external vscode --sourcemap",
     "watch": "tsup src/extension.ts --format cjs --external vscode --sourcemap --watch",
     "package": "vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
     "@secretlint/secretlint-rule-no-dotenv": "^11.3.0",
@@ -54,6 +78,28 @@
         "scopeName": "source.dotprompt",
         "path": "./syntaxes/dotprompt.tmLanguage.json"
       }
-    ]
+    ],
+    "snippets": [
+      {
+        "language": "dotprompt",
+        "path": "./snippets/dotprompt.snippets.json"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Dotprompt",
+      "properties": {
+        "dotprompt.promptlyPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the promptly binary. If not set, the extension will search in PATH and common locations."
+        },
+        "dotprompt.enableLsp": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable LSP features (diagnostics, formatting, hover). Requires promptly to be installed."
+        }
+      }
+    }
   }
 }

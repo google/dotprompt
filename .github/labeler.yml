@@ -102,6 +102,51 @@ dotpromptz:
       - any-glob-to-any-file:
           - "**/dotpromptz/**"
 
+promptly:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "rs/promptly/**"
+
+vscode:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "packages/vscode/**"
+
+emacs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "packages/emacs/**"
+
+vim:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "packages/vim/**"
+
+jetbrains:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "packages/jetbrains/**"
+
+treesitter:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "packages/treesitter/**"
+
+editors:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "packages/vscode/**"
+          - "packages/emacs/**"
+          - "packages/vim/**"
+          - "packages/jetbrains/**"
+          - "packages/treesitter/**"
+
+npm:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "packages/promptly/**"
+          - "packages/promptly-*/**"
+
 # Automatically add labels to any PR also based on branch naming conventions.
 build:
   - head-branch: [^.*/build/.*, build]
@@ -129,3 +174,4 @@ style:
 
 test:
   - head-branch: [^.*/test/.*, test]
+

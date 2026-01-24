@@ -1,0 +1,14 @@
+---
+model: gemini-2.0-flash
+config:
+  temperature: 0.7
+input:
+  schema:
+    name: string
+    email: string
+    age: number
+---
+Hello, {{ name }}!
+
+This prompt has 'email' and 'age' in the schema but only uses 'name'.
+The linter should warn about unused variables.

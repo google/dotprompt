@@ -35,6 +35,7 @@ crate.from_cargo(
         "//:Cargo.toml",
         "//rs/smoke:Cargo.toml",
         "//rs/dotprompt:Cargo.toml",
+        "//rs/promptly:Cargo.toml",
         "//python/handlebarrz:Cargo.toml",
     ],
 )

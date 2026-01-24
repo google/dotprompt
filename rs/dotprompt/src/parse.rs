@@ -47,11 +47,12 @@ const SECTION_MARKER_PREFIX: &str = "<<<dotprompt:section";
 const MEDIA_MARKER_PREFIX: &str = "<<<dotprompt:media:url";
 
 /// Gets or initializes the frontmatter regex pattern.
+/// Allows blank lines and license headers (lines starting with #) before the first ---.
 #[allow(clippy::expect_used)]
 fn frontmatter_regex() -> &'static Regex {
     FRONTMATTER_RE.get_or_init(|| {
         Regex::new(
-            r"(?s)^---\s*(?:\r\n|\r|\n)([\s\S]*?)(?:\r\n|\r|\n)---\s*(?:\r\n|\r|\n)([\s\S]*)$",
+            r"(?s)^(?:(?:#[^\n]*|[ \t]*)\n)*---\s*(?:\r\n|\r|\n)([\s\S]*?)(?:\r\n|\r|\n)---\s*(?:\r\n|\r|\n)([\s\S]*)$",
         )
         .expect("failed to compile frontmatter regex")
     })
@@ -465,5 +466,37 @@ mod tests {
         let messages = to_messages::<serde_json::Value>(rendered, None);
         assert_eq!(messages.len(), 1);
         assert!(matches!(messages[0].content[0], Part::Media(_)));
+    }
+
+    #[test]
+    fn test_extract_with_license_header() {
+        let source = "# Copyright 2025 Google LLC\n# License: Apache 2.0\n---\nmodel: gemini-pro\n---\nHello!";
+        let (yaml, template) = extract_frontmatter_and_body(source).expect("parse should succeed");
+        assert!(yaml.contains("model: gemini-pro"));
+        assert_eq!(template, "Hello!");
+    }
+
+    #[test]
+    fn test_extract_with_shebang() {
+        let source = "#!/usr/bin/env promptly\n---\nmodel: gemini-flash\n---\nHello shebang!";
+        let (yaml, template) = extract_frontmatter_and_body(source).expect("parse should succeed");
+        assert!(yaml.contains("model: gemini-flash"));
+        assert_eq!(template, "Hello shebang!");
+    }
+
+    #[test]
+    fn test_extract_with_shebang_and_license() {
+        let source = "#!/usr/bin/env promptly\n# Copyright 2025 Google\n# SPDX: Apache-2.0\n---\nmodel: gemini-2.0\n---\nHello combined!";
+        let (yaml, template) = extract_frontmatter_and_body(source).expect("parse should succeed");
+        assert!(yaml.contains("model: gemini-2.0"));
+        assert_eq!(template, "Hello combined!");
+    }
+
+    #[test]
+    fn test_parse_document_with_license_header() {
+        let source = "# License Header\n---\nmodel: gemini-pro\n---\nTemplate body";
+        let parsed: ParsedPrompt = parse_document(source).expect("parse should succeed");
+        assert_eq!(parsed.metadata.model, Some("gemini-pro".to_string()));
+        assert_eq!(parsed.template, "Template body");
     }
 }

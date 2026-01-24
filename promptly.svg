@@ -1,0 +1,62 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="rustGradient" x1="100" y1="100" x2="412" y2="412" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#DEA584" />
+      <stop offset="100%" stop-color="#B7410E" />
+    </linearGradient>
+    
+    <linearGradient id="terminalGradient" x1="256" y1="0" x2="256" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2B303B" />
+      <stop offset="100%" stop-color="#191C23" />
+    </linearGradient>
+    
+    <filter id="dropShadow" x="-20" y="-20" width="552" height="552" filterUnits="userSpaceOnUse">
+      <feFlood flood-opacity="0.2" />
+      <feGaussianBlur stdDeviation="8" />
+      <feComposite in2="SourceAlpha" operator="out" />
+      <feOffset dx="0" dy="4" />
+      <feComposite in2="SourceAlpha" operator="in" />
+    </filter>
+  </defs>
+
+  <rect x="32" y="32" width="448" height="448" rx="80" fill="url(#terminalGradient)" />
+  
+  <g transform="translate(106, 126)">
+    
+    <path d="M150 0 L300 75 L150 150 L0 75 Z" fill="#E8B59A" opacity="0.9"/>
+    
+    <path d="M300 75 V225 L150 300 V150 Z" fill="#9C350B" />
+    
+    <path d="M0 75 V225 L150 300 V150 Z" fill="url(#rustGradient)" />
+    
+    <g transform="matrix(1, 0.5, 0, 1, 0, 0)"> 
+        <path d="M45 80 L95 110 L45 140" 
+              stroke="white" 
+              stroke-width="18" 
+              stroke-linecap="round" 
+              stroke-linejoin="round"
+              fill="none"/>
+              
+        <line x1="55" y1="165" x2="95" y2="165" 
+              stroke="white" 
+              stroke-width="18" 
+              stroke-linecap="round" 
+              opacity="0.8"/>
+    </g>
+
+    <g transform="matrix(1, -0.5, 0, 1, 0, 0)">
+       <path d="M220 200 Q210 215 220 230 M230 200 Q220 215 230 230" 
+             stroke="rgba(255,255,255,0.3)" 
+             stroke-width="10" 
+             stroke-linecap="round" 
+             fill="none" />
+       
+       <path d="M260 200 Q270 215 260 230 M270 200 Q280 215 270 230" 
+             stroke="rgba(255,255,255,0.3)" 
+             stroke-width="10" 
+             stroke-linecap="round" 
+             fill="none" />
+    </g>
+  </g>
+</svg>
+

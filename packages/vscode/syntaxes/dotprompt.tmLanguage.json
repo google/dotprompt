@@ -4,6 +4,9 @@
   "scopeName": "source.dotprompt",
   "patterns": [
     {
+      "include": "#headerComments"
+    },
+    {
       "include": "#frontmatter"
     },
     {
@@ -17,17 +20,30 @@
     }
   ],
   "repository": {
+    "headerComments": {
+      "comment": "Comments or license headers before the YAML frontmatter",
+      "patterns": [
+        {
+          "match": "^#!.*$",
+          "name": "comment.line.shebang.dotprompt"
+        },
+        {
+          "match": "^#.*$",
+          "name": "comment.line.number-sign.dotprompt"
+        }
+      ]
+    },
     "frontmatter": {
-      "begin": "\\A---",
-      "end": "---",
+      "begin": "^---\\s*$",
+      "end": "^---\\s*$",
       "beginCaptures": {
         "0": {
-          "name": "comment.block.frontmatter.dotprompt"
+          "name": "punctuation.definition.frontmatter.begin.dotprompt"
         }
       },
       "endCaptures": {
         "0": {
-          "name": "comment.block.frontmatter.dotprompt"
+          "name": "punctuation.definition.frontmatter.end.dotprompt"
         }
       },
       "patterns": [

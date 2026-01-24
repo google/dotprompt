@@ -50,13 +50,15 @@ const (
 
 var (
 	// FrontmatterAndBodyRegex is a regular expression to match YAML frontmatter
-	// delineated by `---` markers at the start of a .prompt content block.
+	// delineated by `---` markers. Allows blank lines and license headers (lines
+	// starting with #) before the first ---.
 	FrontmatterAndBodyRegex = regexp.MustCompile(
-		`^---\s*(?:\r\n|\r|\n)([\s\S]*?)(?:\r\n|\r|\n)---\s*(?:\r\n|\r|\n)([\s\S]*)$`)
+		`^(?:(?:#[^\n]*|[ \t]*)\n)*---\s*(?:\r\n|\r|\n)([\s\S]*?)(?:\r\n|\r|\n)---\s*(?:\r\n|\r|\n)([\s\S]*)$`)
 
 	// EmptyFrontmatterRegex is a regular expression to match empty YAML
 	// frontmatter (where there's no content between the frontmatter markers).
-	EmptyFrontmatterRegex = regexp.MustCompile(`^---\s*\n---\s*\n([\s\S]*)$`)
+	// Also allows blank lines and license headers before the first ---.
+	EmptyFrontmatterRegex = regexp.MustCompile(`^(?:(?:#[^\n]*|[ \t]*)\n)*---\s*\n---\s*\n([\s\S]*)$`)
 
 	// RoleAndHistoryMarkerRegex is a regular expression to match
 	// <<<dotprompt:role:xxx>>> and <<<dotprompt:history>>> markers in the

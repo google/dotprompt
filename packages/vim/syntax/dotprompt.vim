@@ -25,7 +25,11 @@ endif
 
 " Define Dotprompt specifics
 syntax match dotpromptMarker "<<<dotprompt:[^>]\+>>>"
-syntax match dotpromptPartial "{{>.\+}}"
+syntax match dotpromptPartial "{{>.\\+}}"
+
+" License header comments (lines starting with #)
+syntax match dotpromptHeaderComment "^#.*$"
+highlight default link dotpromptHeaderComment Comment
 
 " Handlebars/Dotprompt tags
 syntax region dotpromptTag start="{{" end="}}" contains=dotpromptKeyword,dotpromptString,dotpromptNumber,dotpromptBoolean
@@ -49,11 +53,13 @@ highlight default link dotpromptString String
 highlight default link dotpromptNumber Number
 highlight default link dotpromptBoolean Boolean
 
-" Handle Frontmatter (YAML) - attempt to include standard YAML syntax
+" Handle Frontmatter (YAML) - include standard YAML syntax
+" Match --- anywhere (not just at file start) to support license headers
 let s:current_syntax = b:current_syntax
 unlet b:current_syntax
 syntax include @Yaml syntax/yaml.vim
-syntax region dotpromptFrontmatter start="\%^---" end="^---" contains=@Yaml keepend
+syntax region dotpromptFrontmatter start="^---$" end="^---$" contains=@Yaml keepend
 let b:current_syntax = s:current_syntax
 
 let b:current_syntax = "dotprompt"
+

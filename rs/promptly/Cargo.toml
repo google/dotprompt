@@ -1,0 +1,49 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+categories  = ["command-line-utilities", "development-tools"]
+description = "Promptly: Cargo for prompts - lint, format, test, and publish .prompt files"
+edition     = "2024"
+keywords    = ["genai", "prompting", "llms", "cli", "linter"]
+license     = "Apache-2.0"
+name        = "promptly"
+readme      = "README.md"
+repository  = "https://github.com/google/dotprompt"
+version     = "0.1.0"
+
+[dependencies]
+anstyle              = "1.0"
+ariadne              = "0.5"
+clap                 = { version = "4.5", features = ["derive", "color"] }
+clap_complete        = "4.5"
+dirs                 = "6.0"
+owo-colors           = "4.2"
+regex                = "1.11"
+serde.workspace      = true
+serde_json.workspace = true
+serde_yaml           = "0.9"
+thiserror            = "2.0"
+tokio                = { version = "1.44", features = ["full"] }
+toml                 = "0.8"
+tower-lsp            = "0.20"
+walkdir              = "2.5.0"
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+tempfile = "3.15"

@@ -1,6 +1,6 @@
 # Dotprompt VS Code Extension
 
-This extension provides syntax highlighting and language support for **Dotprompt** (`.prompt`) files in Visual Studio Code.
+This extension provides syntax highlighting, diagnostics, formatting, and language support for **Dotprompt** (`.prompt`) files in Visual Studio Code.
 
 ## Features
 
@@ -8,12 +8,12 @@ This extension provides syntax highlighting and language support for **Dotprompt
     - YAML Frontmatter
     - Dotprompt Markers (e.g., `<<<dotprompt:role:user>>>`)
     - Handlebars syntax (`{{...}}`)
-- **Snippets** (Planned)
-- **Validation** (Planned)
+- **Autocomplete**: Context-aware completion for Handlebars and Dotprompt helpers
+- **Diagnostics** (requires `promptly`): Real-time error detection for YAML and Handlebars syntax
+- **Formatting** (requires `promptly`): Automatic formatting of `.prompt` files
+- **Hover Documentation** (requires `promptly`): Documentation on hover for helpers and frontmatter fields
 
 ## Installation
-
-## Installation & Testing
 
 ### Quick Start (One-Liner)
 Run the following script from the repository root:
@@ -35,11 +35,53 @@ Run the following script from the repository root:
     pnpm run package
     ```
 4.  **Install in VS Code**:
-    - Run `code --install-extension dotprompt-vscode-0.0.1.vsix`
+    - Run `code --install-extension dotprompt-vscode-0.0.2.vsix`
     - OR open VS Code, go to Extensions (`Cmd+Shift+X`), click `...` > `Install from VSIX...`, and select the generated file.
 
-### Local Development
-You can also open this folder in VS Code and press `F5` to launch a localized Extension Development Host with the extension loaded for debugging.
+### Installing Promptly (Optional but Recommended)
+
+For full LSP features (diagnostics, formatting, hover), install the `promptly` CLI:
+
+```bash
+# From source (requires Rust)
+cargo install --path rs/promptly
+
+# Or build from the repository
+cargo build --release -p promptly
+# Then add target/release to your PATH
+```
+
+## Configuration
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `dotprompt.promptlyPath` | string | `""` | Path to the `promptly` binary. If not set, searches PATH and common locations. |
+| `dotprompt.enableLsp` | boolean | `true` | Enable LSP features. Requires `promptly` to be installed. |
+
+## LSP Features
+
+When `promptly` is installed, the extension provides:
+
+### Diagnostics
+Real-time detection of:
+- **E001**: Invalid YAML frontmatter
+- **E002**: Invalid Handlebars syntax (unclosed blocks, unbalanced braces)
+- **I001**: Partial reference information
+
+### Formatting
+Automatic formatting that:
+- Normalizes Handlebars spacing (`{{name}}` → `{{ name }}`)
+- Trims trailing whitespace
+- Ensures files end with a single newline
+
+### Hover
+Documentation on hover for:
+- **Handlebars helpers**: `if`, `unless`, `each`, `with`, `json`, `role`, `media`, `section`
+- **Frontmatter fields**: `model`, `input`, `output`, `config`, `tools`
+
+## Local Development
+
+Open this folder in VS Code and press `F5` to launch an Extension Development Host with the extension loaded for debugging.
 
 ## Syntax Support
 

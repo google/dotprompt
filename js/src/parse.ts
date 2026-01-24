@@ -61,11 +61,11 @@ export const MEDIA_MARKER_PREFIX = '<<<dotprompt:media:';
 export const SECTION_MARKER_PREFIX = '<<<dotprompt:section';
 
 /**
- * Regular expression to match YAML frontmatter delineated by `---` markers at
- * the start of a .prompt content block.
+ * Regular expression to match YAML frontmatter delineated by `---` markers.
+ * Allows blank lines and license headers (lines starting with #) before the first ---.
  */
 export const FRONTMATTER_AND_BODY_REGEX =
-  /^---\s*(?:\r\n|\r|\n)([\s\S]*?)(?:\r\n|\r|\n)---\s*(?:\r\n|\r|\n)([\s\S]*)$/;
+  /^(?:(?:#[^\n]*|[ \t]*)\n)*---\s*(?:\r\n|\r|\n)([\s\S]*?)(?:\r\n|\r|\n)---\s*(?:\r\n|\r|\n)([\s\S]*)$/;
 
 /**
  * Regular expression to match <<<dotprompt:role:xxx>>> and
