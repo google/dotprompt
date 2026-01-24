@@ -71,7 +71,6 @@ from __future__ import annotations
 
 import json
 import re
-import sys  # noqa
 from collections.abc import Callable
 from enum import Enum
 from pathlib import Path
@@ -409,8 +408,7 @@ class Template:
             helper_fn: The helper function
         """
         try:
-            # TODO: Fix this type error.
-            self._template.register_helper(name, create_helper(helper_fn))  # type: ignore[arg-type]
+            self._template.register_helper(name, create_helper(helper_fn))
             # logger.debug({'event': 'helper_registered', 'name': name})
         except Exception as e:
             logger.exception({
