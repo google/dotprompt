@@ -393,8 +393,8 @@ class Dotprompt:
         Returns:
             The rendered prompt metadata.
         """
-        needs_input_processing = meta.input is not None and meta.input.schema_ is not None
-        needs_output_processing = meta.output is not None and meta.output.schema_ is not None
+        needs_input_processing = meta.input is not None and meta.input.schema is not None
+        needs_output_processing = meta.output is not None and meta.output.schema is not None
 
         if not needs_input_processing and not needs_output_processing:
             return meta
@@ -403,14 +403,14 @@ class Dotprompt:
 
         async def _process_input_schema(schema_to_process: Any) -> None:
             if new_meta.input is not None:
-                new_meta.input.schema_ = await picoschema_to_json_schema(
+                new_meta.input.schema = await picoschema_to_json_schema(
                     schema_to_process,
                     self._wrapped_schema_resolver,
                 )
 
         async def _process_output_schema(schema_to_process: Any) -> None:
             if new_meta.output is not None:
-                new_meta.output.schema_ = await picoschema_to_json_schema(
+                new_meta.output.schema = await picoschema_to_json_schema(
                     schema_to_process,
                     self._wrapped_schema_resolver,
                 )
@@ -418,10 +418,10 @@ class Dotprompt:
         async with anyio.create_task_group() as tg:
             if needs_input_processing and meta.input is not None:
                 # TODO: use meta.input.model_dump(exclude_none=True)?
-                tg.start_soon(_process_input_schema, meta.input.schema_)
+                tg.start_soon(_process_input_schema, meta.input.schema)
             if needs_output_processing and meta.output is not None:
                 # TODO: use meta.output.model_dump(exclude_none=True)?
-                tg.start_soon(_process_output_schema, meta.output.schema_)
+                tg.start_soon(_process_output_schema, meta.output.schema)
 
         return new_meta
 

@@ -373,9 +373,9 @@ class TestRenderPicoSchema(IsolatedAsyncioTestCase):
         # Now call the function that uses picoschema.picoschema internally
         result: PromptMetadata[dict[str, Any]] = await dotprompt._render_picoschema(metadata)
         assert result.input is not None
-        assert result.input.schema_ == values_assert
+        assert result.input.schema == values_assert
         assert result.output is not None
-        assert result.output.schema_ == values_assert
+        assert result.output.schema == values_assert
 
     async def test_returns_original_metadata_when_no_schemas_present(self) -> None:
         """Test that the original metadata is returned unchanged when no schemas are present."""

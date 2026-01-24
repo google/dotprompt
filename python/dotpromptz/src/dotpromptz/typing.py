@@ -155,7 +155,7 @@ from typing import (
     TypeVar,
 )
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 Schema = Any
 """Type alias for a generic schema."""
@@ -244,14 +244,13 @@ class PromptInputConfig(BaseModel):
     Attributes:
         default: A dictionary providing default values for input variables
                  if not supplied at runtime.
-        schema_: A schema definition constraining the expected input
-                 variables. Aliased as 'schema'. Using `schema_` avoids
-                 collision with Pydantic methods.
+        schema: A schema definition constraining the expected input
+                variables. Can be passed as `schema` or `schema_` at runtime.
     """
 
     default: dict[str, Any] | None = None
-    schema_: Schema | None = Field(default=None, alias='schema')
-    model_config = ConfigDict(populate_by_name=True)
+    schema: Schema | None = Field(default=None, validation_alias=AliasChoices('schema', 'schema_'))
+    model_config = ConfigDict(populate_by_name=True, protected_namespaces=())
 
 
 class PromptOutputConfig(BaseModel):
@@ -259,13 +258,13 @@ class PromptOutputConfig(BaseModel):
 
     Attributes:
         format: Specifies the desired output format.
-        schema_: A schema definition constraining the structure of the
-                 expected output. Aliased as 'schema'.
+        schema: A schema definition constraining the structure of the
+                expected output. Can be passed as `schema` or `schema_` at runtime.
     """
 
     format: Literal['json', 'text'] | str | None = None
-    schema_: Schema | None = Field(default=None, alias='schema')
-    model_config = ConfigDict(populate_by_name=True)
+    schema: Schema | None = Field(default=None, validation_alias=AliasChoices('schema', 'schema_'))
+    model_config = ConfigDict(populate_by_name=True, protected_namespaces=())
 
 
 class PromptMetadata(HasMetadata, Generic[ModelConfigT]):
