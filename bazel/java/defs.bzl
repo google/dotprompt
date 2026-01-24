@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Bazel macros for dotprompt Java spec tests."""
+load("@rules_java//java:defs.bzl", "java_binary", "java_library", "java_test")
 
 def java_spec_test(name, spec_file):
     """Creates a java_test target for a specific spec YAML file.
@@ -32,10 +32,12 @@ def java_spec_test(name, spec_file):
             spec_file = "//spec:metadata.yaml",
         )
     """
-    native.java_test(
+    java_test(
         name = name,
         srcs = ["SpecTest.java"],
         data = [spec_file],
+        size = "small",
+        timeout = "short",
         jvm_flags = ["-Dspec.file=$(location " + spec_file + ")"],
         test_class = "com.google.dotprompt.SpecTest",
         deps = [

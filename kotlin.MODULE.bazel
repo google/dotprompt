@@ -16,4 +16,4 @@
 
 """Configuration for Bazel with Kotlin dependencies."""
 
-bazel_dep(name = "rules_kotlin", version = "2.2.1")
+bazel_dep(name = "rules_kotlin", version = "2.2.2")

@@ -19,6 +19,12 @@
 bazel_dep(name = "rules_java", version = "9.3.0")
 bazel_dep(name = "rules_jvm_external", version = "6.9")
 
+git_override(
+    module_name = "rules_jvm_external",
+    commit = "627b6db9505fdc5338ca33bc0283b82d3a3944e7",
+    remote = "https://github.com/bazel-contrib/rules_jvm_external.git",
+)
+
 # Register the specific Java toolchain version.
 # See https://github.com/bazelbuild/rules_java/blob/master/toolchains.bzl
 use_extension("@rules_java//java:extensions.bzl", "toolchains")

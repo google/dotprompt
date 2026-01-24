@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@rules_java//java:defs.bzl", "java_library")
+load("@rules_java//java:defs.bzl", "java_library", "java_test")
 
 java_library(
     name = "store",
@@ -38,6 +38,8 @@ java_library(
 java_test(
     name = "DirStoreSyncTest",
     srcs = ["DirStoreSyncTest.java"],
+    size = "small",
+    timeout = "short",
     deps = [
         ":store",
         "//java/com/google/dotprompt/models",
@@ -49,6 +51,8 @@ java_test(
 java_test(
     name = "DirStoreTest",
     srcs = ["DirStoreTest.java"],
+    size = "small",
+    timeout = "short",
     deps = [
         ":store",
         "//java/com/google/dotprompt/models",
@@ -60,6 +64,8 @@ java_test(
 java_test(
     name = "StoreUtilsTest",
     srcs = ["StoreUtilsTest.java"],
+    size = "small",
+    timeout = "short",
     deps = [
         ":store",
         "@maven//:com_google_truth_truth",
