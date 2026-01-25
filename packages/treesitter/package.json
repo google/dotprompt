@@ -39,13 +39,19 @@
     }
   },
   "devDependencies": {
-    "tree-sitter-cli": "^0.22.0"
+    "@biomejs/biome": "^1.5.0",
+    "node-gyp": "^10.0.0",
+    "tree-sitter-cli": "^0.22.6",
+    "prebuildify": "^6.0.0"
   },
   "scripts": {
     "generate": "tree-sitter generate",
     "test": "tree-sitter test",
     "build": "tree-sitter generate && node-gyp rebuild",
-    "install": "node-gyp-build"
+    "install": "node-gyp-build",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "prebuildify": "prebuildify --napi --strip"
   },
   "tree-sitter": [
     {

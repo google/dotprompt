@@ -1,0 +1,60 @@
+{
+  "name": "@dotprompt/codemirror",
+  "version": "0.1.0",
+  "description": "CodeMirror 6 language support for Dotprompt (.prompt) files",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "watch": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check . && tsc --noEmit",
+    "format": "biome check --write ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/google/dotprompt.git",
+    "directory": "packages/codemirror"
+  },
+  "keywords": [
+    "codemirror",
+    "editor",
+    "dotprompt",
+    "prompt",
+    "llm",
+    "syntax-highlighting",
+    "genkit"
+  ],
+  "author": "Google",
+  "license": "Apache-2.0",
+  "peerDependencies": {
+    "@codemirror/autocomplete": "^6.0.0",
+    "@codemirror/language": "^6.0.0",
+    "@codemirror/state": "^6.0.0",
+    "@codemirror/view": "^6.0.0",
+    "@lezer/highlight": "^1.0.0",
+    "@lezer/lr": "^1.0.0"
+  },
+  "devDependencies": {
+    "@codemirror/autocomplete": "^6.18.0",
+    "@codemirror/language": "^6.10.0",
+    "@codemirror/state": "^6.4.0",
+    "@codemirror/view": "^6.35.0",
+    "@lezer/highlight": "^1.2.0",
+    "@lezer/lr": "^1.4.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "@biomejs/biome": "^1.5.0"
+  }
+}

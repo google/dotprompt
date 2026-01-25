@@ -14,78 +14,41 @@
 ;;
 ;; SPDX-License-Identifier: Apache-2.0
 
-; Highlight queries for Dotprompt Tree-sitter grammar
-; For use with nvim-treesitter
-
-; License header comments
-(header_comment) @comment
-
 ; Frontmatter
-(frontmatter_delimiter) @punctuation.delimiter
-(yaml_content) @embedded
-(yaml_line) @string
+(frontmatter) @meta
 
-; Handlebars expressions
-(handlebars_expression
-  "{{" @punctuation.bracket
-  "}}" @punctuation.bracket)
+(yaml_key) @property
+(yaml_value) @string
 
-; Helper names
-(helper_name) @function.call
-
-; Block expressions
-(block_expression
-  "{{#" @punctuation.bracket
-  (block_name) @keyword.control
-  "}}" @punctuation.bracket)
-
-(close_block
-  "{{/" @punctuation.bracket
-  (block_name) @keyword.control
-  "}}" @punctuation.bracket)
-
-(else_expression) @keyword.control
-
-; Dotprompt-specific helpers
-((helper_name) @keyword.control.dotprompt
-  (#any-of? @keyword.control.dotprompt
-    "role" "json" "media" "history" "section" "ifEquals" "unlessEquals"))
-
-; Block keywords
-((block_name) @keyword.control.flow
-  (#any-of? @keyword.control.flow
-    "if" "unless" "each" "with" "role" "section"))
-
-; Partials
-(partial_reference
-  ">" @punctuation.special
-  (identifier) @function)
-
-; Variables
-(variable_reference) @variable
-
-; Special variables
-((variable_reference) @variable.builtin
-  (#any-of? @variable.builtin "@index" "@first" "@last" "@key" "this"))
-
-; Arguments
-(named_argument
-  (identifier) @property
-  "=" @operator)
-
-; Literals
-(string_literal) @string
-(number_literal) @number
-(boolean_literal) @boolean
-
-; Comments
+(header_comment) @comment
 (handlebars_comment) @comment
 
-; Dotprompt markers
-(dotprompt_marker
-  "<<<dotprompt:" @keyword.directive
-  (marker_content) @string.special
-  ">>>" @keyword.directive)
+; Handlebars
+(handlebars_block
+  (block_expression
+    "{{#" @punctuation.bracket
+    (block_name) @keyword
+    "}}" @punctuation.bracket
+  )
+  (close_block
+    "{{/" @punctuation.bracket
+    (block_name) @keyword
+    "}}" @punctuation.bracket
+  )
+)
 
-; Plain text
-(text) @none
+(handlebars_expression
+  "{{" @punctuation.bracket
+  "}}" @punctuation.bracket
+)
+
+(helper_name) @function
+
+(variable_reference) @variable
+(string_literal) @string
+(number) @number
+(boolean) @constant.builtin
+(key) @attribute
+
+; Dotprompt markers
+(dotprompt_marker) @keyword

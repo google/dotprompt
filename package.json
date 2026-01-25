@@ -1,7 +1,7 @@
 {
   "packageManager": "pnpm@10.25.0",
   "scripts": {
-    "build": "pnpm -C js build",
+    "build": "pnpm -r run --if-present build",
     "format": "pnpm dlx @biomejs/biome check --formatter-enabled=true --linter-enabled=false --fix . && scripts/add_license",
     "format:check": "pnpm dlx @biomejs/biome ci --linter-enabled=false --formatter-enabled=true . && scripts/check_license",
     "lint": "pnpm dlx @biomejs/biome lint --fix . && scripts/add_license",

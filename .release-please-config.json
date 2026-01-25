@@ -143,6 +143,53 @@
       "draft": false,
       "prerelease": false,
       "path": "packages/emacs"
+    },
+    "packages/monaco": {
+      "release-type": "node",
+      "package-name": "@dotprompt/monaco",
+      "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "draft": false,
+      "prerelease": false,
+      "path": "packages/monaco"
+    },
+    "packages/codemirror": {
+      "release-type": "node",
+      "package-name": "@dotprompt/codemirror",
+      "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "draft": false,
+      "prerelease": false,
+      "path": "packages/codemirror"
+    },
+    "packages/jetbrains": {
+      "release-type": "simple",
+      "package-name": "dotprompt-jetbrains",
+      "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "draft": false,
+      "prerelease": false,
+      "path": "packages/jetbrains",
+      "extra-files": [
+        {
+          "type": "xml",
+          "path": "src/main/resources/META-INF/plugin.xml",
+          "jsonpath": "idea-plugin.change-notes"
+        }
+      ]
+    },
+    "packages/treesitter": {
+      "release-type": "node",
+      "package-name": "tree-sitter-dotprompt",
+      "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "draft": false,
+      "prerelease": false,
+      "path": "packages/treesitter"
     }
   },
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"

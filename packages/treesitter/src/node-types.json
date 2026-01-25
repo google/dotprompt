@@ -1,0 +1,488 @@
+[
+  {
+    "type": "argument",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "boolean",
+          "named": true
+        },
+        {
+          "type": "hash_param",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "string_literal",
+          "named": true
+        },
+        {
+          "type": "variable_reference",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "block_expression",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "block_name",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "argument",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "boolean",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "close_block",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "block_name",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "document",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "frontmatter",
+          "named": true
+        },
+        {
+          "type": "license_header",
+          "named": true
+        },
+        {
+          "type": "template_body",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "dotprompt_marker",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "marker_content",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "expression_content",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "argument",
+          "named": true
+        },
+        {
+          "type": "helper_name",
+          "named": true
+        },
+        {
+          "type": "partial_reference",
+          "named": true
+        },
+        {
+          "type": "variable_reference",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "frontmatter",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "frontmatter_delimiter",
+          "named": true
+        },
+        {
+          "type": "yaml_content",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "handlebars_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "block_expression",
+          "named": true
+        },
+        {
+          "type": "close_block",
+          "named": true
+        },
+        {
+          "type": "dotprompt_marker",
+          "named": true
+        },
+        {
+          "type": "handlebars_block",
+          "named": true
+        },
+        {
+          "type": "handlebars_comment",
+          "named": true
+        },
+        {
+          "type": "handlebars_expression",
+          "named": true
+        },
+        {
+          "type": "text",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "handlebars_comment",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "handlebars_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "expression_content",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "hash_param",
+    "named": true,
+    "fields": {
+      "key": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "key",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "boolean",
+            "named": true
+          },
+          {
+            "type": "number",
+            "named": true
+          },
+          {
+            "type": "string_literal",
+            "named": true
+          },
+          {
+            "type": "variable_reference",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "license_header",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "header_comment",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "string_literal",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "template_body",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "dotprompt_marker",
+          "named": true
+        },
+        {
+          "type": "handlebars_block",
+          "named": true
+        },
+        {
+          "type": "handlebars_comment",
+          "named": true
+        },
+        {
+          "type": "handlebars_expression",
+          "named": true
+        },
+        {
+          "type": "text",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "variable_reference",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "path",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "yaml_content",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "header_comment",
+          "named": true
+        },
+        {
+          "type": "yaml_line",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "yaml_line",
+    "named": true,
+    "fields": {
+      "key": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "yaml_key",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "yaml_value",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "\"",
+    "named": false
+  },
+  {
+    "type": "'",
+    "named": false
+  },
+  {
+    "type": "--}}",
+    "named": false
+  },
+  {
+    "type": ":",
+    "named": false
+  },
+  {
+    "type": "<<<dotprompt:",
+    "named": false
+  },
+  {
+    "type": "=",
+    "named": false
+  },
+  {
+    "type": ">",
+    "named": false
+  },
+  {
+    "type": ">>>",
+    "named": false
+  },
+  {
+    "type": "block_name",
+    "named": true
+  },
+  {
+    "type": "else",
+    "named": false
+  },
+  {
+    "type": "false",
+    "named": false
+  },
+  {
+    "type": "frontmatter_delimiter",
+    "named": true
+  },
+  {
+    "type": "header_comment",
+    "named": true
+  },
+  {
+    "type": "helper_name",
+    "named": true
+  },
+  {
+    "type": "key",
+    "named": true
+  },
+  {
+    "type": "marker_content",
+    "named": true
+  },
+  {
+    "type": "number",
+    "named": true
+  },
+  {
+    "type": "partial_reference",
+    "named": true
+  },
+  {
+    "type": "path",
+    "named": true
+  },
+  {
+    "type": "text",
+    "named": true
+  },
+  {
+    "type": "true",
+    "named": false
+  },
+  {
+    "type": "yaml_key",
+    "named": true
+  },
+  {
+    "type": "yaml_value",
+    "named": true
+  },
+  {
+    "type": "{{",
+    "named": false
+  },
+  {
+    "type": "{{!",
+    "named": false
+  },
+  {
+    "type": "{{!--",
+    "named": false
+  },
+  {
+    "type": "{{#",
+    "named": false
+  },
+  {
+    "type": "{{/",
+    "named": false
+  },
+  {
+    "type": "}}",
+    "named": false
+  }
+]

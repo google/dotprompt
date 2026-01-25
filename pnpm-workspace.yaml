@@ -16,3 +16,6 @@ packages:
   - js
   - third_party/docsite
   - packages/vscode
+  - packages/monaco
+  - packages/codemirror
+  - packages/treesitter

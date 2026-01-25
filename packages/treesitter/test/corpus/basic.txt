@@ -13,7 +13,9 @@ Hello world!
   (frontmatter
     (frontmatter_delimiter)
     (yaml_content
-      (yaml_line))
+      (yaml_line
+        key: (yaml_key)
+        value: (yaml_value)))
     (frontmatter_delimiter))
   (template_body
     (text)))
@@ -31,7 +33,8 @@ Hello {{ name }}!
     (text)
     (handlebars_expression
       (expression_content
-        (variable_reference)))
+        (variable_reference
+          (path))))
     (text)))
 
 ================================================================================
@@ -48,13 +51,13 @@ You are helpful.
   (template_body
     (handlebars_block
       (block_expression
-        (block_name)
+        name: (block_name)
         (argument
-          (string_literal))))
-    (text)
-    (handlebars_block
+          (string_literal)))
+      (text)
       (close_block
-        (block_name)))))
+        name: (block_name)))
+    (text)))
 
 ================================================================================
 EACH LOOP
@@ -70,17 +73,18 @@ EACH LOOP
   (template_body
     (handlebars_block
       (block_expression
-        (block_name)
+        name: (block_name)
         (argument
-          (variable_reference))))
-    (text)
-    (handlebars_expression
-      (expression_content
-        (variable_reference)))
-    (text)
-    (handlebars_block
+          (variable_reference
+            (path))))
+      (text)
+      (handlebars_expression
+        (expression_content
+          (variable_reference
+            (path))))
       (close_block
-        (block_name)))))
+        name: (block_name)))
+    (text)))
 
 ================================================================================
 PARTIAL
@@ -94,8 +98,8 @@ PARTIAL
   (template_body
     (handlebars_expression
       (expression_content
-        (partial_reference
-          (identifier))))))
+        (partial_reference)))
+    (text)))
 
 ================================================================================
 COMMENT
@@ -107,7 +111,8 @@ COMMENT
 
 (document
   (template_body
-    (handlebars_comment)))
+    (handlebars_comment)
+    (text)))
 
 ================================================================================
 DOTPROMPT MARKER
@@ -120,7 +125,8 @@ DOTPROMPT MARKER
 (document
   (template_body
     (dotprompt_marker
-      (marker_content))))
+      (marker_content))
+    (text)))
 
 ================================================================================
 FRONTMATTER WITH CONFIG
@@ -143,18 +149,25 @@ Hello {{ name }}!
   (frontmatter
     (frontmatter_delimiter)
     (yaml_content
-      (yaml_line)
-      (yaml_line)
-      (yaml_line)
-      (yaml_line)
-      (yaml_line)
-      (yaml_line))
+      (yaml_line
+        key: (yaml_key)
+        value: (yaml_value))
+      (yaml_line
+        key: (yaml_key)
+        value: (yaml_value))
+      (yaml_line
+        key: (yaml_key)
+        value: (yaml_value))
+      (yaml_line
+        key: (yaml_key)
+        value: (yaml_value)))
     (frontmatter_delimiter))
   (template_body
     (text)
     (handlebars_expression
       (expression_content
-        (variable_reference)))
+        (variable_reference
+          (path))))
     (text)))
 
 ================================================================================
@@ -177,7 +190,9 @@ Hello
   (frontmatter
     (frontmatter_delimiter)
     (yaml_content
-      (yaml_line))
+      (yaml_line
+        key: (yaml_key)
+        value: (yaml_value)))
     (frontmatter_delimiter))
   (template_body
     (text)))

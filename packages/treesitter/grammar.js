@@ -12,18 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @file Tree-sitter grammar for Dotprompt files
- * @author Google
- * @license Apache-2.0
- *
- * Dotprompt files consist of:
- * 1. Optional YAML frontmatter (between --- delimiters)
- * 2. Template body with Handlebars expressions and Dotprompt markers
  */
 
 /// <reference types="tree-sitter-cli/dsl" />
@@ -32,12 +20,7 @@
 module.exports = grammar({
   name: 'dotprompt',
 
-  extras: ($) => [/\s/],
-
-  externals: ($) => [$._eof],
-
   rules: {
-    // Document structure
     document: ($) =>
       seq(
         optional($.license_header),
@@ -45,109 +28,116 @@ module.exports = grammar({
         optional($.template_body)
       ),
 
-    // License header (# comments before frontmatter)
     license_header: ($) => repeat1($.header_comment),
 
-    header_comment: ($) => seq('#', /[^\n]*/, /\n/),
+    header_comment: ($) => token(seq('#', /.*/)),
 
-    // YAML Frontmatter (--- ... ---)
     frontmatter: ($) =>
-      seq(
-        $.frontmatter_delimiter,
-        optional($.yaml_content),
-        $.frontmatter_delimiter
-      ),
-
-    frontmatter_delimiter: ($) => '---',
-
-    yaml_content: ($) => repeat1($.yaml_line),
-
-    yaml_line: ($) => seq(/[^\n]*/, /\n/),
-
-    // Template body
-    template_body: ($) =>
-      repeat1(
-        choice(
-          $.handlebars_expression,
-          $.handlebars_block,
-          $.dotprompt_marker,
-          $.handlebars_comment,
-          $.text
+      prec(
+        1,
+        seq(
+          $.frontmatter_delimiter,
+          /\r?\n/,
+          alias(repeat($._yaml_content), $.yaml_content),
+          $.frontmatter_delimiter,
+          /\r?\n/
         )
       ),
 
-    // Handlebars expressions: {{ ... }}
-    handlebars_expression: ($) =>
-      seq('{{', optional($.expression_content), '}}'),
+    frontmatter_delimiter: ($) => token(prec(10, '---')),
+
+    _yaml_content: ($) => choice($.yaml_line, $.header_comment, /\s+/),
+
+    yaml_line: ($) =>
+      seq(
+        field('key', alias(/[a-zA-Z_][a-zA-Z0-9_-]*/, $.yaml_key)),
+        ':',
+        optional(field('value', alias(/.+/, $.yaml_value))),
+        /\r?\n/
+      ),
+
+    template_body: ($) => repeat1($._content),
+
+    _content: ($) =>
+      choice(
+        $.handlebars_block,
+        $.handlebars_expression,
+        $.handlebars_comment,
+        $.dotprompt_marker,
+        $.text
+      ),
+
+    handlebars_block: ($) =>
+      seq(
+        $.block_expression, // block_start renamed
+        repeat($._content),
+        $.close_block // block_end renamed
+      ),
+
+    block_expression: ($) =>
+      seq(
+        '{{#',
+        field('name', alias($.path, $.block_name)), // helper_name -> block_name
+        repeat($.argument), // _param -> argument
+        '}}'
+      ),
+
+    close_block: ($) =>
+      seq('{{/', field('name', alias($.path, $.block_name)), '}}'),
+
+    handlebars_expression: ($) => seq('{{', $.expression_content, '}}'),
 
     expression_content: ($) =>
-      choice($.helper_call, $.variable_reference, $.partial_reference),
+      choice(
+        seq('>', alias($.path, $.partial_reference)),
+        'else',
+        seq(alias($.path, $.helper_name), repeat1($.argument)),
+        alias($.variable_reference, $.variable_reference)
+      ),
 
-    // Helper call: {{helper arg1 arg2}}
-    helper_call: ($) => seq($.helper_name, repeat($.argument)),
-
-    helper_name: ($) => /[a-zA-Z_][a-zA-Z0-9_]*/,
+    handlebars_comment: ($) =>
+      choice(
+        seq('{{!', /([^}]|}[^}])*?/, '}}'),
+        seq('{{!--', /([^-]|-+|-[^}])*?/, '--}}')
+      ),
 
     argument: ($) =>
       choice(
         $.string_literal,
-        $.number_literal,
-        $.boolean_literal,
+        $.number,
+        $.boolean,
         $.variable_reference,
-        $.named_argument
+        $.hash_param
       ),
 
-    named_argument: ($) =>
+    hash_param: ($) =>
       seq(
-        $.identifier,
+        field('key', alias($.path, $.key)),
         '=',
-        choice(
-          $.string_literal,
-          $.number_literal,
-          $.boolean_literal,
-          $.variable_reference
+        field(
+          'value',
+          choice($.string_literal, $.number, $.boolean, $.variable_reference)
         )
       ),
 
-    // Variable reference: {{variable}} or {{object.property}}
-    variable_reference: ($) => /[a-zA-Z_@][a-zA-Z0-9_.]*/,
+    variable_reference: ($) =>
+      choice(
+        /@[a-zA-Z_][a-zA-Z0-9_]*/, // @index, @first
+        $.path
+      ),
 
-    // Partial reference: {{> partialName}}
-    partial_reference: ($) =>
-      seq('>', $.identifier, optional($.variable_reference)),
+    path: ($) => /[a-zA-Z_][a-zA-Z0-9_.]*/,
 
-    // Handlebars blocks: {{#block}} ... {{/block}}
-    handlebars_block: ($) =>
-      choice($.block_expression, $.else_expression, $.close_block),
-
-    block_expression: ($) => seq('{{#', $.block_name, repeat($.argument), '}}'),
-
-    else_expression: ($) => '{{else}}',
-
-    close_block: ($) => seq('{{/', $.block_name, '}}'),
-
-    block_name: ($) => /[a-zA-Z_][a-zA-Z0-9_]*/,
-
-    // Handlebars comments: {{! ... }} or {{!-- ... --}}
-    handlebars_comment: ($) =>
-      choice(seq('{{!', /[^}]*/, '}}'), seq('{{!--', /[^-]*/, '--}}')),
-
-    // Dotprompt markers: <<<dotprompt:...>>>
-    dotprompt_marker: ($) => seq('<<<dotprompt:', $.marker_content, '>>>'),
-
-    marker_content: ($) => /[^>]+/,
-
-    // Literals
     string_literal: ($) =>
-      choice(seq('"', /[^"]*/, '"'), seq("'", /[^']*/, "'")),
+      choice(seq('"', /([^"\\]|\\.)*/, '"'), seq("'", /([^'\\]|\\.)*/, "'")),
 
-    number_literal: ($) => /\d+(\.\d+)?/,
+    number: ($) => /-?\d+(\.\d+)?/,
 
-    boolean_literal: ($) => choice('true', 'false'),
+    boolean: ($) => choice('true', 'false'),
 
-    identifier: ($) => /[a-zA-Z_][a-zA-Z0-9_-]*/,
+    dotprompt_marker: ($) =>
+      seq('<<<dotprompt:', alias(/[^>]+/, $.marker_content), '>>>'),
 
-    // Plain text
-    text: ($) => /[^{<]+/,
+    text: ($) => /[^{<#]+|\{|<|#/,
   },
 });
