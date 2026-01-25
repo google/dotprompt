@@ -6,7 +6,9 @@ Language support for Dotprompt (`.prompt`) files in JetBrains IDEs (IntelliJ IDE
 
 - **Syntax Highlighting**: YAML frontmatter, Handlebars templates, Dotprompt markers
 - **LSP Integration**: Real-time diagnostics, formatting, and hover documentation (via LSP4IJ)
+- **Live Templates**: Type `role`, `if`, `each`, `json` + Tab for quick insertions
 - **Code Comments**: Block comment support using `{{! ... }}`
+- **Settings UI**: Configure promptly path and format on save
 
 ## Requirements
 
@@ -35,7 +37,7 @@ Language support for Dotprompt (`.prompt`) files in JetBrains IDEs (IntelliJ IDE
 
 3. **Install**:
    - Go to **Settings/Preferences** → **Plugins** → **⚙️** → **Install Plugin from Disk...**
-   - Select `build/distributions/dotprompt-intellij-0.1.0.zip`
+   - Select `build/distributions/dotprompt-intellij-0.2.0.zip`
 
 ### From Source (Bazel)
 
@@ -72,6 +74,30 @@ cargo build --release -p promptly
 ./gradlew test
 ```
 
+## Live Templates
+
+Type these abbreviations and press Tab to expand:
+
+| Abbreviation | Expands To |
+|--------------|------------|
+| `role` | Role block with customizable role name |
+| `system` | System role block |
+| `user` | User role block |
+| `model` | Model role block |
+| `if` | Handlebars if block |
+| `ifelse` | Handlebars if-else block |
+| `unless` | Handlebars unless block |
+| `each` | Handlebars each loop |
+| `with` | Handlebars with block |
+| `json` | JSON serialization helper |
+| `media` | Media embedding helper |
+| `history` | History insertion |
+| `section` | Named section block |
+| `partial` | Partial template inclusion |
+| `comment` | Handlebars comment |
+| `prompt` | Complete prompt template |
+| `frontmatter` | YAML frontmatter |
+
 ## LSP Features
 
 When `promptly` is installed and in your PATH, you get:
@@ -84,9 +110,20 @@ When `promptly` is installed and in your PATH, you get:
 
 ## Configuration
 
+### Settings UI
+
+Go to **Settings/Preferences** → **Languages & Frameworks** → **Dotprompt**:
+
+- **Promptly path**: Custom path to the promptly executable
+- **Enable LSP features**: Toggle diagnostics, formatting, hover
+- **Format on save**: Automatically format when saving
+
+### Auto-Detection
+
 The plugin automatically finds `promptly` in:
-1. System PATH
-2. `~/.cargo/bin/promptly`
+1. User-configured path (Settings)
+2. System PATH
+3. `~/.cargo/bin/promptly`
 
 ## Architecture
 

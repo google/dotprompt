@@ -22,11 +22,13 @@ import {
   LanguageClient,
   LanguageClientOptions,
   ServerOptions,
+  State,
   TransportKind,
 } from 'vscode-languageclient/node';
 
 let client: LanguageClient | undefined;
 let outputChannel: vscode.OutputChannel;
+let statusBarItem: vscode.StatusBarItem;
 
 export async function activate(context: vscode.ExtensionContext) {
   // Create output channel early for debugging
@@ -38,11 +40,142 @@ export async function activate(context: vscode.ExtensionContext) {
     `Dotprompt: Extension path: ${context.extensionPath}`
   );
 
+  // Create status bar item
+  statusBarItem = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Right,
+    100
+  );
+  statusBarItem.command = 'dotprompt.showOutput';
+  context.subscriptions.push(statusBarItem);
+  updateStatusBar('$(loading~spin) Dotprompt', 'Initializing...');
+
   // Register completions (existing functionality)
   const completionProvider = registerCompletionProvider();
   context.subscriptions.push(completionProvider);
 
+  // Register commands
+  context.subscriptions.push(
+    vscode.commands.registerCommand('dotprompt.formatDocument', formatDocument),
+    vscode.commands.registerCommand('dotprompt.restartLsp', () =>
+      restartLspClient(context)
+    ),
+    vscode.commands.registerCommand('dotprompt.showOutput', () =>
+      outputChannel.show()
+    )
+  );
+
+  // Register format on save
+  context.subscriptions.push(
+    vscode.workspace.onWillSaveTextDocument(async (event) => {
+      const config = vscode.workspace.getConfiguration('dotprompt');
+      if (
+        config.get<boolean>('formatOnSave') &&
+        event.document.languageId === 'dotprompt' &&
+        client?.state === State.Running
+      ) {
+        const edit = await formatDocumentEdit(event.document);
+        if (edit) {
+          event.waitUntil(Promise.resolve([edit]));
+        }
+      }
+    })
+  );
+
   // Start LSP client if promptly is available
+  const config = vscode.workspace.getConfiguration('dotprompt');
+  if (config.get<boolean>('enableLsp', true)) {
+    await startLspClient(context, outputChannel);
+  } else {
+    updateStatusBar('$(circle-slash) Dotprompt', 'LSP disabled');
+  }
+}
+
+/**
+ * Updates the status bar with current LSP state.
+ */
+function updateStatusBar(text: string, tooltip: string) {
+  statusBarItem.text = text;
+  statusBarItem.tooltip = tooltip;
+  statusBarItem.show();
+}
+
+/**
+ * Formats the current document using the LSP.
+ */
+async function formatDocument() {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor || editor.document.languageId !== 'dotprompt') {
+    vscode.window.showWarningMessage('No Dotprompt file is active.');
+    return;
+  }
+
+  if (!client || client.state !== State.Running) {
+    vscode.window.showWarningMessage(
+      'Dotprompt LSP is not running. Install promptly for formatting.'
+    );
+    return;
+  }
+
+  await vscode.commands.executeCommand('editor.action.formatDocument');
+}
+
+/**
+ * Gets a text edit for formatting a document.
+ */
+async function formatDocumentEdit(
+  document: vscode.TextDocument
+): Promise<vscode.TextEdit | undefined> {
+  if (!client || client.state !== State.Running) {
+    return undefined;
+  }
+
+  try {
+    const edits = await client.sendRequest('textDocument/formatting', {
+      textDocument: { uri: document.uri.toString() },
+      options: {
+        tabSize: 2,
+        insertSpaces: true,
+      },
+    });
+
+    if (Array.isArray(edits) && edits.length > 0) {
+      // Convert LSP edits to VS Code edits
+      const edit = edits[0] as {
+        range: {
+          start: { line: number; character: number };
+          end: { line: number; character: number };
+        };
+        newText: string;
+      };
+      return new vscode.TextEdit(
+        new vscode.Range(
+          edit.range.start.line,
+          edit.range.start.character,
+          edit.range.end.line,
+          edit.range.end.character
+        ),
+        edit.newText
+      );
+    }
+  } catch (error) {
+    outputChannel.appendLine(`Format error: ${error}`);
+  }
+
+  return undefined;
+}
+
+/**
+ * Restarts the LSP client.
+ */
+async function restartLspClient(context: vscode.ExtensionContext) {
+  outputChannel.appendLine('Dotprompt: Restarting LSP client...');
+  updateStatusBar('$(loading~spin) Dotprompt', 'Restarting...');
+
+  if (client) {
+    await client.stop();
+    client = undefined;
+  }
+
   await startLspClient(context, outputChannel);
 }
 
@@ -127,9 +260,26 @@ async function startLspClient(
     outputChannel.appendLine(
       'promptly binary not found. LSP features disabled. Install promptly for enhanced features.'
     );
-    vscode.window.showWarningMessage(
-      "Promptly LSP: Binary not found. Set 'dotprompt.promptlyPath' in settings."
+    updateStatusBar(
+      '$(warning) Dotprompt',
+      'promptly not found. Click to see details.'
     );
+    vscode.window
+      .showWarningMessage(
+        "Promptly LSP: Binary not found. Install with 'cargo install promptly' or set path in settings.",
+        'Open Settings',
+        'Show Output'
+      )
+      .then((selection) => {
+        if (selection === 'Open Settings') {
+          vscode.commands.executeCommand(
+            'workbench.action.openSettings',
+            'dotprompt.promptlyPath'
+          );
+        } else if (selection === 'Show Output') {
+          outputChannel.show();
+        }
+      });
     return;
   }
 
@@ -156,16 +306,46 @@ async function startLspClient(
     clientOptions
   );
 
+  // Listen for state changes
+  client.onDidChangeState((event) => {
+    switch (event.newState) {
+      case State.Running:
+        updateStatusBar('$(check) Dotprompt', 'LSP connected');
+        break;
+      case State.Starting:
+        updateStatusBar('$(loading~spin) Dotprompt', 'LSP starting...');
+        break;
+      case State.Stopped:
+        updateStatusBar('$(error) Dotprompt', 'LSP stopped');
+        break;
+    }
+  });
+
   // Start the client
   try {
     await client.start();
     outputChannel.appendLine(
       'Dotprompt: Promptly LSP client started successfully'
     );
-    vscode.window.showInformationMessage('Promptly LSP connected!');
   } catch (error) {
     outputChannel.appendLine(`Failed to start Promptly LSP client: ${error}`);
-    vscode.window.showErrorMessage(`Promptly LSP failed to start: ${error}`);
+    updateStatusBar(
+      '$(error) Dotprompt',
+      `LSP failed to start: ${error}. Click for details.`
+    );
+    vscode.window
+      .showErrorMessage(
+        `Promptly LSP failed to start: ${error}`,
+        'Show Output',
+        'Retry'
+      )
+      .then((selection) => {
+        if (selection === 'Show Output') {
+          outputChannel.show();
+        } else if (selection === 'Retry') {
+          restartLspClient(context);
+        }
+      });
     client = undefined;
   }
 }

@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Copyright 2026 Google LLC
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+
+ SPDX-License-Identifier: Apache-2.0
+-->
+<templateSet group="Dotprompt">
+    <!-- Role blocks -->
+    <template name="role" value="{{#role &quot;$ROLE$&quot;}}&#10;$CONTENT$&#10;{{/role}}" description="Handlebars role block" toReformat="false" toShortenFQNames="true">
+        <variable name="ROLE" expression="" defaultValue="&quot;user&quot;" alwaysStopAt="true"/>
+        <variable name="CONTENT" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <template name="system" value="{{#role &quot;system&quot;}}&#10;$CONTENT$&#10;{{/role}}" description="System role block" toReformat="false" toShortenFQNames="true">
+        <variable name="CONTENT" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <template name="user" value="{{#role &quot;user&quot;}}&#10;$CONTENT$&#10;{{/role}}" description="User role block" toReformat="false" toShortenFQNames="true">
+        <variable name="CONTENT" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <template name="model" value="{{#role &quot;model&quot;}}&#10;$CONTENT$&#10;{{/role}}" description="Model role block" toReformat="false" toShortenFQNames="true">
+        <variable name="CONTENT" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <!-- Conditionals -->
+    <template name="if" value="{{#if $CONDITION$}}&#10;$CONTENT$&#10;{{/if}}" description="Handlebars if block" toReformat="false" toShortenFQNames="true">
+        <variable name="CONDITION" expression="" defaultValue="" alwaysStopAt="true"/>
+        <variable name="CONTENT" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <template name="ifelse" value="{{#if $CONDITION$}}&#10;$TRUE_CONTENT$&#10;{{else}}&#10;$FALSE_CONTENT$&#10;{{/if}}" description="Handlebars if-else block" toReformat="false" toShortenFQNames="true">
+        <variable name="CONDITION" expression="" defaultValue="" alwaysStopAt="true"/>
+        <variable name="TRUE_CONTENT" expression="" defaultValue="" alwaysStopAt="true"/>
+        <variable name="FALSE_CONTENT" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <template name="unless" value="{{#unless $CONDITION$}}&#10;$CONTENT$&#10;{{/unless}}" description="Handlebars unless block" toReformat="false" toShortenFQNames="true">
+        <variable name="CONDITION" expression="" defaultValue="" alwaysStopAt="true"/>
+        <variable name="CONTENT" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <template name="ifEquals" value="{{#ifEquals $VAR1$ $VAR2$}}&#10;$CONTENT$&#10;{{/ifEquals}}" description="Compare two values for equality" toReformat="false" toShortenFQNames="true">
+        <variable name="VAR1" expression="" defaultValue="" alwaysStopAt="true"/>
+        <variable name="VAR2" expression="" defaultValue="" alwaysStopAt="true"/>
+        <variable name="CONTENT" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <template name="unlessEquals" value="{{#unlessEquals $VAR1$ $VAR2$}}&#10;$CONTENT$&#10;{{/unlessEquals}}" description="Compare two values for inequality" toReformat="false" toShortenFQNames="true">
+        <variable name="VAR1" expression="" defaultValue="" alwaysStopAt="true"/>
+        <variable name="VAR2" expression="" defaultValue="" alwaysStopAt="true"/>
+        <variable name="CONTENT" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <!-- Loops -->
+    <template name="each" value="{{#each $ARRAY$}}&#10;$CONTENT$&#10;{{/each}}" description="Handlebars each loop" toReformat="false" toShortenFQNames="true">
+        <variable name="ARRAY" expression="" defaultValue="items" alwaysStopAt="true"/>
+        <variable name="CONTENT" expression="" defaultValue="{{this}}" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <template name="with" value="{{#with $CONTEXT$}}&#10;$CONTENT$&#10;{{/with}}" description="Handlebars with block" toReformat="false" toShortenFQNames="true">
+        <variable name="CONTEXT" expression="" defaultValue="" alwaysStopAt="true"/>
+        <variable name="CONTENT" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <!-- Helpers -->
+    <template name="json" value="{{ json $VAR$ }}" description="JSON serialization helper" toReformat="false" toShortenFQNames="true">
+        <variable name="VAR" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <template name="media" value="{{media url=$URL$}}" description="Embed media content" toReformat="false" toShortenFQNames="true">
+        <variable name="URL" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <template name="history" value="{{history}}" description="Insert conversation history" toReformat="false" toShortenFQNames="true">
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <template name="section" value="{{#section &quot;$NAME$&quot;}}&#10;$CONTENT$&#10;{{/section}}" description="Named section block" toReformat="false" toShortenFQNames="true">
+        <variable name="NAME" expression="" defaultValue="" alwaysStopAt="true"/>
+        <variable name="CONTENT" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <!-- Partials -->
+    <template name="partial" value="{{> $PARTIAL_NAME$}}" description="Include a partial template" toReformat="false" toShortenFQNames="true">
+        <variable name="PARTIAL_NAME" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <!-- Comments -->
+    <template name="comment" value="{{! $COMMENT$ }}" description="Handlebars comment" toReformat="false" toShortenFQNames="true">
+        <variable name="COMMENT" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <!-- Full template -->
+    <template name="prompt" value="---&#10;model: $MODEL$&#10;config:&#10;  temperature: $TEMPERATURE$&#10;input:&#10;  schema:&#10;    $VARIABLE$: string&#10;---&#10;&#10;{{#role &quot;system&quot;}}&#10;$SYSTEM_PROMPT$&#10;{{/role}}&#10;&#10;{{#role &quot;user&quot;}}&#10;$USER_PROMPT$&#10;{{/role}}" description="Complete prompt template" toReformat="false" toShortenFQNames="true">
+        <variable name="MODEL" expression="" defaultValue="&quot;gemini-2.0-flash&quot;" alwaysStopAt="true"/>
+        <variable name="TEMPERATURE" expression="" defaultValue="&quot;0.7&quot;" alwaysStopAt="true"/>
+        <variable name="VARIABLE" expression="" defaultValue="&quot;name&quot;" alwaysStopAt="true"/>
+        <variable name="SYSTEM_PROMPT" expression="" defaultValue="&quot;You are a helpful assistant.&quot;" alwaysStopAt="true"/>
+        <variable name="USER_PROMPT" expression="" defaultValue="" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+
+    <!-- Frontmatter -->
+    <template name="frontmatter" value="---&#10;model: $MODEL$&#10;config:&#10;  temperature: $TEMPERATURE$&#10;---" description="YAML frontmatter" toReformat="false" toShortenFQNames="true">
+        <variable name="MODEL" expression="" defaultValue="&quot;gemini-2.0-flash&quot;" alwaysStopAt="true"/>
+        <variable name="TEMPERATURE" expression="" defaultValue="&quot;0.7&quot;" alwaysStopAt="true"/>
+        <context>
+            <option name="OTHER" value="true"/>
+        </context>
+    </template>
+</templateSet>

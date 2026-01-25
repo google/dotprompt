@@ -35,9 +35,24 @@ class PromptlyServerFactory : LanguageServerFactory {
 
     /**
      * Finds the promptly executable in common locations.
+     *
+     * Priority:
+     * 1. User-configured path in settings
+     * 2. System PATH
+     * 3. ~/.cargo/bin/promptly
+     * 4. Fallback to "promptly" (hope it's in PATH)
      */
     private fun findPromptlyExecutable(): String {
-        // Check PATH first
+        // Check user settings first
+        val settings = DotpromptSettings.getInstance()
+        if (settings.promptlyPath.isNotBlank()) {
+            val configuredPath = File(settings.promptlyPath)
+            if (configuredPath.exists() && configuredPath.canExecute()) {
+                return configuredPath.absolutePath
+            }
+        }
+
+        // Check PATH
         val pathDirs = System.getenv("PATH")?.split(File.pathSeparator) ?: emptyList()
         for (dir in pathDirs) {
             val promptly = File(dir, "promptly")

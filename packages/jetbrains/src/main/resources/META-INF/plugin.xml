@@ -30,6 +30,7 @@
         <li>Real-time diagnostics via LSP (requires <code>promptly</code>)</li>
         <li>Document formatting</li>
         <li>Hover documentation for helpers and frontmatter fields</li>
+        <li>Live templates for common patterns (role, if, each, json, etc.)</li>
     </ul>
 
     <h3>Installation</h3>
@@ -38,6 +39,12 @@
     ]]></description>
 
     <change-notes><![CDATA[
+    <h3>0.2.0</h3>
+    <ul>
+        <li>Live templates for common patterns</li>
+        <li>Settings UI for promptly path configuration</li>
+        <li>Format on save option</li>
+    </ul>
     <h3>0.1.0</h3>
     <ul>
         <li>Initial release</li>
@@ -72,6 +79,21 @@
         <lang.commenter
                 language="Dotprompt"
                 implementationClass="com.google.dotprompt.DotpromptCommenter"/>
+
+        <!-- Live templates -->
+        <defaultLiveTemplates file="/liveTemplates/Dotprompt.xml"/>
+        <liveTemplateContext
+                contextId="DOTPROMPT"
+                implementation="com.google.dotprompt.DotpromptTemplateContext"/>
+
+        <!-- Settings -->
+        <applicationConfigurable
+                parentId="language"
+                instance="com.google.dotprompt.DotpromptSettingsConfigurable"
+                id="com.google.dotprompt.settings"
+                displayName="Dotprompt"/>
+        <applicationService
+                serviceImplementation="com.google.dotprompt.DotpromptSettings"/>
     </extensions>
 
     <!-- LSP4IJ server definition -->
@@ -87,3 +109,4 @@
         <languageMapping language="Dotprompt" serverId="promptly"/>
     </extensions>
 </idea-plugin>
+

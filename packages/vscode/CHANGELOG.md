@@ -5,6 +5,25 @@ All notable changes to the Dotprompt VS Code extension will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-01-24
+
+### Added
+- **Status Bar Indicator**: Shows LSP connection status (connected, starting, error)
+- **Format on Save**: Automatically format `.prompt` files when saving (configurable)
+- **Commands**:
+  - `Dotprompt: Format Document` - Format the current file
+  - `Dotprompt: Restart Language Server` - Restart the LSP connection
+  - `Dotprompt: Show Output` - View LSP logs
+- **Improved Error Handling**: Better messages when promptly is not found with actions
+
+### Changed
+- Status bar now shows real-time LSP state
+- Error messages offer actionable options (Open Settings, Retry, Show Output)
+
+### Configuration
+- `dotprompt.formatOnSave`: Enable/disable format on save (default: true)
+- `dotprompt.trace.server`: Configure LSP message tracing
+
 ## [0.1.0] - 2026-01-24
 
 ### Added

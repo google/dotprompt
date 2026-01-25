@@ -1,0 +1,183 @@
+================================================================================
+DOCUMENT
+================================================================================
+
+---
+model: gemini-2.0-flash
+---
+Hello world!
+
+--------------------------------------------------------------------------------
+
+(document
+  (frontmatter
+    (frontmatter_delimiter)
+    (yaml_content
+      (yaml_line))
+    (frontmatter_delimiter))
+  (template_body
+    (text)))
+
+================================================================================
+HANDLEBARS EXPRESSION
+================================================================================
+
+Hello {{ name }}!
+
+--------------------------------------------------------------------------------
+
+(document
+  (template_body
+    (text)
+    (handlebars_expression
+      (expression_content
+        (variable_reference)))
+    (text)))
+
+================================================================================
+ROLE BLOCK
+================================================================================
+
+{{#role "system"}}
+You are helpful.
+{{/role}}
+
+--------------------------------------------------------------------------------
+
+(document
+  (template_body
+    (handlebars_block
+      (block_expression
+        (block_name)
+        (argument
+          (string_literal))))
+    (text)
+    (handlebars_block
+      (close_block
+        (block_name)))))
+
+================================================================================
+EACH LOOP
+================================================================================
+
+{{#each items}}
+  - {{ this }}
+{{/each}}
+
+--------------------------------------------------------------------------------
+
+(document
+  (template_body
+    (handlebars_block
+      (block_expression
+        (block_name)
+        (argument
+          (variable_reference))))
+    (text)
+    (handlebars_expression
+      (expression_content
+        (variable_reference)))
+    (text)
+    (handlebars_block
+      (close_block
+        (block_name)))))
+
+================================================================================
+PARTIAL
+================================================================================
+
+{{> header}}
+
+--------------------------------------------------------------------------------
+
+(document
+  (template_body
+    (handlebars_expression
+      (expression_content
+        (partial_reference
+          (identifier))))))
+
+================================================================================
+COMMENT
+================================================================================
+
+{{! This is a comment }}
+
+--------------------------------------------------------------------------------
+
+(document
+  (template_body
+    (handlebars_comment)))
+
+================================================================================
+DOTPROMPT MARKER
+================================================================================
+
+<<<dotprompt:role:system>>>
+
+--------------------------------------------------------------------------------
+
+(document
+  (template_body
+    (dotprompt_marker
+      (marker_content))))
+
+================================================================================
+FRONTMATTER WITH CONFIG
+================================================================================
+
+---
+model: gemini-2.0-flash
+config:
+  temperature: 0.7
+input:
+  schema:
+    name: string
+---
+
+Hello {{ name }}!
+
+--------------------------------------------------------------------------------
+
+(document
+  (frontmatter
+    (frontmatter_delimiter)
+    (yaml_content
+      (yaml_line)
+      (yaml_line)
+      (yaml_line)
+      (yaml_line)
+      (yaml_line)
+      (yaml_line))
+    (frontmatter_delimiter))
+  (template_body
+    (text)
+    (handlebars_expression
+      (expression_content
+        (variable_reference)))
+    (text)))
+
+================================================================================
+LICENSE HEADER
+================================================================================
+
+# Copyright 2026 Google LLC
+# Some license text
+---
+model: gemini-2.0-flash
+---
+Hello
+
+--------------------------------------------------------------------------------
+
+(document
+  (license_header
+    (header_comment)
+    (header_comment))
+  (frontmatter
+    (frontmatter_delimiter)
+    (yaml_content
+      (yaml_line))
+    (frontmatter_delimiter))
+  (template_body
+    (text)))

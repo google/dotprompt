@@ -2,7 +2,7 @@
   "name": "dotprompt-vscode",
   "displayName": "Dotprompt",
   "description": "Syntax highlighting, LSP diagnostics, formatting, and code snippets for Dotprompt (.prompt) files",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "google",
   "license": "Apache-2.0",
   "icon": "images/icon.png",
@@ -85,6 +85,23 @@
         "path": "./snippets/dotprompt.snippets.json"
       }
     ],
+    "commands": [
+      {
+        "command": "dotprompt.formatDocument",
+        "title": "Format Document",
+        "category": "Dotprompt"
+      },
+      {
+        "command": "dotprompt.restartLsp",
+        "title": "Restart Language Server",
+        "category": "Dotprompt"
+      },
+      {
+        "command": "dotprompt.showOutput",
+        "title": "Show Output",
+        "category": "Dotprompt"
+      }
+    ],
     "configuration": {
       "type": "object",
       "title": "Dotprompt",
@@ -98,6 +115,21 @@
           "type": "boolean",
           "default": true,
           "description": "Enable LSP features (diagnostics, formatting, hover). Requires promptly to be installed."
+        },
+        "dotprompt.formatOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically format .prompt files on save."
+        },
+        "dotprompt.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Traces the communication between VS Code and the language server."
         }
       }
     }
