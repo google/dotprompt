@@ -21,11 +21,14 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
+      "@biomejs/biome",
       "@vscode/vsce-sign",
       "esbuild",
       "js",
       "keytar",
-      "sharp"
+      "sharp",
+      "tree-sitter",
+      "tree-sitter-cli"
     ],
     "overrides": {
       "rollup@>=4.0.0 <4.22.4": ">=4.22.4",
