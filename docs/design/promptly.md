@@ -234,27 +234,30 @@ The linter validates the AST against a set of configurable rules.
 
 #### Lint Rules
 
-| Rule ID | Severity | Description | Auto-fixable |
-|---------|----------|-------------|--------------|
-| `E001` | Error | Invalid YAML syntax in frontmatter | No |
-| `E002` | Error | Invalid Handlebars syntax | No |
-| `E003` | Error | Missing partial file | Yes (create) |
-| `E004` | Error | Cyclic partial reference | No |
-| `E005` | Error | Unknown block helper | No |
-| `W001` | Warning | Unused variable in schema | Yes (remove) |
-| `W002` | Warning | Undefined variable (not in schema) | Yes (add) |
-| `W003` | Warning | Deprecated helper | Yes (replace) |
-| `W004` | Warning | Schema type mismatch | No |
-| `W005` | Warning | Empty block | Yes (remove) |
-| `W006` | Warning | Potential prompt injection | No |
-| `I001` | Info | Consider using `{{#if}}` instead of inline conditional | No |
-| `I002` | Info | Long template (consider extracting partials) | No |
-| `I003` | Info | Token count estimate | No |
+| Message Key | Severity | Description | Auto-fixable |
+|-------------|----------|-------------|--------------|
+| `invalid-yaml` | Error | Invalid YAML syntax in frontmatter | No |
+| `unclosed-block` | Error | Handlebars block not closed | No |
+| `unmatched-closing-block` | Error | Closing block without matching open | No |
+| `unbalanced-brace` | Error | Unbalanced `{{` or `}}` braces | No |
+| `missing-partial` | Error | Missing partial file | Yes (create) |
+| `circular-partial` | Error | Circular partial dependency | No |
+| `unknown-block-helper` | Error | Unknown block helper | No |
+| `unused-variable` | Warning | Variable in schema but not used | Yes (remove) |
+| `undefined-variable` | Warning | Variable used but not in schema | Yes (add) |
+| `deprecated-helper` | Warning | Deprecated helper | Yes (replace) |
+| `schema-type-mismatch` | Warning | Schema type mismatch | No |
+| `empty-block` | Warning | Empty block | Yes (remove) |
+| `potential-injection` | Warning | Potential prompt injection | No |
+| `unverified-partial` | Info | Partial template used (verify exists) | No |
+| `prefer-if-block` | Info | Consider using `{{#if}}` instead of inline conditional | No |
+| `long-template` | Info | Long template (consider extracting partials) | No |
+| `token-count` | Info | Token count estimate | No |
 
 #### Error Message Format (Rust-style)
 
 ```
-error[E003]: missing partial 'userProfile'
+error[missing-partial]: missing partial 'userProfile'
   --> prompts/greeting.prompt:15:3
    |
 15 |   {{> userProfile}}
@@ -263,7 +266,7 @@ error[E003]: missing partial 'userProfile'
    = help: create file `prompts/_userProfile.prompt`
    = help: or check for typos in the partial name
 
-error[E004]: cyclic partial reference detected
+error[circular-partial]: cyclic partial reference detected
   --> prompts/partialA.prompt:5:1
    |
  5 | {{> partialB}}
@@ -284,10 +287,10 @@ error[E004]: cyclic partial reference detected
 extends = "recommended"
 
 [rules]
-E003 = "error"      # Missing partial
-W001 = "off"        # Disable unused variable warning
-W002 = "warn"       # Undefined variable
-I001 = "off"        # Disable suggestion
+missing-partial = "error"      # Missing partial
+unused-variable = "off"        # Disable unused variable warning
+undefined-variable = "warn"    # Undefined variable
+prefer-if-block = "off"        # Disable suggestion
 
 [settings]
 max-template-lines = 200
@@ -478,7 +481,7 @@ All 14 standard LSP features are supported for `.prompt` files:
 ##### Diagnostics
 
 ```
-error[E001]: Invalid YAML frontmatter
+error[invalid-yaml]: Invalid YAML frontmatter
   --> greeting.prompt:3:5
    |
  3 |     temperature: "hot"
@@ -489,7 +492,7 @@ help: temperature should be a number between 0.0 and 2.0
  3 |     temperature: 0.7
    |                  ~~~
 
-warning[W001]: Unused variable
+warning[unused-variable]: Unused variable
   --> greeting.prompt:12:5
    |
 12 |     {{ userName }}
@@ -767,7 +770,7 @@ The LSP validates frontmatter and provides diagnostics:
 ```yaml
 model: gemini-3.0-flash
        ^^^^^^^^^^^^^^^^
-error[E010]: Unknown model 'gemini-3.0-flash'
+error[unknown-model]: Unknown model 'gemini-3.0-flash'
   --> greeting.prompt:1:8
    |
  1 |   model: gemini-3.0-flash
@@ -780,7 +783,7 @@ help: available models: gemini-2.0-flash, gemini-1.5-pro, gpt-4o
 config:
   temperature: 3.0
                ^^^
-error[E011]: Invalid temperature value
+error[invalid-config-value]: Invalid temperature value
   --> greeting.prompt:4:16
    |
  4 |     temperature: 3.0
@@ -794,7 +797,7 @@ input:
   schema:
     name: strnig
           ^^^^^^
-warning[W010]: Unknown type 'strnig'
+warning[unknown-type]: Unknown type 'strnig'
   --> greeting.prompt:8:12
    |
  8 |       name: strnig
@@ -1274,17 +1277,25 @@ promptly check                   # Validate prompts
 promptly fmt                     # Format all files
 promptly test                    # Run package tests (if defined)
 
-# Packaging
+# Key Management (first-time setup)
+promptly keys generate           # Generate Ed25519 key pair
+promptly keys register           # Register public key with Prompt Store
+
+# Packaging & Signing
 promptly pack                    # Create .promptly archive
 promptly pack --dry-run          # Validate without creating
 promptly pack --output ./dist/   # Custom output directory
+promptly sign my-package.promptly  # Sign the package (REQUIRED for publish)
 
-# Publishing
+# Publishing (requires signed package)
 promptly login                   # Authenticate
-promptly publish                 # Publish to registry
+promptly publish                 # Sign and publish (combines sign + upload)
 promptly publish --dry-run       # Validate without publishing
 promptly publish --tag beta      # Publish with dist-tag
 promptly publish --access public # Set visibility
+
+# Note: The store ONLY accepts signed packages. Unsigned packages will be
+# rejected with error: "Package must be signed with a registered key"
 
 # Version management
 promptly version patch           # Bump patch version (1.2.3 -> 1.2.4)
@@ -1716,8 +1727,14 @@ GET    /api/v1/packages/:scope/:name          # Get package metadata
 GET    /api/v1/packages/:scope/:name/versions # List versions
 GET    /api/v1/packages/:scope/:name/:version # Get specific version
 GET    /api/v1/packages/:scope/:name/:version/download  # Download tarball
-PUT    /api/v1/packages/:scope/:name          # Publish new version (auth)
+PUT    /api/v1/packages/:scope/:name          # Publish new version (auth, REQUIRES SIGNED PACKAGE)
 DELETE /api/v1/packages/:scope/:name/:version # Yank version (auth)
+
+# Signature Verification
+POST   /api/v1/verify                         # Verify package signature
+GET    /api/v1/keys/:keyId                    # Get public key info
+POST   /api/v1/keys                           # Register new public key (auth)
+DELETE /api/v1/keys/:keyId                    # Revoke key (auth)
 
 # Search
 GET    /api/v1/search?q=:query&tags=:tags     # Search packages
@@ -1727,11 +1744,67 @@ POST   /api/v1/auth/login                     # OAuth login
 POST   /api/v1/auth/token                     # Generate API token
 GET    /api/v1/users/:username                # Get user profile
 GET    /api/v1/users/:username/packages       # Get user's packages
+GET    /api/v1/users/:username/keys           # Get user's registered keys
 
 # Scope/Organization
 POST   /api/v1/scopes                         # Create scope (auth)
 GET    /api/v1/scopes/:scope                  # Get scope info
 PUT    /api/v1/scopes/:scope/members          # Add member (auth)
+```
+
+#### Publish Endpoint (Signature Required)
+
+The `PUT /api/v1/packages/:scope/:name` endpoint **only accepts signed packages**. The server validates:
+
+1. **Signature Present**: Package must include a SIGNATURE file
+2. **Valid Signature**: Ed25519 signature must verify against the payload
+3. **Registered Key**: Signing key must be registered with the user's account
+4. **Non-Revoked Key**: Key must not be on the revocation list
+5. **Scope Authorization**: User must have publish rights to the scope
+
+```http
+PUT /api/v1/packages/@user/my-prompts HTTP/1.1
+Authorization: Bearer <token>
+Content-Type: application/octet-stream
+
+<signed .promptly package bytes>
+```
+
+**Response (Success):**
+```json
+{
+  "status": "published",
+  "package": "@user/my-prompts",
+  "version": "1.2.0",
+  "signature": {
+    "valid": true,
+    "keyId": "pk_1a2b3c4d5e6f7890",
+    "signedBy": "user@example.com",
+    "signedAt": "2026-01-25T10:30:00Z"
+  },
+  "trustLevel": "verified_author"
+}
+```
+
+**Response (Unsigned Package - Rejected):**
+```json
+{
+  "error": "SIGNATURE_REQUIRED",
+  "message": "Package must be signed with a registered key",
+  "help": "Run 'promptly keys generate' to create a key pair, then 'promptly sign <package>' before publishing"
+}
+```
+
+**Response (Invalid Signature - Rejected):**
+```json
+{
+  "error": "INVALID_SIGNATURE",
+  "message": "Package signature verification failed",
+  "details": {
+    "reason": "signature_mismatch",
+    "keyId": "pk_1a2b3c4d5e6f7890"
+  }
+}
 ```
 
 ### Server Project Structure
@@ -1744,7 +1817,8 @@ rs/promptly-store-server/
 │   ├── config.rs              # Configuration (env vars)
 │   ├── routes/
 │   │   ├── mod.rs
-│   │   ├── packages.rs        # Package CRUD
+│   │   ├── packages.rs        # Package CRUD (requires signed packages)
+│   │   ├── keys.rs            # Public key management
 │   │   ├── search.rs          # Search endpoint
 │   │   ├── auth.rs            # Authentication
 │   │   └── users.rs           # User management
@@ -1753,12 +1827,14 @@ rs/promptly-store-server/
 │   │   ├── package.rs
 │   │   ├── version.rs
 │   │   ├── user.rs
-│   │   └── scope.rs
+│   │   ├── scope.rs
+│   │   └── signing_key.rs     # Ed25519 public key model
 │   ├── services/
 │   │   ├── mod.rs
 │   │   ├── storage.rs         # GCS/S3 integration
 │   │   ├── search.rs          # Search indexing
-│   │   └── validation.rs      # Package validation
+│   │   ├── validation.rs      # Package validation
+│   │   └── signature.rs       # Ed25519 signature verification (REQUIRED)
 │   ├── db/
 │   │   ├── mod.rs
 │   │   └── migrations/
@@ -1804,6 +1880,11 @@ uuid = { version = "1.10", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
+
+# Cryptography (REQUIRED for package signature verification)
+ring = "0.17"                     # Ed25519 signature verification
+base64 = "0.22"                  # Signature encoding
+sha2 = "0.10"                    # SHA-256 checksums
 
 [features]
 default = ["firestore"]
@@ -4680,6 +4761,137 @@ project/
 | **Vulnerability Scanning** | Static analysis for prompt injection patterns |
 | **Audit Logs** | All publish/yank/permission changes logged |
 
+#### Package Signing and Verification
+
+> **Critical for Agentic Execution:** Signed packages are **required** for executing agentic prompts in the Chrome extension. Unsigned or unverified packages cannot perform browser automation actions.
+
+All `.promptly` packages MUST be cryptographically signed before publication to the Prompt Store. This ensures:
+
+1. **Authenticity**: Package comes from the claimed author
+2. **Integrity**: Package contents have not been modified
+3. **Non-repudiation**: Author cannot deny publishing the package
+4. **Agentic Trust**: Only signed packages can execute browser actions
+
+**Signing Implementation:**
+
+| Component | Specification |
+|-----------|---------------|
+| **Algorithm** | Ed25519 (RFC 8032) |
+| **Key Size** | 256-bit private key, 256-bit public key |
+| **Signature Size** | 64 bytes |
+| **Hash** | SHA-256 of package contents |
+| **Library** | `ring` crate (Rust implementation) |
+
+**Key Management:**
+
+```bash
+# Generate a new signing key pair
+promptly keys generate
+# Output:
+# ✓ Generated Ed25519 key pair
+# Private key: ~/.promptly/keys/private.key (keep secret!)
+# Public key:  ~/.promptly/keys/public.key
+# Key ID:      pk_1a2b3c4d5e6f7890
+
+# Register public key with Prompt Store
+promptly keys register
+# Links your public key to your account for verification
+
+# List registered keys
+promptly keys list
+
+# Revoke a compromised key
+promptly keys revoke pk_1a2b3c4d5e6f7890
+```
+
+**Package Signing Flow:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     PACKAGE SIGNING FLOW                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   1. Build Package                                                   │
+│      promptly pack                                                   │
+│      ├── Collect all .prompt files                                  │
+│      ├── Include promptly.toml manifest                             │
+│      ├── Generate SHA256 checksums for each file                    │
+│      └── Create package.tar.gz                                      │
+│                                                                      │
+│   2. Sign Package                                                    │
+│      promptly sign my-prompts-1.0.0.promptly                        │
+│      ├── Load private key from ~/.promptly/keys/private.key        │
+│      ├── Compute SHA256 of entire package                           │
+│      ├── Sign hash with Ed25519                                     │
+│      └── Append signature to package as SIGNATURE file              │
+│                                                                      │
+│   3. Publish Package                                                 │
+│      promptly publish                                                │
+│      ├── Upload package + signature to Prompt Store                 │
+│      ├── Server verifies signature against registered public key    │
+│      ├── Server stores package with verified badge                  │
+│      └── Package now available for installation                     │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Verification on Install:**
+
+```bash
+# Automatic verification during install
+promptly install @user/my-prompts
+# ✓ Downloaded @user/my-prompts@1.0.0
+# ✓ Verified signature (signed by user@example.com on 2026-01-25)
+# ✓ Integrity check passed (SHA256 match)
+# ✓ Installed to ~/.promptly/packages/@user/my-prompts/
+
+# Manual verification
+promptly verify my-prompts-1.0.0.promptly
+# ✓ Package signature valid
+# Signed by: user@example.com (pk_1a2b3c4d5e6f7890)
+# Signed at: 2026-01-25T10:30:00Z
+# SHA256: a1b2c3d4e5f6...
+```
+
+**Signature File Format:**
+
+```json
+{
+  "version": 1,
+  "algorithm": "Ed25519",
+  "keyId": "pk_1a2b3c4d5e6f7890",
+  "signature": "base64-encoded-64-byte-signature",
+  "timestamp": "2026-01-25T10:30:00Z",
+  "checksums": {
+    "promptly.toml": "sha256:abc123...",
+    "prompts/greeting.prompt": "sha256:def456...",
+    "prompts/_header.prompt": "sha256:789ghi..."
+  }
+}
+```
+
+**Trust Levels:**
+
+| Level | Badge | Requirements |
+|-------|-------|--------------|
+| **Unverified** | ⚠️ | No signature or invalid signature |
+| **Signed** | ✓ | Valid Ed25519 signature |
+| **Verified Author** | ✓✓ | Signed + verified email/GitHub |
+| **Verified Org** | ✓✓✓ | Signed + verified organization ownership |
+
+**Agentic Execution Requirements:**
+
+For the Chrome extension to execute agentic prompts (browser automation), packages must meet these requirements:
+
+| Requirement | Description |
+|-------------|-------------|
+| **Valid Signature** | Ed25519 signature must be valid and not expired |
+| **Non-Revoked Key** | Signing key must not be on revocation list |
+| **Minimum Trust** | "Signed" level or higher |
+| **Declared Permissions** | Package must declare tools/actions in manifest |
+| **User Consent** | User must approve execution after reviewing permissions |
+
+
 ### Authentication
 
 | Method | Use Case |
@@ -5786,6 +5998,79 @@ interface ExtensionSettings {
   aiStudioApiKey?: string;
 }
 ```
+
+#### Agentic Prompts Execution (Future)
+
+> **Security Note:** Agentic prompts executed in the browser require signed `.promptly` packages to ensure trust and prevent malicious code execution. See [Package Signing](#package-signing-and-verification) for details.
+
+Run multi-step agentic prompts directly in the browser:
+
+| Feature | Description |
+|---------|-------------|
+| **Tool Execution** | Execute tool calls (web search, form filling, page navigation) |
+| **Loop Control** | Iterative prompt execution with state management |
+| **Sandboxed Execution** | All actions run in isolated browser context |
+| **Approval Workflow** | User approval for sensitive actions (payments, form submissions) |
+| **Audit Trail** | Complete log of all actions taken |
+| **Rollback** | Undo actions when possible |
+
+**Execution Flow:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    BROWSER AGENTIC EXECUTION                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   User Action                                                        │
+│   ───────────                                                        │
+│   "Run agentic prompt: book-flight.prompt"                          │
+│        │                                                             │
+│        ▼                                                             │
+│   ┌─────────────────────────────────────────────────────────────┐   │
+│   │ 1. Verify Package Signature (Ed25519)                        │   │
+│   │    - Check signature against author's public key             │   │
+│   │    - Verify package integrity (SHA256)                       │   │
+│   │    - Check for revocation                                    │   │
+│   └─────────────────────────────────────────────────────────────┘   │
+│        │                                                             │
+│        ▼                                                             │
+│   ┌─────────────────────────────────────────────────────────────┐   │
+│   │ 2. Display Permissions & Require User Approval               │   │
+│   │    - List tools to be used                                   │   │
+│   │    - Show estimated steps                                    │   │
+│   │    - Highlight sensitive actions                             │   │
+│   └─────────────────────────────────────────────────────────────┘   │
+│        │                                                             │
+│        ▼                                                             │
+│   ┌─────────────────────────────────────────────────────────────┐   │
+│   │ 3. Execute in Sandboxed Context                              │   │
+│   │    - Step-by-step execution with pause points                │   │
+│   │    - Real-time action preview                                │   │
+│   │    - Cancel at any time                                      │   │
+│   └─────────────────────────────────────────────────────────────┘   │
+│        │                                                             │
+│        ▼                                                             │
+│   ┌─────────────────────────────────────────────────────────────┐   │
+│   │ 4. Complete Audit Trail                                      │   │
+│   │    - All actions logged                                      │   │
+│   │    - Export to JSON/PDF                                      │   │
+│   └─────────────────────────────────────────────────────────────┘   │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Supported Browser Actions:**
+
+| Action | Description | Approval Required |
+|--------|-------------|-------------------|
+| `navigate` | Navigate to URL | No (same origin) / Yes (cross-origin) |
+| `click` | Click element | No |
+| `type` | Type into input | No (non-sensitive) / Yes (passwords) |
+| `scroll` | Scroll page | No |
+| `screenshot` | Capture visible area | Yes |
+| `download` | Download file | Yes |
+| `submit_form` | Submit form | Yes |
+| `payment` | Initiate payment | Yes (always) |
 
 ---
 

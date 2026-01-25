@@ -40,9 +40,21 @@ if [ -d "${PROMPTLY_DIR}" ]; then
     PROMPTLY_BIN="${ROOT_DIR}/target/release/promptly"
     if [ -f "${PROMPTLY_BIN}" ]; then
       echo "  ✓ promptly built successfully: ${PROMPTLY_BIN}"
-      echo ""
-      echo "  TIP: Add to PATH or configure in VS Code settings:"
-      echo "       \"dotprompt.promptlyPath\": \"${PROMPTLY_BIN}\""
+      
+      # Install to ~/.local/bin for PATH discovery
+      LOCAL_BIN="${HOME}/.local/bin"
+      mkdir -p "${LOCAL_BIN}"
+      cp "${PROMPTLY_BIN}" "${LOCAL_BIN}/promptly"
+      chmod +x "${LOCAL_BIN}/promptly"
+      echo "  ✓ Installed promptly to ${LOCAL_BIN}/promptly"
+      
+      # Check if ~/.local/bin is in PATH
+      if [[ ":$PATH:" != *":${LOCAL_BIN}:"* ]]; then
+        echo ""
+        echo "  ⚠ ${LOCAL_BIN} is not in your PATH."
+        echo "    Add this to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
+        echo "    export PATH=\"\$HOME/.local/bin:\$PATH\""
+      fi
     fi
   else
     echo "  ⚠ cargo not found. Skipping promptly build."
@@ -77,15 +89,22 @@ if [ -z "${VSIX_FILE}" ]; then
   exit 1
 fi
 
+# Uninstall existing extension if present
+echo "  Uninstalling existing extension (if any)..."
+code --uninstall-extension google.dotprompt-vscode 2>/dev/null || true
+
 # Install the extension
 echo "  Installing ${VSIX_FILE}..."
 code --install-extension "${VSIX_FILE}" --force
 
-# Configure VS Code settings if promptly was built
-PROMPTLY_BIN="${ROOT_DIR}/target/release/promptly"
+# Configure VS Code settings if promptly was built (optional if ~/.local/bin is in PATH)
+LOCAL_BIN="${HOME}/.local/bin"
+PROMPTLY_BIN="${LOCAL_BIN}/promptly"
 if [ -f "${PROMPTLY_BIN}" ]; then
   echo ""
-  echo "Step 3: Configuring VS Code settings..."
+  echo "Step 3: Configuring VS Code settings (optional)..."
+  echo "  Note: If ~/.local/bin is in your PATH, VS Code will find promptly automatically."
+  echo "  The setting below is only needed if you want to use a custom path."
   
   # Determine the VS Code settings directory
   if [ -d "${HOME}/Library/Application Support/Code/User" ]; then
@@ -141,7 +160,7 @@ echo "Next steps:"
 echo "  1. Reload VS Code (Cmd+Shift+P > 'Developer: Reload Window')"
 echo "  2. Open a .prompt file from examples/ to test the extension"
 echo ""
-if [ -f "${ROOT_DIR}/target/release/promptly" ]; then
+if [ -f "${HOME}/.local/bin/promptly" ]; then
   echo "LSP features enabled! You should see:"
   echo "  - Real-time diagnostics for YAML and Handlebars errors"
   echo "  - Document formatting (Shift+Alt+F)"
@@ -152,5 +171,5 @@ if [ -f "${ROOT_DIR}/target/release/promptly" ]; then
   echo "  - examples/valid-greeting.prompt (should be clean)"
 else
   echo "Note: LSP features are disabled (promptly not built)."
-  echo "Run 'cargo build --release -p promptly' to enable them."
+  echo "Re-run this script with cargo installed to enable them."
 fi

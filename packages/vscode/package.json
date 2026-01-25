@@ -37,12 +37,15 @@
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
-    "onLanguage:dotprompt"
+    "onLanguage:dotprompt",
+    "onCommand:dotprompt.restartLsp",
+    "onCommand:dotprompt.formatDocument",
+    "onCommand:dotprompt.showOutput"
   ],
   "scripts": {
     "vscode:prepublish": "pnpm run build",
-    "build": "tsup src/extension.ts --format cjs --external vscode --sourcemap",
-    "watch": "tsup src/extension.ts --format cjs --external vscode --sourcemap --watch",
+    "build": "tsup",
+    "watch": "tsup --watch",
     "package": "vsce package --no-dependencies"
   },
   "dependencies": {

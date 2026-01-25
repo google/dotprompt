@@ -68,6 +68,21 @@ if [ "$BUILD_LSP" = true ]; then
     PROMPTLY_BIN="$REPO_ROOT/target/release/promptly"
     if [ -f "$PROMPTLY_BIN" ]; then
       echo "  ✓ promptly built successfully"
+      
+      # Install to ~/.local/bin for PATH discovery
+      LOCAL_BIN="$HOME/.local/bin"
+      mkdir -p "$LOCAL_BIN"
+      cp "$PROMPTLY_BIN" "$LOCAL_BIN/promptly"
+      chmod +x "$LOCAL_BIN/promptly"
+      echo "  ✓ Installed promptly to $LOCAL_BIN/promptly"
+      
+      # Check if ~/.local/bin is in PATH
+      if [[ ":$PATH:" != *":$LOCAL_BIN:"* ]]; then
+        echo ""
+        echo "  ⚠ $LOCAL_BIN is not in your PATH."
+        echo "    Add this to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
+        echo "    export PATH=\"\$HOME/.local/bin:\$PATH\""
+      fi
     fi
   else
     echo "  ⚠ cargo not found. Skipping LSP build."
@@ -109,8 +124,11 @@ echo "For LSP support with eglot (Emacs 29+), also add:"
 echo ""
 echo "  (add-hook 'dotprompt-mode-hook 'eglot-ensure)"
 echo ""
-if [ "$BUILD_LSP" = true ] && [ -f "$REPO_ROOT/target/release/promptly" ]; then
-  echo "If promptly is not in your PATH, add:"
+if [ "$BUILD_LSP" = true ] && [ -f "$HOME/.local/bin/promptly" ]; then
+  echo "promptly is installed at ~/.local/bin/promptly"
+  echo "If ~/.local/bin is in your PATH, LSP will work automatically."
   echo ""
-  echo "  (setq dotprompt-promptly-path \"$REPO_ROOT/target/release/promptly\")"
+  echo "Otherwise, add to your Emacs config:"
+  echo ""
+  echo "  (setq dotprompt-promptly-path \"$HOME/.local/bin/promptly\")"
 fi

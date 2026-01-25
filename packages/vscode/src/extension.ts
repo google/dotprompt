@@ -54,15 +54,37 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(completionProvider);
 
   // Register commands
-  context.subscriptions.push(
-    vscode.commands.registerCommand('dotprompt.formatDocument', formatDocument),
-    vscode.commands.registerCommand('dotprompt.restartLsp', () =>
-      restartLspClient(context)
-    ),
-    vscode.commands.registerCommand('dotprompt.showOutput', () =>
-      outputChannel.show()
-    )
-  );
+  try {
+    const formatCmd = vscode.commands.registerCommand(
+      'dotprompt.formatDocument',
+      formatDocument
+    );
+    context.subscriptions.push(formatCmd);
+    outputChannel.appendLine(
+      'Dotprompt: Registered command: dotprompt.formatDocument'
+    );
+
+    const restartCmd = vscode.commands.registerCommand(
+      'dotprompt.restartLsp',
+      () => restartLspClient(context)
+    );
+    context.subscriptions.push(restartCmd);
+    outputChannel.appendLine(
+      'Dotprompt: Registered command: dotprompt.restartLsp'
+    );
+
+    const showOutputCmd = vscode.commands.registerCommand(
+      'dotprompt.showOutput',
+      () => outputChannel.show()
+    );
+    context.subscriptions.push(showOutputCmd);
+    outputChannel.appendLine(
+      'Dotprompt: Registered command: dotprompt.showOutput'
+    );
+  } catch (error) {
+    outputChannel.appendLine(`Dotprompt: ERROR registering commands: ${error}`);
+    console.error('Dotprompt: ERROR registering commands:', error);
+  }
 
   // Register format on save
   context.subscriptions.push(
@@ -380,6 +402,16 @@ async function findPromptlyBinary(
   // Check common cargo install location
   const homeDir = process.env.HOME || process.env.USERPROFILE;
   if (homeDir) {
+    // Check ~/.local/bin first (where install_vscode_ext installs it)
+    const localBinPath = path.join(homeDir, '.local', 'bin', 'promptly');
+    outputChannel.appendLine(`  Checking local bin path: ${localBinPath}`);
+    if (await fileExists(localBinPath)) {
+      outputChannel.appendLine(`  ✓ Found at local bin path: ${localBinPath}`);
+      return localBinPath;
+    }
+    outputChannel.appendLine('  ✗ Not found at local bin path');
+
+    // Check cargo install location
     const cargoPath = path.join(homeDir, '.cargo', 'bin', 'promptly');
     outputChannel.appendLine(`  Checking cargo path: ${cargoPath}`);
     if (await fileExists(cargoPath)) {
