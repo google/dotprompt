@@ -1,6 +1,6 @@
 {
   "name": "tree-sitter-dotprompt",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Tree-sitter grammar for Dotprompt files",
   "repository": {
     "type": "git",
