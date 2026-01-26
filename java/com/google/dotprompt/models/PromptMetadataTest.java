@@ -493,12 +493,11 @@ public class PromptMetadataTest {
 
   @Test
   public void fromConfig_nullFieldValues_succeeds() {
-    Map<String, Object> config =
-        Map.of(
-            "name", null,
-            "variant", null,
-            "tools", null,
-            "config", null);
+    Map<String, Object> config = new java.util.HashMap<>();
+    config.put("name", null);
+    config.put("variant", null);
+    config.put("tools", null);
+    config.put("config", null);
 
     PromptMetadata result = PromptMetadata.fromConfig(config);
 
