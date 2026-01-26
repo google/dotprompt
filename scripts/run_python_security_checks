@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2025 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,13 +25,7 @@ fi
 TOP_DIR=$(git rev-parse --show-toplevel)
 PY_DIR="${TOP_DIR}/python"
 
-uv run --directory "${PY_DIR}" ruff check --select I --fix --preview --unsafe-fixes .
-# uv run --directory "${PY_DIR}" mypy .
+echo "=== Running Python security scan (pysentry) ==="
+uv run --directory "${PY_DIR}" pysentry-rs --fail-on medium .
 
-# Add pylyzer, ty, and pyrefly
-#uv run --directory "${PY_DIR}" pylyzer --check .
-uv run --directory "${PY_DIR}" ty check
-#uv run --directory "${PY_DIR}" pyrefly check
-
-# Run security scanning
-"${TOP_DIR}/scripts/run_python_security_checks"
+echo "=== Python security scan completed ==="

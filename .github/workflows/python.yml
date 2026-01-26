@@ -43,6 +43,9 @@ jobs:
           scripts/export_requirements
           git diff --exit-code python/requirements.txt
 
+      - name: Run security scan
+        run: scripts/run_python_security_checks
+
   python-checks:
     runs-on: ubuntu-latest
     env:

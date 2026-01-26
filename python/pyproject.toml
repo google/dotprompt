@@ -39,6 +39,7 @@ dev = [
   "nox-uv>=0.2.1",
   "pyrefly>=0.16.1",
   "ty>=0.0.5",
+  "pysentry-rs>=0.3.14",
 ]
 lint = ["ruff>=0.9.2"]
 
