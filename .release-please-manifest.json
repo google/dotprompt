@@ -11,5 +11,5 @@
   "packages/monaco": "0.1.0",
   "packages/codemirror": "0.1.0",
   "packages/jetbrains": "0.2.0",
-  "packages/treesitter": "0.1.0"
+  "packages/treesitter": "0.1.1"
 }
