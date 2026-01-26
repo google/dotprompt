@@ -175,7 +175,8 @@ public class PromptMetadataTest {
     Map<String, Object> defaultValues = Map.of("key", "value");
     PromptMetadata.InputConfig inputConfig = new PromptMetadata.InputConfig(defaultValues, null);
 
-    assertThat(inputConfig.getDefault()).isSameAs(inputConfig.defaultValues());
+    // Verify getDefault() returns the same Map reference as defaultValues() (alias, not copy)
+    assertThat((Object) inputConfig.getDefault()).isSameInstanceAs(inputConfig.defaultValues());
     assertThat(inputConfig.getDefault()).containsEntry("key", "value");
   }
 
