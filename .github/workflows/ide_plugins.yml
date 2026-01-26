@@ -46,19 +46,24 @@ jobs:
           
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.5
+          
+      - name: Check Kotlin formatting
+        run: ./scripts/format_kotlin_files --check
         
       - name: Build Plugin
         working-directory: packages/jetbrains
-        run: ./gradlew buildPlugin
+        run: gradle buildPlugin
         
       - name: Verify Plugin
         working-directory: packages/jetbrains
-        run: ./gradlew verifyPlugin
+        run: gradle verifyPlugin
         
       - name: Publish Plugin
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.modified, 'packages/jetbrains/src/main/resources/META-INF/plugin.xml')
         working-directory: packages/jetbrains
-        run: ./gradlew publishPlugin
+        run: gradle publishPlugin
         env:
           PUBLISH_TOKEN: ${{ secrets.JETBRAINS_TOKEN }}
 
@@ -69,12 +74,8 @@ jobs:
       # Simple check for syntax validity
       - uses: actions/checkout@v4
       
-      - name: Check Lua syntax
-        uses: JohnnyMorganz/stylua-action@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          version: latest
-          args: --check packages/vim/lua/
+      - name: Check Lua formatting
+        run: ./scripts/format_lua_files --check
 
   emacs:
     name: Emacs Mode

@@ -38,6 +38,9 @@ if command -v rust-parallel >/dev/null 2>&1; then
     "${TOP_DIR}/scripts/format_handlebarrz_files" \
     "${TOP_DIR}/scripts/format_toml_files" \
     "${TOP_DIR}/scripts/format_ts_files" \
+    "${TOP_DIR}/scripts/format_kotlin_files" \
+    "${TOP_DIR}/scripts/format_elisp_files" \
+    "${TOP_DIR}/scripts/format_lua_files" \
     | rust-parallel -s --exit-on-error || exit 1
 else
   echo "rust-parallel was not detected; not performing formatting in parallel"
@@ -48,6 +51,9 @@ else
   "${TOP_DIR}/scripts/format_rust_files" || exit 1
   "${TOP_DIR}/scripts/format_toml_files" || exit 1
   "${TOP_DIR}/scripts/format_ts_files" || exit 1
+  "${TOP_DIR}/scripts/format_kotlin_files" || exit 1
+  "${TOP_DIR}/scripts/format_elisp_files" || exit 1
+  "${TOP_DIR}/scripts/format_lua_files" || exit 1
 fi
 
 # Do this after all of the above have completed.

@@ -32,7 +32,7 @@ Language support for Dotprompt (`.prompt`) files in JetBrains IDEs (IntelliJ IDE
 2. **Build the plugin**:
    ```bash
    cd packages/jetbrains
-   ./gradlew buildPlugin
+   gradle buildPlugin
    ```
 
 3. **Install**:
@@ -65,13 +65,13 @@ cargo build --release -p promptly
 
 ```bash
 # Build the plugin
-./gradlew buildPlugin
+gradle buildPlugin
 
 # Run IDE with plugin for testing
-./gradlew runIde
+gradle runIde
 
 # Run tests
-./gradlew test
+gradle test
 ```
 
 ## Live Templates

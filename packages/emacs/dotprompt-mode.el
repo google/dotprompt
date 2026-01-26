@@ -57,26 +57,75 @@
 
 (defvar dotprompt-font-lock-keywords
   (list
-   ;; License header comments (lines starting with #)
-   '("^#.*$" . font-lock-comment-face)
+   ;; YAML frontmatter delimiters
+   '("^---$" . font-lock-preprocessor-face)
    
-   ;; Markers <<<dotprompt:role:system>>>
+   ;; YAML keys in frontmatter (word followed by colon at start of line or after indentation)
+   '("^\\s-*\\([a-zA-Z_][a-zA-Z0-9_-]*\\):" 1 font-lock-keyword-face)
+   
+   ;; YAML string values (unquoted, after colon and space)
+   '(":\\s-+\\([a-zA-Z][a-zA-Z0-9._/-]*\\)$" 1 font-lock-string-face)
+   
+   ;; YAML numeric values
+   '(":\\s-+\\([0-9]+\\.?[0-9]*\\)$" 1 font-lock-constant-face)
+   
+   ;; Dotprompt markers <<<dotprompt:role:system>>> etc.
    '("<<<dotprompt:[^>]+>>>" . font-lock-preprocessor-face)
    
-   ;; Partials {{> partialName}}
-   '("{{>\\s-*[a-zA-Z0-9_.-]+\\s-*\\(.*?\\)}}" . font-lock-builtin-face)
+   ;; Handlebars block comments {{!-- ... --}}
+   '("{{!--\\(.\\|\n\\)*?--}}" . font-lock-comment-face)
    
-   ;; Handlebars Control Flow {{#if}} {{/if}}
-   '("{{[#/]\\(if\\|unless\\|each\\|with\\|log\\|lookup\\|else\\)" 1 font-lock-keyword-face)
+   ;; Handlebars inline comments {{! ... }}
+   '("{{![^}]*}}" . font-lock-comment-face)
    
-   ;; Dotprompt Helpers (distinct color)
-   '("\\<\\(json\\|role\\|history\\|section\\|media\\|ifEquals\\|unlessEquals\\)\\>" . font-lock-function-name-face)
+   ;; Partials {{> partialName}} - highlight partial indicator and name
+   '("{{\\(>\\)\\s-*\\([a-zA-Z0-9_.-]+\\)"
+     (1 font-lock-keyword-face)
+     (2 font-lock-builtin-face))
    
-   ;; General tags
-   '("{{" . font-lock-delimiter-face)
-   '("}}" . font-lock-delimiter-face)
+   ;; Block opening helpers {{#each items}} - highlight # + keyword AND the argument
+   '("{{\\(#\\)\\(if\\|unless\\|each\\|with\\|log\\|lookup\\|ifEquals\\|unlessEquals\\)\\(?:\\s-+\\([a-zA-Z0-9_.-]+\\)\\)?"
+     (1 font-lock-keyword-face)
+     (2 font-lock-keyword-face)
+     (3 font-lock-variable-name-face nil t))
+   
+   ;; Block closing helpers {{/each}} - highlight / and keyword
+   '("{{\\(/\\)\\(if\\|unless\\|each\\|with\\|log\\|lookup\\|ifEquals\\|unlessEquals\\)}}"
+     (1 font-lock-keyword-face)
+     (2 font-lock-keyword-face))
+   
+   ;; Else keyword {{else}}
+   '("{{\\(else\\)}}" 1 font-lock-keyword-face)
+   
+   ;; Dotprompt helpers {{json this indent=2}}
+   '("{{\\(json\\|role\\|history\\|section\\|media\\|ifEquals\\|unlessEquals\\)"
+     1 font-lock-function-name-face)
+   
+   ;; Helper named parameters (param=value)
+   '("\\b\\([a-zA-Z_][a-zA-Z0-9_]*\\)=" 1 font-lock-type-face)
+   
+   ;; Quoted strings inside handlebars
+   '("{{[^}]*\\([\"'][^\"']*[\"']\\)" 1 font-lock-string-face)
+   
+   ;; Boolean and null constants inside handlebars
+   '("{{[^}]*\\b\\(true\\|false\\|null\\|undefined\\)\\b" 1 font-lock-constant-face)
+   
+   ;; Numbers inside handlebars
+   '("{{[^}]*\\b\\([0-9]+\\)\\b" 1 font-lock-constant-face)
+   
+   ;; Simple variable references {{variableName}} or {{this}}
+   '("{{\\([a-zA-Z_][a-zA-Z0-9_.]*\\)}}" 1 font-lock-variable-name-face)
+   
+   ;; The handlebars delimiters themselves
+   '("\\({{\\)" 1 font-lock-constant-face)
+   '("\\(}}\\)" 1 font-lock-constant-face)
+   
+   ;; License header comments (lines starting with #)
+   ;; This is at the END with override flag `t` to ensure entire comment lines
+   ;; are highlighted uniformly, overriding any patterns that matched within them
+   '("^#.*$" 0 font-lock-comment-face t)
    )
-  "Minimal highlighting for Dotprompt.")
+  "Syntax highlighting for Dotprompt templates.")
 
 (defvar dotprompt-mode-map
   (let ((map (make-sparse-keymap)))
@@ -132,7 +181,7 @@ Otherwise, call promptly fmt directly."
         (progn
           (write-region (point-min) (point-max) temp-file nil 'silent)
           (let ((exit-code (call-process dotprompt-promptly-path nil nil nil
-                                          "fmt" temp-file)))
+                                         "fmt" temp-file)))
             (when (zerop exit-code)
               (erase-buffer)
               (insert-file-contents temp-file)

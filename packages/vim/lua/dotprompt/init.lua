@@ -131,7 +131,10 @@ function M.setup(opts)
     capabilities = vim.lsp.protocol.make_client_capabilities(),
   })
 
-  vim.notify("Dotprompt: LSP configured with " .. promptly_path, vim.log.levels.INFO)
+  vim.notify(
+    "Dotprompt: LSP configured with " .. promptly_path,
+    vim.log.levels.INFO
+  )
 end
 
 --- Manually trigger document formatting

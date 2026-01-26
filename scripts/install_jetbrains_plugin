@@ -96,12 +96,11 @@ echo ""
 echo "Step 2: Building JetBrains plugin..."
 cd "$JETBRAINS_DIR"
 
-if [ -f "./gradlew" ]; then
-  ./gradlew buildPlugin
+if command -v gradle &> /dev/null; then
+  gradle buildPlugin
 else
-  # Download gradle wrapper if not present
-  gradle wrapper
-  ./gradlew buildPlugin
+  echo "Error: gradle not found. Please install Gradle: https://gradle.org/install/"
+  exit 1
 fi
 
 # Find the built plugin
@@ -126,8 +125,7 @@ echo "  2. Go to Settings/Preferences → Plugins → ⚙️ → Install Plugin 
 echo "  3. Select: $JETBRAINS_DIR/$PLUGIN_ZIP"
 echo ""
 
-# Optionally run the IDE for testing
 if [ "$RUN_IDE" = true ]; then
   echo "Launching IDE with plugin for testing..."
-  ./gradlew runIde
+  gradle runIde
 fi

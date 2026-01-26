@@ -30,7 +30,7 @@ class PromptlyServerFactory : LanguageServerFactory {
     override fun createConnectionProvider(project: Project): StreamConnectionProvider {
         val promptlyPath = findPromptlyExecutable()
         val commands = listOf(promptlyPath, "lsp")
-        return ProcessStreamConnectionProvider(commands)
+        return object : ProcessStreamConnectionProvider(commands, project.basePath) {}
     }
 
     /**

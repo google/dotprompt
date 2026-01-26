@@ -27,7 +27,6 @@ usage() {
   echo "Usage: $0 [options]"
   echo "Options:"
   echo "  -d, --dest DIR    Destination directory (default: ~/.emacs.d/lisp)"
-  echo "  -f, --force       Overwrite existing files without prompting"
   echo "  --no-lsp          Skip building promptly LSP server"
   echo "  -h, --help        Show this help message"
   exit 1
@@ -35,13 +34,11 @@ usage() {
 
 # Parse arguments
 DEST_DIR=""
-FORCE=false
 BUILD_LSP=true
 
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     -d|--dest) DEST_DIR="$2"; shift ;;
-    -f|--force) FORCE=true ;;
     --no-lsp) BUILD_LSP=false ;;
     -h|--help) usage ;;
     *) echo "Unknown parameter passed: $1"; usage ;;
@@ -49,9 +46,21 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
+# Detect Doom Emacs configuration directory
+DOOM_CONFIG_DIR=""
+if [[ -d "$HOME/.doom.d" ]]; then
+  DOOM_CONFIG_DIR="$HOME/.doom.d"
+elif [[ -d "$HOME/.config/doom" ]]; then
+  DOOM_CONFIG_DIR="$HOME/.config/doom"
+fi
+
 # Determine destination if not specified
 if [[ -z "$DEST_DIR" ]]; then
-  DEST_DIR="$EMACS_LISP_DIR"
+  if [[ -n "$DOOM_CONFIG_DIR" ]]; then
+    DEST_DIR="$DOOM_CONFIG_DIR/lisp"
+  else
+    DEST_DIR="$EMACS_LISP_DIR"
+  fi
 fi
 
 echo "=========================================="
@@ -96,18 +105,37 @@ echo "Step 2: Installing Emacs mode to: $DEST_DIR"
 # Create directory
 mkdir -p "$DEST_DIR"
 
-# Copy file
+# Copy file (always overwrite - this is an installer/updater)
 echo "  Copying dotprompt-mode.el..."
-if [ -f "$DEST_DIR/dotprompt-mode.el" ] && [ "$FORCE" = false ]; then
-  read -p "  File '$DEST_DIR/dotprompt-mode.el' exists. Overwrite? (y/N) " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "  Skipping file copy."
+cp "$EMACS_PKG_DIR/dotprompt-mode.el" "$DEST_DIR/"
+echo "  ✓ Installed dotprompt-mode.el"
+
+# Doom Emacs Auto-config
+CONFIG_UPDATED=false
+ALREADY_CONFIGURED=false
+if [[ -n "$DOOM_CONFIG_DIR" ]]; then
+  echo ""
+  echo "Step 3: Doom Emacs detected in $DOOM_CONFIG_DIR"
+  CONFIG_EL="$DOOM_CONFIG_DIR/config.el"
+  if [[ -f "$CONFIG_EL" ]]; then
+    if grep -q "dotprompt-mode" "$CONFIG_EL"; then
+      echo "  ✓ dotprompt-mode already configured in $CONFIG_EL"
+      ALREADY_CONFIGURED=true
+    else
+      echo "  Updating $CONFIG_EL..."
+      cat >> "$CONFIG_EL" <<EOF
+
+;; Dotprompt support
+(add-to-list 'load-path "$DEST_DIR")
+(require 'dotprompt-mode)
+(add-hook 'dotprompt-mode-hook #'eglot-ensure)
+EOF
+      echo "  ✓ Configuration added to $CONFIG_EL"
+      CONFIG_UPDATED=true
+    fi
   else
-    cp "$EMACS_PKG_DIR/dotprompt-mode.el" "$DEST_DIR/"
+    echo "  ⚠ config.el not found in $DOOM_CONFIG_DIR. Skipping auto-config."
   fi
-else
-  cp "$EMACS_PKG_DIR/dotprompt-mode.el" "$DEST_DIR/"
 fi
 
 echo ""
@@ -115,14 +143,23 @@ echo "=========================================="
 echo "Installation Complete!"
 echo "=========================================="
 echo ""
-echo "Add the following to your Emacs init file (~/.emacs or ~/.emacs.d/init.el):"
-echo ""
-echo "  (add-to-list 'load-path \"$DEST_DIR\")"
-echo "  (require 'dotprompt-mode)"
-echo ""
-echo "For LSP support with eglot (Emacs 29+), also add:"
-echo ""
-echo "  (add-hook 'dotprompt-mode-hook 'eglot-ensure)"
+
+if [ "$CONFIG_UPDATED" = true ]; then
+  echo "Your Doom Emacs configuration has been automatically updated."
+  echo "Please restart Emacs or run 'M-x load-file' on your config.el."
+elif [ "$ALREADY_CONFIGURED" = true ]; then
+  echo "Your Doom Emacs configuration is already up to date."
+else
+  echo "Add the following to your Emacs init file (~/.emacs or ~/.emacs.d/init.el):"
+  echo ""
+  echo "  (add-to-list 'load-path \"$DEST_DIR\")"
+  echo "  (require 'dotprompt-mode)"
+  echo ""
+  echo "For LSP support with eglot (Emacs 29+), also add:"
+  echo ""
+  echo "  (add-hook 'dotprompt-mode-hook 'eglot-ensure)"
+fi
+
 echo ""
 if [ "$BUILD_LSP" = true ] && [ -f "$HOME/.local/bin/promptly" ]; then
   echo "promptly is installed at ~/.local/bin/promptly"
