@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestFrontmatterAndBodyRegex(t *testing.T) {
@@ -109,14 +109,24 @@ func TestFrontmatterAndBodyRegex(t *testing.T) {
 			match := FrontmatterAndBodyRegex.FindStringSubmatch(tc.source)
 
 			if !tc.shouldMatch {
-				assert.Nil(t, match, "Regex should not match for: %s", tc.source)
+				if match != nil {
+					t.Errorf("Regex should not match for: %s", tc.source)
+				}
 			} else {
-				assert.NotNil(t, match, "Regex should match for: %s", tc.source)
-				assert.Equal(t, 3, len(match), "Match should have 3 elements (full match + 2 groups)")
+				if match == nil {
+					t.Fatalf("Regex should match for: %s", tc.source)
+				}
+				if len(match) != 3 {
+					t.Errorf("Match should have 3 elements (full match + 2 groups), got %d", len(match))
+				}
 				frontmatter := match[1]
 				body := match[2]
-				assert.Equal(t, tc.expectedFrontmatter, frontmatter, "Frontmatter should match")
-				assert.Equal(t, tc.expectedBody, body, "Body should match")
+				if frontmatter != tc.expectedFrontmatter {
+					t.Errorf("Frontmatter = %q, want %q", frontmatter, tc.expectedFrontmatter)
+				}
+				if body != tc.expectedBody {
+					t.Errorf("Body = %q, want %q", body, tc.expectedBody)
+				}
 			}
 		})
 	}
@@ -136,8 +146,9 @@ func TestRoleAndHistoryMarkerRegex(t *testing.T) {
 		}
 
 		for _, pattern := range validPatterns {
-			assert.NotNil(t, RoleAndHistoryMarkerRegex.FindStringSubmatch(pattern),
-				"Pattern should match: %s", pattern)
+			if RoleAndHistoryMarkerRegex.FindStringSubmatch(pattern) == nil {
+				t.Errorf("Pattern should match: %s", pattern)
+			}
 		}
 	})
 
@@ -155,8 +166,9 @@ func TestRoleAndHistoryMarkerRegex(t *testing.T) {
 		}
 
 		for _, pattern := range invalidPatterns {
-			assert.Nil(t, RoleAndHistoryMarkerRegex.FindStringSubmatch(pattern),
-				"Pattern should not match: %s", pattern)
+			if RoleAndHistoryMarkerRegex.FindStringSubmatch(pattern) != nil {
+				t.Errorf("Pattern should not match: %s", pattern)
+			}
 		}
 	})
 
@@ -169,7 +181,9 @@ func TestRoleAndHistoryMarkerRegex(t *testing.T) {
 	`
 
 		matches := RoleAndHistoryMarkerRegex.FindAllString(text, -1)
-		assert.Equal(t, 4, len(matches))
+		if len(matches) != 4 {
+			t.Errorf("len(matches) = %d, want 4", len(matches))
+		}
 	})
 }
 
@@ -181,8 +195,9 @@ func TestMediaAndSectionMarkerRegex(t *testing.T) {
 		}
 
 		for _, pattern := range validPatterns {
-			assert.NotNil(t, MediaAndSectionMarkerRegex.FindStringSubmatch(pattern),
-				"Pattern should match: %s", pattern)
+			if MediaAndSectionMarkerRegex.FindStringSubmatch(pattern) == nil {
+				t.Errorf("Pattern should match: %s", pattern)
+			}
 		}
 	})
 
@@ -195,14 +210,19 @@ func TestMediaAndSectionMarkerRegex(t *testing.T) {
 	`
 
 		matches := MediaAndSectionMarkerRegex.FindAllString(text, -1)
-		assert.Equal(t, 4, len(matches))
+		if len(matches) != 4 {
+			t.Errorf("len(matches) = %d, want 4", len(matches))
+		}
 	})
 }
 
 func TestSplitByRegex(t *testing.T) {
 	inputStr := "  one  ,  ,  two  ,  three  "
 	output := splitByRegex(inputStr, regexp.MustCompile(`,`))
-	assert.Equal(t, []string{"  one  ", "  two  ", "  three  "}, output)
+	want := []string{"  one  ", "  two  ", "  three  "}
+	if diff := cmp.Diff(want, output); diff != "" {
+		t.Errorf("splitByRegex() mismatch (-want +got):\n%s", diff)
+	}
 }
 
 func TestSplitByMediaAndSectionMarkers(t *testing.T) {
@@ -214,7 +234,9 @@ func TestSplitByMediaAndSectionMarkers(t *testing.T) {
 			" https://example.com/image.jpg",
 		}
 
-		assert.Equal(t, expected, output, "Split result should match expected output")
+		if diff := cmp.Diff(expected, output); diff != "" {
+			t.Errorf("splitByMediaAndSectionMarkers() mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("MultipleMarkers", func(t *testing.T) {
@@ -228,7 +250,9 @@ func TestSplitByMediaAndSectionMarkers(t *testing.T) {
 			" Code",
 		}
 
-		assert.Equal(t, expected, output, "Split result should match expected output")
+		if diff := cmp.Diff(expected, output); diff != "" {
+			t.Errorf("splitByMediaAndSectionMarkers() mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("NoMarkers", func(t *testing.T) {
@@ -236,7 +260,9 @@ func TestSplitByMediaAndSectionMarkers(t *testing.T) {
 		output := splitByMediaAndSectionMarkers(inputStr)
 		expected := []string{"Hello World"}
 
-		assert.Equal(t, expected, output, "Split result should match expected output")
+		if diff := cmp.Diff(expected, output); diff != "" {
+			t.Errorf("splitByMediaAndSectionMarkers() mismatch (-want +got):\n%s", diff)
+		}
 	})
 }
 
@@ -246,7 +272,9 @@ func TestSplitByRoleAndHistoryMarkers(t *testing.T) {
 		output := splitByRoleAndHistoryMarkers(inputStr)
 		expected := []string{"Hello World"}
 
-		assert.Equal(t, expected, output, "Split result should match expected output")
+		if diff := cmp.Diff(expected, output); diff != "" {
+			t.Errorf("splitByRoleAndHistoryMarkers() mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("SingleMarker", func(t *testing.T) {
@@ -258,7 +286,9 @@ func TestSplitByRoleAndHistoryMarkers(t *testing.T) {
 			" world",
 		}
 
-		assert.Equal(t, expected, output, "Split result should match expected output")
+		if diff := cmp.Diff(expected, output); diff != "" {
+			t.Errorf("splitByRoleAndHistoryMarkers() mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("FilterEmpty", func(t *testing.T) {
@@ -266,7 +296,9 @@ func TestSplitByRoleAndHistoryMarkers(t *testing.T) {
 		output := splitByRoleAndHistoryMarkers(inputStr)
 		expected := []string{"<<<dotprompt:role:system"}
 
-		assert.Equal(t, expected, output, "Split result should match expected output")
+		if diff := cmp.Diff(expected, output); diff != "" {
+			t.Errorf("splitByRoleAndHistoryMarkers() mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("AdjacentMarkers", func(t *testing.T) {
@@ -277,7 +309,9 @@ func TestSplitByRoleAndHistoryMarkers(t *testing.T) {
 			"<<<dotprompt:history",
 		}
 
-		assert.Equal(t, expected, output, "Split result should match expected output")
+		if diff := cmp.Diff(expected, output); diff != "" {
+			t.Errorf("splitByRoleAndHistoryMarkers() mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("InvalidFormat", func(t *testing.T) {
@@ -285,7 +319,9 @@ func TestSplitByRoleAndHistoryMarkers(t *testing.T) {
 		output := splitByRoleAndHistoryMarkers(inputStr)
 		expected := []string{"<<<dotprompt:ROLE:user>>>"}
 
-		assert.Equal(t, expected, output, "Split result should match expected output")
+		if diff := cmp.Diff(expected, output); diff != "" {
+			t.Errorf("splitByRoleAndHistoryMarkers() mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("MultipleMarkers", func(t *testing.T) {
@@ -299,7 +335,9 @@ func TestSplitByRoleAndHistoryMarkers(t *testing.T) {
 			" end",
 		}
 
-		assert.Equal(t, expected, output, "Split result should match expected output")
+		if diff := cmp.Diff(expected, output); diff != "" {
+			t.Errorf("splitByRoleAndHistoryMarkers() mismatch (-want +got):\n%s", diff)
+		}
 	})
 }
 
@@ -313,7 +351,9 @@ func TestConvertNamespacedEntryToNestedObject(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, expected, result)
+		if diff := cmp.Diff(expected, result); diff != "" {
+			t.Errorf("convertNamespacedEntryToNestedObject() mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("test adding to existing namespace", func(t *testing.T) {
@@ -332,7 +372,9 @@ func TestConvertNamespacedEntryToNestedObject(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, expected, result)
+		if diff := cmp.Diff(expected, result); diff != "" {
+			t.Errorf("convertNamespacedEntryToNestedObject() mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("test handling multiple namespaces", func(t *testing.T) {
@@ -348,7 +390,9 @@ func TestConvertNamespacedEntryToNestedObject(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, expected, finalResult)
+		if diff := cmp.Diff(expected, finalResult); diff != "" {
+			t.Errorf("convertNamespacedEntryToNestedObject() mismatch (-want +got):\n%s", diff)
+		}
 	})
 }
 
@@ -356,15 +400,23 @@ func TestExtractFrontmatterAndBody(t *testing.T) {
 	t.Run("should extract frontmatter and body", func(t *testing.T) {
 		inputStr := "---\nfoo: bar\n---\nThis is the body."
 		frontmatter, body := extractFrontmatterAndBody(inputStr)
-		assert.Equal(t, "foo: bar", frontmatter)
-		assert.Equal(t, "This is the body.", body)
+		if frontmatter != "foo: bar" {
+			t.Errorf("frontmatter = %q, want %q", frontmatter, "foo: bar")
+		}
+		if body != "This is the body." {
+			t.Errorf("body = %q, want %q", body, "This is the body.")
+		}
 	})
 
 	t.Run("should extract frontmatter and body with empty frontmatter", func(t *testing.T) {
 		inputStr := "---\n\n---\nThis is the body."
 		frontmatter, body := extractFrontmatterAndBody(inputStr)
-		assert.Equal(t, "", frontmatter)
-		assert.Equal(t, "This is the body.", body)
+		if frontmatter != "" {
+			t.Errorf("frontmatter = %q, want \"\"", frontmatter)
+		}
+		if body != "This is the body." {
+			t.Errorf("body = %q, want %q", body, "This is the body.")
+		}
 	})
 
 	t.Run("should return empty strings when there is no frontmatter marker", func(t *testing.T) {
@@ -373,8 +425,12 @@ func TestExtractFrontmatterAndBody(t *testing.T) {
 		// be done across all the runtimes.
 		inputStr := "Hello World"
 		frontmatter, body := extractFrontmatterAndBody(inputStr)
-		assert.Equal(t, "", frontmatter)
-		assert.Equal(t, "", body)
+		if frontmatter != "" {
+			t.Errorf("frontmatter = %q, want \"\"", frontmatter)
+		}
+		if body != "" {
+			t.Errorf("body = %q, want \"\"", body)
+		}
 	})
 }
 
@@ -396,12 +452,17 @@ func TestTransformMessagesToHistory(t *testing.T) {
 		}
 
 		result, err := transformMessagesToHistory(messages)
-		assert.NoError(t, err)
-		assert.Equal(t, 2, len(result))
+		if err != nil {
+			t.Errorf("transformMessagesToHistory() returned error: %v", err)
+		}
+		if len(result) != 2 {
+			t.Errorf("len(result) = %d, want 2", len(result))
+		}
 
-		for _, msg := range result {
-			assert.Contains(t, msg.Metadata, "purpose")
-			assert.Equal(t, "history", msg.Metadata["purpose"])
+		for i, msg := range result {
+			if msg.Metadata["purpose"] != "history" {
+				t.Errorf("result[%d].Metadata['purpose'] = %v, want \"history\"", i, msg.Metadata["purpose"])
+			}
 		}
 	})
 
@@ -421,20 +482,30 @@ func TestTransformMessagesToHistory(t *testing.T) {
 		}
 
 		result, err := transformMessagesToHistory(messages)
-		assert.NoError(t, err)
-		assert.Equal(t, 1, len(result))
+		if err != nil {
+			t.Errorf("transformMessagesToHistory() returned error: %v", err)
+		}
+		if len(result) != 1 {
+			t.Errorf("len(result) = %d, want 1", len(result))
+		}
 
 		// Check that history purpose was added and existing metadata preserved
-		assert.Contains(t, result[0].Metadata, "purpose")
-		assert.Equal(t, "history", result[0].Metadata["purpose"])
-		assert.Contains(t, result[0].Metadata, "foo")
-		assert.Equal(t, "bar", result[0].Metadata["foo"])
+		if result[0].Metadata["purpose"] != "history" {
+			t.Errorf("Metadata['purpose'] = %v, want \"history\"", result[0].Metadata["purpose"])
+		}
+		if result[0].Metadata["foo"] != "bar" {
+			t.Errorf("Metadata['foo'] = %v, want \"bar\"", result[0].Metadata["foo"])
+		}
 	})
 
 	t.Run("handle empty array", func(t *testing.T) {
 		result, err := transformMessagesToHistory([]Message{})
-		assert.NoError(t, err)
-		assert.Equal(t, 0, len(result))
+		if err != nil {
+			t.Errorf("transformMessagesToHistory() returned error: %v", err)
+		}
+		if len(result) != 0 {
+			t.Errorf("len(result) = %d, want 0", len(result))
+		}
 	})
 }
 
@@ -442,8 +513,12 @@ func TestMessageSourcesToMessages(t *testing.T) {
 	t.Run("should handle empty array", func(t *testing.T) {
 		messageSources := []*MessageSource{}
 		messages, err := messageSourcesToMessages(messageSources)
-		assert.NoError(t, err)
-		assert.Equal(t, 0, len(messages))
+		if err != nil {
+			t.Errorf("messageSourcesToMessages() returned error: %v", err)
+		}
+		if len(messages) != 0 {
+			t.Errorf("len(messages) = %d, want 0", len(messages))
+		}
 	})
 
 	t.Run("should convert a single message source", func(t *testing.T) {
@@ -455,16 +530,23 @@ func TestMessageSourcesToMessages(t *testing.T) {
 		}
 
 		messages, err := messageSourcesToMessages(messageSources)
-		assert.NoError(t, err)
-		assert.Equal(t, 1, len(messages))
-		assert.Equal(t, []Message{
+		if err != nil {
+			t.Errorf("messageSourcesToMessages() returned error: %v", err)
+		}
+		if len(messages) != 1 {
+			t.Errorf("len(messages) = %d, want 1", len(messages))
+		}
+		expected := []Message{
 			{
 				Role: RoleUser,
 				Content: []Part{
 					&TextPart{Text: "Hello"},
 				},
 			},
-		}, messages)
+		}
+		if diff := cmp.Diff(expected, messages); diff != "" {
+			t.Errorf("messages mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("should handle message source with content", func(t *testing.T) {
@@ -479,16 +561,23 @@ func TestMessageSourcesToMessages(t *testing.T) {
 		}
 
 		messages, err := messageSourcesToMessages(messageSources)
-		assert.NoError(t, err)
-		assert.Equal(t, 1, len(messages))
-		assert.Equal(t, []Message{
+		if err != nil {
+			t.Errorf("messageSourcesToMessages() returned error: %v", err)
+		}
+		if len(messages) != 1 {
+			t.Errorf("len(messages) = %d, want 1", len(messages))
+		}
+		expected := []Message{
 			{
 				Role: RoleUser,
 				Content: []Part{
 					textPart,
 				},
 			},
-		}, messages)
+		}
+		if diff := cmp.Diff(expected, messages); diff != "" {
+			t.Errorf("messages mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("should handle message source with metadata", func(t *testing.T) {
@@ -506,9 +595,13 @@ func TestMessageSourcesToMessages(t *testing.T) {
 		}
 
 		messages, err := messageSourcesToMessages(messageSources)
-		assert.NoError(t, err)
-		assert.Equal(t, 1, len(messages))
-		assert.Equal(t, []Message{
+		if err != nil {
+			t.Errorf("messageSourcesToMessages() returned error: %v", err)
+		}
+		if len(messages) != 1 {
+			t.Errorf("len(messages) = %d, want 1", len(messages))
+		}
+		expected := []Message{
 			{
 				Role: RoleUser,
 				Content: []Part{
@@ -520,7 +613,10 @@ func TestMessageSourcesToMessages(t *testing.T) {
 					},
 				},
 			},
-		}, messages)
+		}
+		if diff := cmp.Diff(expected, messages); diff != "" {
+			t.Errorf("messages mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("should filter out message sources with empty source and content", func(t *testing.T) {
@@ -541,17 +637,29 @@ func TestMessageSourcesToMessages(t *testing.T) {
 		}
 
 		messages, err := messageSourcesToMessages(messageSources)
-		assert.NoError(t, err)
-		assert.Equal(t, 2, len(messages))
+		if err != nil {
+			t.Errorf("messageSourcesToMessages() returned error: %v", err)
+		}
+		if len(messages) != 2 {
+			t.Errorf("len(messages) = %d, want 2", len(messages))
+		}
 
 		// Check that the model message is included even with empty source
-		assert.Equal(t, RoleModel, messages[0].Role)
+		if messages[0].Role != RoleModel {
+			t.Errorf("messages[0].Role = %q, want %q", messages[0].Role, RoleModel)
+		}
 
 		// Check that the user message is included
-		assert.Equal(t, RoleUser, messages[1].Role)
+		if messages[1].Role != RoleUser {
+			t.Errorf("messages[1].Role = %q, want %q", messages[1].Role, RoleUser)
+		}
 		textPart, ok := messages[1].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Hello", textPart.Text)
+		if !ok {
+			t.Fatalf("messages[1].Content[0] is not *TextPart, got %T", messages[1].Content[0])
+		}
+		if textPart.Text != "Hello" {
+			t.Errorf("messages[1].Text = %q, want %q", textPart.Text, "Hello")
+		}
 	})
 }
 
@@ -571,8 +679,9 @@ func TestMessagesHaveHistory(t *testing.T) {
 			},
 		}
 
-		result := messagesHaveHistory(messages)
-		assert.True(t, result)
+		if !messagesHaveHistory(messages) {
+			t.Error("messagesHaveHistory(messages) = false, want true")
+		}
 	})
 
 	t.Run("should return false if messages do not have history metadata", func(t *testing.T) {
@@ -585,8 +694,9 @@ func TestMessagesHaveHistory(t *testing.T) {
 			},
 		}
 
-		result := messagesHaveHistory(messages)
-		assert.False(t, result)
+		if messagesHaveHistory(messages) {
+			t.Error("messagesHaveHistory(messages) = true, want false")
+		}
 	})
 }
 
@@ -595,26 +705,46 @@ func TestToMessages(t *testing.T) {
 		renderedString := "Hello world"
 		result, err := ToMessages(renderedString, nil)
 
-		assert.NoError(t, err)
-		assert.Equal(t, 1, len(result))
-		assert.Equal(t, RoleUser, result[0].Role)
+		if err != nil {
+			t.Errorf("ToMessages() returned error: %v", err)
+		}
+		if len(result) != 1 {
+			t.Errorf("len(result) = %d, want 1", len(result))
+		}
+		if result[0].Role != RoleUser {
+			t.Errorf("Role = %q, want %q", result[0].Role, RoleUser)
+		}
 
 		textPart, ok := result[0].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Hello world", textPart.Text)
+		if !ok {
+			t.Fatalf("Content[0] is not *TextPart, got %T", result[0].Content[0])
+		}
+		if textPart.Text != "Hello world" {
+			t.Errorf("Text = %q, want %q", textPart.Text, "Hello world")
+		}
 	})
 
 	t.Run("should handle a string with a single role marker", func(t *testing.T) {
 		renderedString := "<<<dotprompt:role:model>>>Hello world"
 		result, err := ToMessages(renderedString, nil)
 
-		assert.NoError(t, err)
-		assert.Equal(t, 1, len(result))
-		assert.Equal(t, RoleModel, result[0].Role)
+		if err != nil {
+			t.Errorf("ToMessages() returned error: %v", err)
+		}
+		if len(result) != 1 {
+			t.Errorf("len(result) = %d, want 1", len(result))
+		}
+		if result[0].Role != RoleModel {
+			t.Errorf("Role = %q, want %q", result[0].Role, RoleModel)
+		}
 
 		textPart, ok := result[0].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Hello world", textPart.Text)
+		if !ok {
+			t.Fatalf("Content[0] is not *TextPart, got %T", result[0].Content[0])
+		}
+		if textPart.Text != "Hello world" {
+			t.Errorf("Text = %q, want %q", textPart.Text, "Hello world")
+		}
 	})
 
 	t.Run("should handle a string with multiple role markers", func(t *testing.T) {
@@ -623,37 +753,69 @@ func TestToMessages(t *testing.T) {
 			"<<<dotprompt:role:model>>>Model response"
 		result, err := ToMessages(renderedString, nil)
 
-		assert.NoError(t, err)
-		assert.Equal(t, 3, len(result))
+		if err != nil {
+			t.Errorf("ToMessages() returned error: %v", err)
+		}
+		if len(result) != 3 {
+			t.Errorf("len(result) = %d, want 3", len(result))
+		}
 
-		assert.Equal(t, RoleSystem, result[0].Role)
+		if result[0].Role != RoleSystem {
+			t.Errorf("result[0].Role = %q, want %q", result[0].Role, RoleSystem)
+		}
 		textPart0, ok := result[0].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "System instructions\n", textPart0.Text)
+		if !ok {
+			t.Fatalf("result[0].Content[0] is not *TextPart, got %T", result[0].Content[0])
+		}
+		if textPart0.Text != "System instructions\n" {
+			t.Errorf("result[0].Text = %q, want %q", textPart0.Text, "System instructions\n")
+		}
 
-		assert.Equal(t, RoleUser, result[1].Role)
+		if result[1].Role != RoleUser {
+			t.Errorf("result[1].Role = %q, want %q", result[1].Role, RoleUser)
+		}
 		textPart1, ok := result[1].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "User query\n", textPart1.Text)
+		if !ok {
+			t.Fatalf("result[1].Content[0] is not *TextPart, got %T", result[1].Content[0])
+		}
+		if textPart1.Text != "User query\n" {
+			t.Errorf("result[1].Text = %q, want %q", textPart1.Text, "User query\n")
+		}
 
-		assert.Equal(t, RoleModel, result[2].Role)
+		if result[2].Role != RoleModel {
+			t.Errorf("result[2].Role = %q, want %q", result[2].Role, RoleModel)
+		}
 		textPart2, ok := result[2].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Model response", textPart2.Text)
+		if !ok {
+			t.Fatalf("result[2].Content[0] is not *TextPart, got %T", result[2].Content[0])
+		}
+		if textPart2.Text != "Model response" {
+			t.Errorf("result[2].Text = %q, want %q", textPart2.Text, "Model response")
+		}
 	})
 
 	t.Run("should update the role of an empty message instead of creating a new one", func(t *testing.T) {
 		renderedString := "<<<dotprompt:role:user>>><<<dotprompt:role:model>>>Response"
 		result, err := ToMessages(renderedString, nil)
 
-		assert.NoError(t, err)
+		if err != nil {
+			t.Errorf("ToMessages() returned error: %v", err)
+		}
 		// Should only have one message since the first role marker doesn't have content
-		assert.Equal(t, 1, len(result))
-		assert.Equal(t, RoleModel, result[0].Role)
+		if len(result) != 1 {
+			t.Errorf("len(result) = %d, want 1", len(result))
+		}
+		if result[0].Role != RoleModel {
+			t.Errorf("Role = %q, want %q", result[0].Role, RoleModel)
+		}
 
 		textPart, ok := result[0].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Response", textPart.Text)
+		if !ok {
+			t.Fatalf("Content[0] is not *TextPart, got %T", result[0].Content[0])
+		}
+		if textPart.Text != "Response" {
+			t.Errorf("Text = %q, want %q", textPart.Text, "Response")
+		}
 	})
 
 	t.Run("should handle history markers and add metadata", func(t *testing.T) {
@@ -676,29 +838,51 @@ func TestToMessages(t *testing.T) {
 		data := &DataArgument{Messages: historyMessages}
 		result, err := ToMessages(renderedString, data)
 
-		assert.NoError(t, err)
-		assert.Equal(t, 4, len(result))
+		if err != nil {
+			t.Errorf("ToMessages() returned error: %v", err)
+		}
+		if len(result) != 4 {
+			t.Errorf("len(result) = %d, want 4", len(result))
+		}
 
 		// First message is the user query
-		assert.Equal(t, RoleUser, result[0].Role)
+		if result[0].Role != RoleUser {
+			t.Errorf("result[0].Role = %q, want %q", result[0].Role, RoleUser)
+		}
 		textPart0, ok := result[0].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Query", textPart0.Text)
+		if !ok {
+			t.Fatalf("result[0].Content[0] is not *TextPart, got %T", result[0].Content[0])
+		}
+		if textPart0.Text != "Query" {
+			t.Errorf("result[0].Text = %q, want %q", textPart0.Text, "Query")
+		}
 
 		// Next two messages should be history messages with appropriate metadata
-		assert.Equal(t, RoleUser, result[1].Role)
-		assert.Contains(t, result[1].Metadata, "purpose")
-		assert.Equal(t, "history", result[1].Metadata["purpose"])
+		if result[1].Role != RoleUser {
+			t.Errorf("result[1].Role = %q, want %q", result[1].Role, RoleUser)
+		}
+		if result[1].Metadata["purpose"] != "history" {
+			t.Errorf("result[1].Metadata['purpose'] = %v, want \"history\"", result[1].Metadata["purpose"])
+		}
 
-		assert.Equal(t, RoleModel, result[2].Role)
-		assert.Contains(t, result[2].Metadata, "purpose")
-		assert.Equal(t, "history", result[2].Metadata["purpose"])
+		if result[2].Role != RoleModel {
+			t.Errorf("result[2].Role = %q, want %q", result[2].Role, RoleModel)
+		}
+		if result[2].Metadata["purpose"] != "history" {
+			t.Errorf("result[2].Metadata['purpose'] = %v, want \"history\"", result[2].Metadata["purpose"])
+		}
 
 		// Last message is the follow-up
-		assert.Equal(t, RoleModel, result[3].Role)
+		if result[3].Role != RoleModel {
+			t.Errorf("result[3].Role = %q, want %q", result[3].Role, RoleModel)
+		}
 		textPart3, ok := result[3].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Follow-up", textPart3.Text)
+		if !ok {
+			t.Fatalf("result[3].Content[0] is not *TextPart, got %T", result[3].Content[0])
+		}
+		if textPart3.Text != "Follow-up" {
+			t.Errorf("result[3].Text = %q, want %q", textPart3.Text, "Follow-up")
+		}
 	})
 
 	t.Run("should handle empty history gracefully", func(t *testing.T) {
@@ -706,36 +890,68 @@ func TestToMessages(t *testing.T) {
 		data := &DataArgument{Messages: []Message{}}
 		result, err := ToMessages(renderedString, data)
 
-		assert.NoError(t, err)
-		assert.Equal(t, 2, len(result))
+		if err != nil {
+			t.Errorf("ToMessages() returned error: %v", err)
+		}
+		if len(result) != 2 {
+			t.Errorf("len(result) = %d, want 2", len(result))
+		}
 
-		assert.Equal(t, RoleUser, result[0].Role)
+		if result[0].Role != RoleUser {
+			t.Errorf("result[0].Role = %q, want %q", result[0].Role, RoleUser)
+		}
 		textPart0, ok := result[0].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Query", textPart0.Text)
+		if !ok {
+			t.Fatalf("result[0].Content[0] is not *TextPart, got %T", result[0].Content[0])
+		}
+		if textPart0.Text != "Query" {
+			t.Errorf("result[0].Text = %q, want %q", textPart0.Text, "Query")
+		}
 
-		assert.Equal(t, RoleModel, result[1].Role)
+		if result[1].Role != RoleModel {
+			t.Errorf("result[1].Role = %q, want %q", result[1].Role, RoleModel)
+		}
 		textPart1, ok := result[1].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Follow-up", textPart1.Text)
+		if !ok {
+			t.Fatalf("result[1].Content[0] is not *TextPart, got %T", result[1].Content[0])
+		}
+		if textPart1.Text != "Follow-up" {
+			t.Errorf("result[1].Text = %q, want %q", textPart1.Text, "Follow-up")
+		}
 	})
 
 	t.Run("should handle nil data gracefully", func(t *testing.T) {
 		renderedString := "<<<dotprompt:role:user>>>Query<<<dotprompt:history>>>Follow-up"
 		result, err := ToMessages(renderedString, nil)
 
-		assert.NoError(t, err)
-		assert.Equal(t, 2, len(result))
+		if err != nil {
+			t.Errorf("ToMessages() returned error: %v", err)
+		}
+		if len(result) != 2 {
+			t.Errorf("len(result) = %d, want 2", len(result))
+		}
 
-		assert.Equal(t, RoleUser, result[0].Role)
+		if result[0].Role != RoleUser {
+			t.Errorf("result[0].Role = %q, want %q", result[0].Role, RoleUser)
+		}
 		textPart0, ok := result[0].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Query", textPart0.Text)
+		if !ok {
+			t.Fatalf("result[0].Content[0] is not *TextPart, got %T", result[0].Content[0])
+		}
+		if textPart0.Text != "Query" {
+			t.Errorf("result[0].Text = %q, want %q", textPart0.Text, "Query")
+		}
 
-		assert.Equal(t, RoleModel, result[1].Role)
+		if result[1].Role != RoleModel {
+			t.Errorf("result[1].Role = %q, want %q", result[1].Role, RoleModel)
+		}
 		textPart1, ok := result[1].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Follow-up", textPart1.Text)
+		if !ok {
+			t.Fatalf("result[1].Content[0] is not *TextPart, got %T", result[1].Content[0])
+		}
+		if textPart1.Text != "Follow-up" {
+			t.Errorf("result[1].Text = %q, want %q", textPart1.Text, "Follow-up")
+		}
 	})
 
 	t.Run("should filter out empty messages", func(t *testing.T) {
@@ -744,13 +960,23 @@ func TestToMessages(t *testing.T) {
 			"<<<dotprompt:role:model>>>Response"
 		result, err := ToMessages(renderedString, nil)
 
-		assert.NoError(t, err)
-		assert.Equal(t, 1, len(result))
-		assert.Equal(t, RoleModel, result[0].Role)
+		if err != nil {
+			t.Errorf("ToMessages() returned error: %v", err)
+		}
+		if len(result) != 1 {
+			t.Errorf("len(result) = %d, want 1", len(result))
+		}
+		if result[0].Role != RoleModel {
+			t.Errorf("Role = %q, want %q", result[0].Role, RoleModel)
+		}
 
 		textPart, ok := result[0].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Response", textPart.Text)
+		if !ok {
+			t.Fatalf("Content[0] is not *TextPart, got %T", result[0].Content[0])
+		}
+		if textPart.Text != "Response" {
+			t.Errorf("Text = %q, want %q", textPart.Text, "Response")
+		}
 	})
 
 	t.Run("should handle multiple history markers by treating each as a separate insertion point", func(t *testing.T) {
@@ -767,22 +993,36 @@ func TestToMessages(t *testing.T) {
 		data := &DataArgument{Messages: historyMessages}
 		result, err := ToMessages(renderedString, data)
 
-		assert.NoError(t, err)
-		assert.Equal(t, 4, len(result))
+		if err != nil {
+			t.Errorf("ToMessages() returned error: %v", err)
+		}
+		if len(result) != 4 {
+			t.Errorf("len(result) = %d, want 4", len(result))
+		}
 
-		assert.Contains(t, result[0].Metadata, "purpose")
-		assert.Equal(t, "history", result[0].Metadata["purpose"])
+		if result[0].Metadata["purpose"] != "history" {
+			t.Errorf("result[0].Metadata['purpose'] = %v, want \"history\"", result[0].Metadata["purpose"])
+		}
 
 		textPart1, ok := result[1].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "First", textPart1.Text)
+		if !ok {
+			t.Fatalf("result[1].Content[0] is not *TextPart, got %T", result[1].Content[0])
+		}
+		if textPart1.Text != "First" {
+			t.Errorf("result[1].Text = %q, want %q", textPart1.Text, "First")
+		}
 
-		assert.Contains(t, result[2].Metadata, "purpose")
-		assert.Equal(t, "history", result[2].Metadata["purpose"])
+		if result[2].Metadata["purpose"] != "history" {
+			t.Errorf("result[2].Metadata['purpose'] = %v, want \"history\"", result[2].Metadata["purpose"])
+		}
 
 		textPart3, ok := result[3].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Second", textPart3.Text)
+		if !ok {
+			t.Fatalf("result[3].Content[0] is not *TextPart, got %T", result[3].Content[0])
+		}
+		if textPart3.Text != "Second" {
+			t.Errorf("result[3].Text = %q, want %q", textPart3.Text, "Second")
+		}
 	})
 
 	t.Run("should support complex interleaving of role and history markers", func(t *testing.T) {
@@ -810,43 +1050,81 @@ func TestToMessages(t *testing.T) {
 		data := &DataArgument{Messages: historyMessages}
 		result, err := ToMessages(renderedString, data)
 
-		assert.NoError(t, err)
-		assert.Equal(t, 6, len(result))
+		if err != nil {
+			t.Errorf("ToMessages() returned error: %v", err)
+		}
+		if len(result) != 6 {
+			t.Errorf("len(result) = %d, want 6", len(result))
+		}
 
-		assert.Equal(t, RoleSystem, result[0].Role)
+		if result[0].Role != RoleSystem {
+			t.Errorf("result[0].Role = %q, want %q", result[0].Role, RoleSystem)
+		}
 		textPart0, ok := result[0].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Instructions\n", textPart0.Text)
+		if !ok {
+			t.Fatalf("result[0].Content[0] is not *TextPart, got %T", result[0].Content[0])
+		}
+		if textPart0.Text != "Instructions\n" {
+			t.Errorf("result[0].Text = %q, want %q", textPart0.Text, "Instructions\n")
+		}
 
-		assert.Equal(t, RoleUser, result[1].Role)
+		if result[1].Role != RoleUser {
+			t.Errorf("result[1].Role = %q, want %q", result[1].Role, RoleUser)
+		}
 		textPart1, ok := result[1].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Initial Query\n", textPart1.Text)
+		if !ok {
+			t.Fatalf("result[1].Content[0] is not *TextPart, got %T", result[1].Content[0])
+		}
+		if textPart1.Text != "Initial Query\n" {
+			t.Errorf("result[1].Text = %q, want %q", textPart1.Text, "Initial Query\n")
+		}
 
-		assert.Equal(t, RoleUser, result[2].Role)
-		assert.Contains(t, result[2].Metadata, "purpose")
-		assert.Equal(t, "history", result[2].Metadata["purpose"])
+		if result[2].Role != RoleUser {
+			t.Errorf("result[2].Role = %q, want %q", result[2].Role, RoleUser)
+		}
+		if result[2].Metadata["purpose"] != "history" {
+			t.Errorf("result[2].Metadata['purpose'] = %v, want \"history\"", result[2].Metadata["purpose"])
+		}
 
-		assert.Equal(t, RoleModel, result[3].Role)
-		assert.Contains(t, result[3].Metadata, "purpose")
-		assert.Equal(t, "history", result[3].Metadata["purpose"])
+		if result[3].Role != RoleModel {
+			t.Errorf("result[3].Role = %q, want %q", result[3].Role, RoleModel)
+		}
+		if result[3].Metadata["purpose"] != "history" {
+			t.Errorf("result[3].Metadata['purpose'] = %v, want \"history\"", result[3].Metadata["purpose"])
+		}
 
-		assert.Equal(t, RoleUser, result[4].Role)
+		if result[4].Role != RoleUser {
+			t.Errorf("result[4].Role = %q, want %q", result[4].Role, RoleUser)
+		}
 		textPart4, ok := result[4].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Follow-up Question\n", textPart4.Text)
+		if !ok {
+			t.Fatalf("result[4].Content[0] is not *TextPart, got %T", result[4].Content[0])
+		}
+		if textPart4.Text != "Follow-up Question\n" {
+			t.Errorf("result[4].Text = %q, want %q", textPart4.Text, "Follow-up Question\n")
+		}
 
-		assert.Equal(t, RoleModel, result[5].Role)
+		if result[5].Role != RoleModel {
+			t.Errorf("result[5].Role = %q, want %q", result[5].Role, RoleModel)
+		}
 		textPart5, ok := result[5].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Final Response", textPart5.Text)
+		if !ok {
+			t.Fatalf("result[5].Content[0] is not *TextPart, got %T", result[5].Content[0])
+		}
+		if textPart5.Text != "Final Response" {
+			t.Errorf("result[5].Text = %q, want %q", textPart5.Text, "Final Response")
+		}
 	})
 
 	t.Run("should handle an empty input string", func(t *testing.T) {
 		result, err := ToMessages("", nil)
 
-		assert.NoError(t, err)
-		assert.Equal(t, 0, len(result))
+		if err != nil {
+			t.Errorf("ToMessages() returned error: %v", err)
+		}
+		if len(result) != 0 {
+			t.Errorf("len(result) = %d, want 0", len(result))
+		}
 	})
 
 	t.Run("should properly call insertHistory with data.messages", func(t *testing.T) {
@@ -863,21 +1141,39 @@ func TestToMessages(t *testing.T) {
 		data := &DataArgument{Messages: historyMessages}
 		result, err := ToMessages(renderedString, data)
 
-		assert.NoError(t, err)
+		if err != nil {
+			t.Errorf("ToMessages() returned error: %v", err)
+		}
 		// The resulting messages should have the history message inserted
 		// before the user message by the insertHistory function
-		assert.Equal(t, 2, len(result))
+		if len(result) != 2 {
+			t.Errorf("len(result) = %d, want 2", len(result))
+		}
 
-		assert.Equal(t, RoleUser, result[0].Role)
+		if result[0].Role != RoleUser {
+			t.Errorf("result[0].Role = %q, want %q", result[0].Role, RoleUser)
+		}
 		textPart0, ok := result[0].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Previous", textPart0.Text)
-		assert.Nil(t, result[0].Metadata) // insertHistory shouldn't add history metadata
+		if !ok {
+			t.Fatalf("result[0].Content[0] is not *TextPart, got %T", result[0].Content[0])
+		}
+		if textPart0.Text != "Previous" {
+			t.Errorf("result[0].Text = %q, want %q", textPart0.Text, "Previous")
+		}
+		if result[0].Metadata != nil {
+			t.Errorf("result[0].Metadata should be nil, got %v", result[0].Metadata)
+		}
 
-		assert.Equal(t, RoleUser, result[1].Role)
+		if result[1].Role != RoleUser {
+			t.Errorf("result[1].Role = %q, want %q", result[1].Role, RoleUser)
+		}
 		textPart1, ok := result[1].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Question", textPart1.Text)
+		if !ok {
+			t.Fatalf("result[1].Content[0] is not *TextPart, got %T", result[1].Content[0])
+		}
+		if textPart1.Text != "Question" {
+			t.Errorf("result[1].Text = %q, want %q", textPart1.Text, "Question")
+		}
 	})
 }
 
@@ -893,8 +1189,12 @@ func TestInsertHistory(t *testing.T) {
 		}
 
 		result, err := insertHistory(messages, nil)
-		assert.NoError(t, err)
-		assert.Equal(t, messages, result)
+		if err != nil {
+			t.Errorf("insertHistory() returned error: %v", err)
+		}
+		if diff := cmp.Diff(messages, result); diff != "" {
+			t.Errorf("insertHistory() mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("should return original messages if history purpose already exists", func(t *testing.T) {
@@ -927,8 +1227,12 @@ func TestInsertHistory(t *testing.T) {
 		}
 
 		result, err := insertHistory(messages, history)
-		assert.NoError(t, err)
-		assert.Equal(t, messages, result)
+		if err != nil {
+			t.Errorf("insertHistory() returned error: %v", err)
+		}
+		if diff := cmp.Diff(messages, result); diff != "" {
+			t.Errorf("insertHistory() mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("should insert history before the last user message", func(t *testing.T) {
@@ -962,8 +1266,12 @@ func TestInsertHistory(t *testing.T) {
 		}
 
 		result, err := insertHistory(messages, history)
-		assert.NoError(t, err)
-		assert.Equal(t, 3, len(result))
+		if err != nil {
+			t.Errorf("insertHistory() returned error: %v", err)
+		}
+		if len(result) != 3 {
+			t.Errorf("len(result) = %d, want 3", len(result))
+		}
 
 		expected := []Message{
 			{
@@ -991,21 +1299,12 @@ func TestInsertHistory(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, len(expected), len(result))
-		for i := range expected {
-			assert.Equal(t, expected[i].Role, result[i].Role)
-			assert.Equal(t, expected[i].Metadata, result[i].Metadata)
+		if len(expected) != len(result) {
+			t.Fatalf("Expected length %d, got %d", len(expected), len(result))
+		}
 
-			assert.Equal(t, len(expected[i].Content), len(result[i].Content))
-			for j := range expected[i].Content {
-				expectedPart, ok := expected[i].Content[j].(*TextPart)
-				assert.True(t, ok)
-
-				resultPart, ok := result[i].Content[j].(*TextPart)
-				assert.True(t, ok)
-
-				assert.Equal(t, expectedPart.Text, resultPart.Text)
-			}
+		if diff := cmp.Diff(expected, result); diff != "" {
+			t.Errorf("insertHistory() mismatch (-want +got):\n%s", diff)
 		}
 	})
 
@@ -1040,8 +1339,12 @@ func TestInsertHistory(t *testing.T) {
 		}
 
 		result, err := insertHistory(messages, history)
-		assert.NoError(t, err)
-		assert.Equal(t, 3, len(result))
+		if err != nil {
+			t.Errorf("insertHistory() returned error: %v", err)
+		}
+		if len(result) != 3 {
+			t.Errorf("len(result) = %d, want 3", len(result))
+		}
 
 		expected := []Message{
 			{
@@ -1069,21 +1372,12 @@ func TestInsertHistory(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, len(expected), len(result))
-		for i := range expected {
-			assert.Equal(t, expected[i].Role, result[i].Role)
-			assert.Equal(t, expected[i].Metadata, result[i].Metadata)
+		if len(expected) != len(result) {
+			t.Fatalf("Expected length %d, got %d", len(expected), len(result))
+		}
 
-			assert.Equal(t, len(expected[i].Content), len(result[i].Content))
-			for j := range expected[i].Content {
-				expectedPart, ok := expected[i].Content[j].(*TextPart)
-				assert.True(t, ok)
-
-				resultPart, ok := result[i].Content[j].(*TextPart)
-				assert.True(t, ok)
-
-				assert.Equal(t, expectedPart.Text, resultPart.Text)
-			}
+		if diff := cmp.Diff(expected, result); diff != "" {
+			t.Errorf("insertHistory() mismatch (-want +got):\n%s", diff)
 		}
 	})
 }
@@ -1148,25 +1442,45 @@ func TestParsePart(t *testing.T) {
 			result, err := parsePart(tc.piece)
 
 			if tc.hasError {
-				assert.Error(t, err)
+				if err == nil {
+					t.Errorf("parsePart(%q) expected error, got nil", tc.piece)
+				}
 			} else {
-				assert.NoError(t, err)
+				if err != nil {
+					t.Errorf("parsePart(%q) expected no error, got %v", tc.piece, err)
+				}
 
 				switch expected := tc.expected.(type) {
 				case *TextPart:
 					actual, ok := result.(*TextPart)
-					assert.True(t, ok)
-					assert.Equal(t, expected.Text, actual.Text)
+					if !ok {
+						t.Fatalf("result is not *TextPart, got %T", result)
+					}
+					if actual.Text != expected.Text {
+						t.Errorf("Text = %q, want %q", actual.Text, expected.Text)
+					}
 				case *MediaPart:
 					actual, ok := result.(*MediaPart)
-					assert.True(t, ok)
-					assert.Equal(t, expected.Media.URL, actual.Media.URL)
-					assert.Equal(t, expected.Media.ContentType, actual.Media.ContentType)
+					if !ok {
+						t.Fatalf("result is not *MediaPart, got %T", result)
+					}
+					if actual.Media.URL != expected.Media.URL {
+						t.Errorf("URL = %q, want %q", actual.Media.URL, expected.Media.URL)
+					}
+					if actual.Media.ContentType != expected.Media.ContentType {
+						t.Errorf("ContentType = %q, want %q", actual.Media.ContentType, expected.Media.ContentType)
+					}
 				case *PendingPart:
 					actual, ok := result.(*PendingPart)
-					assert.True(t, ok)
-					assert.Equal(t, expected.Metadata["purpose"], actual.Metadata["purpose"])
-					assert.Equal(t, expected.Metadata["pending"], actual.Metadata["pending"])
+					if !ok {
+						t.Fatalf("result is not *PendingPart, got %T", result)
+					}
+					if diff := cmp.Diff(expected.Metadata["purpose"], actual.Metadata["purpose"]); diff != "" {
+						t.Errorf("Metadata['purpose'] mismatch (-want +got):\n%s", diff)
+					}
+					if diff := cmp.Diff(expected.Metadata["pending"], actual.Metadata["pending"]); diff != "" {
+						t.Errorf("Metadata['pending'] mismatch (-want +got):\n%s", diff)
+					}
 				}
 			}
 		})
@@ -1177,8 +1491,12 @@ func TestParseMediaPiece(t *testing.T) {
 	t.Run("parse media piece", func(t *testing.T) {
 		piece := "<<<dotprompt:media:url>>> https://example.com/image.jpg"
 		result, err := parseMediaPart(piece)
-		assert.NoError(t, err)
-		assert.Equal(t, "https://example.com/image.jpg", result.Media.URL)
+		if err != nil {
+			t.Errorf("parseMediaPart() returned error: %v", err)
+		}
+		if result.Media.URL != "https://example.com/image.jpg" {
+			t.Errorf("URL = %q, want %q", result.Media.URL, "https://example.com/image.jpg")
+		}
 	})
 }
 
@@ -1192,26 +1510,49 @@ foo.bar: value
 Template content`
 
 		result, err := ParseDocument(source)
-		assert.NoError(t, err)
-		assert.Equal(t, "test", result.Name)
-		assert.Equal(t, "test description", result.Description)
-		assert.Equal(t, "Template content", result.Template)
+		if err != nil {
+			t.Errorf("ParseDocument() returned error: %v", err)
+		}
+		if result.Name != "test" {
+			t.Errorf("Name = %q, want %q", result.Name, "test")
+		}
+		if result.Description != "test description" {
+			t.Errorf("Description = %q, want %q", result.Description, "test description")
+		}
+		if result.Template != "Template content" {
+			t.Errorf("Template = %q, want %q", result.Template, "Template content")
+		}
 
-		assert.Contains(t, result.Ext, "foo")
-		assert.Equal(t, "value", result.Ext["foo"]["bar"])
+		if result.Ext["foo"] == nil {
+			t.Error("Ext['foo'] is nil")
+		} else if result.Ext["foo"]["bar"] != "value" {
+			t.Errorf("Ext['foo']['bar'] = %q, want \"value\"", result.Ext["foo"]["bar"])
+		}
 
-		assert.Equal(t, "test", result.Raw["name"])
-		assert.Equal(t, "test description", result.Raw["description"])
-		assert.Equal(t, "value", result.Raw["foo.bar"])
+		if result.Raw["name"] != "test" {
+			t.Errorf("Raw['name'] = %q, want \"test\"", result.Raw["name"])
+		}
+		if result.Raw["description"] != "test description" {
+			t.Errorf("Raw['description'] = %q, want \"test description\"", result.Raw["description"])
+		}
+		if result.Raw["foo.bar"] != "value" {
+			t.Errorf("Raw['foo.bar'] = %q, want \"value\"", result.Raw["foo.bar"])
+		}
 	})
 
 	t.Run("handle document without frontmatter", func(t *testing.T) {
 		source := "Just template content"
 
 		result, err := ParseDocument(source)
-		assert.NoError(t, err)
-		assert.NotNil(t, result.Ext)
-		assert.Equal(t, "Just template content", result.Template)
+		if err != nil {
+			t.Errorf("ParseDocument() returned error: %v", err)
+		}
+		if result.Ext == nil {
+			t.Error("Ext is nil")
+		}
+		if result.Template != "Just template content" {
+			t.Errorf("Template = %q, want \"Just template content\"", result.Template)
+		}
 	})
 
 	t.Run("handle invalid yaml frontmatter", func(t *testing.T) {
@@ -1221,10 +1562,16 @@ invalid: : yaml
 Template content`
 
 		result, err := ParseDocument(source)
-		assert.NoError(t, err)
-		assert.NotNil(t, result.Ext)
+		if err != nil {
+			t.Errorf("ParseDocument() returned error: %v", err)
+		}
+		if result.Ext == nil {
+			t.Error("Ext is nil")
+		}
 		// When YAML is invalid, return source as template
-		assert.Equal(t, source, result.Template)
+		if result.Template != source {
+			t.Errorf("Template = %q, want %q", result.Template, source)
+		}
 	})
 
 	t.Run("handle empty frontmatter", func(t *testing.T) {
@@ -1233,9 +1580,15 @@ Template content`
 Template content`
 
 		result, err := ParseDocument(source)
-		assert.NoError(t, err)
-		assert.NotNil(t, result.Ext)
-		assert.Equal(t, "Template content", result.Template)
+		if err != nil {
+			t.Errorf("ParseDocument() returned error: %v", err)
+		}
+		if result.Ext == nil {
+			t.Error("Ext is nil")
+		}
+		if result.Template != "Template content" {
+			t.Errorf("Template = %q, want \"Template content\"", result.Template)
+		}
 	})
 
 	t.Run("handle multiple namespaced entries", func(t *testing.T) {
@@ -1247,13 +1600,25 @@ qux.quux: value3
 Template content`
 
 		result, err := ParseDocument(source)
-		assert.NoError(t, err)
+		if err != nil {
+			t.Errorf("ParseDocument() returned error: %v", err)
+		}
 
-		assert.Contains(t, result.Ext, "foo")
-		assert.Contains(t, result.Ext, "qux")
-		assert.Equal(t, "value1", result.Ext["foo"]["bar"])
-		assert.Equal(t, "value2", result.Ext["foo"]["baz"])
-		assert.Equal(t, "value3", result.Ext["qux"]["quux"])
+		if result.Ext["foo"] == nil {
+			t.Error("Ext['foo'] is nil")
+		}
+		if result.Ext["qux"] == nil {
+			t.Error("Ext['qux'] is nil")
+		}
+		if result.Ext["foo"]["bar"] != "value1" {
+			t.Errorf("Ext['foo']['bar'] = %q, want \"value1\"", result.Ext["foo"]["bar"])
+		}
+		if result.Ext["foo"]["baz"] != "value2" {
+			t.Errorf("Ext['foo']['baz'] = %q, want \"value2\"", result.Ext["foo"]["baz"])
+		}
+		if result.Ext["qux"]["quux"] != "value3" {
+			t.Errorf("Ext['qux']['quux'] = %q, want \"value3\"", result.Ext["qux"]["quux"])
+		}
 	})
 
 	t.Run("handle reserved keywords", func(t *testing.T) {
@@ -1271,49 +1636,83 @@ Template content`
 
 		// Parse the document
 		result, err := ParseDocument(source)
-		assert.NoError(t, err)
+		if err != nil {
+			t.Errorf("ParseDocument() returned error: %v", err)
+		}
 
 		// Check that the result is a ParsedPrompt with the expected template
-		assert.Equal(t, "Template content", result.Template)
+		if result.Template != "Template content" {
+			t.Errorf("Template = %q, want \"Template content\"", result.Template)
+		}
 
 		// Check that each reserved keyword field has the expected value
-		// This is the equivalent of the commented-out section in the Python test
-		assert.Equal(t, "value-name", result.Name)
-		assert.Equal(t, "value-description", result.Description)
-		assert.Equal(t, "value-variant", result.Variant)
-		assert.Equal(t, "value-version", result.Version)
+		if result.Name != "value-name" {
+			t.Errorf("Name = %q, want \"value-name\"", result.Name)
+		}
+		if result.Description != "value-description" {
+			t.Errorf("Description = %q, want \"value-description\"", result.Description)
+		}
+		if result.Variant != "value-variant" {
+			t.Errorf("Variant = %q, want \"value-variant\"", result.Variant)
+		}
+		if result.Version != "value-version" {
+			t.Errorf("Version = %q, want \"value-version\"", result.Version)
+		}
 
 		// Check that raw contains all the reserved keywords
 		for _, keyword := range ReservedMetadataKeywords {
 			if keyword == "ext" {
 				continue
 			}
-			assert.Contains(t, result.Raw, keyword)
-			assert.Equal(t, "value-"+keyword, result.Raw[keyword])
+			if result.Raw[keyword] == nil {
+				t.Errorf("Raw[%q] is nil", keyword)
+			}
+			expectedValue := "value-" + keyword
+			if result.Raw[keyword] != expectedValue {
+				t.Errorf("Raw[%q] = %q, want %q", keyword, result.Raw[keyword], expectedValue)
+			}
 		}
 	})
 
 	t.Run("should handle license header before frontmatter", func(t *testing.T) {
 		source := "# Copyright 2025 Google LLC\n# License: Apache 2.0\n---\nmodel: gemini-pro\n---\nHello!"
 		result, err := ParseDocument(source)
-		assert.NoError(t, err)
-		assert.Equal(t, "gemini-pro", result.Model)
-		assert.Equal(t, "Hello!", result.Template)
+		if err != nil {
+			t.Errorf("ParseDocument() returned error: %v", err)
+		}
+		if result.Model != "gemini-pro" {
+			t.Errorf("Model = %q, want \"gemini-pro\"", result.Model)
+		}
+		if result.Template != "Hello!" {
+			t.Errorf("Template = %q, want \"Hello!\"", result.Template)
+		}
 	})
 
 	t.Run("should handle shebang before frontmatter", func(t *testing.T) {
 		source := "#!/usr/bin/env promptly\n---\nmodel: gemini-flash\n---\nHello shebang!"
 		result, err := ParseDocument(source)
-		assert.NoError(t, err)
-		assert.Equal(t, "gemini-flash", result.Model)
-		assert.Equal(t, "Hello shebang!", result.Template)
+		if err != nil {
+			t.Errorf("ParseDocument() returned error: %v", err)
+		}
+		if result.Model != "gemini-flash" {
+			t.Errorf("Model = %q, want \"gemini-flash\"", result.Model)
+		}
+		if result.Template != "Hello shebang!" {
+			t.Errorf("Template = %q, want \"Hello shebang!\"", result.Template)
+		}
 	})
 
 	t.Run("should handle shebang and license header before frontmatter", func(t *testing.T) {
 		source := "#!/usr/bin/env promptly\n# Copyright 2025 Google\n# SPDX: Apache-2.0\n---\nmodel: gemini-2.0\n---\nHello combined!"
 		result, err := ParseDocument(source)
-		assert.NoError(t, err)
-		assert.Equal(t, "gemini-2.0", result.Model)
-		assert.Equal(t, "Hello combined!", result.Template)
+		if err != nil {
+			t.Errorf("ParseDocument() returned error: %v", err)
+		}
+		if result.Model != "gemini-2.0" {
+			t.Errorf("Model = %q, want \"gemini-2.0\"", result.Model)
+		}
+		if result.Template != "Hello combined!" {
+			t.Errorf("Template = %q, want \"Hello combined!\"", result.Template)
+		}
 	})
 }

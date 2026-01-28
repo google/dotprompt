@@ -18,9 +18,6 @@ package dotprompt
 
 import (
 	"testing"
-
-	"github.com/mbleigh/raymond"
-	"github.com/stretchr/testify/assert"
 )
 
 // Tests for role helper
@@ -29,22 +26,33 @@ func TestRoleFn(t *testing.T) {
 	role := "admin"
 	expected := "<<<dotprompt:role:admin>>>"
 	result := RoleFn(role)
-	assert.Equal(t, raymond.SafeString(expected), result)
+	if string(result) != expected {
+		t.Errorf("RoleFn(%q) = %q, want %q", role, result, expected)
+	}
 }
 
 func TestRoleFn_system(t *testing.T) {
 	result := RoleFn("system")
-	assert.Equal(t, raymond.SafeString("<<<dotprompt:role:system>>>"), result)
+	expected := "<<<dotprompt:role:system>>>"
+	if string(result) != expected {
+		t.Errorf("RoleFn(\"system\") = %q, want %q", result, expected)
+	}
 }
 
 func TestRoleFn_user(t *testing.T) {
 	result := RoleFn("user")
-	assert.Equal(t, raymond.SafeString("<<<dotprompt:role:user>>>"), result)
+	expected := "<<<dotprompt:role:user>>>"
+	if string(result) != expected {
+		t.Errorf("RoleFn(\"user\") = %q, want %q", result, expected)
+	}
 }
 
 func TestRoleFn_model(t *testing.T) {
 	result := RoleFn("model")
-	assert.Equal(t, raymond.SafeString("<<<dotprompt:role:model>>>"), result)
+	expected := "<<<dotprompt:role:model>>>"
+	if string(result) != expected {
+		t.Errorf("RoleFn(\"model\") = %q, want %q", result, expected)
+	}
 }
 
 // Tests for history helper
@@ -52,7 +60,9 @@ func TestRoleFn_model(t *testing.T) {
 func TestHistory(t *testing.T) {
 	expected := "<<<dotprompt:history>>>"
 	result := History()
-	assert.Equal(t, raymond.SafeString(expected), result)
+	if string(result) != expected {
+		t.Errorf("History() = %q, want %q", result, expected)
+	}
 }
 
 // Tests for section helper
@@ -61,12 +71,17 @@ func TestSection(t *testing.T) {
 	name := "Introduction"
 	expected := "<<<dotprompt:section Introduction>>>"
 	result := Section(name)
-	assert.Equal(t, raymond.SafeString(expected), result)
+	if string(result) != expected {
+		t.Errorf("Section(%q) = %q, want %q", name, result, expected)
+	}
 }
 
 func TestSection_examples(t *testing.T) {
 	result := Section("examples")
-	assert.Equal(t, raymond.SafeString("<<<dotprompt:section examples>>>"), result)
+	expected := "<<<dotprompt:section examples>>>"
+	if string(result) != expected {
+		t.Errorf("Section(\"examples\") = %q, want %q", result, expected)
+	}
 }
 
 // Note: JSON, Media, IfEquals, UnlessEquals helpers require raymond.Options
