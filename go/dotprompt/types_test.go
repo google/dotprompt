@@ -19,7 +19,7 @@ package dotprompt
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestHasMetadata(t *testing.T) {
@@ -29,17 +29,19 @@ func TestHasMetadata(t *testing.T) {
 				"key": "value",
 			},
 		}
-		assert.Equal(t, Metadata{
-			"key": "value",
-		}, hasMetadata.Metadata)
+		want := Metadata{"key": "value"}
+		if diff := cmp.Diff(want, hasMetadata.Metadata); diff != "" {
+			t.Errorf("Metadata mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("test setting metadata", func(t *testing.T) {
 		hasMetadata := HasMetadata{}
 		hasMetadata.SetMetadata("key", "value")
-		assert.Equal(t, Metadata{
-			"key": "value",
-		}, hasMetadata.Metadata)
+		want := Metadata{"key": "value"}
+		if diff := cmp.Diff(want, hasMetadata.Metadata); diff != "" {
+			t.Errorf("Metadata mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("test getting metadata", func(t *testing.T) {
@@ -48,9 +50,10 @@ func TestHasMetadata(t *testing.T) {
 				"key": "value",
 			},
 		}
-		assert.Equal(t, Metadata{
-			"key": "value",
-		}, hasMetadata.GetMetadata())
+		want := Metadata{"key": "value"}
+		if diff := cmp.Diff(want, hasMetadata.GetMetadata()); diff != "" {
+			t.Errorf("GetMetadata() mismatch (-want +got):\n%s", diff)
+		}
 	})
 }
 
@@ -66,50 +69,72 @@ func TestDerivedMetadata(t *testing.T) {
 				},
 			},
 		}
-		assert.Equal(t, Metadata{
-			"key": "value",
-		}, d.GetMetadata())
-		assert.Equal(t, Metadata{
-			"key": "value",
-		}, d.Metadata)
+		want := Metadata{"key": "value"}
+		if diff := cmp.Diff(want, d.GetMetadata()); diff != "" {
+			t.Errorf("GetMetadata() mismatch (-want +got):\n%s", diff)
+		}
+		if diff := cmp.Diff(want, d.Metadata); diff != "" {
+			t.Errorf("Metadata mismatch (-want +got):\n%s", diff)
+		}
 
 		d.SetMetadata("key2", "value2")
-		assert.Equal(t, Metadata{
+		want2 := Metadata{
 			"key":  "value",
 			"key2": "value2",
-		}, d.GetMetadata())
-		assert.Equal(t, Metadata{
-			"key":  "value",
-			"key2": "value2",
-		}, d.Metadata)
+		}
+		if diff := cmp.Diff(want2, d.GetMetadata()); diff != "" {
+			t.Errorf("GetMetadata() after SetMetadata mismatch (-want +got):\n%s", diff)
+		}
+		if diff := cmp.Diff(want2, d.Metadata); diff != "" {
+			t.Errorf("Metadata after SetMetadata mismatch (-want +got):\n%s", diff)
+		}
 	})
 }
 
 func TestIsToolArgument(t *testing.T) {
 	t.Run("test is valid tool argument", func(t *testing.T) {
-		assert.True(t, IsToolArgument("tool"))
-		assert.True(t, IsToolArgument(ToolDefinition{}))
+		if !IsToolArgument("tool") {
+			t.Error("IsToolArgument(\"tool\") = false, want true")
+		}
+		if !IsToolArgument(ToolDefinition{}) {
+			t.Error("IsToolArgument(ToolDefinition{}) = false, want true")
+		}
 	})
 
 	t.Run("test is invalid tool argument", func(t *testing.T) {
-		assert.False(t, IsToolArgument(1))
-		assert.False(t, IsToolArgument(1.0))
-		assert.False(t, IsToolArgument(true))
-		assert.False(t, IsToolArgument(false))
-		assert.False(t, IsToolArgument(nil))
-		assert.False(t, IsToolArgument(map[string]any{}))
-		assert.False(t, IsToolArgument([]any{}))
-		assert.False(t, IsToolArgument(func() {}))
+		invalidArgs := []any{
+			1,
+			1.0,
+			true,
+			false,
+			nil,
+			map[string]any{},
+			[]any{},
+			func() {},
+		}
+		for _, arg := range invalidArgs {
+			if IsToolArgument(arg) {
+				t.Errorf("IsToolArgument(%v) = true, want false", arg)
+			}
+		}
 	})
 }
 
 func TestPendingPart(t *testing.T) {
 	t.Run("test NewPendingPart", func(t *testing.T) {
 		pendingPart := NewPendingPart()
-		assert.NotNil(t, pendingPart)
-		assert.NotNil(t, pendingPart.Metadata)
-		assert.True(t, pendingPart.IsPending())
-		assert.Equal(t, true, pendingPart.Metadata["pending"])
+		if pendingPart == nil {
+			t.Fatal("NewPendingPart() returned nil")
+		}
+		if pendingPart.Metadata == nil {
+			t.Fatal("NewPendingPart().Metadata is nil")
+		}
+		if !pendingPart.IsPending() {
+			t.Error("IsPending() = false, want true")
+		}
+		if got := pendingPart.Metadata["pending"]; got != true {
+			t.Errorf("Metadata['pending'] = %v, want true", got)
+		}
 	})
 
 	t.Run("test IsPending", func(t *testing.T) {
@@ -121,7 +146,9 @@ func TestPendingPart(t *testing.T) {
 				},
 			},
 		}
-		assert.True(t, pendingPart.IsPending())
+		if !pendingPart.IsPending() {
+			t.Error("IsPending() = false, want true")
+		}
 
 		// Test with pending set to false
 		pendingPart = &PendingPart{
@@ -131,13 +158,17 @@ func TestPendingPart(t *testing.T) {
 				},
 			},
 		}
-		assert.False(t, pendingPart.IsPending())
+		if pendingPart.IsPending() {
+			t.Error("IsPending() = true, want false")
+		}
 
 		// Test with pending not set
 		pendingPart = &PendingPart{
 			HasMetadata: HasMetadata{},
 		}
-		assert.False(t, pendingPart.IsPending())
+		if pendingPart.IsPending() {
+			t.Error("IsPending() = true, want false")
+		}
 
 		// Test with pending set to non-bool value
 		pendingPart = &PendingPart{
@@ -147,7 +178,9 @@ func TestPendingPart(t *testing.T) {
 				},
 			},
 		}
-		assert.False(t, pendingPart.IsPending())
+		if pendingPart.IsPending() {
+			t.Error("IsPending() = true, want false")
+		}
 	})
 
 	t.Run("test SetPending", func(t *testing.T) {
@@ -155,13 +188,21 @@ func TestPendingPart(t *testing.T) {
 
 		// Test setting to true
 		pendingPart.SetPending(true)
-		assert.True(t, pendingPart.IsPending())
-		assert.Equal(t, true, pendingPart.Metadata["pending"])
+		if !pendingPart.IsPending() {
+			t.Error("IsPending() = false, want true")
+		}
+		if got := pendingPart.Metadata["pending"]; got != true {
+			t.Errorf("Metadata['pending'] = %v, want true", got)
+		}
 
 		// Test setting to false
 		pendingPart.SetPending(false)
-		assert.False(t, pendingPart.IsPending())
-		assert.Equal(t, false, pendingPart.Metadata["pending"])
+		if pendingPart.IsPending() {
+			t.Error("IsPending() = true, want false")
+		}
+		if got := pendingPart.Metadata["pending"]; got != false {
+			t.Errorf("Metadata['pending'] = %v, want false", got)
+		}
 	})
 }
 
@@ -176,12 +217,19 @@ func TestTextPart(t *testing.T) {
 			Text: "Hello, world!",
 		}
 
-		assert.Equal(t, "Hello, world!", textPart.Text)
-		assert.Equal(t, Metadata{"key": "value"}, textPart.GetMetadata())
+		if textPart.Text != "Hello, world!" {
+			t.Errorf("Text = %q, want %q", textPart.Text, "Hello, world!")
+		}
+		wantMeta := Metadata{"key": "value"}
+		if diff := cmp.Diff(wantMeta, textPart.GetMetadata()); diff != "" {
+			t.Errorf("GetMetadata() mismatch (-want +got):\n%s", diff)
+		}
 
 		// Test Part interface compliance
 		var part Part = textPart
-		assert.Equal(t, Metadata{"key": "value"}, part.GetMetadata())
+		if diff := cmp.Diff(wantMeta, part.GetMetadata()); diff != "" {
+			t.Errorf("part.GetMetadata() mismatch (-want +got):\n%s", diff)
+		}
 	})
 }
 
@@ -199,12 +247,20 @@ func TestDataPart(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, map[string]any{"name": "John", "age": 30}, dataPart.Data)
-		assert.Equal(t, Metadata{"key": "value"}, dataPart.GetMetadata())
+		wantData := map[string]any{"name": "John", "age": 30}
+		if diff := cmp.Diff(wantData, dataPart.Data); diff != "" {
+			t.Errorf("Data mismatch (-want +got):\n%s", diff)
+		}
+		wantMeta := Metadata{"key": "value"}
+		if diff := cmp.Diff(wantMeta, dataPart.GetMetadata()); diff != "" {
+			t.Errorf("GetMetadata() mismatch (-want +got):\n%s", diff)
+		}
 
 		// Test Part interface compliance
 		var part Part = dataPart
-		assert.Equal(t, Metadata{"key": "value"}, part.GetMetadata())
+		if diff := cmp.Diff(wantMeta, part.GetMetadata()); diff != "" {
+			t.Errorf("part.GetMetadata() mismatch (-want +got):\n%s", diff)
+		}
 	})
 }
 
@@ -220,13 +276,22 @@ func TestMediaPart(t *testing.T) {
 		mediaPart.Media.URL = "https://example.com/image.jpg"
 		mediaPart.Media.ContentType = "image/jpeg"
 
-		assert.Equal(t, "https://example.com/image.jpg", mediaPart.Media.URL)
-		assert.Equal(t, "image/jpeg", mediaPart.Media.ContentType)
-		assert.Equal(t, Metadata{"key": "value"}, mediaPart.GetMetadata())
+		if mediaPart.Media.URL != "https://example.com/image.jpg" {
+			t.Errorf("URL = %q, want %q", mediaPart.Media.URL, "https://example.com/image.jpg")
+		}
+		if mediaPart.Media.ContentType != "image/jpeg" {
+			t.Errorf("ContentType = %q, want %q", mediaPart.Media.ContentType, "image/jpeg")
+		}
+		wantMeta := Metadata{"key": "value"}
+		if diff := cmp.Diff(wantMeta, mediaPart.GetMetadata()); diff != "" {
+			t.Errorf("GetMetadata() mismatch (-want +got):\n%s", diff)
+		}
 
 		// Test Part interface compliance
 		var part Part = mediaPart
-		assert.Equal(t, Metadata{"key": "value"}, part.GetMetadata())
+		if diff := cmp.Diff(wantMeta, part.GetMetadata()); diff != "" {
+			t.Errorf("part.GetMetadata() mismatch (-want +got):\n%s", diff)
+		}
 	})
 }
 
@@ -247,18 +312,26 @@ func TestToolRequestPart(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, map[string]any{
+		wantRequest := map[string]any{
 			"name": "calculator",
 			"args": map[string]any{
 				"a": 1,
 				"b": 2,
 			},
-		}, toolRequestPart.ToolRequest)
-		assert.Equal(t, Metadata{"key": "value"}, toolRequestPart.GetMetadata())
+		}
+		if diff := cmp.Diff(wantRequest, toolRequestPart.ToolRequest); diff != "" {
+			t.Errorf("ToolRequest mismatch (-want +got):\n%s", diff)
+		}
+		wantMeta := Metadata{"key": "value"}
+		if diff := cmp.Diff(wantMeta, toolRequestPart.GetMetadata()); diff != "" {
+			t.Errorf("GetMetadata() mismatch (-want +got):\n%s", diff)
+		}
 
 		// Test Part interface compliance
 		var part Part = toolRequestPart
-		assert.Equal(t, Metadata{"key": "value"}, part.GetMetadata())
+		if diff := cmp.Diff(wantMeta, part.GetMetadata()); diff != "" {
+			t.Errorf("part.GetMetadata() mismatch (-want +got):\n%s", diff)
+		}
 	})
 }
 
@@ -275,12 +348,20 @@ func TestToolResponsePart(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, map[string]any{"result": 3}, toolResponsePart.ToolResponse)
-		assert.Equal(t, Metadata{"key": "value"}, toolResponsePart.GetMetadata())
+		wantResponse := map[string]any{"result": 3}
+		if diff := cmp.Diff(wantResponse, toolResponsePart.ToolResponse); diff != "" {
+			t.Errorf("ToolResponse mismatch (-want +got):\n%s", diff)
+		}
+		wantMeta := Metadata{"key": "value"}
+		if diff := cmp.Diff(wantMeta, toolResponsePart.GetMetadata()); diff != "" {
+			t.Errorf("GetMetadata() mismatch (-want +got):\n%s", diff)
+		}
 
 		// Test Part interface compliance
 		var part Part = toolResponsePart
-		assert.Equal(t, Metadata{"key": "value"}, part.GetMetadata())
+		if diff := cmp.Diff(wantMeta, part.GetMetadata()); diff != "" {
+			t.Errorf("part.GetMetadata() mismatch (-want +got):\n%s", diff)
+		}
 	})
 }
 
@@ -300,19 +381,38 @@ func TestMessage(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, RoleUser, message.Role)
-		assert.Len(t, message.Content, 1)
+		if message.Role != RoleUser {
+			t.Errorf("Role = %q, want %q", message.Role, RoleUser)
+		}
+		if len(message.Content) != 1 {
+			t.Errorf("len(Content) = %d, want 1", len(message.Content))
+		}
 		textPart, ok := message.Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Hello, world!", textPart.Text)
-		assert.Equal(t, Metadata{"key": "value"}, message.GetMetadata())
+		if !ok {
+			t.Fatalf("Content[0] is not *TextPart, got %T", message.Content[0])
+		}
+		if textPart.Text != "Hello, world!" {
+			t.Errorf("Text = %q, want %q", textPart.Text, "Hello, world!")
+		}
+		wantMeta := Metadata{"key": "value"}
+		if diff := cmp.Diff(wantMeta, message.GetMetadata()); diff != "" {
+			t.Errorf("GetMetadata() mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("test predefined roles", func(t *testing.T) {
-		assert.Equal(t, Role("user"), RoleUser)
-		assert.Equal(t, Role("model"), RoleModel)
-		assert.Equal(t, Role("tool"), RoleTool)
-		assert.Equal(t, Role("system"), RoleSystem)
+		if Role("user") != RoleUser {
+			t.Errorf("RoleUser mismatch")
+		}
+		if Role("model") != RoleModel {
+			t.Errorf("RoleModel mismatch")
+		}
+		if Role("tool") != RoleTool {
+			t.Errorf("RoleTool mismatch")
+		}
+		if Role("system") != RoleSystem {
+			t.Errorf("RoleSystem mismatch")
+		}
 	})
 }
 
@@ -331,11 +431,20 @@ func TestDocument(t *testing.T) {
 			},
 		}
 
-		assert.Len(t, document.Content, 1)
+		if len(document.Content) != 1 {
+			t.Errorf("len(Content) = %d, want 1", len(document.Content))
+		}
 		textPart, ok := document.Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Document content", textPart.Text)
-		assert.Equal(t, Metadata{"key": "value"}, document.GetMetadata())
+		if !ok {
+			t.Fatalf("Content[0] is not *TextPart, got %T", document.Content[0])
+		}
+		if textPart.Text != "Document content" {
+			t.Errorf("Text = %q, want %q", textPart.Text, "Document content")
+		}
+		wantMeta := Metadata{"key": "value"}
+		if diff := cmp.Diff(wantMeta, document.GetMetadata()); diff != "" {
+			t.Errorf("GetMetadata() mismatch (-want +got):\n%s", diff)
+		}
 	})
 }
 
@@ -365,21 +474,39 @@ func TestDataArgument(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, "How to make pancakes?", dataArg.Input["query"])
-		assert.Len(t, dataArg.Docs, 1)
-		assert.Len(t, dataArg.Messages, 1)
-		assert.Equal(t, "cooking", dataArg.Context["state"])
+		if dataArg.Input["query"] != "How to make pancakes?" {
+			t.Errorf("Input['query'] = %q, want %q", dataArg.Input["query"], "How to make pancakes?")
+		}
+		if len(dataArg.Docs) != 1 {
+			t.Errorf("len(Docs) = %d, want 1", len(dataArg.Docs))
+		}
+		if len(dataArg.Messages) != 1 {
+			t.Errorf("len(Messages) = %d, want 1", len(dataArg.Messages))
+		}
+		if dataArg.Context["state"] != "cooking" {
+			t.Errorf("Context['state'] = %q, want %q", dataArg.Context["state"], "cooking")
+		}
 
 		// Check document content
 		textPart, ok := dataArg.Docs[0].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Pancake recipe", textPart.Text)
+		if !ok {
+			t.Fatalf("Docs[0].Content[0] is not *TextPart, got %T", dataArg.Docs[0].Content[0])
+		}
+		if textPart.Text != "Pancake recipe" {
+			t.Errorf("Docs text = %q, want %q", textPart.Text, "Pancake recipe")
+		}
 
 		// Check message content
-		assert.Equal(t, RoleUser, dataArg.Messages[0].Role)
+		if dataArg.Messages[0].Role != RoleUser {
+			t.Errorf("Message Role = %q, want %q", dataArg.Messages[0].Role, RoleUser)
+		}
 		msgTextPart, ok := dataArg.Messages[0].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "I want to make pancakes", msgTextPart.Text)
+		if !ok {
+			t.Fatalf("Messages[0].Content[0] is not *TextPart, got %T", dataArg.Messages[0].Content[0])
+		}
+		if msgTextPart.Text != "I want to make pancakes" {
+			t.Errorf("Message text = %q, want %q", msgTextPart.Text, "I want to make pancakes")
+		}
 	})
 }
 
@@ -391,9 +518,15 @@ func TestPromptRef(t *testing.T) {
 			Version: "1.0.0",
 		}
 
-		assert.Equal(t, "test-prompt", promptRef.Name)
-		assert.Equal(t, "v1", promptRef.Variant)
-		assert.Equal(t, "1.0.0", promptRef.Version)
+		if promptRef.Name != "test-prompt" {
+			t.Errorf("Name = %q, want %q", promptRef.Name, "test-prompt")
+		}
+		if promptRef.Variant != "v1" {
+			t.Errorf("Variant = %q, want %q", promptRef.Variant, "v1")
+		}
+		if promptRef.Version != "1.0.0" {
+			t.Errorf("Version = %q, want %q", promptRef.Version, "1.0.0")
+		}
 	})
 }
 
@@ -408,10 +541,18 @@ func TestPromptData(t *testing.T) {
 			Source: "This is a test prompt template",
 		}
 
-		assert.Equal(t, "test-prompt", promptData.Name)
-		assert.Equal(t, "v1", promptData.Variant)
-		assert.Equal(t, "1.0.0", promptData.Version)
-		assert.Equal(t, "This is a test prompt template", promptData.Source)
+		if promptData.Name != "test-prompt" {
+			t.Errorf("Name = %q, want %q", promptData.Name, "test-prompt")
+		}
+		if promptData.Variant != "v1" {
+			t.Errorf("Variant = %q, want %q", promptData.Variant, "v1")
+		}
+		if promptData.Version != "1.0.0" {
+			t.Errorf("Version = %q, want %q", promptData.Version, "1.0.0")
+		}
+		if promptData.Source != "This is a test prompt template" {
+			t.Errorf("Source = %q, want %q", promptData.Source, "This is a test prompt template")
+		}
 	})
 }
 
@@ -423,9 +564,15 @@ func TestPartialRef(t *testing.T) {
 			Version: "1.0.0",
 		}
 
-		assert.Equal(t, "test-partial", partialRef.Name)
-		assert.Equal(t, "v1", partialRef.Variant)
-		assert.Equal(t, "1.0.0", partialRef.Version)
+		if partialRef.Name != "test-partial" {
+			t.Errorf("Name = %q, want %q", partialRef.Name, "test-partial")
+		}
+		if partialRef.Variant != "v1" {
+			t.Errorf("Variant = %q, want %q", partialRef.Variant, "v1")
+		}
+		if partialRef.Version != "1.0.0" {
+			t.Errorf("Version = %q, want %q", partialRef.Version, "1.0.0")
+		}
 	})
 }
 
@@ -440,10 +587,18 @@ func TestPartialData(t *testing.T) {
 			Source: "This is a test partial template",
 		}
 
-		assert.Equal(t, "test-partial", partialData.Name)
-		assert.Equal(t, "v1", partialData.Variant)
-		assert.Equal(t, "1.0.0", partialData.Version)
-		assert.Equal(t, "This is a test partial template", partialData.Source)
+		if partialData.Name != "test-partial" {
+			t.Errorf("Name = %q, want %q", partialData.Name, "test-partial")
+		}
+		if partialData.Variant != "v1" {
+			t.Errorf("Variant = %q, want %q", partialData.Variant, "v1")
+		}
+		if partialData.Version != "1.0.0" {
+			t.Errorf("Version = %q, want %q", partialData.Version, "1.0.0")
+		}
+		if partialData.Source != "This is a test partial template" {
+			t.Errorf("Source = %q, want %q", partialData.Source, "This is a test partial template")
+		}
 	})
 }
 
@@ -472,23 +627,45 @@ func TestRenderedPrompt(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, "test-prompt", renderedPrompt.Name)
-		assert.Equal(t, "A test prompt", renderedPrompt.Description)
-		assert.Equal(t, "test-model", renderedPrompt.Model)
-		assert.Equal(t, 5, renderedPrompt.MaxTurns)
-		assert.Len(t, renderedPrompt.Messages, 2)
+		if renderedPrompt.Name != "test-prompt" {
+			t.Errorf("Name = %q, want %q", renderedPrompt.Name, "test-prompt")
+		}
+		if renderedPrompt.Description != "A test prompt" {
+			t.Errorf("Description = %q, want %q", renderedPrompt.Description, "A test prompt")
+		}
+		if renderedPrompt.Model != "test-model" {
+			t.Errorf("Model = %q, want %q", renderedPrompt.Model, "test-model")
+		}
+		if renderedPrompt.MaxTurns != 5 {
+			t.Errorf("MaxTurns = %d, want 5", renderedPrompt.MaxTurns)
+		}
+		if len(renderedPrompt.Messages) != 2 {
+			t.Errorf("len(Messages) = %d, want 2", len(renderedPrompt.Messages))
+		}
 
 		// Check first message
-		assert.Equal(t, RoleUser, renderedPrompt.Messages[0].Role)
+		if renderedPrompt.Messages[0].Role != RoleUser {
+			t.Errorf("Messages[0].Role = %q, want %q", renderedPrompt.Messages[0].Role, RoleUser)
+		}
 		userTextPart, ok := renderedPrompt.Messages[0].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Hello", userTextPart.Text)
+		if !ok {
+			t.Fatalf("Messages[0].Content[0] is not *TextPart, got %T", renderedPrompt.Messages[0].Content[0])
+		}
+		if userTextPart.Text != "Hello" {
+			t.Errorf("Messages[0].Text = %q, want %q", userTextPart.Text, "Hello")
+		}
 
 		// Check second message
-		assert.Equal(t, RoleModel, renderedPrompt.Messages[1].Role)
+		if renderedPrompt.Messages[1].Role != RoleModel {
+			t.Errorf("Messages[1].Role = %q, want %q", renderedPrompt.Messages[1].Role, RoleModel)
+		}
 		modelTextPart, ok := renderedPrompt.Messages[1].Content[0].(*TextPart)
-		assert.True(t, ok)
-		assert.Equal(t, "Hi there!", modelTextPart.Text)
+		if !ok {
+			t.Fatalf("Messages[1].Content[0] is not *TextPart, got %T", renderedPrompt.Messages[1].Content[0])
+		}
+		if modelTextPart.Text != "Hi there!" {
+			t.Errorf("Messages[1].Text = %q, want %q", modelTextPart.Text, "Hi there!")
+		}
 	})
 }
 
@@ -513,11 +690,23 @@ func TestPromptBundle(t *testing.T) {
 			},
 		}
 
-		assert.Len(t, bundle.Partials, 1)
-		assert.Len(t, bundle.Prompts, 1)
-		assert.Equal(t, "test-partial", bundle.Partials[0].Name)
-		assert.Equal(t, "Partial content", bundle.Partials[0].Source)
-		assert.Equal(t, "test-prompt", bundle.Prompts[0].Name)
-		assert.Equal(t, "Prompt content", bundle.Prompts[0].Source)
+		if len(bundle.Partials) != 1 {
+			t.Errorf("len(Partials) = %d, want 1", len(bundle.Partials))
+		}
+		if len(bundle.Prompts) != 1 {
+			t.Errorf("len(Prompts) = %d, want 1", len(bundle.Prompts))
+		}
+		if bundle.Partials[0].Name != "test-partial" {
+			t.Errorf("Partials[0].Name = %q, want %q", bundle.Partials[0].Name, "test-partial")
+		}
+		if bundle.Partials[0].Source != "Partial content" {
+			t.Errorf("Partials[0].Source = %q, want %q", bundle.Partials[0].Source, "Partial content")
+		}
+		if bundle.Prompts[0].Name != "test-prompt" {
+			t.Errorf("Prompts[0].Name = %q, want %q", bundle.Prompts[0].Name, "test-prompt")
+		}
+		if bundle.Prompts[0].Source != "Prompt content" {
+			t.Errorf("Prompts[0].Source = %q, want %q", bundle.Prompts[0].Source, "Prompt content")
+		}
 	})
 }

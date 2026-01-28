@@ -19,15 +19,22 @@ package dotprompt
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/invopop/jsonschema"
-	"github.com/stretchr/testify/assert"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 func TestStringOrEmpty(t *testing.T) {
-	assert.Equal(t, "", stringOrEmpty(nil))
-	assert.Equal(t, "", stringOrEmpty(""))
-	assert.Equal(t, "test", stringOrEmpty("test"))
+	if got := stringOrEmpty(nil); got != "" {
+		t.Errorf("stringOrEmpty(nil) = %q, want \"\"", got)
+	}
+	if got := stringOrEmpty(""); got != "" {
+		t.Errorf("stringOrEmpty(\"\") = %q, want \"\"", got)
+	}
+	if got := stringOrEmpty("test"); got != "test" {
+		t.Errorf("stringOrEmpty(\"test\") = %q, want \"test\"", got)
+	}
 }
 
 func TestGetMapOrNil(t *testing.T) {
@@ -42,27 +49,38 @@ func TestGetMapOrNil(t *testing.T) {
 
 	t.Run("should return nested map for existing key", func(t *testing.T) {
 		result := getMapOrNil(testMap, "mapKey")
-		assert.Equal(t, map[string]any{"key": "value"}, result)
+		want := map[string]any{"key": "value"}
+		if diff := cmp.Diff(want, result); diff != "" {
+			t.Errorf("getMapOrNil() mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("should return nil for nil map", func(t *testing.T) {
 		result := getMapOrNil(nil, "key")
-		assert.Nil(t, result)
+		if result != nil {
+			t.Errorf("getMapOrNil(nil, \"key\") = %v, want nil", result)
+		}
 	})
 
 	t.Run("should return nil for non-existent key", func(t *testing.T) {
 		result := getMapOrNil(testMap, "nonExistentKey")
-		assert.Nil(t, result)
+		if result != nil {
+			t.Errorf("getMapOrNil(testMap, \"nonExistentKey\") = %v, want nil", result)
+		}
 	})
 
 	t.Run("should return nil for value that's not a map", func(t *testing.T) {
 		result := getMapOrNil(testMap, "notAMap")
-		assert.Nil(t, result)
+		if result != nil {
+			t.Errorf("getMapOrNil(testMap, \"notAMap\") = %v, want nil", result)
+		}
 	})
 
 	t.Run("should return nil for nil value", func(t *testing.T) {
 		result := getMapOrNil(testMap, "nilValue")
-		assert.Nil(t, result)
+		if result != nil {
+			t.Errorf("getMapOrNil(testMap, \"nilValue\") = %v, want nil", result)
+		}
 	})
 }
 
@@ -74,24 +92,33 @@ func TestCopyMapping(t *testing.T) {
 
 	copy := copyMapping(original)
 
-	assert.Equal(t, original, copy)
+	if diff := cmp.Diff(original, copy); diff != "" {
+		t.Errorf("copyMapping() mismatch (-want +got):\n%s", diff)
+	}
 }
 func TestMergeMaps(t *testing.T) {
 	t.Run("both maps are nil", func(t *testing.T) {
 		result := MergeMaps(nil, nil)
-		assert.Equal(t, map[string]any{}, result)
+		want := map[string]any{}
+		if diff := cmp.Diff(want, result); diff != "" {
+			t.Errorf("MergeMaps(nil, nil) mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("first map is nil", func(t *testing.T) {
 		map2 := map[string]any{"key1": "value1"}
 		result := MergeMaps(nil, map2)
-		assert.Equal(t, map2, result)
+		if diff := cmp.Diff(map2, result); diff != "" {
+			t.Errorf("MergeMaps(nil, map2) mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("second map is nil", func(t *testing.T) {
 		map1 := map[string]any{"key1": "value1"}
 		result := MergeMaps(map1, nil)
-		assert.Equal(t, map1, result)
+		if diff := cmp.Diff(map1, result); diff != "" {
+			t.Errorf("MergeMaps(map1, nil) mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("both maps are non-nil", func(t *testing.T) {
@@ -99,7 +126,9 @@ func TestMergeMaps(t *testing.T) {
 		map2 := map[string]any{"key2": "value2"}
 		expected := map[string]any{"key1": "value1", "key2": "value2"}
 		result := MergeMaps(map1, map2)
-		assert.Equal(t, expected, result)
+		if diff := cmp.Diff(expected, result); diff != "" {
+			t.Errorf("MergeMaps(map1, map2) mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("overlapping keys", func(t *testing.T) {
@@ -107,7 +136,9 @@ func TestMergeMaps(t *testing.T) {
 		map2 := map[string]any{"key1": "newValue1", "key2": "value2"}
 		expected := map[string]any{"key1": "newValue1", "key2": "value2"}
 		result := MergeMaps(map1, map2)
-		assert.Equal(t, expected, result)
+		if diff := cmp.Diff(expected, result); diff != "" {
+			t.Errorf("MergeMaps(map1, map2) mismatch (-want +got):\n%s", diff)
+		}
 	})
 }
 
@@ -128,7 +159,9 @@ func TestTrimUnicodeSpacesExceptNewlines(t *testing.T) {
 
 	for _, test := range tests {
 		result := trimUnicodeSpacesExceptNewlines(test.input)
-		assert.Equal(t, test.expected, result)
+		if result != test.expected {
+			t.Errorf("trimUnicodeSpacesExceptNewlines(%q) = %q, want %q", test.input, result, test.expected)
+		}
 	}
 }
 func TestCreateCopy(t *testing.T) {
@@ -144,13 +177,21 @@ func TestCreateCopy(t *testing.T) {
 
 	copy := createCopy(original)
 
-	assert.Equal(t, original, copy)
-	assert.NotSame(t, original, copy)
+	if diff := cmp.Diff(original, copy, cmpopts.IgnoreUnexported(jsonschema.Schema{}, orderedmap.OrderedMap[string, *jsonschema.Schema]{})); diff != "" {
+		t.Errorf("createCopy() mismatch (-want +got):\n%s", diff)
+	}
+	if original == copy {
+		t.Errorf("createCopy() returned the same pointer")
+	}
 
 	// Modify the copy and ensure the original is not affected
 	copy.Title = "Modified Schema"
-	assert.NotEqual(t, original.Title, copy.Title)
-	assert.Equal(t, "Original Schema", original.Title)
+	if original.Title == copy.Title {
+		t.Errorf("original.Title was modified")
+	}
+	if original.Title != "Original Schema" {
+		t.Errorf("original.Title = %q, want \"Original Schema\"", original.Title)
+	}
 }
 
 func TestValidatePromptName(t *testing.T) {
@@ -210,9 +251,13 @@ func TestValidatePromptName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := ValidatePromptName(tt.prompt)
 			if tt.shouldErr {
-				assert.Error(t, err, "expected error for prompt: %s", tt.prompt)
+				if err == nil {
+					t.Errorf("ValidatePromptName(%q) expected error, got nil", tt.prompt)
+				}
 			} else {
-				assert.NoError(t, err, "expected no error for prompt: %s", tt.prompt)
+				if err != nil {
+					t.Errorf("ValidatePromptName(%q) expected no error, got %v", tt.prompt, err)
+				}
 			}
 		})
 	}

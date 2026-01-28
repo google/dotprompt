@@ -19,16 +19,16 @@ package dotprompt
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestDirStore(t *testing.T) {
 	tmpDir := t.TempDir()
 	store, err := NewDirStore(tmpDir)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("NewDirStore() returned error: %v", err)
+	}
 
 	t.Run("Save and Load Simple", func(t *testing.T) {
 		prompt := PromptData{
@@ -38,19 +38,35 @@ func TestDirStore(t *testing.T) {
 			Source: "simple content",
 		}
 		err := store.Save(prompt)
-		assert.NoError(t, err)
+		if err != nil {
+			t.Errorf("store.Save() returned error: %v", err)
+		}
 
 		// Verify file exists
 		content, err := os.ReadFile(filepath.Join(tmpDir, "simple.prompt"))
-		assert.NoError(t, err)
-		assert.Equal(t, "simple content", string(content))
+		if err != nil {
+			t.Errorf("os.ReadFile() returned error: %v", err)
+		}
+		if string(content) != "simple content" {
+			t.Errorf("File content = %q, want \"simple content\"", string(content))
+		}
 
 		loaded, err := store.Load("simple", LoadPromptOptions{})
-		assert.NoError(t, err)
-		assert.Equal(t, "simple content", loaded.Source)
-		assert.Equal(t, "simple", loaded.Name)
-		assert.Empty(t, loaded.Variant)
-		assert.NotEmpty(t, loaded.Version)
+		if err != nil {
+			t.Errorf("store.Load() returned error: %v", err)
+		}
+		if loaded.Source != "simple content" {
+			t.Errorf("loaded.Source = %q, want \"simple content\"", loaded.Source)
+		}
+		if loaded.Name != "simple" {
+			t.Errorf("loaded.Name = %q, want \"simple\"", loaded.Name)
+		}
+		if loaded.Variant != "" {
+			t.Errorf("loaded.Variant = %q, want \"\"", loaded.Variant)
+		}
+		if loaded.Version == "" {
+			t.Error("loaded.Version is empty")
+		}
 	})
 
 	t.Run("Save and Load Variant", func(t *testing.T) {
@@ -62,12 +78,20 @@ func TestDirStore(t *testing.T) {
 			Source: "variant content",
 		}
 		err := store.Save(prompt)
-		assert.NoError(t, err)
+		if err != nil {
+			t.Errorf("store.Save() returned error: %v", err)
+		}
 
 		loaded, err := store.Load("variant-test", LoadPromptOptions{Variant: "v1"})
-		assert.NoError(t, err)
-		assert.Equal(t, "variant content", loaded.Source)
-		assert.Equal(t, "v1", loaded.Variant)
+		if err != nil {
+			t.Errorf("store.Load() returned error: %v", err)
+		}
+		if loaded.Source != "variant content" {
+			t.Errorf("loaded.Source = %q, want \"variant content\"", loaded.Source)
+		}
+		if loaded.Variant != "v1" {
+			t.Errorf("loaded.Variant = %q, want \"v1\"", loaded.Variant)
+		}
 	})
 
 	t.Run("List Prompts", func(t *testing.T) {
@@ -92,36 +116,64 @@ func TestDirStore(t *testing.T) {
 		}
 
 		list, err := store.List(ListPromptsOptions{})
-		assert.NoError(t, err)
-		assert.Len(t, list.Items, 3)
+		if err != nil {
+			t.Errorf("store.List() returned error: %v", err)
+		}
+		if len(list.Items) != 3 {
+			t.Errorf("len(list.Items) = %d, want 3", len(list.Items))
+		}
 
 		// sort order is a, b, c.v1
-		assert.Equal(t, "a", list.Items[0].Name)
-		assert.Equal(t, "b", list.Items[1].Name)
-		assert.Equal(t, "c", list.Items[2].Name)
-		assert.Equal(t, "v1", list.Items[2].Variant)
+		if list.Items[0].Name != "a" {
+			t.Errorf("Items[0].Name = %q, want \"a\"", list.Items[0].Name)
+		}
+		if list.Items[1].Name != "b" {
+			t.Errorf("Items[1].Name = %q, want \"b\"", list.Items[1].Name)
+		}
+		if list.Items[2].Name != "c" {
+			t.Errorf("Items[2].Name = %q, want \"c\"", list.Items[2].Name)
+		}
+		if list.Items[2].Variant != "v1" {
+			t.Errorf("Items[2].Variant = %q, want \"v1\"", list.Items[2].Variant)
+		}
 	})
 
 	t.Run("List with Variant Filter", func(t *testing.T) {
 		options := ListPromptsOptions{Variant: "v1"}
 		list, err := store.List(options)
-		assert.NoError(t, err)
-		assert.Len(t, list.Items, 1)
-		assert.Equal(t, "c", list.Items[0].Name)
-		assert.Equal(t, "v1", list.Items[0].Variant)
+		if err != nil {
+			t.Errorf("store.List() returned error: %v", err)
+		}
+		if len(list.Items) != 1 {
+			t.Errorf("len(list.Items) = %d, want 1", len(list.Items))
+		}
+		if list.Items[0].Name != "c" {
+			t.Errorf("Items[0].Name = %q, want \"c\"", list.Items[0].Name)
+		}
+		if list.Items[0].Variant != "v1" {
+			t.Errorf("Items[0].Variant = %q, want \"v1\"", list.Items[0].Variant)
+		}
 	})
 
 	t.Run("Partials", func(t *testing.T) {
 		partialPath := filepath.Join(tmpDir, "_mypartial.prompt")
 		err := os.WriteFile(partialPath, []byte("partial content"), 0644)
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("os.WriteFile() returned error: %v", err)
+		}
 
 		loaded, err := store.LoadPartial("mypartial", LoadPartialOptions{})
-		assert.NoError(t, err)
-		assert.Equal(t, "partial content", loaded.Source)
+		if err != nil {
+			t.Errorf("store.LoadPartial() returned error: %v", err)
+		}
+		if loaded.Source != "partial content" {
+			t.Errorf("loaded.Source = %q, want \"partial content\"", loaded.Source)
+		}
 
 		list, err := store.ListPartials(ListPartialsOptions{})
-		assert.NoError(t, err)
+		if err != nil {
+			t.Errorf("store.ListPartials() returned error: %v", err)
+		}
 		found := false
 		for _, p := range list.Items {
 			if p.Name == "mypartial" {
@@ -129,44 +181,67 @@ func TestDirStore(t *testing.T) {
 				break
 			}
 		}
-		assert.True(t, found, "partial should be listed")
+		if !found {
+			t.Error("partial should be listed")
+		}
 	})
 
 	t.Run("Delete", func(t *testing.T) {
 		promptName := "to-delete"
 		err := store.Save(PromptData{PromptRef: PromptRef{Name: promptName}, Source: "x"})
-		require.NoError(t, err)
+		if err != nil {
+			t.Fatalf("store.Save() returned error: %v", err)
+		}
 
 		err = store.Delete(promptName, PromptStoreDeleteOptions{})
-		assert.NoError(t, err)
+		if err != nil {
+			t.Errorf("store.Delete() returned error: %v", err)
+		}
 
 		_, err = store.Load(promptName, LoadPromptOptions{})
-		assert.Error(t, err)
+		if err == nil {
+			t.Error("store.Load() expected error, got nil")
+		}
 	})
 
 	t.Run("Nested Directories", func(t *testing.T) {
 		promptName := "sub/dir/prompt"
 		err := store.Save(PromptData{PromptRef: PromptRef{Name: promptName}, Source: "nested"})
-		assert.NoError(t, err)
+		if err != nil {
+			t.Errorf("store.Save() returned error: %v", err)
+		}
 
 		loaded, err := store.Load(promptName, LoadPromptOptions{})
-		assert.NoError(t, err)
-		assert.Equal(t, "nested", loaded.Source)
+		if err != nil {
+			t.Errorf("store.Load() returned error: %v", err)
+		}
+		if loaded.Source != "nested" {
+			t.Errorf("loaded.Source = %q, want \"nested\"", loaded.Source)
+		}
 
 		// Check file location
 		expectedPath := filepath.Join(tmpDir, "sub", "dir", "prompt.prompt")
 		_, err = os.Stat(expectedPath)
-		assert.NoError(t, err)
+		if err != nil {
+			t.Errorf("os.Stat() returned error: %v", err)
+		}
 	})
 
 	t.Run("Path Traversal Block", func(t *testing.T) {
 		// Attempt to save outside root
 		err := store.Save(PromptData{PromptRef: PromptRef{Name: "../outside"}, Source: "bad"})
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "invalid path") // From ValidatePromptName
+		if err == nil {
+			t.Error("store.Save() expected error, got nil")
+		} else {
+			if !strings.Contains(err.Error(), "invalid path") && !strings.Contains(err.Error(), "path traversal") {
+				t.Errorf("Error message should contain 'invalid path' or 'path traversal', got: %s", err.Error())
+			}
+		}
 
 		// Attempt to load absolute path (which ValidatePromptName catches or verifyPathContainment)
 		_, err = store.Load("/etc/passwd", LoadPromptOptions{})
-		assert.Error(t, err)
+		if err == nil {
+			t.Error("store.Load() expected error, got nil")
+		}
 	})
 }

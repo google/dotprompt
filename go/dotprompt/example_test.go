@@ -18,8 +18,6 @@ package dotprompt
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 // Square computes the square of a number.
@@ -28,5 +26,9 @@ func Square(n int) int {
 }
 
 func TestSquare(t *testing.T) {
-	assert.Equal(t, 4, Square(2))
+	got := Square(2)
+	want := 4
+	if got != want {
+		t.Errorf("Square(2) = %d, want %d", got, want)
+	}
 }

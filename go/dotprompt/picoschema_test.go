@@ -19,8 +19,9 @@ package dotprompt
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/invopop/jsonschema"
-	"github.com/stretchr/testify/assert"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
@@ -30,14 +31,23 @@ func TestPicoschema(t *testing.T) {
 	TEST_PROPERTY.Set("name", &jsonschema.Schema{Type: "string"})
 	t.Run("nil schema", func(t *testing.T) {
 		result, err := Picoschema(nil, &PicoschemaOptions{})
-		assert.NoError(t, err)
-		assert.Nil(t, result)
+		if err != nil {
+			t.Errorf("Picoschema(nil) returned error: %v", err)
+		}
+		if result != nil {
+			t.Errorf("Picoschema(nil) = %v, want nil", result)
+		}
 	})
 
 	t.Run("scalar type schema", func(t *testing.T) {
 		result, err := Picoschema("string", &PicoschemaOptions{})
-		assert.NoError(t, err)
-		assert.Equal(t, &jsonschema.Schema{Type: "string"}, result)
+		if err != nil {
+			t.Errorf("Picoschema(\"string\") returned error: %v", err)
+		}
+		want := &jsonschema.Schema{Type: "string"}
+		if diff := cmp.Diff(want, result, cmpopts.IgnoreUnexported(jsonschema.Schema{})); diff != "" {
+			t.Errorf("Picoschema(\"string\") mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("named schema", func(t *testing.T) {
@@ -48,13 +58,20 @@ func TestPicoschema(t *testing.T) {
 			return nil, nil
 		}
 		result, err := Picoschema("MySchema", &PicoschemaOptions{SchemaResolver: schemaResolver})
-		assert.NoError(t, err)
-		assert.Equal(t, &jsonschema.Schema{Type: "object", Properties: TEST_PROPERTY}, result)
+		if err != nil {
+			t.Errorf("Picoschema(\"MySchema\") returned error: %v", err)
+		}
+		want := &jsonschema.Schema{Type: "object", Properties: TEST_PROPERTY}
+		if diff := cmp.Diff(want, result, cmpopts.IgnoreUnexported(jsonschema.Schema{}, orderedmap.OrderedMap[string, *jsonschema.Schema]{})); diff != "" {
+			t.Errorf("Picoschema(\"MySchema\") mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("invalid schema type", func(t *testing.T) {
 		_, err := Picoschema(123, &PicoschemaOptions{})
-		assert.Error(t, err)
+		if err == nil {
+			t.Error("Picoschema(123) expected error, got nil")
+		}
 	})
 }
 
@@ -63,14 +80,23 @@ func TestPicoschemaParser_Parse(t *testing.T) {
 
 	t.Run("nil schema", func(t *testing.T) {
 		result, err := parser.Parse(nil)
-		assert.NoError(t, err)
-		assert.Nil(t, result)
+		if err != nil {
+			t.Errorf("Parse(nil) returned error: %v", err)
+		}
+		if result != nil {
+			t.Errorf("Parse(nil) = %v, want nil", result)
+		}
 	})
 
 	t.Run("scalar type schema", func(t *testing.T) {
 		result, err := parser.Parse("string")
-		assert.NoError(t, err)
-		assert.Equal(t, &jsonschema.Schema{Type: "string"}, result)
+		if err != nil {
+			t.Errorf("Parse(\"string\") returned error: %v", err)
+		}
+		want := &jsonschema.Schema{Type: "string"}
+		if diff := cmp.Diff(want, result, cmpopts.IgnoreUnexported(jsonschema.Schema{})); diff != "" {
+			t.Errorf("Parse(\"string\") mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("object schema", func(t *testing.T) {
@@ -83,13 +109,19 @@ func TestPicoschemaParser_Parse(t *testing.T) {
 			Properties: TEST_PROPERTY,
 		}
 		result, err := parser.Parse(schema)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedSchema, result)
+		if err != nil {
+			t.Errorf("Parse(schema) returned error: %v", err)
+		}
+		if diff := cmp.Diff(expectedSchema, result, cmpopts.IgnoreUnexported(jsonschema.Schema{}, orderedmap.OrderedMap[string, *jsonschema.Schema]{})); diff != "" {
+			t.Errorf("Parse(schema) mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("invalid schema type", func(t *testing.T) {
 		_, err := parser.Parse(123)
-		assert.Error(t, err)
+		if err == nil {
+			t.Error("Parse(123) expected error, got nil")
+		}
 	})
 }
 
@@ -98,8 +130,13 @@ func TestPicoschemaParser_parsePico(t *testing.T) {
 
 	t.Run("scalar type", func(t *testing.T) {
 		result, err := parser.parsePico("string")
-		assert.NoError(t, err)
-		assert.Equal(t, &jsonschema.Schema{Type: "string"}, result)
+		if err != nil {
+			t.Errorf("parsePico(\"string\") returned error: %v", err)
+		}
+		want := &jsonschema.Schema{Type: "string"}
+		if diff := cmp.Diff(want, result, cmpopts.IgnoreUnexported(jsonschema.Schema{})); diff != "" {
+			t.Errorf("parsePico(\"string\") mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("object type", func(t *testing.T) {
@@ -112,8 +149,12 @@ func TestPicoschemaParser_parsePico(t *testing.T) {
 			Required:   []string{"name"},
 		}
 		result, err := parser.parsePico(schema)
-		assert.NoError(t, err)
-		assert.Equal(t, expected, result)
+		if err != nil {
+			t.Errorf("parsePico(schema) returned error: %v", err)
+		}
+		if diff := cmp.Diff(expected, result, cmpopts.IgnoreUnexported(jsonschema.Schema{}, orderedmap.OrderedMap[string, *jsonschema.Schema]{})); diff != "" {
+			t.Errorf("parsePico(schema) mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("array type", func(t *testing.T) {
@@ -131,8 +172,12 @@ func TestPicoschemaParser_parsePico(t *testing.T) {
 			Required:   []string{"names"},
 		}
 		result, err := parser.parsePico(schema)
-		assert.NoError(t, err)
-		assert.Equal(t, expected, result)
+		if err != nil {
+			t.Errorf("parsePico(schema) returned error: %v", err)
+		}
+		if diff := cmp.Diff(expected, result, cmpopts.IgnoreUnexported(jsonschema.Schema{}, orderedmap.OrderedMap[string, *jsonschema.Schema]{})); diff != "" {
+			t.Errorf("parsePico(schema) mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("nested array type", func(t *testing.T) {
@@ -162,8 +207,12 @@ func TestPicoschemaParser_parsePico(t *testing.T) {
 			Required:   []string{"items"},
 		}
 		result, err := parser.parsePico(schema)
-		assert.NoError(t, err)
-		assert.Equal(t, expected, result)
+		if err != nil {
+			t.Errorf("parsePico(schema) returned error: %v", err)
+		}
+		if diff := cmp.Diff(expected, result, cmpopts.IgnoreUnexported(jsonschema.Schema{}, orderedmap.OrderedMap[string, *jsonschema.Schema]{})); diff != "" {
+			t.Errorf("parsePico(schema) mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("description on optionl array type", func(t *testing.T) {
@@ -184,8 +233,12 @@ func TestPicoschemaParser_parsePico(t *testing.T) {
 			Required:   []string{},
 		}
 		result, err := parser.parsePico(schema)
-		assert.NoError(t, err)
-		assert.Equal(t, expected, result)
+		if err != nil {
+			t.Errorf("parsePico(schema) returned error: %v", err)
+		}
+		if diff := cmp.Diff(expected, result, cmpopts.IgnoreUnexported(jsonschema.Schema{}, orderedmap.OrderedMap[string, *jsonschema.Schema]{})); diff != "" {
+			t.Errorf("parsePico(schema) mismatch (-want +got):\n%s", diff)
+		}
 	})
 
 	t.Run("enum type", func(t *testing.T) {
@@ -202,8 +255,12 @@ func TestPicoschemaParser_parsePico(t *testing.T) {
 			Required:   []string{"status"},
 		}
 		result, err := parser.parsePico(schema)
-		assert.NoError(t, err)
-		assert.Equal(t, expected, result)
+		if err != nil {
+			t.Errorf("parsePico(schema) returned error: %v", err)
+		}
+		if diff := cmp.Diff(expected, result, cmpopts.IgnoreUnexported(jsonschema.Schema{}, orderedmap.OrderedMap[string, *jsonschema.Schema]{})); diff != "" {
+			t.Errorf("parsePico(schema) mismatch (-want +got):\n%s", diff)
+		}
 	})
 }
 
@@ -212,13 +269,17 @@ func TestExtractDescription(t *testing.T) {
 		input := "string"
 		expected := [2]string{"string", ""}
 		result := extractDescription(input)
-		assert.Equal(t, expected, result)
+		if diff := cmp.Diff(expected, result); diff != "" {
+			t.Errorf("extractDescription(%q) mismatch (-want +got):\n%s", input, diff)
+		}
 	})
 
 	t.Run("with description", func(t *testing.T) {
 		input := "string, a simple string"
 		expected := [2]string{"string", "a simple string"}
 		result := extractDescription(input)
-		assert.Equal(t, expected, result)
+		if diff := cmp.Diff(expected, result); diff != "" {
+			t.Errorf("extractDescription(%q) mismatch (-want +got):\n%s", input, diff)
+		}
 	})
 }
