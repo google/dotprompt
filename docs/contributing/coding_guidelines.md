@@ -57,9 +57,11 @@ Both type checkers are configured in `python/pyproject.toml`.
   and infer return types
 * `python_version = "3.10"`: Matches ruff.target-version
 
-**ty** (`[tool.ty.src]`):
+**ty** (`[[tool.ty.overrides]]`):
 
-* `exclude`: Excludes the `samples` directory (external dependencies not in workspace)
+* Uses overrides to ignore `unresolved-import` errors in `samples/` directory
+  (external dependencies not installed in the workspace)
+* ty still type-checks all code in samples, just tolerates missing third-party imports
 
 ### Error Suppression Policy
 

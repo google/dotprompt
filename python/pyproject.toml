@@ -190,6 +190,11 @@ untyped_def_behavior = "check-and-infer-return-type"
 # example-error-code = false
 
 # ty (Astral/Ruff) type checker configuration.
-[tool.ty.src]
-# Exclude samples directory as they have external dependencies not in the workspace.
-exclude = ["samples"]
+# Use overrides to ignore unresolved-import errors in samples directory,
+# which has external dependencies not installed in the workspace.
+# This lets ty check all code while tolerating missing third-party stubs.
+[[tool.ty.overrides]]
+include = ["samples/**"]
+
+[tool.ty.overrides.rules]
+unresolved-import = "ignore"
