@@ -18,12 +18,28 @@ name: Eng Documentation Checks
 
 on:
   pull_request:
-    paths:
-      - "docs/**"
-      - ".github/workflows/engdoc.yml"
+    branches: [ main ]
 
 jobs:
+  check-paths:
+    runs-on: ubuntu-latest
+    outputs:
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            docs/**
+            .github/workflows/engdoc.yml
+
   engdoc-checks:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
     runs-on: ubuntu-latest
     env:
       PATH: ${{ github.workspace }}/go/bin:${{ github.workspace }}/.cargo/bin:${{ github.workspace }}/.local/share/pnpm:${{ github.workspace }}/.local/bin:/usr/local/bin:/usr/bin:/bin
@@ -80,3 +96,17 @@ jobs:
 
       - name: Build documentation
         run: uv run mkdocs build
+
+  engdoc-checks-all:
+    if: always()
+    needs: [engdoc-checks]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check overall status
+        run: |
+          if [[ "${{ needs.engdoc-checks.result }}" == "failure" ]]; then
+            echo "Eng documentation checks failed"
+            exit 1
+          fi
+          echo "Eng documentation checks passed or were skipped"
+          exit 0

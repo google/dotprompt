@@ -20,18 +20,30 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "java/**"
-      - "spec/**"
-      - ".github/workflows/java.yml"
   pull_request:
-    paths:
-      - "java/**"
-      - "spec/**"
-      - ".github/workflows/java.yml"
+    branches: [ main ]
 
 jobs:
+  check-paths:
+    runs-on: ubuntu-latest
+    outputs:
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            java/**
+            spec/**
+            .github/workflows/java.yml
+
   format-check:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
     runs-on: ubuntu-latest
     name: Java Format Check
     steps:
@@ -51,12 +63,9 @@ jobs:
 
       - name: Check Java formatting
         run: |
-          # Find all Java files (excluding build directories)
           JAVA_FILES=$(find java -name "*.java" -type f)
           if [ -n "${JAVA_FILES}" ]; then
             echo "Checking formatting for Java files..."
-            # --dry-run will exit with non-zero if files need formatting
-            # --set-exit-if-changed makes it return 1 if any files would be changed
             java -jar .cache/google-java-format.jar --dry-run --set-exit-if-changed ${JAVA_FILES}
             echo "✅ All Java files are properly formatted."
           else
@@ -65,7 +74,8 @@ jobs:
 
   tests:
     runs-on: ubuntu-latest
-    needs: format-check
+    needs: [check-paths, format-check]
+    if: needs.check-paths.outputs.any_changed == 'true'
     strategy:
       matrix:
         java-version: ['17', '21', '23', '24']
@@ -85,10 +95,23 @@ jobs:
         uses: bazelbuild/setup-bazelisk@v3
 
       - name: Run Tests
-        # Force Bazel to use the local JDK setup by actions/setup-java
         run: |
           bazel test \
             --java_runtime_version=local_jdk \
             --tool_java_runtime_version=local_jdk \
             --test_output=errors \
             //java/com/google/dotprompt/...
+
+  java-checks-all:
+    if: always()
+    needs: [format-check, tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check overall status
+        run: |
+          if [[ "${{ needs.format-check.result }}" == "failure" || "${{ needs.tests.result }}" == "failure" ]]; then
+            echo "Java checks failed"
+            exit 1
+          fi
+          echo "Java checks passed or were skipped"
+          exit 0

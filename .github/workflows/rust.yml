@@ -18,14 +18,30 @@ name: "Rust checks"
 
 on:
   pull_request:
-    paths:
-      - "rs/**" # TODO: Add python/handlebarrz after fixing linker errors.
-      - "Cargo.toml"
-      - "Cargo.lock"
-      - ".github/workflows/rust.yml"
+    branches: [ main ]
 
 jobs:
+  check-paths:
+    runs-on: ubuntu-latest
+    outputs:
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            rs/**
+            Cargo.toml
+            Cargo.lock
+            .github/workflows/rust.yml
+
   format-check:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
     name: Format Check
     runs-on: ubuntu-latest
     steps:
@@ -41,6 +57,8 @@ jobs:
         run: cargo fmt --all -- --check
 
   clippy-lint:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
     name: Clippy Linting
     runs-on: ubuntu-latest
     steps:
@@ -56,13 +74,14 @@ jobs:
         run: cargo clippy --all-targets --workspace -- -D warnings
 
   check-build-test:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
     name: Check, Build & Test (${{ matrix.toolchain }}, ${{ matrix.os_config.os }}-${{ matrix.os_config.arch }})
     runs-on: ${{ matrix.os_config.os }}
     env:
-      # Fix for PyO3 forward compatibility with newer Python versions (e.g., 3.14 on macOS runner)
       PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
     strategy:
-      fail-fast: false # Keep running other jobs even if one fails
+      fail-fast: false
       matrix:
         os_config:
           - { os: ubuntu-latest, arch: x64 }
@@ -87,19 +106,16 @@ jobs:
 
       - name: Check code
         run: cargo check --all-targets --workspace
-        # Allow nightly check to fail without failing the entire workflow
         continue-on-error: ${{ matrix.toolchain == 'nightly' }}
 
       - name: Build code
         run: cargo build --all-targets --workspace
-        # Allow nightly build to fail
         continue-on-error: ${{ matrix.toolchain == 'nightly' }}
 
       - name: Run tests
         env:
           RUST_BACKTRACE: 1
         run: cargo test --all-targets --workspace
-        # Allow nightly tests to fail
         continue-on-error: ${{ matrix.toolchain == 'nightly' }}
 
       - name: Verify SPEC_FILE support
@@ -113,71 +129,16 @@ jobs:
           done
         continue-on-error: ${{ matrix.toolchain == 'nightly' }}
 
-  #check-build-test-musl-matrix:
-  #  name: Check, Build & Test (${{ matrix.toolchain }}, alpine-${{ matrix.arch }}-musl)
-  #  runs-on: ubuntu-latest # Runner OS
-  #  container: # Run steps inside this container
-  #    image: rust:alpine # Use official Rust image based on Alpine (multi-arch)
-  #  strategy:
-  #    fail-fast: false
-  #    matrix:
-  #      include:
-  #        - arch: x86_64
-  #          target: x86_64-unknown-linux-musl
-  #        - arch: aarch64
-  #          target: aarch64-unknown-linux-musl
-  #      toolchain: [stable, nightly]
-  #  steps:
-  #    - name: Checkout code
-  #      uses: actions/checkout@v6
-
-  #    - name: Install musl build dependencies
-  #      run: |
-  #        # Install native gcc, bash, docker-cli
-  #        apk add --no-cache musl-dev gcc bash docker-cli
-
-  #    - name: Set up QEMU
-  #      uses: docker/setup-qemu-action@v3
-
-  #    - name: Install Rust toolchain (${{ matrix.toolchain }}) via rustup
-  #      shell: bash
-  #      run: |
-  #        echo "Installing toolchain: ${{ matrix.toolchain }} and target: ${{ matrix.target }}"
-  #        rustup toolchain install ${{ matrix.toolchain }} --profile minimal --target ${{ matrix.target }}
-  #        rustup default ${{ matrix.toolchain }}
-
-  #        echo "Rust toolchain info:"
-  #        rustc --version --verbose
-  #        cargo --version --verbose
-
-  #    - name: Cache Cargo registry and index (musl)
-  #      uses: actions/cache@v5
-  #      with:
-  #        path: |
-  #          /usr/local/cargo/registry/index/
-  #          /usr/local/cargo/registry/cache/
-  #          /usr/local/cargo/git/db/
-  #          target/
-  #        # Include architecture and toolchain in cache key
-  #        key: linux-musl-${{ matrix.arch }}-cargo-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.lock') }}
-
-  #    - name: Check code (musl, ${{ matrix.arch }}, ${{ matrix.toolchain }})
-  #      shell: bash
-  #      run: cargo check --all-targets --workspace --target ${{ matrix.target }}
-  #      # Allow nightly check to fail
-  #      continue-on-error: ${{ matrix.toolchain == 'nightly' }}
-
-  #    - name: Build code (musl, ${{ matrix.arch }}, ${{ matrix.toolchain }})
-  #      shell: bash
-  #      run: cargo build --all-targets --workspace --target ${{ matrix.target }}
-  #      # Allow nightly build to fail
-  #      continue-on-error: ${{ matrix.toolchain == 'nightly' }}
-
-  #    - name: Run tests (musl, ${{ matrix.arch }}, ${{ matrix.toolchain }})
-  #      shell: bash
-  #      env:
-  #        RUST_BACKTRACE: 1 # Keep the backtrace env var
-  #      run: cargo test --all-targets --workspace --target ${{ matrix.target }}
-  #      # Allow nightly tests to fail
-  #      continue-on-error: ${{ matrix.toolchain == 'nightly' }}
-
+  rust-checks-all:
+    if: always()
+    needs: [format-check, clippy-lint, check-build-test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check overall status
+        run: |
+          if [[ "${{ needs.format-check.result }}" == "failure" || "${{ needs.clippy-lint.result }}" == "failure" || "${{ needs.check-build-test.result }}" == "failure" ]]; then
+            echo "Rust checks failed"
+            exit 1
+          fi
+          echo "Rust checks passed or were skipped"
+          exit 0

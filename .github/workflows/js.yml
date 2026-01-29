@@ -18,13 +18,29 @@ name: "JS checks"
 
 on:
   pull_request:
-    paths:
-      - "js/**"
-      - "spec/**"
-      - ".github/workflows/js.yml"
+    branches: [ main ]
 
 jobs:
+  check-paths:
+    runs-on: ubuntu-latest
+    outputs:
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            js/**
+            spec/**
+            .github/workflows/js.yml
+
   format-check:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
     runs-on: ubuntu-latest
     name: JS/TS Format Check
     steps:
@@ -49,7 +65,8 @@ jobs:
   test:
     name: Run tests (Node ${{ matrix.node-version }}, ${{ matrix.typescript-compiler }})
     runs-on: ubuntu-latest
-    needs: format-check
+    needs: [check-paths, format-check]
+    if: needs.check-paths.outputs.any_changed == 'true'
     strategy:
       matrix:
         node-version: ["20", "21", "22", "23", "24"]
@@ -81,3 +98,16 @@ jobs:
         if: matrix.typescript-compiler == 'tsgo'
         run: pnpm -C js build:native
 
+  js-checks-all:
+    if: always()
+    needs: [format-check, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check overall status
+        run: |
+          if [[ "${{ needs.format-check.result }}" == "failure" || "${{ needs.test.result }}" == "failure" ]]; then
+            echo "JS checks failed"
+            exit 1
+          fi
+          echo "JS checks passed or were skipped"
+          exit 0

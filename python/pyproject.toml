@@ -178,13 +178,18 @@ python_version = "3.10" # Matches ruff.target-version
 search_path = ["."]
 
 # How to handle untyped function definitions.
-# "error": Emit an error (similar to mypy's disallow_untyped_defs = true).
-# "check": Type check the body as if it were annotated.
-# "skip": Skip checking the body (default).
-untyped_def_behavior = "error"
+# "check-and-infer-return-type": Check and infer return type.
+# "check-and-infer-return-any": Check but infer Any for return type.
+# "skip-and-infer-return-any": Skip checking the body (default).
+untyped_def_behavior = "check-and-infer-return-type"
 
 # By default, all errors are enabled if the [tool.pyrefly.errors] table is empty or not present.
 # For maximum strictness similar to 'mypy --strict', we rely on this default behavior.
 # If specific errors need to be disabled later, they can be added here:
 # [tool.pyrefly.errors]
 # example-error-code = false
+
+# ty (Astral/Ruff) type checker configuration.
+[tool.ty.src]
+# Exclude samples directory as they have external dependencies not in the workspace.
+exclude = ["samples"]

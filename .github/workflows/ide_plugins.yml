@@ -19,24 +19,36 @@ name: IDE Plugins
 on:
   push:
     branches: [main]
-    paths:
-      - 'packages/jetbrains/**'
-      - 'packages/vim/**'
-      - 'packages/emacs/**'
   pull_request:
     branches: [main]
-    paths:
-      - 'packages/jetbrains/**'
-      - 'packages/vim/**'
-      - 'packages/emacs/**'
   workflow_dispatch:
 
 jobs:
+  check-paths:
+    runs-on: ubuntu-latest
+    outputs:
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            packages/jetbrains/**
+            packages/vim/**
+            packages/emacs/**
+            .github/workflows/ide_plugins.yml
+
   jetbrains:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
     name: JetBrains Plugin
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -68,20 +80,23 @@ jobs:
           PUBLISH_TOKEN: ${{ secrets.JETBRAINS_TOKEN }}
 
   vim:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
     name: Vim/Neovim
     runs-on: ubuntu-latest
     steps:
-      # Simple check for syntax validity
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - name: Check Lua formatting
         run: ./scripts/format_lua_files --check
 
   emacs:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
     name: Emacs Mode
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - name: Setup Emacs
         uses: purcell/setup-emacs@master
@@ -91,3 +106,17 @@ jobs:
       - name: Byte compile
         working-directory: packages/emacs
         run: emacs -Q -batch -L . -f batch-byte-compile dotprompt-mode.el
+
+  ide-plugins-all:
+    if: always()
+    needs: [jetbrains, vim, emacs]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check overall status
+        run: |
+          if [[ "${{ needs.jetbrains.result }}" == "failure" || "${{ needs.vim.result }}" == "failure" || "${{ needs.emacs.result }}" == "failure" ]]; then
+            echo "IDE plugins checks failed"
+            exit 1
+          fi
+          echo "IDE plugins checks passed or were skipped"
+          exit 0

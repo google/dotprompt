@@ -21,17 +21,31 @@ on:
       - main
       - master
   pull_request:
-    paths:
-      - "go/**"
-      - ".github/workflows/golangci-lint.yml"
+    branches: [ main ]
 
 permissions:
   contents: read
-  # Optional: allow read access to pull request. Use with `only-new-issues` option.
-  # pull-requests: read
 
 jobs:
+  check-paths:
+    runs-on: ubuntu-latest
+    outputs:
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            go/**
+            .github/workflows/golangci-lint.yml
+
   golangci:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
     name: lint
     runs-on: ubuntu-latest
     steps:
@@ -44,3 +58,17 @@ jobs:
         with:
           version: v1.64
           working-directory: go
+
+  golangci-lint-all:
+    if: always()
+    needs: [golangci]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check overall status
+        run: |
+          if [[ "${{ needs.golangci.result }}" == "failure" ]]; then
+            echo "GolangCI Lint failed"
+            exit 1
+          fi
+          echo "GolangCI Lint passed or was skipped"
+          exit 0

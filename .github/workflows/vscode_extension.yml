@@ -18,19 +18,30 @@ name: "VS Code Extension"
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - "packages/vscode/**"
-      - ".github/workflows/vscode_extension.yml"
+    branches: [ main ]
   pull_request:
-    paths:
-      - "packages/vscode/**"
-      - ".github/workflows/vscode_extension.yml"
-
+    branches: [ main ]
 
 jobs:
+  check-paths:
+    runs-on: ubuntu-latest
+    outputs:
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            packages/vscode/**
+            .github/workflows/vscode_extension.yml
+
   build:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
     name: Build and Package
     runs-on: ubuntu-latest
     steps:
@@ -61,4 +72,16 @@ jobs:
           name: dotprompt-vscode
           path: packages/vscode/*.vsix
 
-
+  vscode-extension-all:
+    if: always()
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check overall status
+        run: |
+          if [[ "${{ needs.build.result }}" == "failure" ]]; then
+            echo "VS Code extension checks failed"
+            exit 1
+          fi
+          echo "VS Code extension checks passed or were skipped"
+          exit 0

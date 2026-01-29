@@ -18,12 +18,29 @@ name: Python checks
 
 on:
   pull_request:
-    paths:
-      - "python/**"
-      - "spec/**"
-      - ".github/workflows/python.yml"
+    branches: [main]
+
 jobs:
+  check-paths:
+    runs-on: ubuntu-latest
+    outputs:
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            python/**
+            spec/**
+            .github/workflows/python.yml
+
   uv-lock-check:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -47,6 +64,8 @@ jobs:
         run: scripts/run_python_security_checks
 
   python-checks:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
     runs-on: ubuntu-latest
     env:
       PATH: ${{ github.workspace }}/go/bin:${{ github.workspace }}/.cargo/bin:${{ github.workspace }}/.local/share/pnpm:${{ github.workspace }}/.local/bin:/usr/local/bin:/usr/bin:/bin
@@ -96,8 +115,11 @@ jobs:
       - name: Lint with ruff
         run: uv run --active --directory python ruff check --select I .
 
-      - name: Static type check
+      - name: Static type check (ty)
         run: uv run --active --directory python ty check
+
+      - name: Static type check (pyrefly)
+        run: uv run --active --directory python pyrefly check
 
       # TODO: Move this to a rust workflow once we have one.
       - name: Run rust lint
@@ -121,3 +143,17 @@ jobs:
 
       - name: Build distributions
         run: ./scripts/build_dists
+
+  python-checks-all:
+    if: always()
+    needs: [uv-lock-check, python-checks]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check overall status
+        run: |
+          if [[ "${{ needs.uv-lock-check.result }}" == "failure" || "${{ needs.python-checks.result }}" == "failure" ]]; then
+            echo "Python checks failed"
+            exit 1
+          fi
+          echo "Python checks passed or were skipped"
+          exit 0

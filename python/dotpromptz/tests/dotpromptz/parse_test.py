@@ -779,6 +779,8 @@ Hello!"""
         result: ParsedPrompt[dict[str, str]] = parse_document(source)
 
         self.assertIsInstance(result, ParsedPrompt)
+        self.assertIsNotNone(result.raw)
+        assert result.raw is not None  # Type narrowing for pyrefly
         self.assertEqual(result.raw.get('model'), 'gemini-pro')
         self.assertEqual(result.template, 'Hello!')
 
@@ -793,6 +795,8 @@ Hello shebang!"""
         result: ParsedPrompt[dict[str, str]] = parse_document(source)
 
         self.assertIsInstance(result, ParsedPrompt)
+        self.assertIsNotNone(result.raw)
+        assert result.raw is not None  # Type narrowing for pyrefly
         self.assertEqual(result.raw.get('model'), 'gemini-flash')
         self.assertEqual(result.template, 'Hello shebang!')
 
@@ -809,5 +813,7 @@ Hello combined!"""
         result: ParsedPrompt[dict[str, str]] = parse_document(source)
 
         self.assertIsInstance(result, ParsedPrompt)
+        self.assertIsNotNone(result.raw)
+        assert result.raw is not None  # Type narrowing for pyrefly
         self.assertEqual(result.raw.get('model'), 'gemini-2.0')
         self.assertEqual(result.template, 'Hello combined!')
