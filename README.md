@@ -5,7 +5,6 @@
 [![View Code Wiki](https://www.gstatic.com/_/boq-sdlc-agents-ui/_/r/YUi5dj2UWvE.svg)](https://codewiki.google/github.com/google/dotprompt)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/google/dotprompt)
 
-
 # Dotprompt: Executable GenAI Prompt Templates
 
 **Dotprompt** is an executable prompt template file format for Generative AI. It
@@ -141,3 +140,37 @@ By following these steps, you'll have a basic Dotprompt setup ready to go. From
 here, you can create more complex prompts, integrate them into your application,
 and start harnessing the full power of generative AI in a structured,
 template-driven way.
+
+## Contributing
+
+We welcome contributions! Please see our [Development Guidelines](GEMINI.md) for:
+
+* Code style and linting requirements for each language
+* Testing requirements
+* Git commit message conventions
+
+### Commit Message Format
+
+We use [Conventional Commits](https://www.conventionalcommits.org/) with package
+names as scopes:
+
+```bash
+feat(dotpromptz): add new helper function
+fix(dotprompt-go): resolve parsing edge case
+docs(dotprompt-java): update API documentation
+```
+
+| Scope | Package |
+|-------|---------|
+| `dotprompt` | JavaScript/TypeScript (`js/`) |
+| `dotpromptz` | Python dotpromptz (`python/dotpromptz/`) |
+| `dotpromptz-handlebars` | Python Handlebars (`python/handlebarrz/`) |
+| `dotprompt-go` | Go (`go/`) |
+| `dotprompt-rs` | Rust (`rs/`) |
+| `dotprompt-java` | Java (`java/`) |
+| `dotprompt-vscode` | VS Code extension |
+| `dotprompt-jetbrains` | JetBrains plugin |
+| `tree-sitter-dotprompt` | Tree-sitter grammar |
+| `promptly` | CLI tool for .prompt files |
+
+See [GEMINI.md](GEMINI.md) for the complete list of scopes and guidelines.

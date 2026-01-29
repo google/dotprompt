@@ -317,11 +317,83 @@ Include the Apache 2.0 license header at the top of each file (update year as ne
 
 ## Git Commit Message Guidelines
 
-* Use conventional commits format (e.g., `feat:`, `fix:`, `docs:`, `chore:`).
-* For scope, refer to `.release-please-config.json` if available.
-* Add a rationale paragraph explaining the why and the what before listing changes.
-* Keep it short and simple.
+Use [Conventional Commits](https://www.conventionalcommits.org/) format with the
+package name as the scope. This ensures release-please correctly attributes
+commits to packages and generates accurate changelogs.
+
+### Format
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+### Commit Types
+
+| Type | Description |
+|------|-------------|
+| `feat` | A new feature |
+| `fix` | A bug fix |
+| `docs` | Documentation only changes |
+| `style` | Changes that do not affect the meaning of the code |
+| `refactor` | A code change that neither fixes a bug nor adds a feature |
+| `perf` | A code change that improves performance |
+| `test` | Adding missing tests or correcting existing tests |
+| `build` | Changes that affect the build system or external dependencies |
+| `ci` | Changes to CI configuration files and scripts |
+| `chore` | Other changes that don't modify src or test files |
+
+### Commit Scopes (Package Names)
+
+**IMPORTANT**: Use the exact scope from the table below. These match the package
+names in `.release-please-config.json` and are used to generate release PRs.
+
+| Scope | Package/Directory | Description |
+|-------|-------------------|-------------|
+| `dotprompt` | `js/` | JavaScript/TypeScript library |
+| `dotpromptz` | `python/dotpromptz/` | Python dotpromptz package |
+| `dotpromptz-handlebars` | `python/handlebarrz/` | Python Handlebars bindings (PyPI: dotpromptz-handlebars) |
+| `dotprompt-go` | `go/` | Go implementation |
+| `dotprompt-rs` | `rs/` | Rust implementation |
+| `dotprompt-java` | `java/` | Java implementation |
+| `dotprompt-vscode` | `packages/vscode/` | VS Code extension |
+| `dotprompt-vim` | `packages/vim/` | Vim plugin |
+| `dotprompt-emacs` | `packages/emacs/` | Emacs mode |
+| `dotprompt-monaco` | `packages/monaco/` | Monaco editor integration |
+| `dotprompt-codemirror` | `packages/codemirror/` | CodeMirror integration |
+| `dotprompt-jetbrains` | `packages/jetbrains/` | JetBrains IDE plugin |
+| `tree-sitter-dotprompt` | `packages/treesitter/` | Tree-sitter grammar |
+| `promptly` | `packages/promptly/` | CLI tool for .prompt files |
+
+### Examples
+
+```bash
+# Feature in Python dotpromptz package
+feat(dotpromptz): add support for custom helpers
+
+# Bug fix in handlebarrz (Python Handlebars bindings)
+fix(dotpromptz-handlebars): correct template escaping behavior
+
+# Documentation for Go implementation
+docs(dotprompt-go): add usage examples to README
+
+# CI change for Rust
+ci(dotprompt-rs): add nightly toolchain testing
+
+# Cross-cutting change (no scope)
+chore: update dependencies across all packages
+```
+
+### Guidelines
+
+* Add a rationale paragraph in the body explaining the why and what.
+* Keep the subject line under 72 characters.
+* Use imperative mood ("add" not "added", "fix" not "fixed").
 * Do not include absolute file paths as links in commit messages.
+* Reference issue numbers in the footer (e.g., `Fixes #123`).
 
 ***
 

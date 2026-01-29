@@ -4,7 +4,7 @@
   "bump-minor-pre-major": true,
   "bump-patch-for-minor-pre-major": true,
   "draft": false,
-  "pull-request-title-pattern": "chore${scope}: release ${component}-${version}",
+  "pull-request-title-pattern": "chore(${component}): release ${version}",
   "include-component-in-tag": true,
   "prerelease": false,
   "separate-pull-requests": true,
@@ -12,9 +12,10 @@
   "include-v-in-tag": false,
   "plugins": ["node-workspace"],
   "packages": {
-    "js": {
+    "dotprompt": {
       "release-type": "node",
       "package-name": "dotprompt",
+      "component": "dotprompt",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
@@ -25,6 +26,7 @@
     "dotpromptz": {
       "release-type": "python",
       "package-name": "dotpromptz",
+      "component": "dotpromptz",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
@@ -47,6 +49,7 @@
     "dotpromptz-handlebars": {
       "release-type": "python",
       "package-name": "dotpromptz-handlebars",
+      "component": "dotpromptz-handlebars",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
@@ -71,9 +74,10 @@
         }
       ]
     },
-    "go": {
+    "dotprompt-go": {
       "release-type": "go",
       "package-name": "dotprompt-go",
+      "component": "dotprompt-go",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
@@ -81,9 +85,10 @@
       "prerelease": false,
       "path": "go"
     },
-    "rs": {
+    "dotprompt-rs": {
       "release-type": "rust",
       "package-name": "dotprompt-rs",
+      "component": "dotprompt-rs",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
@@ -98,9 +103,10 @@
         }
       ]
     },
-    "java": {
+    "dotprompt-java": {
       "release-type": "java",
       "package-name": "dotprompt-java",
+      "component": "dotprompt-java",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
@@ -114,9 +120,10 @@
         }
       ]
     },
-    "packages/vscode": {
+    "dotprompt-vscode": {
       "release-type": "node",
       "package-name": "dotprompt-vscode",
+      "component": "dotprompt-vscode",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
@@ -124,9 +131,10 @@
       "prerelease": false,
       "path": "packages/vscode"
     },
-    "packages/vim": {
+    "dotprompt-vim": {
       "release-type": "simple",
       "package-name": "dotprompt-vim",
+      "component": "dotprompt-vim",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
@@ -134,9 +142,10 @@
       "prerelease": false,
       "path": "packages/vim"
     },
-    "packages/emacs": {
+    "dotprompt-emacs": {
       "release-type": "simple",
       "package-name": "dotprompt-emacs",
+      "component": "dotprompt-emacs",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
@@ -144,9 +153,10 @@
       "prerelease": false,
       "path": "packages/emacs"
     },
-    "packages/monaco": {
+    "dotprompt-monaco": {
       "release-type": "node",
       "package-name": "@dotprompt/monaco",
+      "component": "dotprompt-monaco",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
@@ -154,9 +164,10 @@
       "prerelease": false,
       "path": "packages/monaco"
     },
-    "packages/codemirror": {
+    "dotprompt-codemirror": {
       "release-type": "node",
       "package-name": "@dotprompt/codemirror",
+      "component": "dotprompt-codemirror",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
@@ -164,32 +175,38 @@
       "prerelease": false,
       "path": "packages/codemirror"
     },
-    "packages/jetbrains": {
+    "dotprompt-jetbrains": {
       "release-type": "simple",
       "package-name": "dotprompt-jetbrains",
+      "component": "dotprompt-jetbrains",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
       "prerelease": false,
-      "path": "packages/jetbrains",
-      "extra-files": [
-        {
-          "type": "xml",
-          "path": "src/main/resources/META-INF/plugin.xml",
-          "jsonpath": "idea-plugin.change-notes"
-        }
-      ]
+      "path": "packages/jetbrains"
     },
-    "packages/treesitter": {
+    "tree-sitter-dotprompt": {
       "release-type": "node",
       "package-name": "tree-sitter-dotprompt",
+      "component": "tree-sitter-dotprompt",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
       "prerelease": false,
       "path": "packages/treesitter"
+    },
+    "promptly": {
+      "release-type": "node",
+      "package-name": "@dotprompt/promptly",
+      "component": "promptly",
+      "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "draft": false,
+      "prerelease": false,
+      "path": "packages/promptly"
     }
   },
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"

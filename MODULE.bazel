@@ -26,13 +26,8 @@ bazel_dep(name = "gazelle", version = "0.47.0")
 bazel_dep(name = "platforms", version = "1.0.0")
 
 include("//:go.MODULE.bazel")
-
 include("//:java.MODULE.bazel")
-
 include("//:rust.MODULE.bazel")
-
 include("//:kotlin.MODULE.bazel")
-
 include("//:python.MODULE.bazel")
-
 include("//:ts.MODULE.bazel")
