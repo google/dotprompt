@@ -188,10 +188,7 @@ public record PromptMetadata(
       throw new IllegalArgumentException(
           String.format(
               "Field '%s' has incorrect type. Expected: %s, Actual: %s, Value: %s",
-              fieldName,
-              expectedType.getSimpleName(),
-              value.getClass().getSimpleName(),
-              value));
+              fieldName, expectedType.getSimpleName(), value.getClass().getSimpleName(), value));
     }
   }
 
