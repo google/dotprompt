@@ -133,7 +133,7 @@ export function Search() {
                           key={refIndex}
                         >
                           <a
-                            href={`/${item.slug}`}
+                            href={`/dotprompt/${item.slug}`}
                             key={refIndex}
                             className=" no-underline hover:text-primary-foreground"
                           >
