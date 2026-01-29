@@ -106,11 +106,30 @@ unless there is a compelling, documented reason.
 
 * **Format**: Write comprehensive Google-style docstrings for modules, classes,
   and functions.
+* **Content**:
+  * **Explain Concepts**: Explain the terminology and concepts used in the
+    code to someone unfamiliar with the code so that first timers can easily
+    understand these ideas.
+  * **Visuals**: Prefer using tabular format and ASCII diagrams in the
+    docstrings to break down complex concepts or list terminology.
 * **Required Sections**:
   * **Overview**: One-liner description followed by rationale.
+  * **Key Operations**: Purpose of the component.
   * **Args/Attributes**: Required for callables/classes.
   * **Returns**: Required for callables.
   * **Examples**: Required for user-facing API.
+  * **Caveats**: Known limitations or edge cases.
+* **References**:
+  * Use the Dotprompt specification and documentation as the source of truth
+    for the API and concepts.
+  * When uncertain about API or concepts, refer to the JavaScript (canonical)
+    implementation.
+* Keep examples in documentation and docstrings simple.
+* Add links to relevant documentation on the Web or elsewhere in docstrings.
+* Add ASCII diagrams to illustrate relationships, flows, and concepts.
+* Always update module docstrings and function docstrings when updating code
+  to reflect updated reality of any file you add or modify.
+* Scan documentation for every module you edit and keep it up-to-date.
 
 ***
 

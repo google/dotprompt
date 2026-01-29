@@ -14,7 +14,93 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Utility functions for dotpromptz."""
+r"""Utility functions for dotpromptz.
+
+This module provides general-purpose utility functions used throughout the
+dotpromptz package, including data transformation and security validation.
+
+## Key Functions
+
+| Function                | Description                                              |
+|-------------------------|----------------------------------------------------------|
+| `remove_undefined_fields` | Recursively remove None values from dicts/lists       |
+| `unquote`               | Strip quote characters from string literals              |
+| `validate_prompt_name`  | Security validation for prompt names (path traversal)    |
+
+## Security: Path Traversal Prevention
+
+The `validate_prompt_name` function implements multiple security layers to
+prevent path traversal attacks (CWE-22). This is critical because prompt names
+are often used to construct file paths when loading prompts from disk.
+
+### Attack Vectors Blocked
+
+```
+Attack Vector              Example Input           Protection Layer
+─────────────────────────────────────────────────────────────────────
+Basic traversal            ../../../etc/passwd     Segment validation
+URL-encoded traversal      %2e%2e/secret           URL decoding
+Double-encoded             %252e%252e/secret       Iterative decoding
+Unicode homograph          ․․/secret (U+2024)      Unicode normalization
+Absolute Unix path         /etc/passwd             Prefix check
+Absolute Windows path      C:\Windows\secret       Drive letter check
+UNC network path           \\server\share          UNC prefix check
+Null byte injection        foo\x00../bar           Null byte check
+Current directory ref      ./config                ./ pattern check
+```
+
+### Validation Flow
+
+```
+Input: "foo/../bar"
+        │
+        ▼
+┌───────────────────┐
+│  URL decode (3x)  │  Catches %2e%2e and %252e%252e
+└─────────┬─────────┘
+          │
+          ▼
+┌───────────────────┐
+│ Unicode normalize │  NFC normalization for homographs
+└─────────┬─────────┘
+          │
+          ▼
+┌───────────────────┐
+│ Segment analysis  │  Check each path component for ".."
+└─────────┬─────────┘
+          │
+          ▼
+┌───────────────────┐
+│  Path type check  │  Block absolute/UNC/special paths
+└─────────┬─────────┘
+          │
+          ▼
+       Valid? ──No──▶ ValueError
+          │
+         Yes
+          │
+          ▼
+       Continue
+```
+
+## Usage Example
+
+```python
+from dotpromptz.util import remove_undefined_fields, validate_prompt_name
+
+# Clean up a metadata dict
+metadata = {'name': 'test', 'version': None, 'config': {'key': None}}
+clean = remove_undefined_fields(metadata)
+# Result: {'name': 'test', 'config': {}}
+
+# Validate a prompt name before loading
+try:
+    validate_prompt_name('prompts/greeting')  # OK
+    validate_prompt_name('../secret')  # Raises ValueError
+except ValueError as e:
+    print(f'Invalid prompt name: {e}')
+```
+"""
 
 import re
 import unicodedata

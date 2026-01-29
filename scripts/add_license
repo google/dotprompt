@@ -38,10 +38,13 @@ fi
 
 # NOTE: If you edit the ignore patterns, make sure to update the ignore patterns
 # in the corresponding check_license script.
+CURRENT_YEAR=$(date +%Y)
+
 $HOME/go/bin/addlicense \
   -c "Google LLC" \
   -s \
   -l apache \
+  -y "$CURRENT_YEAR" \
   -ignore '**/.dist/**/*' \
   -ignore '**/.eggs/**/*' \
   -ignore '**/.idea/**/*' \

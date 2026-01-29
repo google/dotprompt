@@ -31,6 +31,9 @@ theme:
 markdown_extensions:
   - admonition
   - attr_list
+  - toc:
+      permalink: true
+      toc_depth: 3
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.highlight:
@@ -54,7 +57,35 @@ plugins:
   - tags
   - mermaid2
   - search
-  - mkdocstrings
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths:
+            - python/dotpromptz/src
+            - python/handlebarrz/src
+          options:
+            docstring_style: google
+            docstring_options:
+              ignore_init_summary: true
+            merge_init_into_class: true
+            show_root_heading: true
+            show_source: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            signature_crossrefs: true
+            # Prevent docstring headings from polluting the TOC
+            docstring_section_style: spacy
+            heading_level: 3
+            # Only show the summary/first line of module docstrings
+            show_docstring_description: true
+            show_docstring_examples: false
+            show_docstring_other_parameters: true
+            show_docstring_parameters: true
+            show_docstring_raises: true
+            show_docstring_returns: true
+            show_docstring_warns: true
+            show_docstring_yields: true
   - minify:
       minify_html: true
       minify_js: true
@@ -62,6 +93,31 @@ plugins:
       htmlmin_opts:
         remove_comments: true
       cache_safe: true
+nav:
+  - Home: index.md
+  - Extending:
+    - extending/index.md
+    - Specification: extending/specification.md
+    - Picoschema: extending/picoschema.md
+  - API Reference:
+    - api/index.md
+    - Python:
+      - dotpromptz: api/python/dotpromptz.md
+      - handlebarrz: api/python/handlebarrz.md
+    - TypeScript/JavaScript: api/typescript/index.md
+    - Go: api/go/index.md
+    - Rust: api/rust/index.md
+    - Java: api/java/index.md
+  - Contributing:
+    - contributing/index.md
+    - Coding Guidelines: contributing/coding_guidelines.md
+    - Git Workflow: contributing/git_workflow.md
+    - Releases: contributing/releases.md
+    - Packaging Rust: contributing/packagin_rust.md
+    - Troubleshooting: contributing/troubleshooting.md
+  - Design:
+    - Promptly: design/promptly.md
+
 extra:
   social:
     - icon: fontawesome/brands/github
