@@ -92,7 +92,12 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Bazel
-        uses: bazelbuild/setup-bazelisk@v3
+        uses: bazel-contrib/setup-bazel@0.18.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}-java${{ matrix.java-version }}
+          repository-cache: true
+          cache-save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Run Tests
         run: |

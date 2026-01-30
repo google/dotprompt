@@ -50,8 +50,14 @@ jobs:
           distribution: 'temurin'
           
       - name: Setup Bazel
-        uses: bazelbuild/setup-bazelisk@v3
-        
+        uses: bazel-contrib/setup-bazel@0.18.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
+          # Always save cache for release builds
+          cache-save: true
+
       - name: Import GPG key
         id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v6

@@ -68,11 +68,12 @@ jobs:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
 
       - name: Setup Bazel
-        uses: bazel-contrib/setup-bazel@0.14.0
+        uses: bazel-contrib/setup-bazel@0.18.0
         with:
           bazelisk-cache: true
-          disk-cache: false
+          disk-cache: ${{ github.workflow }}-lockfiles
           repository-cache: true
+          cache-save: true
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
