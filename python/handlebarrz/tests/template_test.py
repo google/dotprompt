@@ -331,6 +331,88 @@ class TestTemplateEdgeCases(unittest.TestCase):
         self.assertEqual(result2, 'Version 2: data')
 
 
+class TestUnicodeAndInternationalization(unittest.TestCase):
+    """Test Unicode and internationalization support."""
+
+    def test_hindi_devanagari_script(self) -> None:
+        """Test Hindi text in Devanagari script."""
+        template = Template()
+        template.register_template('hindi', 'नमस्ते {{name}}!')
+        result = template.render('hindi', {'name': 'दुनिया'})
+        self.assertEqual(result, 'नमस्ते दुनिया!')
+
+    def test_arabic_rtl_text(self) -> None:
+        """Test Arabic right-to-left text."""
+        template = Template()
+        template.register_template('arabic', 'مرحبا {{name}}!')
+        result = template.render('arabic', {'name': 'العالم'})
+        self.assertEqual(result, 'مرحبا العالم!')
+
+    def test_japanese_mixed_scripts(self) -> None:
+        """Test Japanese with hiragana, katakana, and kanji."""
+        template = Template()
+        template.register_template('japanese', 'こんにちは {{name}}さん!')
+        result = template.render('japanese', {'name': '田中'})
+        self.assertEqual(result, 'こんにちは 田中さん!')
+
+    def test_korean_hangul(self) -> None:
+        """Test Korean Hangul script."""
+        template = Template()
+        template.register_template('korean', '안녕하세요 {{name}}님!')
+        result = template.render('korean', {'name': '세계'})
+        self.assertEqual(result, '안녕하세요 세계님!')
+
+    def test_chinese_simplified(self) -> None:
+        """Test Simplified Chinese characters."""
+        template = Template()
+        template.register_template('chinese', '你好 {{name}}!')
+        result = template.render('chinese', {'name': '世界'})
+        self.assertEqual(result, '你好 世界!')
+
+    def test_tamil_script(self) -> None:
+        """Test Tamil script."""
+        template = Template()
+        template.register_template('tamil', 'வணக்கம் {{name}}!')
+        result = template.render('tamil', {'name': 'உலகம்'})
+        self.assertEqual(result, 'வணக்கம் உலகம்!')
+
+    def test_emoji_in_template(self) -> None:
+        """Test emoji characters in templates."""
+        template = Template()
+        template.register_template('emoji', '{{greeting}} 🎉🎊 {{name}} 🌍🌎🌏')
+        result = template.render('emoji', {'greeting': 'Hello', 'name': 'World'})
+        self.assertEqual(result, 'Hello 🎉🎊 World 🌍🌎🌏')
+
+    def test_mixed_scripts_in_single_template(self) -> None:
+        """Test multiple scripts in a single template."""
+        template = Template()
+        template.register_template(
+            'mixed',
+            'English: {{en}}, 中文: {{zh}}, हिंदी: {{hi}}, العربية: {{ar}}',
+        )
+        result = template.render(
+            'mixed',
+            {'en': 'Hello', 'zh': '你好', 'hi': 'नमस्ते', 'ar': 'مرحبا'},
+        )
+        self.assertEqual(result, 'English: Hello, 中文: 你好, हिंदी: नमस्ते, العربية: مرحبا')
+
+    def test_combining_diacritical_marks(self) -> None:
+        """Test characters with combining diacritical marks."""
+        template = Template()
+        # é can be represented as e + combining acute accent
+        template.register_template('diacritics', 'Café: {{name}}')
+        result = template.render('diacritics', {'name': 'résumé'})
+        self.assertEqual(result, 'Café: résumé')
+
+    def test_zero_width_characters(self) -> None:
+        """Test handling of zero-width characters."""
+        template = Template()
+        # Zero-width joiner (U+200D) is used in some scripts
+        template.register_template('zwj', 'Family: {{emoji}}')
+        result = template.render('zwj', {'emoji': '👨‍👩‍👧‍👦'})  # Family emoji with ZWJ
+        self.assertEqual(result, 'Family: 👨‍👩‍👧‍👦')
+
+
 class TestHandlebarsAlias(unittest.TestCase):
     """Test that the Handlebars alias works like Template."""
 
