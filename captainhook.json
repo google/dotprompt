@@ -61,7 +61,7 @@
           "run": "pnpm -C js build"
         },
         {
-          "run": "echo 'disabled' || uv run mkdocs build"
+          "run": "uv run mkdocs build"
         },
         {
           "run": "scripts/build_dists"
@@ -116,7 +116,7 @@
           "run": "pnpm -C js build"
         },
         {
-          "run": "echo 'disabled' || uv run mkdocs build"
+          "run": "uv run mkdocs build"
         },
         {
           "run": "scripts/build_dists"
