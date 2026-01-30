@@ -429,7 +429,7 @@ class TestNumericAndBooleanValues(unittest.TestCase):
         template = Template()
         template.register_template('float', 'Price: {{price}}')
         self.assertEqual(template.render('float', {'price': 19.99}), 'Price: 19.99')
-        self.assertEqual(template.render('float', {'price': 0.0}), 'Price: 0')
+        self.assertEqual(template.render('float', {'price': 0.0}), 'Price: 0.0')
         self.assertEqual(template.render('float', {'price': -3.14}), 'Price: -3.14')
 
     def test_boolean_in_conditionals(self) -> None:
