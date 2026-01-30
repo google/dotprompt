@@ -381,4 +381,4 @@
       expect:
         messages:
           - role: user
-            content: [{ text: "Hello, 你好, こんにちは, 안녕하세요, مرحبا" }]
+            content: [{ text: "Hello, 你好, こんにちは, 안녕하세요, مرحبا\n" }]
