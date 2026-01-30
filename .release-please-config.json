@@ -13,14 +13,7 @@
   "packages": {
     "js": {
       "release-type": "node",
-      "component": "dotprompt",
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "../../README.md",
-          "glob": false
-        }
-      ]
+      "component": "dotprompt"
     },
     "python/dotpromptz": {
       "release-type": "python",
@@ -36,11 +29,6 @@
           "type": "toml",
           "path": "tests/smoke/pyproject.toml",
           "jsonpath": "$.project.version"
-        },
-        {
-          "type": "generic",
-          "path": "../../README.md",
-          "glob": false
         }
       ]
     },
@@ -63,24 +51,12 @@
           "type": "toml",
           "path": "smoke_tests/pyproject.toml",
           "jsonpath": "$.project.version"
-        },
-        {
-          "type": "generic",
-          "path": "../../README.md",
-          "glob": false
         }
       ]
     },
     "go": {
       "release-type": "go",
-      "component": "dotprompt-go",
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "../README.md",
-          "glob": false
-        }
-      ]
+      "component": "dotprompt-go"
     },
     "rs": {
       "release-type": "rust",
@@ -95,112 +71,44 @@
           "type": "toml",
           "path": "smoke/Cargo.toml",
           "jsonpath": "$.package.version"
-        },
-        {
-          "type": "generic",
-          "path": "../README.md",
-          "glob": false
         }
       ]
     },
     "java": {
       "release-type": "simple",
-      "component": "dotprompt-java",
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "../README.md",
-          "glob": false
-        }
-      ]
+      "component": "dotprompt-java"
     },
     "packages/vscode": {
       "release-type": "node",
-      "component": "dotprompt-vscode",
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "../../README.md",
-          "glob": false
-        }
-      ]
+      "component": "dotprompt-vscode"
     },
     "packages/vim": {
       "release-type": "simple",
-      "component": "dotprompt-vim",
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "../../README.md",
-          "glob": false
-        }
-      ]
+      "component": "dotprompt-vim"
     },
     "packages/emacs": {
       "release-type": "simple",
-      "component": "dotprompt-emacs",
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "../../README.md",
-          "glob": false
-        }
-      ]
+      "component": "dotprompt-emacs"
     },
     "packages/monaco": {
       "release-type": "node",
-      "component": "dotprompt-monaco",
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "../../README.md",
-          "glob": false
-        }
-      ]
+      "component": "dotprompt-monaco"
     },
     "packages/codemirror": {
       "release-type": "node",
-      "component": "dotprompt-codemirror",
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "../../README.md",
-          "glob": false
-        }
-      ]
+      "component": "dotprompt-codemirror"
     },
     "packages/jetbrains": {
       "release-type": "simple",
-      "component": "dotprompt-jetbrains",
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "../../README.md",
-          "glob": false
-        }
-      ]
+      "component": "dotprompt-jetbrains"
     },
     "packages/treesitter": {
       "release-type": "node",
-      "component": "tree-sitter-dotprompt",
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "../../README.md",
-          "glob": false
-        }
-      ]
+      "component": "tree-sitter-dotprompt"
     },
     "packages/promptly": {
       "release-type": "node",
-      "component": "promptly",
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "../../README.md",
-          "glob": false
-        }
-      ]
+      "component": "promptly"
     }
   }
 }
