@@ -144,8 +144,8 @@ information.
 ## Installation
 
 The remainder of this getting started guide will use the reference Dotprompt
-implementation included as part of the [Firebase
-Genkit](https://github.com/firebase/genkit) GenAI SDK. To use other
+implementation included as part of [Genkit](https://github.com/firebase/genkit),
+the GenAI SDK for app developers. To use other
 implementations of Dotprompt, see the [list of
 Implementations](third_party/docsite/src/content/docs/implementations.mdx).
 

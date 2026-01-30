@@ -288,8 +288,8 @@ output:
 ### Code-defined schemas
 
 In additional to defining schemas in the `.prompt` file, you can reference a
-schema in code. You can read more about how [Firebase Genkit handles
-it](https://firebase.google.com/docs/genkit/dotprompt#zod_schemas_defined_in_code).
+schema in code. You can read more about how [Genkit handles
+it](https://genkit.dev/docs/dotprompt#zod_schemas_defined_in_code).
 
 Dotprompt allows you to refer to a registered code-defined schema by name. For
 example, when you define a schema using

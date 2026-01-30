@@ -87,17 +87,18 @@ jobs:
 
   handlebarrz_native:
     name: Build Handlebarrz Native
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.config.os }}
     env:
-      # Enable sccache for Rust builds
-      SCCACHE_GHA_ENABLED: "true"
-      RUSTC_WRAPPER: "sccache"
+      # Enable sccache for Rust builds (disabled on macos-15-intel due to missing binaries)
+      SCCACHE_GHA_ENABLED: ${{ matrix.config.os != 'macos-15-intel' && 'true' || 'false' }}
+      RUSTC_WRAPPER: ${{ matrix.config.os != 'macos-15-intel' && 'sccache' || '' }}
     strategy:
       matrix:
         python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
         config:
           - { os: "macos-14", target: "aarch64-apple-darwin", name: "macOS ARM64", python_arch: "arm64" }
-          - { os: "macos-14", target: "x86_64-apple-darwin", name: "macOS x86_64", python_arch: "x64" }
+          # Use macos-15-intel for x86_64 builds - macos-13 is retired, macos-14 (ARM64) has issues with x64 Python
+          - { os: "macos-15-intel", target: "x86_64-apple-darwin", name: "macOS x86_64", python_arch: "x64" }
           - { os: "windows-latest", target: "x86_64-pc-windows-msvc", name: "Windows x86_64", python_arch: "x64" }
 #          - { os: "windows-latest", target: "aarch64-pc-windows-msvc", name: "Windows ARM64", python_arch: "arm64" }
     steps:
@@ -113,6 +114,7 @@ jobs:
         env:
           RUSTUP_MAX_RETRIES: 3
       - name: Setup sccache
+        if: matrix.config.os != 'macos-15-intel'
         uses: mozilla-actions/sccache-action@v0.0.9
       - run: pip install maturin
       - name: Build wheel
@@ -130,8 +132,8 @@ jobs:
         shell: bash
         run: |
           pip install dist/*.whl
-          pip install pytest
+          pip install pytest pytest-cov
       - name: Run tests
         working-directory: ./python/handlebarrz
         shell: bash
-        run: pytest
+        run: pytest --cov=handlebarrz --cov-report=term-missing
