@@ -97,7 +97,7 @@ jobs:
           bazelisk-cache: true
           disk-cache: ${{ github.workflow }}-java${{ matrix.java-version }}
           repository-cache: true
-          cache-save: ${{ github.ref == 'refs/heads/main' }}
+          cache-save: true
 
       - name: Run Tests
         run: |

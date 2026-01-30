@@ -54,14 +54,14 @@ jobs:
       # - bazelisk-cache: Caches Bazel downloads based on .bazelversion
       # - disk-cache: Stores build outputs, shared across PRs
       # - repository-cache: Stores external dependencies
-      # - cache-save: Only save cache on main branch to avoid PR pollution
+      # - cache-save: Always save cache to enable reuse across PR pushes
       - name: Setup Bazel
         uses: bazel-contrib/setup-bazel@0.18.0
         with:
           bazelisk-cache: true
           disk-cache: ${{ github.workflow }}-java${{ matrix.java-version }}
           repository-cache: true
-          cache-save: ${{ github.ref == 'refs/heads/main' }}
+          cache-save: true
 
       - name: Check if this is a release-please PR
         id: check-release-please
