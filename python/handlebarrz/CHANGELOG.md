@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.5...dotpromptz-handlebars-0.1.6) (2026-01-30)
+
+
+### Bug Fixes
+
+* **handlebarrz:** add toggleable platform flags and Unicode tests ([#481](https://github.com/google/dotprompt/issues/481)) ([7130b4c](https://github.com/google/dotprompt/commit/7130b4ce172bf70513d55417f6bcc309511d83f0))
+
 ## [0.1.5](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.4...dotpromptz-handlebars-0.1.5) (2026-01-30)
 
 

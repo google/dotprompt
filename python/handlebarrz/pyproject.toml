@@ -35,7 +35,7 @@ description = "Handlebars library for Python dotpromptz based on handlebars-rust
 name = "dotpromptz-handlebars"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "0.1.5"
+version = "0.1.6"
 
 [build-system]
 build-backend = "maturin"
