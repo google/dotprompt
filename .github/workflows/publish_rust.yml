@@ -23,8 +23,8 @@ on:
 jobs:
   publish-cargo:
     runs-on: ubuntu-latest
-    # Only run for releases tagged with rs- prefix
-    if: startsWith(github.ref, 'refs/tags/rs-')
+    # Only run for releases tagged with dotprompt-rs- prefix (per release-please config)
+    if: startsWith(github.event.release.tag_name, 'dotprompt-rs-')
     permissions:
       contents: read
     steps:

@@ -41,7 +41,9 @@ jobs:
   check_and_build:
     name: Dependency Check and Build
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'dotpromptz-v'))
+    # Triggers on GitHub releases for the 'dotpromptz' package (tag: dotpromptz-X.Y.Z)
+    # Excludes 'dotpromptz-handlebars' releases which have their own publish workflow
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'dotpromptz-') && !startsWith(github.event.release.tag_name, 'dotpromptz-handlebars-'))
     permissions:
       contents: write
       actions: write

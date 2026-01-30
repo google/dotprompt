@@ -40,7 +40,8 @@ jobs:
   build_ubuntu_arm64:
     name: Build for Ubuntu ARM64
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'dotpromptz-handlebars-v'))
+    # Triggers on GitHub releases for the 'dotpromptz-handlebars' package (tag: dotpromptz-handlebars-X.Y.Z)
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'dotpromptz-handlebars-'))
     strategy:
       matrix:
         python_version:
