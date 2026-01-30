@@ -138,10 +138,11 @@ ALLOWLISTED_FILES = [
     'spec/helpers/role.yaml',
     'spec/helpers/unlessEquals.yaml',
     'spec/helpers/section.yaml',
-    'spec/variables.yaml',
+    'spec/metadata.yaml',
     'spec/partials.yaml',
     'spec/picoschema.yaml',
-    'spec/metadata.yaml',
+    'spec/variables.yaml',
+    'spec/whitespace.yaml',
 ]
 
 # Counters for test class and test method names.

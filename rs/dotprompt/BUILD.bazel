@@ -111,3 +111,9 @@ rust_spec_test(
     spec_file = "//spec:helpers/unlessEquals.yaml",
     deps = [":dotprompt"],
 )
+
+rust_spec_test(
+    name = "SpecTest_whitespace",
+    spec_file = "//spec:whitespace.yaml",
+    deps = [":dotprompt"],
+)

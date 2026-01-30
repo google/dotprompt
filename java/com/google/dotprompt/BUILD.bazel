@@ -134,6 +134,11 @@ java_spec_test(
     spec_file = "//spec:helpers/unlessEquals.yaml",
 )
 
+java_spec_test(
+    name = "SpecTest_whitespace",
+    spec_file = "//spec:whitespace.yaml",
+)
+
 java_test(
     name = "ResolveToolsConcurrencyTest",
     srcs = ["ResolveToolsConcurrencyTest.java"],
