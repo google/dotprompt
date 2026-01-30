@@ -84,9 +84,9 @@ jobs:
       - name: Commit lockfile updates
         if: steps.check-release-please.outputs.is_release_please == 'true'
         run: |
-          # Use the PR author's identity (from the last commit) for CLA compliance
-          git config user.name "$(git log -1 --format='%an')"
-          git config user.email "$(git log -1 --format='%ae')"
+          # Use CLA-covered maintainer identity from MAINTAINERS.yaml
+          git config user.name "$(yq '.ci.commit_author.name' MAINTAINERS.yaml)"
+          git config user.email "$(yq '.ci.commit_author.email' MAINTAINERS.yaml)"
           if ! git diff --quiet pnpm-lock.yaml js/pnpm-lock.yaml; then
             git add pnpm-lock.yaml js/pnpm-lock.yaml 2>/dev/null || true
             git commit -m "chore: update pnpm lockfiles" || echo "No changes to commit"
