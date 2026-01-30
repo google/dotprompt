@@ -39,7 +39,7 @@ on:
 jobs:
   build_ubuntu_arm64:
     name: Build for Ubuntu ARM64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm  # Native ARM64 runner - no QEMU needed
     # Triggers on GitHub releases for the 'dotpromptz-handlebars' package (tag: dotpromptz-handlebars-X.Y.Z)
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'dotpromptz-handlebars-'))
     strategy:
@@ -53,30 +53,42 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up QEMU for Multi-Arch support
-        uses: docker/setup-qemu-action@v3
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python_version }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        env:
+          RUSTUP_MAX_RETRIES: 10
 
-      - name: Build container
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install maturin
+        run: uv pip install --system "maturin[patchelf]"
+
+      - name: Build wheels
+        working-directory: ./python/handlebarrz
+        env:
+          PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
         run: |
-          cd python/handlebarrz
-          docker build --platform linux/arm64 -t ubuntu-arm64 -f dockerfile-arm64 .
-
-      - name: Run container
-        run: |
-          docker run -v "$PWD/python/handlebarrz":/project ubuntu-arm64:latest sh ./generate-arm-wheels.sh "${{ matrix.python_version }}"
+          # Build for multiple manylinux compatibility levels
+          for i in $(seq 40 -1 24); do
+            maturin build --release -i python${{ matrix.python_version }} --compatibility manylinux_2_$i --auditwheel=skip -o dist || true
+          done
+          maturin build --release -i python${{ matrix.python_version }} -o dist
 
       - name: Upload build packages
         uses: actions/upload-artifact@v6
         with:
           name: wheels-ubuntu-arm64-${{ matrix.python_version }}
-          path: python/handlebarrz/target/wheels
+          path: python/handlebarrz/dist
 
   build_alpine_arm64:
     name: Build for Alpine ARM64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm  # Native ARM64 runner - use Docker for Alpine
     strategy:
       matrix:
         python_version:
@@ -88,16 +100,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up QEMU for Multi-Arch support
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
+      # No QEMU needed - running natively on ARM64
       - name: Build container
         run: |
           cd python/handlebarrz
-          docker build --platform linux/arm64 -t alpine-arm64 -f dockerfile-alpine .
+          docker build -t alpine-arm64 -f dockerfile-alpine .
 
       - name: Run container
         run: |
@@ -123,16 +130,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up QEMU for Multi-Arch support
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
+      # No QEMU needed - running natively on x86_64
       - name: Build container
         run: |
           cd python/handlebarrz
-          docker build --platform linux/amd64 -t alpine-amd64 -f dockerfile-alpine-x86-64 .
+          docker build -t alpine-amd64 -f dockerfile-alpine-x86-64 .
 
       - name: Run container
         run: |
@@ -198,6 +200,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
+        env:
+          RUSTUP_MAX_RETRIES: 10
 
       - name: Install maturin
         run: pip install maturin
@@ -240,6 +244,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
+        env:
+          RUSTUP_MAX_RETRIES: 10
 
       - name: Install maturin
         run: pip install maturin
@@ -282,6 +288,8 @@ jobs:
         with:
           toolchain: stable
           target: x86_64-apple-darwin
+        env:
+          RUSTUP_MAX_RETRIES: 10
 
       - name: Install maturin
         run: pip install maturin

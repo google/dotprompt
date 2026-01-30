@@ -67,6 +67,8 @@ jobs:
         with:
           toolchain: stable
           target: ${{ matrix.config.target }}
+        env:
+          RUSTUP_MAX_RETRIES: 10
       - run: pip install maturin
       - name: Build wheel
         working-directory: ./python/handlebarrz

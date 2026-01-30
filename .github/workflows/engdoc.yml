@@ -61,6 +61,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+        env:
+          RUSTUP_MAX_RETRIES: 10
 
       - name: Set up Go
         uses: actions/setup-go@v6

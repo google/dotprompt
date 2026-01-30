@@ -57,6 +57,8 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        env:
+          RUSTUP_MAX_RETRIES: 10
 
       - name: Check if this is a release-please PR
         id: check-release-please
@@ -106,6 +108,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
+        env:
+          RUSTUP_MAX_RETRIES: 10
 
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -123,6 +127,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
+        env:
+          RUSTUP_MAX_RETRIES: 10
 
       - name: Run clippy
         run: cargo clippy --all-targets --workspace -- -D warnings
