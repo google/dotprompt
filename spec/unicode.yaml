@@ -1,0 +1,259 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Tests for Unicode and internationalization support in templates,
+# including various scripts, emoji, and special characters.
+
+# Tests basic Unicode support with various scripts and languages.
+- name: unicode_basic
+  template: |
+    Hello, {{name}}!
+  tests:
+    - desc: handles Chinese characters
+      data:
+        input: { name: "世界" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, 世界!\n" }]
+
+    - desc: handles Japanese characters (Hiragana and Kanji)
+      data:
+        input: { name: "こんにちは世界" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, こんにちは世界!\n" }]
+
+    - desc: handles Korean characters (Hangul)
+      data:
+        input: { name: "안녕하세요" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, 안녕하세요!\n" }]
+
+    - desc: handles Arabic characters (RTL script)
+      data:
+        input: { name: "مرحبا" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, مرحبا!\n" }]
+
+    - desc: handles Hebrew characters (RTL script)
+      data:
+        input: { name: "שלום" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, שלום!\n" }]
+
+    - desc: handles Cyrillic characters (Russian)
+      data:
+        input: { name: "Мир" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, Мир!\n" }]
+
+    - desc: handles Greek characters
+      data:
+        input: { name: "Κόσμος" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, Κόσμος!\n" }]
+
+    - desc: handles Thai characters
+      data:
+        input: { name: "สวัสดี" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, สวัสดี!\n" }]
+
+    - desc: handles Hindi/Devanagari characters
+      data:
+        input: { name: "नमस्ते" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, नमस्ते!\n" }]
+
+# Tests emoji support in templates and data.
+- name: unicode_emoji
+  template: |
+    {{greeting}} {{name}} {{emoji}}
+  tests:
+    - desc: handles basic emoji
+      data:
+        input: { greeting: "Hello", name: "World", emoji: "👋" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello World 👋\n" }]
+
+    - desc: handles emoji sequences (family)
+      data:
+        input: { greeting: "Hi", name: "Family", emoji: "👨‍👩‍👧‍👦" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hi Family 👨‍👩‍👧‍👦\n" }]
+
+    - desc: handles emoji with skin tone modifiers
+      data:
+        input: { greeting: "Wave", name: "to you", emoji: "👋🏽" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Wave to you 👋🏽\n" }]
+
+    - desc: handles flag emoji
+      data:
+        input: { greeting: "From", name: "Japan", emoji: "🇯🇵" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "From Japan 🇯🇵\n" }]
+
+    - desc: handles multiple emoji in sequence
+      data:
+        input: { greeting: "🎉", name: "Party", emoji: "🎊🎈🥳" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "🎉 Party 🎊🎈🥳\n" }]
+
+# Tests Unicode in template content itself (not just variables).
+- name: unicode_in_template
+  template: |
+    你好, {{name}}! 欢迎来到我们的应用。
+  tests:
+    - desc: handles Chinese in template with ASCII variable
+      data:
+        input: { name: "Alice" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "你好, Alice! 欢迎来到我们的应用。\n" }]
+
+    - desc: handles Chinese in both template and variable
+      data:
+        input: { name: "小明" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "你好, 小明! 欢迎来到我们的应用。\n" }]
+
+# Tests mixed scripts in a single template.
+- name: unicode_mixed_scripts
+  template: |
+    {{english}} / {{chinese}} / {{japanese}} / {{korean}}
+  tests:
+    - desc: handles multiple scripts in one template
+      data:
+        input:
+          english: "Hello"
+          chinese: "你好"
+          japanese: "こんにちは"
+          korean: "안녕하세요"
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello / 你好 / こんにちは / 안녕하세요\n" }]
+
+# Tests special Unicode characters and edge cases.
+- name: unicode_special
+  template: |
+    {{text}}
+  tests:
+    - desc: handles zero-width characters
+      data:
+        input: { text: "a\u200Bb\u200Cc" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "a\u200Bb\u200Cc\n" }]
+
+    - desc: handles combining characters (accents)
+      data:
+        input: { text: "café résumé naïve" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "café résumé naïve\n" }]
+
+    - desc: handles mathematical symbols
+      data:
+        input: { text: "∑ ∏ ∫ √ ∞ ≠ ≤ ≥" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "∑ ∏ ∫ √ ∞ ≠ ≤ ≥\n" }]
+
+    - desc: handles currency symbols
+      data:
+        input: { text: "$ € £ ¥ ₹ ₽ ₿" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "$ € £ ¥ ₹ ₽ ₿\n" }]
+
+    - desc: handles arrows and symbols
+      data:
+        input: { text: "← → ↑ ↓ ↔ ⇒ ⇔" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "← → ↑ ↓ ↔ ⇒ ⇔\n" }]
+
+# Tests Unicode in nested data structures.
+- name: unicode_nested
+  template: |
+    {{user.name}} says "{{user.greeting}}" in {{user.language}}
+  tests:
+    - desc: handles Unicode in nested objects
+      data:
+        input:
+          user:
+            name: "田中太郎"
+            greeting: "こんにちは"
+            language: "日本語"
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "田中太郎 says \"こんにちは\" in 日本語\n" }]
+
+# Tests Unicode with iteration helpers.
+- name: unicode_iteration
+  template: |
+    {{#each greetings}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+  tests:
+    - desc: handles Unicode in arrays
+      data:
+        input:
+          greetings:
+            - "Hello"
+            - "你好"
+            - "こんにちは"
+            - "안녕하세요"
+            - "مرحبا"
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, 你好, こんにちは, 안녕하세요, مرحبا" }]
