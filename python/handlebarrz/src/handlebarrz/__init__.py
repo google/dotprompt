@@ -656,6 +656,15 @@ def create_helper(
 Handlebars = Template
 
 
+def package_name() -> str:
+    """Return the package name for smoke testing.
+
+    Returns:
+        The string 'handlebarrz'.
+    """
+    return 'handlebarrz'
+
+
 __all__ = [
     'EscapeFunction',
     'Handlebars',
@@ -663,4 +672,5 @@ __all__ = [
     'create_helper',
     'html_escape',
     'no_escape',
+    'package_name',
 ]
