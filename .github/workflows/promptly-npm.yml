@@ -49,9 +49,8 @@ jobs:
             os: macos-13
             npm_package: promptly-darwin-x64
           - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
+            os: ubuntu-24.04-arm  # Native ARM64 runner - no cross-compilation needed
             npm_package: promptly-linux-arm64
-            use_cross: true
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             npm_package: promptly-linux-x64
@@ -64,21 +63,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+        env:
+          RUSTUP_MAX_RETRIES: 3
 
-      - name: Install cross (for cross-compilation)
-        if: matrix.use_cross
-        run: cargo install cross --git https://github.com/cross-rs/cross
-
-      - name: Build (native)
-        if: "!matrix.use_cross"
+      - name: Build
         run: cargo build --release --package promptly --target ${{ matrix.target }}
-
-      - name: Build (cross)
-        if: matrix.use_cross
-        run: cross build --release --package promptly --target ${{ matrix.target }}
 
       - name: Prepare npm package (Unix)
         if: runner.os != 'Windows'

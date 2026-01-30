@@ -146,7 +146,7 @@ jobs:
       matrix:
         os_config:
           - { os: ubuntu-latest, arch: x64 }
-          - { os: ubuntu-latest, arch: arm64 }
+          - { os: ubuntu-24.04-arm, arch: arm64 }  # Native ARM64 runner
           - { os: macos-latest, arch: arm64 }
         toolchain: [stable, nightly]
 
