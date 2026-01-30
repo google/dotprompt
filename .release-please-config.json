@@ -6,7 +6,7 @@
   "prerelease": false,
   "include-component-in-tag": true,
   "include-v-in-tag": false,
-  "pull-request-title-pattern": "chore(${component}): release ${version}",
+  "pull-request-title-pattern": "chore(release): ${component} ${version}",
   "separate-pull-requests": true,
   "skip-github-release": false,
   "plugins": ["node-workspace"],
