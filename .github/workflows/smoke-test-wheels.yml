@@ -23,7 +23,7 @@ on:
 jobs:
   smoke_test_linux_arm64:
     name: Test for Linux ARM64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm  # Native ARM64 runner - no QEMU needed
     strategy:
       matrix:
         python_version:
@@ -38,16 +38,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up QEMU for Multi-Arch support
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Build container
         run: |
           cd python/handlebarrz/smoke_tests
-          docker build --platform linux/arm64 \
+          docker build \
           -t test-${{ matrix.linux_platform }}-arm64 \
           -f Dockerfile-${{ matrix.linux_platform }}-arm64 .
 
@@ -58,7 +52,7 @@ jobs:
 
   smoke_test_alpine_arm64:
     name: Test for Alpine ARM64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm  # Native ARM64 runner - no QEMU needed
     strategy:
       matrix:
         python_version:
@@ -70,16 +64,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up QEMU for Multi-Arch support
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Build container
         run: |
           cd python/handlebarrz/smoke_tests
-          docker build --platform linux/arm64 \
+          docker build \
           -t test-alpine-arm64 \
           -f Dockerfile-alpine .
 
@@ -90,7 +78,7 @@ jobs:
 
   smoke_test_alpine_x86_64:
     name: Test for Alpine x86_64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # Native x86_64 - no QEMU needed
     strategy:
       matrix:
         python_version:
@@ -102,16 +90,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up QEMU for Multi-Arch support
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Build container
         run: |
           cd python/handlebarrz/smoke_tests
-          docker build --platform linux/amd64 \
+          docker build \
           -t test-alpine-x86-64 \
           -f Dockerfile-alpine-x86-64 .
 
@@ -122,7 +104,7 @@ jobs:
 
   smoke_test_linux_x86_64:
     name: Test for Linux x86_64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # Native x86_64
     strategy:
       matrix:
         python_version:

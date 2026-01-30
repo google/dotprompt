@@ -184,7 +184,7 @@ jobs:
 
   build_ubuntu_x86_64:
     name: Build for Ubuntu x86_64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # Native x86_64 runner
     strategy:
       matrix:
         python_version:
@@ -197,20 +197,38 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Build container
-        run: |
-          cd python/handlebarrz
-          docker build -t ubuntu-x86-64 -f dockerfile-x86-64 .
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python_version }}
 
-      - name: Run container
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        env:
+          RUSTUP_MAX_RETRIES: 3
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install maturin
+        run: uv pip install --system "maturin[patchelf]"
+
+      - name: Build wheels
+        working-directory: ./python/handlebarrz
+        env:
+          PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
         run: |
-          docker run -v "$PWD/python/handlebarrz":/project ubuntu-x86-64:latest sh ./generate-x86-64-wheels.sh "${{ matrix.python_version }}"
+          # Build for multiple manylinux compatibility levels
+          for i in $(seq 40 -1 24); do
+            maturin build --release -i python${{ matrix.python_version }} --compatibility manylinux_2_$i --auditwheel=skip -o dist || true
+          done
+          maturin build --release -i python${{ matrix.python_version }} -o dist
 
       - name: Upload build packages
         uses: actions/upload-artifact@v6
         with:
           name: wheels-ubuntu-x86-64-${{ matrix.python_version }}
-          path: python/handlebarrz/target/wheels
+          path: python/handlebarrz/dist
 
   build_windows_x86_64:
     name: Build for Windows x86_64
@@ -422,7 +440,7 @@ jobs:
   smoke_test_linux_arm64:
     name: Test for Linux ARM64
     needs: [pypi_publish]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm  # Native ARM64 runner - no QEMU needed
     strategy:
       matrix:
         python_version:
@@ -437,16 +455,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up QEMU for Multi-Arch support
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Build container
         run: |
           cd python/handlebarrz/smoke_tests
-          docker build --platform linux/arm64 \
+          docker build \
           -t test-${{ matrix.linux_platform }}-arm64 \
           -f Dockerfile-${{ matrix.linux_platform }}-arm64 .
 
@@ -458,7 +470,7 @@ jobs:
   smoke_test_alpine_arm64:
     name: Test for Alpine ARM64
     needs: [pypi_publish]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm  # Native ARM64 runner - no QEMU needed
     strategy:
       matrix:
         python_version:
@@ -470,16 +482,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up QEMU for Multi-Arch support
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Build container
         run: |
           cd python/handlebarrz/smoke_tests
-          docker build --platform linux/arm64 \
+          docker build \
           -t test-alpine \
           -f Dockerfile-alpine .
 
@@ -491,7 +497,7 @@ jobs:
   smoke_test_alpine_x86_64:
     name: Test for Alpine x86_64
     needs: [pypi_publish]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # Native x86_64 - no QEMU needed
     strategy:
       matrix:
         python_version:
@@ -503,16 +509,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up QEMU for Multi-Arch support
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Build container
         run: |
           cd python/handlebarrz/smoke_tests
-          docker build --platform linux/amd64 \
+          docker build \
           -t test-alpine-x86-64 \
           -f Dockerfile-alpine-x86-64 .
 
