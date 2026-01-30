@@ -170,7 +170,7 @@ jobs:
       - name: Static type check (pyrefly)
         run: uv run --active --directory python pyrefly check
 
-      # TODO: Move this to a rust workflow once we have one.
+      # TODO(#505): Move this to a rust workflow once we have one.
       - name: Run rust lint
         run: pushd python/handlebarrz && cargo clippy --all-targets --all-features -- -D warnings && popd
 
