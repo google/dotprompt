@@ -25,6 +25,9 @@ fi
 TOP_DIR=$(git rev-parse --show-toplevel)
 PY_DIR="${TOP_DIR}/python"
 
+# Validate release-please configuration
+"${TOP_DIR}/scripts/validate_release_please_config"
+
 uv run --directory "${PY_DIR}" ruff check --select I --fix --preview --unsafe-fixes .
 
 # Static type checking with ty (Astral/Ruff) and pyrefly (Meta).
