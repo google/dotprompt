@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.4](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.3...dotpromptz-handlebars-0.1.4) (2026-01-30)
+
+
+### Features
+
+* **dotpromptz-handlebars:** add package_name function for smoke testing ([#457](https://github.com/google/dotprompt/issues/457)) ([681cc52](https://github.com/google/dotprompt/commit/681cc527dfd2d534ba5e0b6b2d73c52ead267b59))
+* **py:** add bazel build/test support and automate requirements ([#399](https://github.com/google/dotprompt/issues/399)) ([efd7fe0](https://github.com/google/dotprompt/commit/efd7fe0592e2491c34e8fd399e756de375c802eb))
+* **py:** switch to using ty for type checking ([#376](https://github.com/google/dotprompt/issues/376)) ([7f1c026](https://github.com/google/dotprompt/commit/7f1c0268e5de5a2d6d887ac590d110dea7d3ed07))
+
+
+### Bug Fixes
+
+* **dotpromptz-handlebars:** version mismatch in handlebarrz ([#428](https://github.com/google/dotprompt/issues/428)) ([1cf8e01](https://github.com/google/dotprompt/commit/1cf8e019a1c4b94254c5819ceb312df2b8c1e889))
+* **handlebarrz:** correct register_helper type stub signature ([#434](https://github.com/google/dotprompt/issues/434)) ([7bc7e2a](https://github.com/google/dotprompt/commit/7bc7e2a72f792940481fdf180961c7508b3ae389))
+* update package name references to dotpromptz-handlebars ([#403](https://github.com/google/dotprompt/issues/403)) ([8bbd99d](https://github.com/google/dotprompt/commit/8bbd99debe511a5b7327d80aeb40b6a854d57630)), closes [#344](https://github.com/google/dotprompt/issues/344)
+
 ## [0.1.3](https://github.com/google/dotprompt/compare/handlebarrz-0.1.2...handlebarrz-0.1.3) (2025-12-12)
 
 
