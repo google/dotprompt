@@ -1,19 +1,24 @@
-<!-- CI Status Badges -->
+<!-- Code Quality & Security -->
 
-[![Go](https://github.com/google/dotprompt/actions/workflows/go.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/go.yml)
-[![Python](https://github.com/google/dotprompt/actions/workflows/python.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/python.yml)
-[![JavaScript](https://github.com/google/dotprompt/actions/workflows/js.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/js.yml)
-[![Java](https://github.com/google/dotprompt/actions/workflows/java.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/java.yml)
-[![Rust](https://github.com/google/dotprompt/actions/workflows/rust.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/rust.yml)
-[![Bazel](https://github.com/google/dotprompt/actions/workflows/bazel.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/bazel.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/google/dotprompt/badge)](https://scorecard.dev/viewer/?uri=github.com/google/dotprompt)
+[![codecov](https://codecov.io/gh/google/dotprompt/graph/badge.svg)](https://codecov.io/gh/google/dotprompt)
+[![License](https://img.shields.io/github/license/google/dotprompt)](https://github.com/google/dotprompt/blob/main/LICENSE)
 
-[![VS Code Extension](https://github.com/google/dotprompt/actions/workflows/vscode_extension.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/vscode_extension.yml)
-[![IDE Plugins](https://github.com/google/dotprompt/actions/workflows/ide_plugins.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/ide_plugins.yml)
-[![Web Editors](https://github.com/google/dotprompt/actions/workflows/web_editors.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/web_editors.yml)
-[![Tree-sitter](https://github.com/google/dotprompt/actions/workflows/treesitter.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/treesitter.yml)
+<!-- Repository Stats -->
 
+[![GitHub stars](https://img.shields.io/github/stars/google/dotprompt?style=social)](https://github.com/google/dotprompt)
+[![GitHub forks](https://img.shields.io/github/forks/google/dotprompt?style=social)](https://github.com/google/dotprompt/fork)
+[![GitHub watchers](https://img.shields.io/github/watchers/google/dotprompt?style=social)](https://github.com/google/dotprompt)
+[![GitHub contributors](https://img.shields.io/github/contributors/google/dotprompt)](https://github.com/google/dotprompt/graphs/contributors)
+[![GitHub last commit](https://img.shields.io/github/last-commit/google/dotprompt)](https://github.com/google/dotprompt/commits/main)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/google/dotprompt)](https://github.com/google/dotprompt/pulse)
+
+[![OSS Insight](https://img.shields.io/badge/OSS%20Insight-google%2Fdotprompt-blue?logo=github)](https://ossinsight.io/analyze/google/dotprompt)
+[![Discord](https://img.shields.io/discord/1029867111234740224?logo=discord&label=Discord)](https://discord.gg/qXt5zzQKpc)
 [![View Code Wiki](https://www.gstatic.com/_/boq-sdlc-agents-ui/_/r/YUi5dj2UWvE.svg)](https://codewiki.google/github.com/google/dotprompt)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/google/dotprompt)
+
+[![Star History Chart](https://api.star-history.com/svg?repos=google/dotprompt&type=Date)](https://star-history.com/#google/dotprompt&Date)
 
 # Dotprompt: Executable GenAI Prompt Templates
 
@@ -28,23 +33,23 @@ features.
 | Package | Version | Registry |
 |---------|---------|----------|
 | **Core Libraries** |||
-| `dotprompt` (JS/TS) | 0.2.9 <!-- x-release-please-version:js --> | [![npm](https://img.shields.io/npm/v/dotprompt)](https://www.npmjs.com/package/dotprompt) |
-| `dotpromptz` (Python) | 0.1.4 <!-- x-release-please-version:python/dotpromptz --> | [![PyPI](https://img.shields.io/pypi/v/dotpromptz)](https://pypi.org/project/dotpromptz/) |
-| `dotpromptz-handlebars` (Python) | 0.1.7 <!-- x-release-please-version:python/handlebarrz --> | [![PyPI](https://img.shields.io/pypi/v/dotpromptz-handlebars)](https://pypi.org/project/dotpromptz-handlebars/) |
-| `dotprompt-go` (Go) | 0.2.0 <!-- x-release-please-version:go --> | [![Go](https://img.shields.io/github/v/tag/google/dotprompt?filter=dotprompt-go*&label=go)](https://pkg.go.dev/github.com/google/dotprompt/go/dotprompt) |
-| `dotprompt-rs` (Rust) | 0.1.0 <!-- x-release-please-version:rs --> | [![crates.io](https://img.shields.io/crates/v/dotprompt)](https://crates.io/crates/dotprompt) |
-| `dotprompt-java` (Java) | 0.1.0 <!-- x-release-please-version:java --> | [![Maven Central](https://img.shields.io/maven-central/v/com.google.dotprompt/dotprompt)](https://central.sonatype.com/artifact/com.google.dotprompt/dotprompt) |
+| `dotprompt` (JS/TS) | [![npm](https://img.shields.io/npm/v/dotprompt)](https://www.npmjs.com/package/dotprompt) | [npm](https://www.npmjs.com/package/dotprompt) |
+| `dotpromptz` (Python) | [![PyPI](https://img.shields.io/pypi/v/dotpromptz)](https://pypi.org/project/dotpromptz/) | [PyPI](https://pypi.org/project/dotpromptz/) |
+| `dotpromptz-handlebars` (Python) | [![PyPI](https://img.shields.io/pypi/v/dotpromptz-handlebars)](https://pypi.org/project/dotpromptz-handlebars/) | [PyPI](https://pypi.org/project/dotpromptz-handlebars/) |
+| `dotprompt-go` (Go) | [![Go](https://img.shields.io/github/v/tag/google/dotprompt?filter=dotprompt-go*&label=version)](https://pkg.go.dev/github.com/google/dotprompt/go/dotprompt) | [pkg.go.dev](https://pkg.go.dev/github.com/google/dotprompt/go/dotprompt) |
+| `dotprompt-rs` (Rust) | [![crates.io](https://img.shields.io/crates/v/dotprompt)](https://crates.io/crates/dotprompt) | [crates.io](https://crates.io/crates/dotprompt) |
+| `dotprompt-java` (Java) | [![Maven Central](https://img.shields.io/maven-central/v/com.google.dotprompt/dotprompt)](https://central.sonatype.com/artifact/com.google.dotprompt/dotprompt) | [Maven Central](https://central.sonatype.com/artifact/com.google.dotprompt/dotprompt) |
 | **IDE Extensions** |||
-| `dotprompt-vscode` | 0.0.1 <!-- x-release-please-version:packages/vscode --> | [![VS Marketplace](https://img.shields.io/visual-studio-marketplace/v/google.dotprompt-vscode)](https://marketplace.visualstudio.com/items?itemName=google.dotprompt-vscode) |
-| `dotprompt-jetbrains` | 0.2.0 <!-- x-release-please-version:packages/jetbrains --> | [![JetBrains](https://img.shields.io/jetbrains/plugin/v/com.google.dotprompt)](https://plugins.jetbrains.com/plugin/com.google.dotprompt) |
-| `dotprompt-vim` | 0.1.0 <!-- x-release-please-version:packages/vim --> | [GitHub](https://github.com/google/dotprompt/tree/main/packages/vim) |
-| `dotprompt-emacs` | 0.1.0 <!-- x-release-please-version:packages/emacs --> | [GitHub](https://github.com/google/dotprompt/tree/main/packages/emacs) |
+| `dotprompt-vscode` | [![VS Marketplace](https://img.shields.io/visual-studio-marketplace/v/google.dotprompt-vscode)](https://marketplace.visualstudio.com/items?itemName=google.dotprompt-vscode) | [VS Marketplace](https://marketplace.visualstudio.com/items?itemName=google.dotprompt-vscode) |
+| `dotprompt-jetbrains` | [![JetBrains](https://img.shields.io/jetbrains/plugin/v/com.google.dotprompt)](https://plugins.jetbrains.com/plugin/com.google.dotprompt) | [JetBrains](https://plugins.jetbrains.com/plugin/com.google.dotprompt) |
+| `dotprompt-vim` | - | [GitHub](https://github.com/google/dotprompt/tree/main/packages/vim) |
+| `dotprompt-emacs` | - | [GitHub](https://github.com/google/dotprompt/tree/main/packages/emacs) |
 | **Web Editors** |||
-| `dotprompt-monaco` | 0.1.0 <!-- x-release-please-version:packages/monaco --> | [![npm](https://img.shields.io/npm/v/dotprompt-monaco)](https://www.npmjs.com/package/dotprompt-monaco) |
-| `dotprompt-codemirror` | 0.1.0 <!-- x-release-please-version:packages/codemirror --> | [![npm](https://img.shields.io/npm/v/dotprompt-codemirror)](https://www.npmjs.com/package/dotprompt-codemirror) |
+| `dotprompt-monaco` | [![npm](https://img.shields.io/npm/v/dotprompt-monaco)](https://www.npmjs.com/package/dotprompt-monaco) | [npm](https://www.npmjs.com/package/dotprompt-monaco) |
+| `dotprompt-codemirror` | [![npm](https://img.shields.io/npm/v/dotprompt-codemirror)](https://www.npmjs.com/package/dotprompt-codemirror) | [npm](https://www.npmjs.com/package/dotprompt-codemirror) |
 | **Tools** |||
-| `tree-sitter-dotprompt` | 0.1.0 <!-- x-release-please-version:packages/treesitter --> | [![npm](https://img.shields.io/npm/v/tree-sitter-dotprompt)](https://www.npmjs.com/package/tree-sitter-dotprompt) |
-| `promptly` | 0.1.0 <!-- x-release-please-version:packages/promptly --> | [![npm](https://img.shields.io/npm/v/promptly-cli)](https://www.npmjs.com/package/promptly-cli) |
+| `tree-sitter-dotprompt` | [![npm](https://img.shields.io/npm/v/tree-sitter-dotprompt)](https://www.npmjs.com/package/tree-sitter-dotprompt) | [npm](https://www.npmjs.com/package/tree-sitter-dotprompt) |
+| `promptly` | [![npm](https://img.shields.io/npm/v/promptly-cli)](https://www.npmjs.com/package/promptly-cli) | [npm](https://www.npmjs.com/package/promptly-cli) |
 
 ## CI Status
 
