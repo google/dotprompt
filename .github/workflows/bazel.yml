@@ -50,37 +50,18 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java-version }}
 
-      # Set up Go environment for go install
-      - name: Setup Go
-        uses: actions/setup-go@v6
+      # Setup Bazel with optimized caching
+      # - bazelisk-cache: Caches Bazel downloads based on .bazelversion
+      # - disk-cache: Stores build outputs, shared across PRs
+      # - repository-cache: Stores external dependencies
+      # - cache-save: Only save cache on main branch to avoid PR pollution
+      - name: Setup Bazel
+        uses: bazel-contrib/setup-bazel@0.18.0
         with:
-          go-version: 1.24.2
-
-      # Use bazelisk to manage Bazel versions based on .bazelversion
-      - name: Install Bazelisk via Go
-        run: go install github.com/bazelbuild/bazelisk@latest
-
-      - name: Mount Bazel repository cache
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cache/bazel/_bazel_${{ runner.os }}/repos
-            ~/.cache/bazel/_bazel_${{ runner.os }}/external
-          key: bazel-repo-${{ hashFiles('**/MODULE.bazel.lock', '**/maven_install.json', '**/pnpm-lock.yaml') }}
-          restore-keys: |
-            bazel-repo-
-
-      # Setup Bazel action cache
-      # Caching build results can significantly speed up CI.
-      # Be cautious with cache size and eviction.
-      - name: Mount Bazel action cache
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/bazel/_bazel_${{ runner.os }}/execroot/**/bazel-out
-          key: bazel-action-${{ github.sha }}-${{ hashFiles('**/MODULE.bazel.lock', '**/maven_install.json', '**/pnpm-lock.yaml') }}
-          restore-keys: |
-             bazel-action-${{ github.ref }}-${{ hashFiles('**/MODULE.bazel.lock', '**/maven_install.json', '**/pnpm-lock.yaml') }}
-             bazel-action-
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}-java${{ matrix.java-version }}
+          repository-cache: true
+          cache-save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Check if this is a release-please PR
         id: check-release-please
