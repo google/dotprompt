@@ -104,7 +104,7 @@
       ]
     },
     "dotprompt-java": {
-      "release-type": "java",
+      "release-type": "simple",
       "package-name": "dotprompt-java",
       "component": "dotprompt-java",
       "changelog-path": "CHANGELOG.md",
@@ -112,13 +112,7 @@
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
       "prerelease": false,
-      "path": "java",
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "com/google/dotprompt/BUILD.bazel"
-        }
-      ]
+      "path": "java"
     },
     "dotprompt-vscode": {
       "release-type": "node",
