@@ -106,19 +106,29 @@ jobs:
   python-checks:
     needs: check-paths
     if: needs.check-paths.outputs.any_changed == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     env:
       PATH: ${{ github.workspace }}/go/bin:${{ github.workspace }}/.cargo/bin:${{ github.workspace }}/.local/share/pnpm:${{ github.workspace }}/.local/bin:/usr/local/bin:/usr/bin:/bin
       PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
     strategy:
       matrix:
+        os:
+          - ubuntu-latest      # x86_64
+          - ubuntu-24.04-arm   # ARM64
         python-version:
           - "3.10"
           - "3.11"
           - "3.12"
           - "3.13"
           - "3.14"
-          - "pypy-3.11"
+        exclude:
+          # PyPy not available on ARM64 runners yet
+          - os: ubuntu-24.04-arm
+            python-version: "pypy-3.11"
+        include:
+          # Add PyPy only for x86_64
+          - os: ubuntu-latest
+            python-version: "pypy-3.11"
       fail-fast: false
 
     steps:
@@ -143,7 +153,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install uv and setup Python version
         uses: astral-sh/setup-uv@v5
