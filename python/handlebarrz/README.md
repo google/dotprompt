@@ -11,6 +11,8 @@
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10359/badge)](https://www.bestpractices.dev/projects/10359)
 
 [![GitHub stars](https://img.shields.io/github/stars/google/dotprompt?style=social)](https://github.com/google/dotprompt)
+[![OSS Insight](https://img.shields.io/badge/OSS%20Insight-google%2Fdotprompt-blue?logo=github)](https://ossinsight.io/analyze/google/dotprompt)
+
 [![Star History Chart](https://api.star-history.com/svg?repos=google/dotprompt&type=Date)](https://star-history.com/#google/dotprompt&Date)
 
 A high-performance [Handlebars](https://handlebarsjs.com/) template engine for Python, powered by Rust.
