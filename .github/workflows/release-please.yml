@@ -45,8 +45,10 @@ jobs:
   update-lockfiles:
     runs-on: ubuntu-latest
     needs: release-please
-    # Run when release-please creates/updates a PR (not when releases are created)
-    if: ${{ needs.release-please.outputs.pr != '' && needs.release-please.outputs.releases_created != 'true' }}
+    # DISABLED: This job was designed for combined PRs but we use separate-pull-requests: true
+    # The 'pr' output is not set when using separate PRs (only 'prs' array is set).
+    # TODO: Rework this to handle separate PRs or switch to combined PRs.
+    if: false
     steps:
       - uses: actions/checkout@v6
         with:
