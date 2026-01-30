@@ -31,6 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
+      prs_created: ${{ steps.release.outputs.prs_created }}
+      prs: ${{ steps.release.outputs.prs }}
       dotpromptz_release_created: ${{ steps.release.outputs['dotpromptz--release_created'] }}
       handlebarrz_release_created: ${{ steps.release.outputs['dotpromptz-handlebars--release_created'] }}
       pr: ${{ steps.release.outputs.pr }}
@@ -42,23 +44,41 @@ jobs:
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
 
+  # ===========================================================================
+  # UPDATE LOCKFILES FOR RELEASE PRs
+  # ===========================================================================
+  # This job updates lockfiles (MODULE.bazel.lock, Cargo.lock, etc.) for each
+  # release PR created by release-please. It uses a matrix strategy to process
+  # each PR separately since we use separate-pull-requests: true.
+
   update-lockfiles:
     runs-on: ubuntu-latest
     needs: release-please
-    # DISABLED: This job was designed for combined PRs but we use separate-pull-requests: true
-    # The 'pr' output is not set when using separate PRs (only 'prs' array is set).
-    # TODO: Rework this to handle separate PRs or switch to combined PRs.
-    if: false
+    # Only run if release-please created/updated PRs
+    if: needs.release-please.outputs.prs != '' && needs.release-please.outputs.prs != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        pr: ${{ fromJson(needs.release-please.outputs.prs) }}
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout PR branch
+        uses: actions/checkout@v6
         with:
-          ref: ${{ fromJson(needs.release-please.outputs.pr).headBranchName }}
+          ref: ${{ matrix.pr.headBranchName }}
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
 
+      - name: Setup Bazel
+        uses: bazel-contrib/setup-bazel@0.14.0
+        with:
+          bazelisk-cache: true
+          disk-cache: false
+          repository-cache: true
+
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v5
         with:
           version: "latest"
+
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
@@ -70,49 +90,58 @@ jobs:
           node-version: 20
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: 10
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        env:
+          RUSTUP_MAX_RETRIES: 3
+
+      - name: Update MODULE.bazel.lock
+        run: |
+          bazel mod deps --lockfile_mode=update
+
+      - name: Update Cargo.lock (root)
+        run: |
+          cargo update --workspace || echo "Root Cargo.lock update skipped"
+
+      - name: Update Cargo.lock (handlebarrz)
+        working-directory: python/handlebarrz
+        run: |
+          cargo update || echo "handlebarrz Cargo.lock update skipped"
+
+      - name: Update Go lockfile
+        run: |
+          go mod tidy -C go || echo "Go mod tidy skipped"
 
       - name: Update uv.lock
         working-directory: python
         run: |
-          uv sync
-          uv export --format requirements-txt --output-file requirements.txt --hashes --no-emit-workspace
-
-      - name: Update Cargo.lock
-        run: |
-          cargo update -p handlebarrz
-
-      - name: Update Go lockfile
-        run: |
-          go mod tidy -C go
+          uv sync || echo "uv sync skipped"
 
       - name: Update pnpm lockfiles
         run: |
-          pnpm install --lockfile-only
+          pnpm install --lockfile-only || echo "pnpm lockfile update skipped"
 
-      - name: Update Bazel lockfiles
-        run: |
-          bazel mod tidy
-          REPIN=1 bazel run @maven//:pin || echo "Maven pin failed, skipping..."
-          bazel build ...
-          
       - name: Check for changes
         id: changes
         run: |
-          if git diff --quiet python/uv.lock python/requirements.txt Cargo.lock python/handlebarrz/Cargo.lock MODULE.bazel.lock go/go.mod go/go.sum pnpm-lock.yaml js/pnpm-lock.yaml maven_install.json; then
+          git add -A
+          if git diff --cached --quiet; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
             echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Changes detected:"
+            git diff --cached --stat
           fi
 
-      - name: Commit changes
+      - name: Commit and push changes
         if: steps.changes.outputs.changed == 'true'
         run: |
           # Use CLA-covered maintainer identity from MAINTAINERS.yaml
           git config user.name "$(yq '.ci.commit_author.name' MAINTAINERS.yaml)"
           git config user.email "$(yq '.ci.commit_author.email' MAINTAINERS.yaml)"
-          git add python/uv.lock python/requirements.txt Cargo.lock python/handlebarrz/Cargo.lock MODULE.bazel.lock go/go.mod go/go.sum pnpm-lock.yaml js/pnpm-lock.yaml maven_install.json
-          git commit -m "chore: update lockfiles"
+          git commit -m "chore: update lockfiles for ${{ matrix.pr.title }}"
           git push
