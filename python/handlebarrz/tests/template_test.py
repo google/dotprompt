@@ -262,6 +262,75 @@ class TestTemplate(unittest.TestCase):
             compiled_func({}, None)
 
 
+class TestTemplateEdgeCases(unittest.TestCase):
+    """Test edge cases and error handling for Template class."""
+
+    def test_empty_template(self) -> None:
+        """Test that an empty template renders to empty string."""
+        template = Template()
+        template.register_template('empty', '')
+        result = template.render('empty', {'name': 'World'})
+        self.assertEqual(result, '')
+
+    def test_template_with_only_whitespace(self) -> None:
+        """Test that a whitespace-only template preserves whitespace."""
+        template = Template()
+        template.register_template('whitespace', '   \n\t  ')
+        result = template.render('whitespace', {})
+        self.assertEqual(result, '   \n\t  ')
+
+    def test_template_with_unicode(self) -> None:
+        """Test that templates handle unicode characters correctly."""
+        template = Template()
+        template.register_template('unicode', 'Hello {{name}}! 你好 🎉')
+        result = template.render('unicode', {'name': '世界'})
+        self.assertEqual(result, 'Hello 世界! 你好 🎉')
+
+    def test_template_with_special_characters_in_data(self) -> None:
+        """Test that special characters in data are handled correctly."""
+        template = Template()
+        template.register_template('special', 'Value: {{{value}}}')  # Triple braces = no escape
+        result = template.render('special', {'value': '<div class="test">&amp;</div>'})
+        self.assertEqual(result, 'Value: <div class="test">&amp;</div>')
+
+    def test_deeply_nested_context(self) -> None:
+        """Test that deeply nested context paths work correctly."""
+        template = Template()
+        template.register_template('deep', '{{a.b.c.d.e}}')
+        data = {'a': {'b': {'c': {'d': {'e': 'deep_value'}}}}}
+        result = template.render('deep', data)
+        self.assertEqual(result, 'deep_value')
+
+    def test_array_index_access(self) -> None:
+        """Test accessing array elements by index."""
+        template = Template()
+        template.register_template('array', '{{items.[0]}} and {{items.[2]}}')
+        result = template.render('array', {'items': ['first', 'second', 'third']})
+        self.assertEqual(result, 'first and third')
+
+    def test_multiple_templates(self) -> None:
+        """Test registering and rendering multiple templates."""
+        template = Template()
+        template.register_template('greeting', 'Hello {{name}}!')
+        template.register_template('farewell', 'Goodbye {{name}}!')
+        template.register_template('question', 'How are you, {{name}}?')
+
+        self.assertEqual(template.render('greeting', {'name': 'Alice'}), 'Hello Alice!')
+        self.assertEqual(template.render('farewell', {'name': 'Bob'}), 'Goodbye Bob!')
+        self.assertEqual(template.render('question', {'name': 'Charlie'}), 'How are you, Charlie?')
+
+    def test_reregister_template(self) -> None:
+        """Test that re-registering a template overwrites the previous one."""
+        template = Template()
+        template.register_template('test', 'Version 1: {{value}}')
+        result1 = template.render('test', {'value': 'data'})
+        self.assertEqual(result1, 'Version 1: data')
+
+        template.register_template('test', 'Version 2: {{value}}')
+        result2 = template.render('test', {'value': 'data'})
+        self.assertEqual(result2, 'Version 2: data')
+
+
 class TestHandlebarsAlias(unittest.TestCase):
     """Test that the Handlebars alias works like Template."""
 
