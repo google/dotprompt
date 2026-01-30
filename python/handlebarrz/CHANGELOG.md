@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.6...dotpromptz-handlebars-0.1.7) (2026-01-30)
+
+
+### Bug Fixes
+
+* **ci:** auto-update lockfiles and label release PRs ([#483](https://github.com/google/dotprompt/issues/483)) ([3ae17e4](https://github.com/google/dotprompt/commit/3ae17e44b9acbd4efe5aab53b30a5c81694cbe4e))
+
 ## [0.1.6](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.5...dotpromptz-handlebars-0.1.6) (2026-01-30)
 
 
