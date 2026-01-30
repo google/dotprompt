@@ -75,7 +75,7 @@ jobs:
         working-directory: ./python/handlebarrz
         run: |
           pip install dist/*.whl
-          pip install pytest
+          pip install pytest pytest-cov
           pytest
 
   handlebarrz_native:
