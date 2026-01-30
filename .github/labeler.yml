@@ -149,29 +149,81 @@ npm:
 
 # Automatically add labels to any PR also based on branch naming conventions.
 build:
-  - head-branch: [^.*/build/.*, build]
+  - head-branch: ['^.*/build/.*', 'build']
 
 chore:
-  - head-branch: [^.*/chore/.*, chore]
+  - head-branch: ['^.*/chore/.*', 'chore']
 
 ci:
-  - head-branch: [^.*/ci/.*, ci]
+  - head-branch: ['^.*/ci/.*', 'ci']
 
 feature:
-  - head-branch: [^.*/feat/.*, feature]
+  - head-branch: ['^.*/feat/.*', 'feature']
 
 fix:
-  - head-branch: [^.*/fix/.*, fix]
+  - head-branch: ['^.*/fix/.*', 'fix']
 
 perf:
-  - head-branch: [^.*/perf/.*, perf]
+  - head-branch: ['^.*/perf/.*', 'perf']
 
 refactor:
-  - head-branch: [^.*/refactor/.*, refactor]
+  - head-branch: ['^.*/refactor/.*', 'refactor']
 
 style:
-  - head-branch: [^.*/style/.*, style]
+  - head-branch: ['^.*/style/.*', 'style']
 
 test:
-  - head-branch: [^.*/test/.*, test]
+  - head-branch: ['^.*/test/.*', 'test']
+
+# ==============================================================================
+# RELEASE PLEASE LABELS
+# ==============================================================================
+# Automatically label release PRs created by release-please.
+# Branch pattern: release-please--<component>--<path>
+
+release:
+  - head-branch: ['^release-please--.*']
+
+# Component-specific release labels
+release/dotprompt:
+  - head-branch: ['^release-please--dotprompt.*']
+
+release/dotpromptz:
+  - head-branch: ['^release-please--dotpromptz--.*']
+
+release/dotpromptz-handlebars:
+  - head-branch: ['^release-please--dotpromptz-handlebars--.*']
+
+release/dotprompt-go:
+  - head-branch: ['^release-please--dotprompt-go.*']
+
+release/dotprompt-rs:
+  - head-branch: ['^release-please--dotprompt-rs.*']
+
+release/dotprompt-java:
+  - head-branch: ['^release-please--dotprompt-java.*']
+
+release/vscode:
+  - head-branch: ['^release-please--dotprompt-vscode.*']
+
+release/vim:
+  - head-branch: ['^release-please--dotprompt-vim.*']
+
+release/emacs:
+  - head-branch: ['^release-please--dotprompt-emacs.*']
+
+release/jetbrains:
+  - head-branch: ['^release-please--dotprompt-jetbrains.*']
+
+release/monaco:
+  - head-branch: ['^release-please--dotprompt-monaco.*']
+
+release/codemirror:
+  - head-branch: ['^release-please--dotprompt-codemirror.*']
+
+release/treesitter:
+  - head-branch: ['^release-please--tree-sitter-dotprompt.*']
+
+release/promptly:
+  - head-branch: ['^release-please--promptly.*']
 
