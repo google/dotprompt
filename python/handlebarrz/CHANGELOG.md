@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.8](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.7...dotpromptz-handlebars-0.1.8) (2026-01-30)
+
+
+### Bug Fixes
+
+* **docs:** remove incorrect OpenSSF Best Practices badge ([#490](https://github.com/google/dotprompt/issues/490)) ([6cdabd7](https://github.com/google/dotprompt/commit/6cdabd7e4d09e5b71034d0bae183af4cfc94fe1d))
+
+
+### Documentation
+
+* **dotpromptz-handlebars:** improve PyPI package description ([#487](https://github.com/google/dotprompt/issues/487)) ([b693e6c](https://github.com/google/dotprompt/commit/b693e6c52b19ba746b505c30a705419281e4d8ce))
+
 ## [0.1.7](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.6...dotpromptz-handlebars-0.1.7) (2026-01-30)
 
 
