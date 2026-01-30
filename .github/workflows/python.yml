@@ -42,13 +42,52 @@ jobs:
     needs: check-paths
     if: needs.check-paths.outputs.any_changed == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          # Use the PR head ref to allow pushing back to the branch
+          ref: ${{ github.head_ref }}
+          # Use a token that can push to the branch (for release-please PRs)
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+
+      - name: Check if this is a release-please PR
+        id: check-release-please
+        run: |
+          if [[ "${{ github.head_ref }}" == release-please--* ]]; then
+            echo "is_release_please=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_release_please=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update lockfiles for release-please PR
+        if: steps.check-release-please.outputs.is_release_please == 'true'
+        working-directory: python
+        run: |
+          echo "Updating uv.lock for release-please PR..."
+          uv lock
+          ../scripts/export_requirements
+
+      - name: Commit lockfile updates
+        if: steps.check-release-please.outputs.is_release_please == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet python/uv.lock python/requirements.txt; then
+            git add python/uv.lock python/requirements.txt
+            git commit -m "chore: update Python lockfiles"
+            git push
+            echo "Lockfiles updated and pushed"
+          else
+            echo "No lockfile changes needed"
+          fi
 
       - name: Check uv.lock is up to date
         working-directory: python
