@@ -379,7 +379,7 @@ class Dotprompt:
             delattr(out, 'template')
 
         out = remove_undefined_fields(out)
-        # TODO: can this be done concurrently?
+        # TODO(#493): can this be done concurrently?
         out = await self._resolve_tools(out)
         out = await self._render_picoschema(out)
         return out
@@ -417,10 +417,10 @@ class Dotprompt:
 
         async with anyio.create_task_group() as tg:
             if needs_input_processing and meta.input is not None:
-                # TODO: use meta.input.model_dump(exclude_none=True)?
+                # TODO(#499): use meta.input.model_dump(exclude_none=True)?
                 tg.start_soon(_process_input_schema, meta.input.schema)
             if needs_output_processing and meta.output is not None:
-                # TODO: use meta.output.model_dump(exclude_none=True)?
+                # TODO(#499): use meta.output.model_dump(exclude_none=True)?
                 tg.start_soon(_process_output_schema, meta.output.schema)
 
         return new_meta
@@ -440,7 +440,7 @@ class Dotprompt:
         if self._schema_resolver is None:
             return None
 
-        # TODO: Should we cache the resolved schema in self._schemas?
+        # TODO(#498): Should we cache the resolved schema in self._schemas?
         return await resolve_json_schema(name, self._schema_resolver)
 
     async def _resolve_tools(self, metadata: PromptMetadata[ModelConfigT]) -> PromptMetadata[ModelConfigT]:

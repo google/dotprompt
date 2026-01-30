@@ -142,7 +142,7 @@ func (ds *DirStore) List(options ListPromptsOptions) (ListPromptsResult[PromptRe
 	result := ListPromptsResult[PromptRef]{
 		Items: prompts,
 	}
-	// TODO: meaningful cursor/limit implementation
+	// TODO(#500): meaningful cursor/limit implementation
 	// For now returns all as simple implementation
 
 	if options.Limit > 0 && len(result.Items) > options.Limit {

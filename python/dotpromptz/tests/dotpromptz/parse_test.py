@@ -725,7 +725,7 @@ Template content"""
 
         self.assertEqual(result.ext, {})
 
-        # TODO: Check whether this is the correct behavior.
+        # TODO(#495): Check whether this is the correct behavior.
         self.assertEqual(result.template, source.strip())
 
     def test_handle_multiple_namespaced_entries(self) -> None:

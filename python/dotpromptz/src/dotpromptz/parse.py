@@ -274,7 +274,7 @@ def parse_document(source: str) -> ParsedPrompt[T]:
                 template=body.strip(),
             )
     except Exception as e:
-        # TODO: Should this be an error?
+        # TODO(#496): Should this be an error?
         print(f'Dotprompt: Error parsing YAML frontmatter: {e}')
         # Return a basic ParsedPrompt with just the template
         return ParsedPrompt(

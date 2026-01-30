@@ -15,6 +15,30 @@ for Generative AI. The codebase supports **Go**, **Python**, **JavaScript/TypeSc
   unless there is a compelling, documented reason.
 * **Check Licenses**: Run `./scripts/check_license` to ensure all files have proper
   license headers.
+* **TODO Format**: All TODOs must reference a GitHub issue. Plain `TODO:` comments
+  without issue links are not allowed and will fail CI.
+
+### TODO Format
+
+TODOs must include an issue reference in parentheses:
+
+```python
+# Python/Bash/YAML
+# TODO(#123): description of work to be done
+# TODO(https://github.com/google/dotprompt/issues/123): full URL also works
+```
+
+```typescript
+// JavaScript/TypeScript/Java/Rust/Go
+// TODO(#123): description of work to be done
+// TODO(https://github.com/google/dotprompt/issues/123): full URL also works
+```
+
+**Why?** Issue-linked TODOs ensure:
+- Work is tracked and not forgotten
+- Context is preserved for future developers
+- Progress can be measured
+- TODOs can be prioritized alongside other work
 
 ***
 

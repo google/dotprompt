@@ -420,7 +420,7 @@ func TestExtractFrontmatterAndBody(t *testing.T) {
 	})
 
 	t.Run("should return empty strings when there is no frontmatter marker", func(t *testing.T) {
-		// TODO: May be change this behavior to return a matching body when
+		// TODO(#495): May be change this behavior to return a matching body when
 		// there is no frontmatter marker and we have a body. This may need to
 		// be done across all the runtimes.
 		inputStr := "Hello World"

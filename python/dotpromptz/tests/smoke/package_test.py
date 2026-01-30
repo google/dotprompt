@@ -16,7 +16,7 @@
 
 """Smoke tests for package structure."""
 
-# TODO: Replace this with proper imports once we have a proper implementation.
+# TODO(#503): Replace this with proper imports once we have a proper implementation.
 from dotpromptz import package_name as dotpromptz_package_name
 
 
@@ -28,7 +28,7 @@ def test_package_names() -> None:
     assert dotpromptz_package_name() == 'dotpromptz'
 
 
-# TODO: Failing test on purpose to be removed after we complete
+# TODO(#503): Failing test on purpose to be removed after we complete
 # this runtime and stop skipping all failures.
 # def test_skip_failures() -> None:
 #    assert dotpromptz_package_name() == 'skip.failures'

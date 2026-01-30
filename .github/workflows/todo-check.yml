@@ -1,0 +1,109 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: TODO Check
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  check-todos:
+    name: Check TODOs have issue links
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for TODOs without issue links
+        run: |
+          #!/bin/bash
+          set -euo pipefail
+
+          echo "🔍 Checking for TODOs without issue links..."
+          echo ""
+
+          # Define patterns for valid TODOs with issue links
+          # Valid formats:
+          #   // TODO(#123): description
+          #   // TODO(https://github.com/org/repo/issues/123): description
+          #   # TODO(#123): description
+          #   # TODO(https://...): description
+
+          # Find all TODO comments that DON'T have an issue reference
+          # Pattern explanation:
+          # - Match TODO comments without parentheses containing # or http
+          # - Exclude: TODO(#123), TODO(https://...)
+
+          INVALID_TODOS=$(grep -rn \
+            --include="*.py" \
+            --include="*.ts" \
+            --include="*.js" \
+            --include="*.go" \
+            --include="*.rs" \
+            --include="*.java" \
+            --include="*.kt" \
+            --include="*.sh" \
+            --include="*.yaml" \
+            --include="*.yml" \
+            -E '(#|//)\s*TODO[^(]|TODO\(\s*\)|TODO\([^#h][^)]*\)' \
+            --exclude-dir=node_modules \
+            --exclude-dir=.git \
+            --exclude-dir=target \
+            --exclude-dir=dist \
+            --exclude-dir=build \
+            --exclude-dir=.cache \
+            --exclude-dir=bazel-* \
+            --exclude-dir=vendor \
+            --exclude-dir=site \
+            --exclude-dir=.venv \
+            --exclude-dir=venv \
+            --exclude-dir=__pycache__ \
+            . 2>/dev/null || true)
+
+          # Filter out documentation examples (in .md files showing TODO syntax)
+          INVALID_TODOS=$(echo "$INVALID_TODOS" | grep -v "\.md:" || true)
+          # Filter out this workflow file itself
+          INVALID_TODOS=$(echo "$INVALID_TODOS" | grep -v "todo-check.yml" || true)
+
+          if [ -n "$INVALID_TODOS" ]; then
+            echo "❌ Found TODOs without issue links:"
+            echo ""
+            echo "$INVALID_TODOS"
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+            echo "📝 TODOs must reference a GitHub issue. Valid formats:"
+            echo ""
+            echo "   Python/Bash/YAML:"
+            echo "     # TODO(#123): description"
+            echo "     # TODO(https://github.com/google/dotprompt/issues/123): description"
+            echo ""
+            echo "   JavaScript/TypeScript/Java/Rust/Go:"
+            echo "     // TODO(#123): description"
+            echo "     // TODO(https://github.com/google/dotprompt/issues/123): description"
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+            echo "💡 To create an issue for your TODO:"
+            echo "   gh issue create --title 'Your TODO title' --body 'Description'"
+            echo ""
+            exit 1
+          fi
+
+          echo "✅ All TODOs have proper issue links!"

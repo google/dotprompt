@@ -59,7 +59,7 @@ ResolverT = TypeVar('ResolverT', bound=ResolverCallable)
 DefinitionT = TypeVar('DefinitionT')
 
 
-# TODO: Python 3.12+:
+# TODO(#497): Python 3.12+:
 # async def resolve[
 #     ResolverT: ResolverCallable,
 #     DefinitionT: Any,
@@ -143,7 +143,7 @@ async def resolve(name: str, kind: str, resolver: ResolverT | None) -> Definitio
         # Catch errors from both await and sync execution in thread.
         raise ResolverFailedError(name, kind, str(e)) from e
 
-    # TODO: Should we raise a LookupError if the resolver returns None?
+    # TODO(#496): Should we raise a LookupError if the resolver returns None?
     if obj is None:
         raise LookupError(f"{kind} resolver for '{name}' returned None")
 

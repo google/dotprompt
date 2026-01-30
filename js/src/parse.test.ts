@@ -856,7 +856,7 @@ Template content`;
   });
 
   it('should handle document with empty frontmatter', () => {
-    // TODO: Check whether this is the correct behavior.
+    // TODO(#495): Check whether this is the correct behavior.
     const source = '---\n\n---\nJust template content';
     const result = parseDocument(source);
     expect(result).toMatchObject({

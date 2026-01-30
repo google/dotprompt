@@ -298,7 +298,7 @@ export class Dotprompt {
     out = outWithoutTemplate as PromptMetadata<ModelConfig>;
 
     out = removeUndefinedFields(out);
-    // TODO: Can this be done concurrently?
+    // TODO(#493): Can this be done concurrently?
     out = await this.resolveTools(out);
     out = await this.renderPicoschema(out);
 

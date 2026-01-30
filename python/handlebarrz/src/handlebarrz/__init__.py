@@ -459,7 +459,7 @@ class Template:
             ValueError: If the template does not exist or there is a rendering
                 error.
         """
-        # TODO: options is currently ignored; need to add support for it.
+        # TODO(#502): options is currently ignored; need to add support for it.
 
         try:
             result = self._template.render(name, json.dumps(data))
@@ -498,7 +498,7 @@ class Template:
             for k, v in runtime_data.items():
                 data[k] = v
 
-            # TODO: get rid of this once the Rust library has a local variables
+            # TODO(#502): get rid of this once the Rust library has a local variables
             # support.
 
             # Local variables support workaround:

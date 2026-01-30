@@ -159,7 +159,7 @@ func (dp *Dotprompt) DefinePartial(name string, source string, tpl *raymond.Temp
 	return nil
 }
 
-// TODO: Add register helpers
+// TODO(#501): Add register helpers
 func (dp *Dotprompt) RegisterHelpers(tpl *raymond.Template) error {
 	if dp.Helpers != nil {
 		for key, helper := range dp.Helpers {

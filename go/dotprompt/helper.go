@@ -34,7 +34,7 @@ var templateHelpers = map[string]any{
 	"unlessEquals": UnlessEquals,
 }
 
-// TODO: Add pending: true for section helper
+// TODO(#494): Add pending: true for section helper
 // JSON serializes the given data to a JSON string with optional indentation.
 // Panics on serialization errors to match JavaScript's JSON.stringify fail-fast behavior.
 func JSON(serializable any, options *raymond.Options) raymond.SafeString {
