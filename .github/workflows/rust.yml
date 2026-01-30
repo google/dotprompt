@@ -39,6 +39,7 @@ jobs:
         with:
           files: |
             rs/**
+            python/handlebarrz/**
             Cargo.toml
             Cargo.lock
             .github/workflows/rust.yml
@@ -58,7 +59,7 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         env:
-          RUSTUP_MAX_RETRIES: 10
+          RUSTUP_MAX_RETRIES: 3
 
       - name: Check if this is a release-please PR
         id: check-release-please
@@ -109,7 +110,7 @@ jobs:
         with:
           components: rustfmt
         env:
-          RUSTUP_MAX_RETRIES: 10
+          RUSTUP_MAX_RETRIES: 3
 
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -128,7 +129,7 @@ jobs:
         with:
           components: clippy
         env:
-          RUSTUP_MAX_RETRIES: 10
+          RUSTUP_MAX_RETRIES: 3
 
       - name: Run clippy
         run: cargo clippy --all-targets --workspace -- -D warnings

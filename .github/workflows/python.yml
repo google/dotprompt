@@ -134,7 +134,7 @@ jobs:
         with:
           components: rustfmt, clippy
         env:
-          RUSTUP_MAX_RETRIES: 10
+          RUSTUP_MAX_RETRIES: 3
 
       - name: Cache Cargo registry
         uses: actions/cache@v5

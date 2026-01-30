@@ -34,7 +34,7 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         env:
-          RUSTUP_MAX_RETRIES: 10
+          RUSTUP_MAX_RETRIES: 3
 
       - name: Verify package
         run: |

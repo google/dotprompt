@@ -61,7 +61,7 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         env:
-          RUSTUP_MAX_RETRIES: 10
+          RUSTUP_MAX_RETRIES: 3
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -88,7 +88,7 @@ jobs:
 
   build_alpine_arm64:
     name: Build for Alpine ARM64
-    runs-on: ubuntu-24.04-arm  # Native ARM64 runner - use Docker for Alpine
+    runs-on: ubuntu-24.04-arm  # Native ARM64 runner - cross-compile for musl
     strategy:
       matrix:
         python_version:
@@ -100,25 +100,43 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # No QEMU needed - running natively on ARM64
-      - name: Build container
-        run: |
-          cd python/handlebarrz
-          docker build -t alpine-arm64 -f dockerfile-alpine .
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python_version }}
 
-      - name: Run container
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-musl
+        env:
+          RUSTUP_MAX_RETRIES: 3
+
+      - name: Install musl tools
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install maturin
+        run: uv pip install --system "maturin[patchelf]"
+
+      - name: Build wheels
+        working-directory: ./python/handlebarrz
+        env:
+          PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
         run: |
-          docker run -v "$PWD/python/handlebarrz":/project alpine-arm64:latest sh ./generate-alpine-wheels.sh "${{ matrix.python_version }}"
+          maturin build --release --target aarch64-unknown-linux-musl -i python${{ matrix.python_version }} -o dist
 
       - name: Upload build packages
         uses: actions/upload-artifact@v6
         with:
           name: wheels-alpine-arm64-${{ matrix.python_version }}
-          path: python/handlebarrz/target/wheels
+          path: python/handlebarrz/dist
 
   build_alpine_x86_64:
     name: Build for Alpine x86_64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # Native x86_64 runner - cross-compile for musl
     strategy:
       matrix:
         python_version:
@@ -130,21 +148,39 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # No QEMU needed - running natively on x86_64
-      - name: Build container
-        run: |
-          cd python/handlebarrz
-          docker build -t alpine-amd64 -f dockerfile-alpine-x86-64 .
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python_version }}
 
-      - name: Run container
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+        env:
+          RUSTUP_MAX_RETRIES: 3
+
+      - name: Install musl tools
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install maturin
+        run: uv pip install --system "maturin[patchelf]"
+
+      - name: Build wheels
+        working-directory: ./python/handlebarrz
+        env:
+          PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
         run: |
-          docker run -v "$PWD/python/handlebarrz":/project alpine-amd64:latest sh ./generate-alpine-wheels-x86-64.sh "${{ matrix.python_version }}"
+          maturin build --release --target x86_64-unknown-linux-musl -i python${{ matrix.python_version }} -o dist
 
       - name: Upload build packages
         uses: actions/upload-artifact@v6
         with:
           name: wheels-alpine-x86_64-${{ matrix.python_version }}
-          path: python/handlebarrz/target/wheels
+          path: python/handlebarrz/dist
 
   build_ubuntu_x86_64:
     name: Build for Ubuntu x86_64
@@ -201,7 +237,7 @@ jobs:
         with:
           toolchain: stable
         env:
-          RUSTUP_MAX_RETRIES: 10
+          RUSTUP_MAX_RETRIES: 3
 
       - name: Install maturin
         run: pip install maturin
@@ -245,7 +281,7 @@ jobs:
         with:
           toolchain: stable
         env:
-          RUSTUP_MAX_RETRIES: 10
+          RUSTUP_MAX_RETRIES: 3
 
       - name: Install maturin
         run: pip install maturin
@@ -289,7 +325,7 @@ jobs:
           toolchain: stable
           target: x86_64-apple-darwin
         env:
-          RUSTUP_MAX_RETRIES: 10
+          RUSTUP_MAX_RETRIES: 3
 
       - name: Install maturin
         run: pip install maturin
