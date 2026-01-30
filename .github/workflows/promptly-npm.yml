@@ -38,6 +38,10 @@ jobs:
   build:
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
+    env:
+      # Enable sccache for Rust builds
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
     strategy:
       fail-fast: false
       matrix:
@@ -68,6 +72,9 @@ jobs:
           targets: ${{ matrix.target }}
         env:
           RUSTUP_MAX_RETRIES: 3
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Build
         run: cargo build --release --package promptly --target ${{ matrix.target }}

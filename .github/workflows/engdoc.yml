@@ -43,6 +43,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PATH: ${{ github.workspace }}/go/bin:${{ github.workspace }}/.cargo/bin:${{ github.workspace }}/.local/share/pnpm:${{ github.workspace }}/.local/bin:/usr/local/bin:/usr/bin:/bin
+      # Enable sccache for Rust builds
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
     strategy:
       matrix:
         python-version:
@@ -63,6 +66,9 @@ jobs:
           components: rustfmt, clippy
         env:
           RUSTUP_MAX_RETRIES: 3
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Set up Go
         uses: actions/setup-go@v6

@@ -110,6 +110,9 @@ jobs:
     env:
       PATH: ${{ github.workspace }}/go/bin:${{ github.workspace }}/.cargo/bin:${{ github.workspace }}/.local/share/pnpm:${{ github.workspace }}/.local/bin:/usr/local/bin:/usr/bin:/bin
       PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
+      # Enable sccache for Rust builds
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
     strategy:
       matrix:
         os:
@@ -146,14 +149,8 @@ jobs:
         env:
           RUSTUP_MAX_RETRIES: 3
 
-      - name: Cache Cargo registry
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Install uv and setup Python version
         uses: astral-sh/setup-uv@v5
