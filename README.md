@@ -1,7 +1,17 @@
-[![Go checks](https://github.com/google/dotprompt/actions/workflows/go.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/go.yml)
-[![Python checks](https://github.com/google/dotprompt/actions/workflows/python.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/python.yml)
-[![JS checks](https://github.com/google/dotprompt/actions/workflows/test.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/test.yml)
-[![Java checks](https://github.com/google/dotprompt/actions/workflows/java.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/java.yml)
+<!-- CI Status Badges -->
+
+[![Go](https://github.com/google/dotprompt/actions/workflows/go.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/go.yml)
+[![Python](https://github.com/google/dotprompt/actions/workflows/python.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/python.yml)
+[![JavaScript](https://github.com/google/dotprompt/actions/workflows/js.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/js.yml)
+[![Java](https://github.com/google/dotprompt/actions/workflows/java.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/java.yml)
+[![Rust](https://github.com/google/dotprompt/actions/workflows/rust.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/rust.yml)
+[![Bazel](https://github.com/google/dotprompt/actions/workflows/bazel.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/bazel.yml)
+
+[![VS Code Extension](https://github.com/google/dotprompt/actions/workflows/vscode_extension.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/vscode_extension.yml)
+[![IDE Plugins](https://github.com/google/dotprompt/actions/workflows/ide_plugins.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/ide_plugins.yml)
+[![Web Editors](https://github.com/google/dotprompt/actions/workflows/web_editors.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/web_editors.yml)
+[![Tree-sitter](https://github.com/google/dotprompt/actions/workflows/treesitter.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/treesitter.yml)
+
 [![View Code Wiki](https://www.gstatic.com/_/boq-sdlc-agents-ui/_/r/YUi5dj2UWvE.svg)](https://codewiki.google/github.com/google/dotprompt)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/google/dotprompt)
 
@@ -12,6 +22,49 @@ is designed to be agnostic to programming language and model provider to allow
 for maximum flexibility in usage. Dotprompt extends the popular
 [Handlebars](https://handlebarsjs.com) templating language with GenAI-specific
 features.
+
+## Package Versions
+
+| Package | Version | Registry |
+|---------|---------|----------|
+| **Core Libraries** |||
+| `dotprompt` (JS/TS) | 0.2.9 <!-- x-release-please-version:js --> | [![npm](https://img.shields.io/npm/v/dotprompt)](https://www.npmjs.com/package/dotprompt) |
+| `dotpromptz` (Python) | 0.1.4 <!-- x-release-please-version:python/dotpromptz --> | [![PyPI](https://img.shields.io/pypi/v/dotpromptz)](https://pypi.org/project/dotpromptz/) |
+| `dotpromptz-handlebars` (Python) | 0.1.7 <!-- x-release-please-version:python/handlebarrz --> | [![PyPI](https://img.shields.io/pypi/v/dotpromptz-handlebars)](https://pypi.org/project/dotpromptz-handlebars/) |
+| `dotprompt-go` (Go) | 0.2.0 <!-- x-release-please-version:go --> | [![Go](https://img.shields.io/github/v/tag/google/dotprompt?filter=dotprompt-go*&label=go)](https://pkg.go.dev/github.com/google/dotprompt/go/dotprompt) |
+| `dotprompt-rs` (Rust) | 0.1.0 <!-- x-release-please-version:rs --> | [![crates.io](https://img.shields.io/crates/v/dotprompt)](https://crates.io/crates/dotprompt) |
+| `dotprompt-java` (Java) | 0.1.0 <!-- x-release-please-version:java --> | [![Maven Central](https://img.shields.io/maven-central/v/com.google.dotprompt/dotprompt)](https://central.sonatype.com/artifact/com.google.dotprompt/dotprompt) |
+| **IDE Extensions** |||
+| `dotprompt-vscode` | 0.0.1 <!-- x-release-please-version:packages/vscode --> | [![VS Marketplace](https://img.shields.io/visual-studio-marketplace/v/google.dotprompt-vscode)](https://marketplace.visualstudio.com/items?itemName=google.dotprompt-vscode) |
+| `dotprompt-jetbrains` | 0.2.0 <!-- x-release-please-version:packages/jetbrains --> | [![JetBrains](https://img.shields.io/jetbrains/plugin/v/com.google.dotprompt)](https://plugins.jetbrains.com/plugin/com.google.dotprompt) |
+| `dotprompt-vim` | 0.1.0 <!-- x-release-please-version:packages/vim --> | [GitHub](https://github.com/google/dotprompt/tree/main/packages/vim) |
+| `dotprompt-emacs` | 0.1.0 <!-- x-release-please-version:packages/emacs --> | [GitHub](https://github.com/google/dotprompt/tree/main/packages/emacs) |
+| **Web Editors** |||
+| `dotprompt-monaco` | 0.1.0 <!-- x-release-please-version:packages/monaco --> | [![npm](https://img.shields.io/npm/v/dotprompt-monaco)](https://www.npmjs.com/package/dotprompt-monaco) |
+| `dotprompt-codemirror` | 0.1.0 <!-- x-release-please-version:packages/codemirror --> | [![npm](https://img.shields.io/npm/v/dotprompt-codemirror)](https://www.npmjs.com/package/dotprompt-codemirror) |
+| **Tools** |||
+| `tree-sitter-dotprompt` | 0.1.0 <!-- x-release-please-version:packages/treesitter --> | [![npm](https://img.shields.io/npm/v/tree-sitter-dotprompt)](https://www.npmjs.com/package/tree-sitter-dotprompt) |
+| `promptly` | 0.1.0 <!-- x-release-please-version:packages/promptly --> | [![npm](https://img.shields.io/npm/v/promptly-cli)](https://www.npmjs.com/package/promptly-cli) |
+
+## CI Status
+
+| Workflow | Status | Description |
+|----------|--------|-------------|
+| **Language Tests** |||
+| Go | [![Go](https://github.com/google/dotprompt/actions/workflows/go.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/go.yml) | Go library tests |
+| Python | [![Python](https://github.com/google/dotprompt/actions/workflows/python.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/python.yml) | Python dotpromptz tests |
+| JavaScript | [![JavaScript](https://github.com/google/dotprompt/actions/workflows/js.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/js.yml) | JS/TS library tests |
+| Java | [![Java](https://github.com/google/dotprompt/actions/workflows/java.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/java.yml) | Java library tests |
+| Rust | [![Rust](https://github.com/google/dotprompt/actions/workflows/rust.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/rust.yml) | Rust library tests |
+| Bazel | [![Bazel](https://github.com/google/dotprompt/actions/workflows/bazel.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/bazel.yml) | Bazel build & test |
+| Handlebarrz | [![Handlebarrz](https://github.com/google/dotprompt/actions/workflows/handlebarrz-tests.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/handlebarrz-tests.yml) | Python Handlebars tests |
+| **IDE & Editor Plugins** |||
+| VS Code | [![VS Code](https://github.com/google/dotprompt/actions/workflows/vscode_extension.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/vscode_extension.yml) | VS Code extension |
+| IDE Plugins | [![IDE Plugins](https://github.com/google/dotprompt/actions/workflows/ide_plugins.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/ide_plugins.yml) | Vim, Emacs, JetBrains |
+| Web Editors | [![Web Editors](https://github.com/google/dotprompt/actions/workflows/web_editors.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/web_editors.yml) | Monaco, CodeMirror |
+| Tree-sitter | [![Tree-sitter](https://github.com/google/dotprompt/actions/workflows/treesitter.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/treesitter.yml) | Grammar & parser |
+| **Code Quality** |||
+| Go Lint | [![Go Lint](https://github.com/google/dotprompt/actions/workflows/golangci-lint.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/golangci-lint.yml) | golangci-lint |
 
 ## What's an executable prompt template?
 

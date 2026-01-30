@@ -13,7 +13,14 @@
   "packages": {
     "js": {
       "release-type": "node",
-      "component": "dotprompt"
+      "component": "dotprompt",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "../../README.md",
+          "glob": false
+        }
+      ]
     },
     "python/dotpromptz": {
       "release-type": "python",
@@ -29,6 +36,11 @@
           "type": "toml",
           "path": "tests/smoke/pyproject.toml",
           "jsonpath": "$.project.version"
+        },
+        {
+          "type": "generic",
+          "path": "../../README.md",
+          "glob": false
         }
       ]
     },
@@ -51,12 +63,24 @@
           "type": "toml",
           "path": "smoke_tests/pyproject.toml",
           "jsonpath": "$.project.version"
+        },
+        {
+          "type": "generic",
+          "path": "../../README.md",
+          "glob": false
         }
       ]
     },
     "go": {
       "release-type": "go",
-      "component": "dotprompt-go"
+      "component": "dotprompt-go",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "../README.md",
+          "glob": false
+        }
+      ]
     },
     "rs": {
       "release-type": "rust",
@@ -71,44 +95,112 @@
           "type": "toml",
           "path": "smoke/Cargo.toml",
           "jsonpath": "$.package.version"
+        },
+        {
+          "type": "generic",
+          "path": "../README.md",
+          "glob": false
         }
       ]
     },
     "java": {
       "release-type": "simple",
-      "component": "dotprompt-java"
+      "component": "dotprompt-java",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "../README.md",
+          "glob": false
+        }
+      ]
     },
     "packages/vscode": {
       "release-type": "node",
-      "component": "dotprompt-vscode"
+      "component": "dotprompt-vscode",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "../../README.md",
+          "glob": false
+        }
+      ]
     },
     "packages/vim": {
       "release-type": "simple",
-      "component": "dotprompt-vim"
+      "component": "dotprompt-vim",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "../../README.md",
+          "glob": false
+        }
+      ]
     },
     "packages/emacs": {
       "release-type": "simple",
-      "component": "dotprompt-emacs"
+      "component": "dotprompt-emacs",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "../../README.md",
+          "glob": false
+        }
+      ]
     },
     "packages/monaco": {
       "release-type": "node",
-      "component": "dotprompt-monaco"
+      "component": "dotprompt-monaco",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "../../README.md",
+          "glob": false
+        }
+      ]
     },
     "packages/codemirror": {
       "release-type": "node",
-      "component": "dotprompt-codemirror"
+      "component": "dotprompt-codemirror",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "../../README.md",
+          "glob": false
+        }
+      ]
     },
     "packages/jetbrains": {
       "release-type": "simple",
-      "component": "dotprompt-jetbrains"
+      "component": "dotprompt-jetbrains",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "../../README.md",
+          "glob": false
+        }
+      ]
     },
     "packages/treesitter": {
       "release-type": "node",
-      "component": "tree-sitter-dotprompt"
+      "component": "tree-sitter-dotprompt",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "../../README.md",
+          "glob": false
+        }
+      ]
     },
     "packages/promptly": {
       "release-type": "node",
-      "component": "promptly"
+      "component": "promptly",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "../../README.md",
+          "glob": false
+        }
+      ]
     }
   }
 }
