@@ -413,6 +413,54 @@ class TestUnicodeAndInternationalization(unittest.TestCase):
         self.assertEqual(result, 'Family: 👨‍👩‍👧‍👦')
 
 
+class TestNumericAndBooleanValues(unittest.TestCase):
+    """Test handling of numeric and boolean values in templates."""
+
+    def test_integer_values(self) -> None:
+        """Test that integer values render correctly."""
+        template = Template()
+        template.register_template('int', 'Count: {{count}}')
+        self.assertEqual(template.render('int', {'count': 42}), 'Count: 42')
+        self.assertEqual(template.render('int', {'count': 0}), 'Count: 0')
+        self.assertEqual(template.render('int', {'count': -100}), 'Count: -100')
+
+    def test_float_values(self) -> None:
+        """Test that float values render correctly."""
+        template = Template()
+        template.register_template('float', 'Price: {{price}}')
+        self.assertEqual(template.render('float', {'price': 19.99}), 'Price: 19.99')
+        self.assertEqual(template.render('float', {'price': 0.0}), 'Price: 0')
+        self.assertEqual(template.render('float', {'price': -3.14}), 'Price: -3.14')
+
+    def test_boolean_in_conditionals(self) -> None:
+        """Test boolean values in conditional blocks."""
+        template = Template()
+        template.register_template('bool', '{{#if active}}Active{{else}}Inactive{{/if}}')
+        self.assertEqual(template.render('bool', {'active': True}), 'Active')
+        self.assertEqual(template.render('bool', {'active': False}), 'Inactive')
+
+    def test_none_value(self) -> None:
+        """Test that None values are handled correctly."""
+        template = Template()
+        template.register_template('none', 'Value: {{value}}')
+        # None should render as empty string
+        self.assertEqual(template.render('none', {'value': None}), 'Value: ')
+
+    def test_large_numbers(self) -> None:
+        """Test handling of large numbers."""
+        template = Template()
+        template.register_template('large', 'Big: {{num}}')
+        self.assertEqual(template.render('large', {'num': 999999999999}), 'Big: 999999999999')
+
+    def test_scientific_notation(self) -> None:
+        """Test that scientific notation numbers render correctly."""
+        template = Template()
+        template.register_template('sci', 'Value: {{val}}')
+        # Python will convert 1e10 to 10000000000.0
+        result = template.render('sci', {'val': 1e10})
+        self.assertIn('10000000000', result)
+
+
 class TestHandlebarsAlias(unittest.TestCase):
     """Test that the Handlebars alias works like Template."""
 
