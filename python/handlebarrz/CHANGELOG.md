@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.4...dotpromptz-handlebars-0.1.5) (2026-01-30)
+
+
+### Bug Fixes
+
+* **ci:** add RUSTUP_MAX_RETRIES and use native ARM64 runners ([#479](https://github.com/google/dotprompt/issues/479)) ([aefd33a](https://github.com/google/dotprompt/commit/aefd33a7a595ae4fc31a7f1b1f28692d7addc046))
+
 ## [0.1.4](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.3...dotpromptz-handlebars-0.1.4) (2026-01-30)
 
 
