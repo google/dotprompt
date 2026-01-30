@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Validates .release-please-config.json against the official JSON schema.
+#
+# Usage:
+#   scripts/validate_release_please_config
+#
+# Requirements:
+#   - Node.js and npx (for ajv-cli)
+#   OR
+#   - Python 3 with jsonschema package
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+CONFIG_FILE="${REPO_ROOT}/.release-please-config.json"
+SCHEMA_URL="https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
+
+echo "Validating release-please config..."
+echo "  Config: ${CONFIG_FILE}"
+echo "  Schema: ${SCHEMA_URL}"
+echo ""
+
+# Check if config file exists
+if [[ ! -f "${CONFIG_FILE}" ]]; then
+    echo -e "${RED}Error: Config file not found: ${CONFIG_FILE}${NC}"
+    exit 1
+fi
+
+# Try using ajv-cli (Node.js) first, then fall back to Python
+validate_with_ajv() {
+    echo "Using ajv-cli for validation..."
+    
+    # Download schema to temp file
+    SCHEMA_FILE=$(mktemp)
+    trap "rm -f ${SCHEMA_FILE}" EXIT
+    
+    curl -sL "${SCHEMA_URL}" -o "${SCHEMA_FILE}"
+    
+    # Run ajv validation
+    npx ajv-cli validate -s "${SCHEMA_FILE}" -d "${CONFIG_FILE}" --strict=false
+}
+
+validate_with_python() {
+    echo "Using Python jsonschema for validation..."
+    
+    python3 - "${CONFIG_FILE}" "${SCHEMA_URL}" << 'PYTHON_SCRIPT'
+import json
+import sys
+import urllib.request
+
+def main():
+    config_file = sys.argv[1]
+    schema_url = sys.argv[2]
+    
+    # Load config
+    with open(config_file, 'r') as f:
+        config = json.load(f)
+    
+    # Download schema
+    with urllib.request.urlopen(schema_url) as response:
+        schema = json.loads(response.read().decode('utf-8'))
+    
+    # Validate
+    try:
+        from jsonschema import validate, ValidationError, Draft7Validator
+        
+        # Use Draft7 validator as specified in the schema
+        validator = Draft7Validator(schema)
+        errors = list(validator.iter_errors(config))
+        
+        if errors:
+            print(f"\n❌ Validation failed with {len(errors)} error(s):\n")
+            for i, error in enumerate(errors, 1):
+                path = " -> ".join(str(p) for p in error.absolute_path) or "(root)"
+                print(f"  {i}. Path: {path}")
+                print(f"     Error: {error.message}")
+                print()
+            sys.exit(1)
+        else:
+            print("\n✅ Config is valid!")
+            sys.exit(0)
+            
+    except ImportError:
+        print("Error: jsonschema package not installed.")
+        print("Install with: pip install jsonschema")
+        sys.exit(2)
+
+if __name__ == "__main__":
+    main()
+PYTHON_SCRIPT
+}
+
+validate_with_check_jsonschema() {
+    echo "Using check-jsonschema for validation..."
+    
+    # check-jsonschema can fetch the schema directly from URL
+    check-jsonschema --schemafile "${SCHEMA_URL}" "${CONFIG_FILE}"
+}
+
+# Try different validation methods
+if command -v check-jsonschema &> /dev/null; then
+    if validate_with_check_jsonschema; then
+        echo -e "\n${GREEN}✅ release-please config is valid!${NC}"
+        exit 0
+    else
+        echo -e "\n${RED}❌ release-please config validation failed!${NC}"
+        exit 1
+    fi
+elif command -v npx &> /dev/null; then
+    if validate_with_ajv; then
+        echo -e "\n${GREEN}✅ release-please config is valid!${NC}"
+        exit 0
+    else
+        echo -e "\n${RED}❌ release-please config validation failed!${NC}"
+        exit 1
+    fi
+elif command -v python3 &> /dev/null; then
+    if validate_with_python; then
+        echo -e "\n${GREEN}✅ release-please config is valid!${NC}"
+        exit 0
+    else
+        echo -e "\n${RED}❌ release-please config validation failed!${NC}"
+        exit 1
+    fi
+else
+    echo -e "${YELLOW}Warning: No JSON schema validator found.${NC}"
+    echo "Install one of the following:"
+    echo "  - check-jsonschema: pip install check-jsonschema"
+    echo "  - ajv-cli: npm install -g ajv-cli"
+    echo "  - jsonschema (Python): pip install jsonschema"
+    exit 2
+fi

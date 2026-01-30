@@ -1,0 +1,86 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Validate Release Please Config
+
+on:
+  pull_request:
+    paths:
+      - ".release-please-config.json"
+      - ".release-please-manifest.json"
+  push:
+    branches:
+      - main
+    paths:
+      - ".release-please-config.json"
+      - ".release-please-manifest.json"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Install check-jsonschema
+        run: uv tool install check-jsonschema
+
+      - name: Validate release-please config
+        run: |
+          echo "Validating .release-please-config.json against official schema..."
+          check-jsonschema \
+            --schemafile "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json" \
+            .release-please-config.json
+
+      - name: Validate manifest JSON syntax
+        run: |
+          echo "Validating .release-please-manifest.json JSON syntax..."
+          python3 -c "import json; json.load(open('.release-please-manifest.json'))"
+
+      - name: Check manifest keys match config paths
+        run: |
+          echo "Checking that manifest keys match config package paths..."
+          python3 << 'EOF'
+          import json
+          import sys
+
+          with open('.release-please-config.json') as f:
+              config = json.load(f)
+
+          with open('.release-please-manifest.json') as f:
+              manifest = json.load(f)
+
+          config_paths = set(config.get('packages', {}).keys())
+          manifest_paths = set(manifest.keys())
+
+          # Check for paths in manifest but not in config
+          extra_in_manifest = manifest_paths - config_paths
+          if extra_in_manifest:
+              print(f"❌ Error: Paths in manifest but not in config: {extra_in_manifest}")
+              sys.exit(1)
+
+          # Check for paths in config but not in manifest (warning only - new packages)
+          missing_in_manifest = config_paths - manifest_paths
+          if missing_in_manifest:
+              print(f"⚠️  Warning: Paths in config but not in manifest (new packages?): {missing_in_manifest}")
+
+          print("✅ Manifest keys match config package paths!")
+          EOF
