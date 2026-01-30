@@ -10,6 +10,9 @@
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/google/dotprompt/badge)](https://scorecard.dev/viewer/?uri=github.com/google/dotprompt)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10359/badge)](https://www.bestpractices.dev/projects/10359)
 
+[![GitHub stars](https://img.shields.io/github/stars/google/dotprompt?style=social)](https://github.com/google/dotprompt)
+[![Star History Chart](https://api.star-history.com/svg?repos=google/dotprompt&type=Date)](https://star-history.com/#google/dotprompt&Date)
+
 A high-performance [Handlebars](https://handlebarsjs.com/) template engine for Python, powered by Rust.
 
 This package provides Python bindings to [handlebars-rust](https://github.com/sunng87/handlebars-rust), offering near-native performance for template rendering while maintaining a Pythonic API.
