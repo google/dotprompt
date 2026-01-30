@@ -20,6 +20,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   check-paths:
     runs-on: ubuntu-latest
@@ -38,6 +42,55 @@ jobs:
             Cargo.toml
             Cargo.lock
             .github/workflows/rust.yml
+
+  cargo-lock-check:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
+    name: Cargo.lock Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Check if this is a release-please PR
+        id: check-release-please
+        run: |
+          if [[ "${{ github.head_ref }}" == release-please--* ]]; then
+            echo "is_release_please=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_release_please=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update Cargo.lock for release-please PR
+        if: steps.check-release-please.outputs.is_release_please == 'true'
+        run: |
+          echo "Updating Cargo.lock for release-please PR..."
+          cargo update --workspace
+
+      - name: Commit Cargo.lock updates
+        if: steps.check-release-please.outputs.is_release_please == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet Cargo.lock; then
+            git add Cargo.lock
+            git commit -m "chore: update Cargo.lock"
+            git push
+            echo "Cargo.lock updated and pushed"
+          else
+            echo "No Cargo.lock changes needed"
+          fi
+
+      - name: Check Cargo.lock is up to date
+        run: |
+          cargo check --locked --workspace
+          echo "✅ Cargo.lock is up to date"
 
   format-check:
     needs: check-paths
@@ -131,12 +184,12 @@ jobs:
 
   rust-checks-all:
     if: always()
-    needs: [format-check, clippy-lint, check-build-test]
+    needs: [cargo-lock-check, format-check, clippy-lint, check-build-test]
     runs-on: ubuntu-latest
     steps:
       - name: Check overall status
         run: |
-          if [[ "${{ needs.format-check.result }}" == "failure" || "${{ needs.clippy-lint.result }}" == "failure" || "${{ needs.check-build-test.result }}" == "failure" ]]; then
+          if [[ "${{ needs.cargo-lock-check.result }}" == "failure" || "${{ needs.format-check.result }}" == "failure" || "${{ needs.clippy-lint.result }}" == "failure" || "${{ needs.check-build-test.result }}" == "failure" ]]; then
             echo "Rust checks failed"
             exit 1
           fi

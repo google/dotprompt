@@ -20,6 +20,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   check-paths:
     runs-on: ubuntu-latest
@@ -37,6 +41,64 @@ jobs:
             go/**
             spec/**
             .github/workflows/go.yml
+
+  go-mod-tidy-check:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
+    runs-on: ubuntu-latest
+    name: go.sum Check
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: stable
+
+      - name: Check if this is a release-please PR
+        id: check-release-please
+        run: |
+          if [[ "${{ github.head_ref }}" == release-please--* ]]; then
+            echo "is_release_please=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_release_please=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update go.sum for release-please PR
+        if: steps.check-release-please.outputs.is_release_please == 'true'
+        working-directory: go
+        run: |
+          echo "Updating go.sum for release-please PR..."
+          go mod tidy
+
+      - name: Commit go.sum updates
+        if: steps.check-release-please.outputs.is_release_please == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet go/go.sum go/go.mod; then
+            git add go/go.sum go/go.mod
+            git commit -m "chore: update go.mod and go.sum"
+            git push
+            echo "go.sum updated and pushed"
+          else
+            echo "No go.sum changes needed"
+          fi
+
+      - name: Check go.mod and go.sum are tidy
+        working-directory: go
+        run: |
+          go mod tidy
+          if ! git diff --quiet go.sum go.mod; then
+            echo "❌ go.mod or go.sum is not tidy. Run 'go mod tidy' in the go/ directory."
+            git diff go.sum go.mod
+            exit 1
+          fi
+          echo "✅ go.mod and go.sum are tidy"
 
   format-check:
     needs: check-paths
@@ -97,12 +159,12 @@ jobs:
 
   go-checks-all:
     if: always()
-    needs: [format-check, tests]
+    needs: [go-mod-tidy-check, format-check, tests]
     runs-on: ubuntu-latest
     steps:
       - name: Check overall status
         run: |
-          if [[ "${{ needs.format-check.result }}" == "failure" || "${{ needs.tests.result }}" == "failure" ]]; then
+          if [[ "${{ needs.go-mod-tidy-check.result }}" == "failure" || "${{ needs.format-check.result }}" == "failure" || "${{ needs.tests.result }}" == "failure" ]]; then
             echo "Go checks failed"
             exit 1
           fi

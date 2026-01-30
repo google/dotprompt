@@ -20,6 +20,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   check-paths:
     runs-on: ubuntu-latest
@@ -36,7 +40,65 @@ jobs:
           files: |
             js/**
             spec/**
+            packages/**
+            pnpm-lock.yaml
+            pnpm-workspace.yaml
             .github/workflows/js.yml
+
+  pnpm-lock-check:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
+    runs-on: ubuntu-latest
+    name: pnpm-lock.yaml Check
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Check if this is a release-please PR
+        id: check-release-please
+        run: |
+          if [[ "${{ github.head_ref }}" == release-please--* ]]; then
+            echo "is_release_please=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_release_please=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update lockfiles for release-please PR
+        if: steps.check-release-please.outputs.is_release_please == 'true'
+        run: |
+          echo "Updating pnpm-lock.yaml for release-please PR..."
+          pnpm install --lockfile-only
+
+      - name: Commit lockfile updates
+        if: steps.check-release-please.outputs.is_release_please == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet pnpm-lock.yaml js/pnpm-lock.yaml; then
+            git add pnpm-lock.yaml js/pnpm-lock.yaml 2>/dev/null || true
+            git commit -m "chore: update pnpm lockfiles" || echo "No changes to commit"
+            git push || echo "Nothing to push"
+            echo "Lockfiles updated and pushed"
+          else
+            echo "No lockfile changes needed"
+          fi
+
+      - name: Check pnpm-lock.yaml is up to date
+        run: |
+          pnpm install --frozen-lockfile
+          echo "✅ pnpm-lock.yaml is up to date"
 
   format-check:
     needs: check-paths
@@ -100,12 +162,12 @@ jobs:
 
   js-checks-all:
     if: always()
-    needs: [format-check, test]
+    needs: [pnpm-lock-check, format-check, test]
     runs-on: ubuntu-latest
     steps:
       - name: Check overall status
         run: |
-          if [[ "${{ needs.format-check.result }}" == "failure" || "${{ needs.test.result }}" == "failure" ]]; then
+          if [[ "${{ needs.pnpm-lock-check.result }}" == "failure" || "${{ needs.format-check.result }}" == "failure" || "${{ needs.test.result }}" == "failure" ]]; then
             echo "JS checks failed"
             exit 1
           fi
