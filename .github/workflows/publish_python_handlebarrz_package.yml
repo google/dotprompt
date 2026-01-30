@@ -70,7 +70,7 @@ on:
 # ==============================================================================
 # PLATFORM SUPPORT FLAGS
 # ==============================================================================
-# Toggle platform builds by setting these to 'true' or 'false'.
+# Toggle platform builds by changing the default values in the setup job below.
 # For one-off builds with different settings, use workflow_dispatch inputs.
 #
 # Current status:
@@ -86,31 +86,88 @@ on:
 # Issue: PyPI upload fails with "400 Invalid distribution file. ZIP archive not
 # accepted: Mis-matched data size" for Windows wheels.
 # ==============================================================================
-env:
-  # Linux platforms
-  ENABLE_LINUX_ARM64: 'true'
-  ENABLE_LINUX_X86_64: 'true'
-  # Alpine (musl) platforms
-  ENABLE_ALPINE_ARM64: 'true'
-  ENABLE_ALPINE_X86_64: 'true'
-  # macOS platforms
-  ENABLE_MACOS_ARM64: 'true'
-  ENABLE_MACOS_X86_64: 'true'
-  # Windows platforms (currently disabled due to wheel corruption)
-  ENABLE_WINDOWS_X86_64: 'false'
-
 
 jobs:
+  # ===========================================================================
+  # SETUP JOB - Determines which platforms to build
+  # ===========================================================================
+  # This job outputs platform flags that other jobs reference.
+  # To enable/disable a platform permanently, change the default value below.
+  # For one-off changes, use workflow_dispatch inputs.
+
+  setup:
+    name: Setup platform flags
+    runs-on: ubuntu-latest
+    # Only run for handlebarrz releases or workflow_dispatch
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'dotpromptz-handlebars-'))
+    outputs:
+      # Platform flags - change these defaults to enable/disable platforms
+      enable_linux_arm64: ${{ steps.flags.outputs.enable_linux_arm64 }}
+      enable_linux_x86_64: ${{ steps.flags.outputs.enable_linux_x86_64 }}
+      enable_alpine_arm64: ${{ steps.flags.outputs.enable_alpine_arm64 }}
+      enable_alpine_x86_64: ${{ steps.flags.outputs.enable_alpine_x86_64 }}
+      enable_macos_arm64: ${{ steps.flags.outputs.enable_macos_arm64 }}
+      enable_macos_x86_64: ${{ steps.flags.outputs.enable_macos_x86_64 }}
+      enable_windows_x86_64: ${{ steps.flags.outputs.enable_windows_x86_64 }}
+    steps:
+      - name: Set platform flags
+        id: flags
+        run: |
+          # =====================================================================
+          # PLATFORM DEFAULTS - Change these to enable/disable platforms
+          # =====================================================================
+          # For workflow_dispatch, inputs override these defaults.
+          # For release events, these defaults are used.
+
+          # Linux platforms
+          DEFAULT_LINUX_ARM64="true"
+          DEFAULT_LINUX_X86_64="true"
+
+          # Alpine (musl) platforms
+          DEFAULT_ALPINE_ARM64="true"
+          DEFAULT_ALPINE_X86_64="true"
+
+          # macOS platforms
+          DEFAULT_MACOS_ARM64="true"
+          DEFAULT_MACOS_X86_64="true"
+
+          # Windows platforms (disabled due to wheel corruption issue)
+          DEFAULT_WINDOWS_X86_64="false"
+
+          # =====================================================================
+          # Output logic - workflow_dispatch inputs override defaults
+          # =====================================================================
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "enable_linux_arm64=${{ inputs.enable_linux_arm64 }}" >> $GITHUB_OUTPUT
+            echo "enable_linux_x86_64=${{ inputs.enable_linux_x86_64 }}" >> $GITHUB_OUTPUT
+            echo "enable_alpine_arm64=${{ inputs.enable_alpine_arm64 }}" >> $GITHUB_OUTPUT
+            echo "enable_alpine_x86_64=${{ inputs.enable_alpine_x86_64 }}" >> $GITHUB_OUTPUT
+            echo "enable_macos_arm64=${{ inputs.enable_macos_arm64 }}" >> $GITHUB_OUTPUT
+            echo "enable_macos_x86_64=${{ inputs.enable_macos_x86_64 }}" >> $GITHUB_OUTPUT
+            echo "enable_windows_x86_64=${{ inputs.enable_windows_x86_64 }}" >> $GITHUB_OUTPUT
+          else
+            echo "enable_linux_arm64=$DEFAULT_LINUX_ARM64" >> $GITHUB_OUTPUT
+            echo "enable_linux_x86_64=$DEFAULT_LINUX_X86_64" >> $GITHUB_OUTPUT
+            echo "enable_alpine_arm64=$DEFAULT_ALPINE_ARM64" >> $GITHUB_OUTPUT
+            echo "enable_alpine_x86_64=$DEFAULT_ALPINE_X86_64" >> $GITHUB_OUTPUT
+            echo "enable_macos_arm64=$DEFAULT_MACOS_ARM64" >> $GITHUB_OUTPUT
+            echo "enable_macos_x86_64=$DEFAULT_MACOS_X86_64" >> $GITHUB_OUTPUT
+            echo "enable_windows_x86_64=$DEFAULT_WINDOWS_X86_64" >> $GITHUB_OUTPUT
+          fi
+
+          # Log the flags for debugging
+          echo "Platform flags set:"
+          cat $GITHUB_OUTPUT
+
   # ===========================================================================
   # BUILD JOBS
   # ===========================================================================
 
   build_ubuntu_arm64:
     name: Build for Ubuntu ARM64
+    needs: [setup]
     runs-on: ubuntu-24.04-arm  # Native ARM64 runner - no QEMU needed
-    if: |
-      (env.ENABLE_LINUX_ARM64 == 'true' || inputs.enable_linux_arm64 == true) &&
-      (github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'dotpromptz-handlebars-')))
+    if: needs.setup.outputs.enable_linux_arm64 == 'true'
     strategy:
       matrix:
         python_version:
@@ -157,8 +214,9 @@ jobs:
 
   build_alpine_arm64:
     name: Build for Alpine ARM64
+    needs: [setup]
     runs-on: ubuntu-24.04-arm  # Native ARM64 runner - cross-compile for musl
-    if: env.ENABLE_ALPINE_ARM64 == 'true' || inputs.enable_alpine_arm64 == true
+    if: needs.setup.outputs.enable_alpine_arm64 == 'true'
     strategy:
       matrix:
         python_version:
@@ -206,8 +264,9 @@ jobs:
 
   build_alpine_x86_64:
     name: Build for Alpine x86_64
+    needs: [setup]
     runs-on: ubuntu-latest  # Native x86_64 runner - cross-compile for musl
-    if: env.ENABLE_ALPINE_X86_64 == 'true' || inputs.enable_alpine_x86_64 == true
+    if: needs.setup.outputs.enable_alpine_x86_64 == 'true'
     strategy:
       matrix:
         python_version:
@@ -255,8 +314,9 @@ jobs:
 
   build_ubuntu_x86_64:
     name: Build for Ubuntu x86_64
+    needs: [setup]
     runs-on: ubuntu-latest  # Native x86_64 runner
-    if: env.ENABLE_LINUX_X86_64 == 'true' || inputs.enable_linux_x86_64 == true
+    if: needs.setup.outputs.enable_linux_x86_64 == 'true'
     strategy:
       matrix:
         python_version:
@@ -304,9 +364,10 @@ jobs:
 
   build_windows_x86_64:
     name: Build for Windows x86_64
+    needs: [setup]
     runs-on: windows-latest
-    # Currently disabled due to wheel corruption issues - see env flags above
-    if: env.ENABLE_WINDOWS_X86_64 == 'true' || inputs.enable_windows_x86_64 == true
+    # Currently disabled due to wheel corruption issues - see setup job defaults
+    if: needs.setup.outputs.enable_windows_x86_64 == 'true'
     strategy:
       matrix:
         python_version:
@@ -346,8 +407,9 @@ jobs:
 
   build_macos_arm64:
     name: Build for macOS ARM64
+    needs: [setup]
     runs-on: macos-14  # Apple Silicon
-    if: env.ENABLE_MACOS_ARM64 == 'true' || inputs.enable_macos_arm64 == true
+    if: needs.setup.outputs.enable_macos_arm64 == 'true'
     strategy:
       matrix:
         python_version:
@@ -395,8 +457,9 @@ jobs:
 
   build_macos_x86_64:
     name: Build for macOS x86_64
+    needs: [setup]
     runs-on: macos-14
-    if: env.ENABLE_MACOS_X86_64 == 'true' || inputs.enable_macos_x86_64 == true
+    if: needs.setup.outputs.enable_macos_x86_64 == 'true'
     strategy:
       matrix:
         python_version:
@@ -486,12 +549,19 @@ jobs:
 
   pypi_publish:
     name: Upload to PyPI by python version
-    # NOTE: Jobs with conditional 'if' statements are not listed in 'needs' because
-    # GitHub Actions would fail if a skipped job is in the needs list.
-    # Artifacts from all enabled platforms are collected via download-artifact's merge-multiple.
-    # This job runs if at least one build job completes (using always() + success check).
-    needs: [build_ubuntu_arm64,build_ubuntu_x86_64,build_alpine_arm64,build_alpine_x86_64,build_macos_arm64,build_macos_x86_64]
-    if: always() && !cancelled() && (needs.build_ubuntu_arm64.result == 'success' || needs.build_ubuntu_x86_64.result == 'success' || needs.build_alpine_arm64.result == 'success' || needs.build_alpine_x86_64.result == 'success' || needs.build_macos_arm64.result == 'success' || needs.build_macos_x86_64.result == 'success')
+    # NOTE: Build jobs with conditional 'if' may be skipped. We use always() to run
+    # this job regardless, and check that at least one build succeeded or was skipped
+    # (skipped jobs don't produce artifacts but don't block the workflow).
+    needs: [setup, build_ubuntu_arm64, build_ubuntu_x86_64, build_alpine_arm64, build_alpine_x86_64, build_macos_arm64, build_macos_x86_64, build_windows_x86_64]
+    if: |
+      always() && !cancelled() && needs.setup.result == 'success' &&
+      (needs.build_ubuntu_arm64.result == 'success' || needs.build_ubuntu_arm64.result == 'skipped' ||
+       needs.build_ubuntu_x86_64.result == 'success' || needs.build_ubuntu_x86_64.result == 'skipped' ||
+       needs.build_alpine_arm64.result == 'success' || needs.build_alpine_arm64.result == 'skipped' ||
+       needs.build_alpine_x86_64.result == 'success' || needs.build_alpine_x86_64.result == 'skipped' ||
+       needs.build_macos_arm64.result == 'success' || needs.build_macos_arm64.result == 'skipped' ||
+       needs.build_macos_x86_64.result == 'success' || needs.build_macos_x86_64.result == 'skipped' ||
+       needs.build_windows_x86_64.result == 'success' || needs.build_windows_x86_64.result == 'skipped')
     runs-on: ubuntu-latest
     environment:
       name: pypi_github_publishing
@@ -528,9 +598,9 @@ jobs:
 
   smoke_test_linux_arm64:
     name: Test for Linux ARM64
-    needs: [pypi_publish]
+    needs: [setup, pypi_publish]
     runs-on: ubuntu-24.04-arm  # Native ARM64 runner - no QEMU needed
-    if: env.ENABLE_LINUX_ARM64 == 'true' || inputs.enable_linux_arm64 == true
+    if: needs.setup.outputs.enable_linux_arm64 == 'true'
     strategy:
       matrix:
         python_version:
@@ -559,9 +629,9 @@ jobs:
 
   smoke_test_alpine_arm64:
     name: Test for Alpine ARM64
-    needs: [pypi_publish]
+    needs: [setup, pypi_publish]
     runs-on: ubuntu-24.04-arm  # Native ARM64 runner - no QEMU needed
-    if: env.ENABLE_ALPINE_ARM64 == 'true' || inputs.enable_alpine_arm64 == true
+    if: needs.setup.outputs.enable_alpine_arm64 == 'true'
     strategy:
       matrix:
         python_version:
@@ -587,9 +657,9 @@ jobs:
 
   smoke_test_alpine_x86_64:
     name: Test for Alpine x86_64
-    needs: [pypi_publish]
+    needs: [setup, pypi_publish]
     runs-on: ubuntu-latest  # Native x86_64 - no QEMU needed
-    if: env.ENABLE_ALPINE_X86_64 == 'true' || inputs.enable_alpine_x86_64 == true
+    if: needs.setup.outputs.enable_alpine_x86_64 == 'true'
     strategy:
       matrix:
         python_version:
@@ -615,9 +685,9 @@ jobs:
 
   smoke_test_linux_x86_64:
     name: Test for Linux x86_64
-    needs: [pypi_publish]
+    needs: [setup, pypi_publish]
     runs-on: ubuntu-latest
-    if: env.ENABLE_LINUX_X86_64 == 'true' || inputs.enable_linux_x86_64 == true
+    if: needs.setup.outputs.enable_linux_x86_64 == 'true'
     strategy:
       matrix:
         python_version:
@@ -647,9 +717,9 @@ jobs:
 
   smoke_test_macos_arm64:
     name: Test for macOS ARM64
-    needs: [pypi_publish]
+    needs: [setup, pypi_publish]
     runs-on: macos-14
-    if: env.ENABLE_MACOS_ARM64 == 'true' || inputs.enable_macos_arm64 == true
+    if: needs.setup.outputs.enable_macos_arm64 == 'true'
     strategy:
       matrix:
         python_version:
@@ -675,9 +745,9 @@ jobs:
 
   smoke_test_macos_x86_64:
     name: Test for macOS x86_64
-    needs: [pypi_publish]
+    needs: [setup, pypi_publish]
     runs-on: macos-14
-    if: env.ENABLE_MACOS_X86_64 == 'true' || inputs.enable_macos_x86_64 == true
+    if: needs.setup.outputs.enable_macos_x86_64 == 'true'
     strategy:
       matrix:
         python_version:
@@ -705,10 +775,10 @@ jobs:
 
   smoke_test_windows_x86_64:
     name: Test for Windows x86_64
-    needs: [pypi_publish]
+    needs: [setup, pypi_publish]
     runs-on: windows-latest
-    # Currently disabled due to wheel corruption issues - see env flags above
-    if: env.ENABLE_WINDOWS_X86_64 == 'true' || inputs.enable_windows_x86_64 == true
+    # Currently disabled due to wheel corruption issues - see setup job defaults
+    if: needs.setup.outputs.enable_windows_x86_64 == 'true'
     strategy:
       matrix:
         python_version:
