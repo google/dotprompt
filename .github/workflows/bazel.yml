@@ -22,7 +22,9 @@ on:
   pull_request:
     branches: [ main ]
 
-permissions: read-all # Needed for security checks, adjust if necessary
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   build_and_test:
@@ -37,6 +39,9 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
 
       # Bazel needs a JDK. Setup Java from matrix.
       - name: Setup Java JDK ${{ matrix.java-version }}
@@ -77,10 +82,34 @@ jobs:
              bazel-action-${{ github.ref }}-${{ hashFiles('**/MODULE.bazel.lock', '**/maven_install.json', '**/pnpm-lock.yaml') }}
              bazel-action-
 
+      - name: Check if this is a release-please PR
+        id: check-release-please
+        run: |
+          if [[ "${{ github.head_ref }}" == release-please--* ]]; then
+            echo "is_release_please=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_release_please=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Pin Java dependencies
         run: bazelisk run @maven//:pin
 
+      - name: Commit maven_install.json updates for release-please PR
+        if: steps.check-release-please.outputs.is_release_please == 'true' && matrix.java-version == 17
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet maven_install.json; then
+            git add maven_install.json
+            git commit -m "chore: update maven_install.json"
+            git push
+            echo "maven_install.json updated and pushed"
+          else
+            echo "No maven_install.json changes needed"
+          fi
+
       - name: Check for changes in maven_install.json
+        if: steps.check-release-please.outputs.is_release_please != 'true'
         id: git-check
         run: |
           if [[ -n "$(git status --porcelain maven_install.json)" ]]; then
