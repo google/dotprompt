@@ -24,27 +24,59 @@ on:
 
 jobs:
   handlebarrz_linux:
-    name: Build Handlebarrz Linux (Ubuntu/Alpine)
-    runs-on: ubuntu-latest
+    name: Build Handlebarrz Linux (${{ matrix.target.name }})
+    runs-on: ${{ matrix.target.runner }}
     strategy:
       matrix:
         python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-        target: 
-          - { name: "Ubuntu ARM64", dockerfile: "dockerfile-arm64", script: "generate-arm-wheels.sh", platform: "linux/arm64", tag: "ubuntu-arm64" }
-          - { name: "Ubuntu x86_64", dockerfile: "dockerfile-x86-64", script: "generate-x86-64-wheels.sh", platform: "linux/amd64", tag: "ubuntu-x86-64" }
-          - { name: "Alpine ARM64", dockerfile: "dockerfile-alpine", script: "generate-alpine-wheels.sh", platform: "linux/arm64", tag: "alpine-arm64" }
-          - { name: "Alpine x86_64", dockerfile: "dockerfile-alpine-x86-64", script: "generate-alpine-wheels-x86-64.sh", platform: "linux/amd64", tag: "alpine-amd64" }
+        target:
+          - { name: "Ubuntu ARM64", runner: "ubuntu-24.04-arm", rust_target: "" }
+          - { name: "Ubuntu x86_64", runner: "ubuntu-latest", rust_target: "" }
+          - { name: "Alpine ARM64", runner: "ubuntu-24.04-arm", rust_target: "aarch64-unknown-linux-musl" }
+          - { name: "Alpine x86_64", runner: "ubuntu-latest", rust_target: "x86_64-unknown-linux-musl" }
     steps:
       - uses: actions/checkout@v6
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-      - name: Build container
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python_version }}
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target.rust_target }}
+        env:
+          RUSTUP_MAX_RETRIES: 3
+
+      - name: Install musl tools (Alpine builds)
+        if: contains(matrix.target.name, 'Alpine')
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install maturin
+        run: uv pip install --system "maturin[patchelf]"
+
+      - name: Build wheel
+        working-directory: ./python/handlebarrz
+        env:
+          PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
         run: |
-          cd python/handlebarrz
-          docker build --platform ${{ matrix.target.platform }} -t ${{ matrix.target.tag }} -f ${{ matrix.target.dockerfile }} .
-      - name: Build wheels
+          if [ -n "${{ matrix.target.rust_target }}" ]; then
+            maturin build --release --strip -o dist --target ${{ matrix.target.rust_target }} -i python${{ matrix.python_version }}
+          else
+            maturin build --release --strip -o dist -i python${{ matrix.python_version }}
+          fi
+
+      - name: Install and test wheel (non-musl only)
+        if: ${{ !contains(matrix.target.name, 'Alpine') }}
+        working-directory: ./python/handlebarrz
         run: |
-          docker run -v "$PWD/python/handlebarrz":/project ${{ matrix.target.tag }}:latest sh ./${{ matrix.target.script }} "${{ matrix.python_version }}"
+          pip install dist/*.whl
+          pip install pytest
+          pytest
 
   handlebarrz_native:
     name: Build Handlebarrz Native
