@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.1.5](https://github.com/google/dotprompt/compare/dotpromptz-0.1.4...dotpromptz-0.1.5) (2026-01-30)
+
+
+### Features
+
+* integrate pyrefly type checker and improve CI workflows ([#451](https://github.com/google/dotprompt/issues/451)) ([619beaf](https://github.com/google/dotprompt/commit/619beaff845a99e5f2e67fb093fefdfe626e3646))
+* **promptly:** add lsp, fmt, and check implementations ([#438](https://github.com/google/dotprompt/issues/438)) ([27fd3d4](https://github.com/google/dotprompt/commit/27fd3d4c7aa96e09c46cb54546da1783be2f6a6e))
+* **py:** add bazel build/test support and automate requirements ([#399](https://github.com/google/dotprompt/issues/399)) ([efd7fe0](https://github.com/google/dotprompt/commit/efd7fe0592e2491c34e8fd399e756de375c802eb))
+* **py:** switch to using ty for type checking ([#376](https://github.com/google/dotprompt/issues/376)) ([7f1c026](https://github.com/google/dotprompt/commit/7f1c0268e5de5a2d6d887ac590d110dea7d3ed07))
+
+
+### Bug Fixes
+
+* add cycle detection to partial resolution across all runtimes ([#431](https://github.com/google/dotprompt/issues/431)) ([4e23d44](https://github.com/google/dotprompt/commit/4e23d44865415c13ab1a5b52c2930e32d26eac5d))
+* compile render issue ([#404](https://github.com/google/dotprompt/issues/404)) ([7152799](https://github.com/google/dotprompt/commit/71527994142de94f7897ce296d31581519e97fe8))
+* **dotpromptz:** clean up pyproject.toml ([#436](https://github.com/google/dotprompt/issues/436)) ([420d05d](https://github.com/google/dotprompt/commit/420d05d9383b1942366010a66745fc7a5b7926bd))
+* **dotpromptz:** enable type-safe schema field in Pydantic models ([#435](https://github.com/google/dotprompt/issues/435)) ([dfc6098](https://github.com/google/dotprompt/commit/dfc6098c161ec49e874b24aefd22d078c7d6870e))
+* **dotpromptz:** update dotpromptz-handlebars dependency to &gt;=0.1.7 ([#486](https://github.com/google/dotprompt/issues/486)) ([56dedb2](https://github.com/google/dotprompt/commit/56dedb276a6dbf8e5fecb32e3a4d7c4cb5ba0dc8))
+* **dotpromptz:** update dotpromptz-handlebars dependency to &gt;=0.1.8 ([#492](https://github.com/google/dotprompt/issues/492)) ([cc918b1](https://github.com/google/dotprompt/commit/cc918b19c7ce5af9038aad666861fc3484a0eca2))
+* Ensure helper behavior parity across all runtimes ([#395](https://github.com/google/dotprompt/issues/395)) ([76de7ba](https://github.com/google/dotprompt/commit/76de7ba6065e07667dda5d3acb8b57ce36b48662))
+* path traversal security hardening (CWE-22) ([#413](https://github.com/google/dotprompt/issues/413)) ([5be598e](https://github.com/google/dotprompt/commit/5be598e9dcd617924150500974173fb0dbbc7acf))
+* **release:** consistent naming and auto-publish to pypi on release creation ([#425](https://github.com/google/dotprompt/issues/425)) ([12ba56d](https://github.com/google/dotprompt/commit/12ba56d9135979da21af042a8030daff7a705f87))
+
+
+### Documentation
+
+* add comprehensive API documentation for all language implementations ([#454](https://github.com/google/dotprompt/issues/454)) ([f641a62](https://github.com/google/dotprompt/commit/f641a6230aaffc2a422fcaa68ebd5f9a370153ba))
+
 ## [0.1.4](https://github.com/google/dotprompt/compare/dotpromptz-v0.1.3...dotpromptz-0.1.4) (2025-12-15)
 
 
