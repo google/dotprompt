@@ -1,7 +1,6 @@
 <!-- Code Quality & Security -->
 
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/google/dotprompt/badge)](https://scorecard.dev/viewer/?uri=github.com/google/dotprompt)
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10359/badge)](https://www.bestpractices.dev/projects/10359)
 [![codecov](https://codecov.io/gh/google/dotprompt/graph/badge.svg)](https://codecov.io/gh/google/dotprompt)
 [![License](https://img.shields.io/github/license/google/dotprompt)](https://github.com/google/dotprompt/blob/main/LICENSE)
 

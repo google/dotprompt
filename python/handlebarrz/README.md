@@ -8,7 +8,6 @@
 [![CI](https://github.com/google/dotprompt/actions/workflows/handlebarrz-tests.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/handlebarrz-tests.yml)
 [![codecov](https://codecov.io/gh/google/dotprompt/graph/badge.svg?flag=handlebarrz)](https://codecov.io/gh/google/dotprompt)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/google/dotprompt/badge)](https://scorecard.dev/viewer/?uri=github.com/google/dotprompt)
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10359/badge)](https://www.bestpractices.dev/projects/10359)
 
 [![GitHub stars](https://img.shields.io/github/stars/google/dotprompt?style=social)](https://github.com/google/dotprompt)
 [![OSS Insight](https://img.shields.io/badge/OSS%20Insight-google%2Fdotprompt-blue?logo=github)](https://ossinsight.io/analyze/google/dotprompt)
