@@ -78,8 +78,9 @@ jobs:
       - name: Commit lockfile updates
         if: steps.check-release-please.outputs.is_release_please == 'true'
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Use the PR author's identity (from the last commit) for CLA compliance
+          git config user.name "$(git log -1 --format='%an')"
+          git config user.email "$(git log -1 --format='%ae')"
           if ! git diff --quiet python/uv.lock python/requirements.txt; then
             git add python/uv.lock python/requirements.txt
             git commit -m "chore: update Python lockfiles"

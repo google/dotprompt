@@ -110,8 +110,9 @@ jobs:
       - name: Commit changes
         if: steps.changes.outputs.changed == 'true'
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Use the PR author's identity (from the last commit) for CLA compliance
+          git config user.name "$(git log -1 --format='%an')"
+          git config user.email "$(git log -1 --format='%ae')"
           git add python/uv.lock python/requirements.txt Cargo.lock python/handlebarrz/Cargo.lock MODULE.bazel.lock go/go.mod go/go.sum pnpm-lock.yaml js/pnpm-lock.yaml maven_install.json
           git commit -m "chore: update lockfiles"
           git push
