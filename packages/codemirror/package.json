@@ -1,6 +1,6 @@
 {
   "name": "@dotprompt/codemirror",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CodeMirror 6 language support for Dotprompt (.prompt) files",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
