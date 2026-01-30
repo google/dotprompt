@@ -2,6 +2,13 @@
 
 [![PyPI](https://img.shields.io/pypi/v/dotpromptz-handlebars)](https://pypi.org/project/dotpromptz-handlebars/)
 [![Python](https://img.shields.io/pypi/pyversions/dotpromptz-handlebars)](https://pypi.org/project/dotpromptz-handlebars/)
+[![License](https://img.shields.io/pypi/l/dotpromptz-handlebars)](https://github.com/google/dotprompt/blob/main/LICENSE)
+[![Downloads](https://img.shields.io/pypi/dm/dotpromptz-handlebars)](https://pypi.org/project/dotpromptz-handlebars/)
+
+[![CI](https://github.com/google/dotprompt/actions/workflows/handlebarrz-tests.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/handlebarrz-tests.yml)
+[![codecov](https://codecov.io/gh/google/dotprompt/graph/badge.svg?flag=handlebarrz)](https://codecov.io/gh/google/dotprompt)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/google/dotprompt/badge)](https://scorecard.dev/viewer/?uri=github.com/google/dotprompt)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10359/badge)](https://www.bestpractices.dev/projects/10359)
 
 A high-performance [Handlebars](https://handlebarsjs.com/) template engine for Python, powered by Rust.
 
