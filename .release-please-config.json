@@ -64,6 +64,11 @@
       "extra-files": [
         {
           "type": "toml",
+          "path": "dotprompt/Cargo.toml",
+          "jsonpath": "$.package.version"
+        },
+        {
+          "type": "toml",
           "path": "smoke/Cargo.toml",
           "jsonpath": "$.package.version"
         }
