@@ -94,6 +94,131 @@
           - role: user
             content: [{ text: "Hello, नमस्ते!\n" }]
 
+    - desc: handles Marathi characters (Devanagari script)
+      data:
+        input: { name: "नमस्कार" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, नमस्कार!\n" }]
+
+    - desc: handles Sanskrit characters (Devanagari script)
+      data:
+        input: { name: "संस्कृतम्" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, संस्कृतम्!\n" }]
+
+    - desc: handles Nepali characters (Devanagari script)
+      data:
+        input: { name: "नमस्ते" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, नमस्ते!\n" }]
+
+    - desc: handles Tamil characters
+      data:
+        input: { name: "வணக்கம்" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, வணக்கம்!\n" }]
+
+    - desc: handles Telugu characters
+      data:
+        input: { name: "నమస్కారం" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, నమస్కారం!\n" }]
+
+    - desc: handles Bengali characters
+      data:
+        input: { name: "নমস্কার" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, নমস্কার!\n" }]
+
+    - desc: handles Gujarati characters
+      data:
+        input: { name: "નમસ્તે" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, નમસ્તે!\n" }]
+
+    - desc: handles Kannada characters
+      data:
+        input: { name: "ನಮಸ್ಕಾರ" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, ನಮಸ್ಕಾರ!\n" }]
+
+    - desc: handles Malayalam characters
+      data:
+        input: { name: "നമസ്കാരം" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, നമസ്കാരം!\n" }]
+
+    - desc: handles Punjabi/Gurmukhi characters
+      data:
+        input: { name: "ਸਤ ਸ੍ਰੀ ਅਕਾਲ" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, ਸਤ ਸ੍ਰੀ ਅਕਾਲ!\n" }]
+
+    - desc: handles Odia characters
+      data:
+        input: { name: "ନମସ୍କାର" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, ନମସ୍କାର!\n" }]
+
+# Tests Indic languages with full sentences.
+- name: unicode_indic_sentences
+  template: |
+    {{message}}
+  tests:
+    - desc: handles full Hindi sentence
+      data:
+        input: { message: "आपका स्वागत है। कृपया अपना नाम दर्ज करें।" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "आपका स्वागत है। कृपया अपना नाम दर्ज करें।\n" }]
+
+    - desc: handles Hindi-English code-mixing (Hinglish)
+      data:
+        input: { message: "Please अपना email address enter करें।" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Please अपना email address enter करें।\n" }]
+
+    - desc: handles Tamil sentence
+      data:
+        input: { message: "உங்களை வரவேற்கிறோம். தயவுசெய்து உங்கள் பெயரை உள்ளிடவும்." }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "உங்களை வரவேற்கிறோம். தயவுசெய்து உங்கள் பெயரை உள்ளிடவும்.\n" }]
+
+    - desc: handles Bengali sentence
+      data:
+        input: { message: "স্বাগতম। অনুগ্রহ করে আপনার নাম লিখুন।" }
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "স্বাগতম। অনুগ্রহ করে আপনার নাম লিখুন।\n" }]
+
 # Tests emoji support in templates and data.
 - name: unicode_emoji
   template: |
