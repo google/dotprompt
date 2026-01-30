@@ -168,6 +168,9 @@ jobs:
     needs: [setup]
     runs-on: ubuntu-24.04-arm  # Native ARM64 runner - no QEMU needed
     if: needs.setup.outputs.enable_linux_arm64 == 'true'
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
     strategy:
       matrix:
         python_version:
@@ -188,6 +191,9 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         env:
           RUSTUP_MAX_RETRIES: 3
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -217,6 +223,9 @@ jobs:
     needs: [setup]
     runs-on: ubuntu-24.04-arm  # Native ARM64 runner - cross-compile for musl
     if: needs.setup.outputs.enable_alpine_arm64 == 'true'
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
     strategy:
       matrix:
         python_version:
@@ -239,6 +248,9 @@ jobs:
           targets: aarch64-unknown-linux-musl
         env:
           RUSTUP_MAX_RETRIES: 3
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Install musl tools
         run: sudo apt-get update && sudo apt-get install -y musl-tools
@@ -267,6 +279,9 @@ jobs:
     needs: [setup]
     runs-on: ubuntu-latest  # Native x86_64 runner - cross-compile for musl
     if: needs.setup.outputs.enable_alpine_x86_64 == 'true'
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
     strategy:
       matrix:
         python_version:
@@ -289,6 +304,9 @@ jobs:
           targets: x86_64-unknown-linux-musl
         env:
           RUSTUP_MAX_RETRIES: 3
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Install musl tools
         run: sudo apt-get update && sudo apt-get install -y musl-tools
@@ -317,6 +335,9 @@ jobs:
     needs: [setup]
     runs-on: ubuntu-latest  # Native x86_64 runner
     if: needs.setup.outputs.enable_linux_x86_64 == 'true'
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
     strategy:
       matrix:
         python_version:
@@ -338,6 +359,9 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         env:
           RUSTUP_MAX_RETRIES: 3
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -368,6 +392,9 @@ jobs:
     runs-on: windows-latest
     # Currently disabled due to wheel corruption issues - see setup job defaults
     if: needs.setup.outputs.enable_windows_x86_64 == 'true'
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
     strategy:
       matrix:
         python_version:
@@ -392,6 +419,9 @@ jobs:
         env:
           RUSTUP_MAX_RETRIES: 3
 
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
       - name: Install maturin
         run: pip install maturin
 
@@ -410,6 +440,9 @@ jobs:
     needs: [setup]
     runs-on: macos-14  # Apple Silicon
     if: needs.setup.outputs.enable_macos_arm64 == 'true'
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
     strategy:
       matrix:
         python_version:
@@ -438,6 +471,9 @@ jobs:
         env:
           RUSTUP_MAX_RETRIES: 3
 
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
       - name: Install maturin
         run: pip install maturin
 
@@ -460,6 +496,9 @@ jobs:
     needs: [setup]
     runs-on: macos-14
     if: needs.setup.outputs.enable_macos_x86_64 == 'true'
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
     strategy:
       matrix:
         python_version:
@@ -483,6 +522,9 @@ jobs:
           target: x86_64-apple-darwin
         env:
           RUSTUP_MAX_RETRIES: 3
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Install maturin
         run: pip install maturin
