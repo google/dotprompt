@@ -1,0 +1,12 @@
+name: handlebarrz
+description: A pure Dart implementation of Handlebars template engine.
+version: 0.0.1
+repository: https://github.com/google/dotprompt
+homepage: https://github.com/google/dotprompt/tree/main/dart/handlebarrz
+
+environment:
+  sdk: ^3.7.0
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.25.0

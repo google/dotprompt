@@ -4,6 +4,8 @@
   "python/handlebarrz": "0.1.8",
   "go": "0.2.0",
   "java": "0.1.0",
+  "dart/dotprompt": "0.0.1",
+  "bazel/rules_dart": "0.0.1",
   "rs": "0.1.0",
   "packages/vscode": "0.0.1",
   "packages/vim": "0.1.0",

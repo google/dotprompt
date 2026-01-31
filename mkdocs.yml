@@ -107,6 +107,7 @@ nav:
     - TypeScript/JavaScript: api/typescript/index.md
     - Go: api/go/index.md
     - Rust: api/rust/index.md
+    - Dart: api/dart/index.md
     - Java: api/java/index.md
   - Contributing:
     - contributing/index.md
