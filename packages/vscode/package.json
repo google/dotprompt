@@ -2,7 +2,7 @@
   "name": "dotprompt-vscode",
   "displayName": "Dotprompt",
   "description": "Syntax highlighting, LSP diagnostics, formatting, and code snippets for Dotprompt (.prompt) files",
-  "version": "0.2.0",
+  "version": "0.0.2",
   "publisher": "google",
   "license": "Apache-2.0",
   "icon": "images/icon.png",
