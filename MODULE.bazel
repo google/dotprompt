@@ -25,6 +25,10 @@ bazel_dep(name = "bazel_skylib", version = "1.8.2")
 bazel_dep(name = "gazelle", version = "0.47.0")
 bazel_dep(name = "platforms", version = "1.0.0")
 
+bazel_dep(name = "rules_dart", version = "0.0.1")
+local_path_override(module_name = "rules_dart", path = "bazel/rules_dart")
+
+include("//:dart.MODULE.bazel")
 include("//:go.MODULE.bazel")
 include("//:java.MODULE.bazel")
 include("//:rust.MODULE.bazel")

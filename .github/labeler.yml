@@ -64,6 +64,29 @@ python:
           - "**/pyproject.toml"
           - "python/**"
 
+dart:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.dart"
+          - "dart/**"
+          - "**/pubspec.yaml"
+          - "**/analysis_options.yaml"
+
+rules_dart:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "bazel/rules_dart/**"
+
+dotprompt-dart:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "dart/dotprompt/**"
+
+handlebarrz-dart:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "dart/handlebarrz/**"
+
 js:
   - changed-files:
       - any-glob-to-any-file:

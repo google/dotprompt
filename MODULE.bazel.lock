@@ -685,6 +685,669 @@
         ]
       }
     },
+    "@@rules_dart+//:extensions.bzl%dart": {
+      "general": {
+        "bzlTransitiveDigest": "FfYn5kXYuuDJT5f57W8fLDUFEGXW443hYPHJCOPb/hI=",
+        "usagesDigest": "X2kJ0LDi5dmWRUOrIlUKGNj4PJKJGmOqeQkTx4wKUw4=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "dart_sdk": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_sdk",
+            "attributes": {
+              "version": "3.7.0"
+            }
+          }
+        },
+        "recordedRepoMappingEntries": []
+      }
+    },
+    "@@rules_dart+//:extensions.bzl%dart_deps": {
+      "general": {
+        "bzlTransitiveDigest": "FfYn5kXYuuDJT5f57W8fLDUFEGXW443hYPHJCOPb/hI=",
+        "usagesDigest": "bFDiWQ203dQgdrPs5klaR6X30ES6EGGPktXZBam3R6Q=",
+        "recordedFileInputs": {
+          "@@//dart/dotprompt/pubspec.lock": "59a4448d34176c977b514416f2f8df17e9491464f220c7d702fe36dd93dc53eb",
+          "@@//dart/handlebarrz/pubspec.lock": "7cce9cde7998744d0fd971c4f502e5e6ea5c4ce2a91148b67dba739aef39d351"
+        },
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "dart_deps__fe_analyzer_shared": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "_fe_analyzer_shared",
+              "version": "88.0.0",
+              "sha256": "f0bb5d1648339c8308cc0b9838d8456b3cfe5c91f9dc1a735b4d003269e5da9a",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_analyzer": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "analyzer",
+              "version": "8.1.1",
+              "sha256": "0b7b9c329d2879f8f05d6c05b32ee9ec025f39b077864bdb5ac9a7b63418a98f",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_antlr4": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "antlr4",
+              "version": "4.13.2",
+              "sha256": "752b4a6e4ad97953652a2b2bbf5377f46c94b579d3372b50080c7e5858234a05",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_args": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "args",
+              "version": "2.7.0",
+              "sha256": "d0481093c50b1da8910eb0bb301626d4d8eb7284aa739614d2b394ee09e3ea04",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_async": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "async",
+              "version": "2.13.0",
+              "sha256": "758e6d74e971c3e5aceb4110bfd6698efc7f501675bcfe0c775459a8140750eb",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_boolean_selector": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "boolean_selector",
+              "version": "2.1.2",
+              "sha256": "8aab1771e1243a5063b8b0ff68042d67334e3feab9e95b9490f9a6ebf73b42ea",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_build": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "build",
+              "version": "4.0.4",
+              "sha256": "275bf6bb2a00a9852c28d4e0b410da1d833a734d57d39d44f94bfc895a484ec3",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_build_config": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "build_config",
+              "version": "1.2.0",
+              "sha256": "4f64382b97504dc2fcdf487d5aae33418e08b4703fc21249e4db6d804a4d0187",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_build_daemon": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "build_daemon",
+              "version": "4.1.1",
+              "sha256": "bf05f6e12cfea92d3c09308d7bcdab1906cd8a179b023269eed00c071004b957",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_build_runner": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "build_runner",
+              "version": "2.10.5",
+              "sha256": "b4d854962a32fd9f8efc0b76f98214790b833af8b2e9b2df6bfc927c0415a072",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_built_collection": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "built_collection",
+              "version": "5.1.1",
+              "sha256": "376e3dd27b51ea877c28d525560790aee2e6fbb5f20e2f85d5081027d94e2100",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_built_value": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "built_value",
+              "version": "8.12.3",
+              "sha256": "7931c90b84bc573fef103548e354258ae4c9d28d140e41961df6843c5d60d4d8",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_checked_yaml": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "checked_yaml",
+              "version": "2.0.3",
+              "sha256": "feb6bed21949061731a7a75fc5d2aa727cf160b91af9a3e464c5e3a32e28b5ff",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_cli_config": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "cli_config",
+              "version": "0.2.0",
+              "sha256": "ac20a183a07002b700f0c25e61b7ee46b23c309d76ab7b7640a028f18e4d99ec",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_code_builder": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "code_builder",
+              "version": "4.11.1",
+              "sha256": "6a6cab2ba4680d6423f34a9b972a4c9a94ebe1b62ecec4e1a1f2cba91fd1319d",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_collection": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "collection",
+              "version": "1.19.1",
+              "sha256": "2f5709ae4d3d59dd8f7cd309b4e023046b57d8a6c82130785d2b0e5868084e76",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_convert": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "convert",
+              "version": "3.1.2",
+              "sha256": "b30acd5944035672bc15c6b7a8b47d773e41e2f17de064350988c5d02adb1c68",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_coverage": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "coverage",
+              "version": "1.15.0",
+              "sha256": "5da775aa218eaf2151c721b16c01c7676fbfdd99cebba2bf64e8b807a28ff94d",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_crypto": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "crypto",
+              "version": "3.0.7",
+              "sha256": "c8ea0233063ba03258fbcf2ca4d6dadfefe14f02fab57702265467a19f27fadf",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_dart_style": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "dart_style",
+              "version": "3.1.2",
+              "sha256": "c87dfe3d56f183ffe9106a18aebc6db431fc7c98c31a54b952a77f3d54a85697",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_file": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "file",
+              "version": "7.0.1",
+              "sha256": "a3b4f84adafef897088c160faf7dfffb7696046cb13ae90b508c2cbc95d3b8d4",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_fixnum": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "fixnum",
+              "version": "1.1.1",
+              "sha256": "b6dc7065e46c974bc7c5f143080a6764ec7a4be6da1285ececdc37be96de53be",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_frontend_server_client": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "frontend_server_client",
+              "version": "4.0.0",
+              "sha256": "f64a0333a82f30b0cca061bc3d143813a486dc086b574bfb233b7c1372427694",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_glob": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "glob",
+              "version": "2.1.3",
+              "sha256": "c3f1ee72c96f8f78935e18aa8cecced9ab132419e8625dc187e1c2408efc20de",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_graphs": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "graphs",
+              "version": "2.3.2",
+              "sha256": "741bbf84165310a68ff28fe9e727332eef1407342fca52759cb21ad8177bb8d0",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_http": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "http",
+              "version": "1.6.0",
+              "sha256": "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_http_multi_server": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "http_multi_server",
+              "version": "3.2.2",
+              "sha256": "aa6199f908078bb1c5efb8d8638d4ae191aac11b311132c3ef48ce352fb52ef8",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_http_parser": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "http_parser",
+              "version": "4.1.2",
+              "sha256": "178d74305e7866013777bab2c3d8726205dc5a4dd935297175b19a23a2e66571",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_io": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "io",
+              "version": "1.0.5",
+              "sha256": "dfd5a80599cf0165756e3181807ed3e77daf6dd4137caaad72d0b7931597650b",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_json_annotation": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "json_annotation",
+              "version": "4.9.0",
+              "sha256": "1ce844379ca14835a50d2f019a3099f419082cfdd231cd86a142af94dd5c6bb1",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_json_schema": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "json_schema",
+              "version": "5.2.2",
+              "sha256": "f37d9c3fdfe8c9aae55fdfd5af815d24ce63c3a0f6a2c1f0982c30f43643fa1a",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_lints": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "lints",
+              "version": "5.1.1",
+              "sha256": "c35bb79562d980e9a453fc715854e1ed39e24e7d0297a880ef54e17f9874a9d7",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_logging": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "logging",
+              "version": "1.3.0",
+              "sha256": "c8245ada5f1717ed44271ed1c26b8ce85ca3228fd2ffdb75468ab01979309d61",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_matcher": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "matcher",
+              "version": "0.12.18",
+              "sha256": "12956d0ad8390bbcc63ca2e1469c0619946ccb52809807067a7020d57e647aa6",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_meta": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "meta",
+              "version": "1.18.1",
+              "sha256": "9f29b9bcc8ee287b1a31e0d01be0eae99a930dbffdaecf04b3f3d82a969f296f",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_mime": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "mime",
+              "version": "2.0.0",
+              "sha256": "41a20518f0cb1256669420fdba0cd90d21561e560ac240f26ef8322e45bb7ed6",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_mockito": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "mockito",
+              "version": "5.6.3",
+              "sha256": "a45d1aa065b796922db7b9e7e7e45f921aed17adf3a8318a1f47097e7e695566",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_node_preamble": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "node_preamble",
+              "version": "2.0.2",
+              "sha256": "6e7eac89047ab8a8d26cf16127b5ed26de65209847630400f9aefd7cd5c730db",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_package_config": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "package_config",
+              "version": "2.2.0",
+              "sha256": "f096c55ebb7deb7e384101542bfba8c52696c1b56fca2eb62827989ef2353bbc",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_path": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "path",
+              "version": "1.9.1",
+              "sha256": "75cca69d1490965be98c73ceaea117e8a04dd21217b37b292c9ddbec0d955bc5",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_pool": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "pool",
+              "version": "1.5.2",
+              "sha256": "978783255c543aa3586a1b3c21f6e9d720eb315376a915872c61ef8b5c20177d",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_pub_semver": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "pub_semver",
+              "version": "2.2.0",
+              "sha256": "5bfcf68ca79ef689f8990d1160781b4bad40a3bd5e5218ad4076ddb7f4081585",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_pubspec_parse": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "pubspec_parse",
+              "version": "1.5.0",
+              "sha256": "0560ba233314abbed0a48a2956f7f022cce7c3e1e73df540277da7544cad4082",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_quiver": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "quiver",
+              "version": "3.2.2",
+              "sha256": "ea0b925899e64ecdfbf9c7becb60d5b50e706ade44a85b2363be2a22d88117d2",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_rfc_6901": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "rfc_6901",
+              "version": "0.2.1",
+              "sha256": "6a43b1858dca2febaf93e15639aa6b0c49ccdfd7647775f15a499f872b018154",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_shelf": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "shelf",
+              "version": "1.4.2",
+              "sha256": "e7dd780a7ffb623c57850b33f43309312fc863fb6aa3d276a754bb299839ef12",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_shelf_packages_handler": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "shelf_packages_handler",
+              "version": "3.0.2",
+              "sha256": "89f967eca29607c933ba9571d838be31d67f53f6e4ee15147d5dc2934fee1b1e",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_shelf_static": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "shelf_static",
+              "version": "1.1.3",
+              "sha256": "c87c3875f91262785dade62d135760c2c69cb217ac759485334c5857ad89f6e3",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_shelf_web_socket": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "shelf_web_socket",
+              "version": "3.0.0",
+              "sha256": "3632775c8e90d6c9712f883e633716432a27758216dfb61bd86a8321c0580925",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_source_gen": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "source_gen",
+              "version": "4.2.0",
+              "sha256": "1d562a3c1f713904ebbed50d2760217fd8a51ca170ac4b05b0db490699dbac17",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_source_map_stack_trace": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "source_map_stack_trace",
+              "version": "2.1.2",
+              "sha256": "c0713a43e323c3302c2abe2a1cc89aa057a387101ebd280371d6a6c9fa68516b",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_source_maps": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "source_maps",
+              "version": "0.10.13",
+              "sha256": "190222579a448b03896e0ca6eca5998fa810fda630c1d65e2f78b3f638f54812",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_source_span": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "source_span",
+              "version": "1.10.1",
+              "sha256": "254ee5351d6cb365c859e20ee823c3bb479bf4a293c22d17a9f1bf144ce86f7c",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_stack_trace": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "stack_trace",
+              "version": "1.12.1",
+              "sha256": "8b27215b45d22309b5cddda1aa2b19bdfec9df0e765f2de506401c071d38d1b1",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_stream_channel": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "stream_channel",
+              "version": "2.1.4",
+              "sha256": "969e04c80b8bcdf826f8f16579c7b14d780458bd97f56d107d3950fdbeef059d",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_stream_transform": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "stream_transform",
+              "version": "2.1.1",
+              "sha256": "ad47125e588cfd37a9a7f86c7d6356dde8dfe89d071d293f80ca9e9273a33871",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_string_scanner": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "string_scanner",
+              "version": "1.4.1",
+              "sha256": "921cd31725b72fe181906c6a94d987c78e3b98c2e205b397ea399d4054872b43",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_term_glyph": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "term_glyph",
+              "version": "1.2.2",
+              "sha256": "7f554798625ea768a7518313e58f83891c7f5024f88e46e7182a4558850a4b8e",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_test": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "test",
+              "version": "1.29.0",
+              "sha256": "54c516bbb7cee2754d327ad4fca637f78abfc3cbcc5ace83b3eda117e42cd71a",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_test_api": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "test_api",
+              "version": "0.7.9",
+              "sha256": "93167629bfc610f71560ab9312acdda4959de4df6fac7492c89ff0d3886f6636",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_test_core": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "test_core",
+              "version": "0.6.15",
+              "sha256": "394f07d21f0f2255ec9e3989f21e54d3c7dc0e6e9dbce160e5a9c1a6be0e2943",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_typed_data": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "typed_data",
+              "version": "1.4.0",
+              "sha256": "f9049c039ebfeb4cf7a7104a675823cd72dba8297f264b6637062516699fa006",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_uri": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "uri",
+              "version": "1.0.0",
+              "sha256": "889eea21e953187c6099802b7b4cf5219ba8f3518f604a1033064d45b1b8268a",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_vm_service": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "vm_service",
+              "version": "15.0.2",
+              "sha256": "45caa6c5917fa127b5dbcfbd1fa60b14e583afdc08bfc96dda38886ca252eb60",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_watcher": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "watcher",
+              "version": "1.2.1",
+              "sha256": "1398c9f081a753f9226febe8900fce8f7d0a67163334e1c94a2438339d79d635",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_web": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "web",
+              "version": "1.1.1",
+              "sha256": "868d88a33d8a87b18ffc05f9f030ba328ffefba92d6c127917a2ba740f9cfe4a",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_web_socket": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "web_socket",
+              "version": "1.0.1",
+              "sha256": "34d64019aa8e36bf9842ac014bb5d2f5586ca73df5e4d9bf5c936975cae6982c",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_web_socket_channel": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "web_socket_channel",
+              "version": "3.0.3",
+              "sha256": "d645757fb0f4773d602444000a8131ff5d48c9e47adfe9772652dd1a4f2d45c8",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_webkit_inspection_protocol": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "webkit_inspection_protocol",
+              "version": "1.2.1",
+              "sha256": "87d3f2333bb240704cd3f1c6b5b7acd8a10e7f0bc28c28dcf14e782014f4a572",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          },
+          "dart_deps_yaml": {
+            "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
+            "attributes": {
+              "package_name": "yaml",
+              "version": "3.1.3",
+              "sha256": "b9da305ac7c39faa3f030eccd175340f968459dae4af175130b3fc47e40d76ce",
+              "rules_dart_label": "@rules_dart//:defs.bzl"
+            }
+          }
+        },
+        "recordedRepoMappingEntries": []
+      }
+    },
     "@@rules_nodejs+//nodejs:extensions.bzl%node": {
       "general": {
         "bzlTransitiveDigest": "NwcLXHrbh2hoorA/Ybmcpjxsn/6avQmewDglodkDrgo=",
@@ -1231,9 +1894,9 @@
         "bzlTransitiveDigest": "gPGJjdrLRKgXLlXMK6kWseKkOlOC/yBSHtYUgLe2bCk=",
         "usagesDigest": "CjgpFVuFCheh9rkTr62WitflU7Lr/QLGpPaiQz2s6RA=",
         "recordedFileInputs": {
-          "@@//Cargo.lock": "3dd5200d6762f77802aecedc34993b5f1f238a0c1a8e257c6b9a1f396aaf66f5",
+          "@@//Cargo.lock": "523efab8a728f5b492205a94fbb673921e1fa942ab28fb8964c2087fa70b74ed",
           "@@//Cargo.toml": "bb029b79e69da26f1868687b1c0730820a2c049db0e4b17f173e06586a027b0c",
-          "@@//python/handlebarrz/Cargo.toml": "ba748365219746ace708b9893aea760ea4f3a3324165e81756f0671f3f062b44",
+          "@@//python/handlebarrz/Cargo.toml": "163cb915b9fcf983335892c7369e5a763fcfa41a8d0c119060670abcb34c24bc",
           "@@//rs/dotprompt/Cargo.toml": "0743681496a30c5fd7b4209f9a6f53af648b80d3524f38d80932507fbb99d3e2",
           "@@//rs/promptly/Cargo.toml": "bc81dc2246413996e0d71b4162a540840e204ace7d9881af6c1fe7c82ba0d2f5",
           "@@//rs/smoke/Cargo.toml": "51477545fc6e886055844a37683b02ba8cbfb5704936354455dfb045a4ba6141"

@@ -1,0 +1,121 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+"""Configuration for Bazel with Dart dependencies.
+
+This module provides Dart SDK configuration for the Dotprompt Dart implementation.
+The Dart SDK is automatically downloaded from Google's official CDN, similar to
+how rules_go and rules_rust fetch their respective toolchains.
+
+Dart SDK Installation:
+- The SDK is downloaded from: https://storage.googleapis.com/dart-archive/
+- Supported platforms: linux-x64, linux-arm64, macos-x64, macos-arm64, windows-x64
+- Version: 3.7.0 (configurable via the dart.configure tag)
+"""
+
+# Use the Dart module extension to download the SDK
+dart = use_extension("@rules_dart//:extensions.bzl", "dart")
+
+# Configure the SDK (optional - uses default version if not specified)
+dart.configure()
+
+# Make the dart_sdk repository available
+use_repo(dart, "dart_sdk")
+
+# Dependency management
+dart_deps = use_extension("@rules_dart//:extensions.bzl", "dart_deps")
+dart_deps.from_file(
+    lock_file = "//dart/dotprompt:pubspec.lock",
+    rules_dart_label = "@rules_dart//:defs.bzl",
+)
+dart_deps.from_file(
+    lock_file = "//dart/handlebarrz:pubspec.lock",
+    rules_dart_label = "@rules_dart//:defs.bzl",
+)
+
+use_repo(
+    dart_deps,
+    "dart_deps__fe_analyzer_shared",
+    "dart_deps_analyzer",
+    "dart_deps_antlr4",
+    "dart_deps_args",
+    "dart_deps_async",
+    "dart_deps_boolean_selector",
+    "dart_deps_build",
+    "dart_deps_build_config",
+    "dart_deps_build_daemon",
+    "dart_deps_build_runner",
+    "dart_deps_built_collection",
+    "dart_deps_built_value",
+    "dart_deps_checked_yaml",
+    "dart_deps_cli_config",
+    "dart_deps_code_builder",
+    "dart_deps_collection",
+    "dart_deps_convert",
+    "dart_deps_coverage",
+    "dart_deps_crypto",
+    "dart_deps_dart_style",
+    "dart_deps_file",
+    "dart_deps_fixnum",
+    "dart_deps_frontend_server_client",
+    "dart_deps_glob",
+    "dart_deps_graphs",
+    "dart_deps_http",
+    "dart_deps_http_multi_server",
+    "dart_deps_http_parser",
+    "dart_deps_io",
+    "dart_deps_json_annotation",
+    "dart_deps_json_schema",
+    "dart_deps_lints",
+    "dart_deps_logging",
+    "dart_deps_matcher",
+    "dart_deps_meta",
+    "dart_deps_mime",
+    "dart_deps_mockito",
+    "dart_deps_node_preamble",
+    "dart_deps_package_config",
+    "dart_deps_path",
+    "dart_deps_pool",
+    "dart_deps_pub_semver",
+    "dart_deps_pubspec_parse",
+    "dart_deps_quiver",
+    "dart_deps_rfc_6901",
+    "dart_deps_shelf",
+    "dart_deps_shelf_packages_handler",
+    "dart_deps_shelf_static",
+    "dart_deps_shelf_web_socket",
+    "dart_deps_source_gen",
+    "dart_deps_source_map_stack_trace",
+    "dart_deps_source_maps",
+    "dart_deps_source_span",
+    "dart_deps_stack_trace",
+    "dart_deps_stream_channel",
+    "dart_deps_stream_transform",
+    "dart_deps_string_scanner",
+    "dart_deps_term_glyph",
+    "dart_deps_test",
+    "dart_deps_test_api",
+    "dart_deps_test_core",
+    "dart_deps_typed_data",
+    "dart_deps_uri",
+    "dart_deps_vm_service",
+    "dart_deps_watcher",
+    "dart_deps_web",
+    "dart_deps_web_socket",
+    "dart_deps_web_socket_channel",
+    "dart_deps_webkit_inspection_protocol",
+    "dart_deps_yaml",
+)

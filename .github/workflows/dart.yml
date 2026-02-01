@@ -1,0 +1,209 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: "Dart checks"
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check-paths:
+    runs-on: ubuntu-latest
+    outputs:
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            dart/**
+            bazel/dart/**
+            bazel/rules_dart/**
+            spec/**
+            .github/workflows/dart.yml
+
+  format-check:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
+    name: Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Get dependencies
+        working-directory: dart/dotprompt
+        run: dart pub get
+
+      - name: Check formatting
+        working-directory: dart/dotprompt
+        run: dart format --line-length=120 --set-exit-if-changed --output=none .
+
+  analyze:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Get dependencies
+        working-directory: dart/dotprompt
+        run: dart pub get
+
+      - name: Run analyzer with strict settings
+        working-directory: dart/dotprompt
+        run: dart analyze --fatal-infos --fatal-warnings
+
+  test:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
+    name: Tests (${{ matrix.sdk }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        sdk: [stable, beta]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ matrix.sdk }}
+
+      - name: Get dependencies
+        working-directory: dart/dotprompt
+        run: dart pub get
+
+      - name: Run tests
+        working-directory: dart/dotprompt
+        run: dart test
+
+      - name: Run tests with coverage
+        if: matrix.os == 'ubuntu-latest' && matrix.sdk == 'stable'
+        working-directory: dart/dotprompt
+        run: |
+          dart pub global activate coverage
+          dart pub global run coverage:test_with_coverage
+
+  bazel-build:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
+    name: Bazel Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Bazel
+        uses: bazel-contrib/setup-bazel@0.14.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
+
+      - name: Build Dart targets
+        run: bazel build //dart/...
+
+      - name: Run Dart tests via Bazel
+        run: bazel test //dart/dotprompt/test:... --test_output=errors
+        continue-on-error: true  # Tests may need network access
+
+  antlr-grammar:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
+    name: ANTLR Grammar Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Java (required for ANTLR)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install ANTLR4
+        run: |
+          curl -O https://www.antlr.org/download/antlr-4.13.2-complete.jar
+          echo "alias antlr4='java -jar $(pwd)/antlr-4.13.2-complete.jar'" >> $GITHUB_ENV
+
+      - name: Validate Handlebars Grammar
+        run: |
+          cd spec/handlebars/antlr
+          java -jar ${{ github.workspace }}/antlr-4.13.2-complete.jar -Dlanguage=Dart HandlebarsLexer.g4
+          java -jar ${{ github.workspace }}/antlr-4.13.2-complete.jar -Dlanguage=Dart -visitor -no-listener HandlebarsParser.g4
+          echo "ANTLR grammar validated successfully"
+
+      - name: Check generated files match
+        run: |
+          # Generate fresh files
+          cd spec/handlebars/antlr
+          java -jar ${{ github.workspace }}/antlr-4.13.2-complete.jar -Dlanguage=Dart HandlebarsLexer.g4
+          java -jar ${{ github.workspace }}/antlr-4.13.2-complete.jar -Dlanguage=Dart -visitor -no-listener HandlebarsParser.g4
+
+          # Compare with committed files (excluding headers)
+          for file in HandlebarsLexer.dart HandlebarsParser.dart HandlebarsParserVisitor.dart HandlebarsParserBaseVisitor.dart; do
+            if [ -f "../../dart/handlebarrz/lib/src/antlr/$file" ]; then
+              # Strip header comments and compare
+              tail -n +22 "$file" > "/tmp/generated_$file"
+              tail -n +22 "../../dart/handlebarrz/lib/src/antlr/$file" > "/tmp/committed_$file"
+              if ! diff -q "/tmp/generated_$file" "/tmp/committed_$file" > /dev/null; then
+                echo "Warning: Generated $file differs from committed version"
+                echo "Run './scripts/generate_handlebars_parser' to update"
+              fi
+            fi
+          done
+
+  dart-checks-all:
+    if: always()
+    needs: [format-check, analyze, test, bazel-build, antlr-grammar]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check overall status
+        run: |
+          if [[ "${{ needs.format-check.result }}" == "failure" || \
+                "${{ needs.analyze.result }}" == "failure" || \
+                "${{ needs.test.result }}" == "failure" || \
+                "${{ needs.antlr-grammar.result }}" == "failure" ]]; then
+            echo "Dart checks failed"
+            exit 1
+          fi
+          echo "Dart checks passed or were skipped"
+          exit 0

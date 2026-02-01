@@ -78,6 +78,21 @@
       "release-type": "simple",
       "component": "dotprompt-java"
     },
+    "dart/dotprompt": {
+      "release-type": "dart",
+      "component": "dotprompt-dart",
+      "extra-files": [
+        {
+          "type": "yaml",
+          "path": "pubspec.yaml",
+          "jsonpath": "$.version"
+        }
+      ]
+    },
+    "bazel/rules_dart": {
+      "release-type": "simple",
+      "component": "rules_dart"
+    },
     "packages/vscode": {
       "release-type": "node",
       "component": "dotprompt-vscode"

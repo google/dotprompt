@@ -21,7 +21,10 @@ load("@npm//:defs.bzl", "npm_link_all_packages")
 package(default_visibility = ["//visibility:public"])
 
 # gazelle:prefix github.com/google/dotprompt
-gazelle(name = "gazelle")
+gazelle(
+    name = "gazelle",
+    gazelle = "@rules_dart//gazelle:gazelle_bin",
+)
 
 # Building this package creates bazel-bin/node_modules/@google/dotprompt
 # so that other packages can depend on this target.
