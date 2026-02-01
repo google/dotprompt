@@ -99,6 +99,11 @@ bazel/rules_dart/
 ├── repositories.bzl         # Repository rule for Dart SDK
 ├── GEMINI.md                # Development guidelines (this file)
 ├── README.md                # User documentation
+├── private/                 # Internal implementation (not public API)
+│   ├── BUILD.bazel          # Package definition
+│   ├── helpers.bzl          # Common utility functions
+│   ├── windows.bzl          # Windows script generators
+│   └── unix.bzl             # Unix script generators
 ├── gazelle/                 # Gazelle extension for Dart
 │   ├── BUILD.bazel
 │   ├── go.mod
@@ -107,13 +112,40 @@ bazel/rules_dart/
 │   └── dart_resolve.go      # Dependency resolution
 ├── scripts/                 # CI/testing scripts
 │   ├── test_examples.sh     # Unix test script
-│   └── test_examples.bat    # Windows test script
+│   └── test_examples.bat    # Windows test script (REQUIRED)
 └── examples/                # Example projects
     └── hello_world/
         ├── BUILD.bazel
         ├── MODULE.bazel
         └── ...
 ```
+
+### Module Structure
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                        Modular Architecture                              │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  defs.bzl (Public API)                                                   │
+│  ├── Uses: private/helpers.bzl                                          │
+│  │         private/windows.bzl                                          │
+│  │         private/unix.bzl                                             │
+│  │                                                                       │
+│  └── Exports: dart_library, dart_binary, dart_test, etc.                │
+│                                                                          │
+│  private/helpers.bzl                                                     │
+│  └── runfiles_path(), is_windows(), relative_path(), to_windows_path()  │
+│                                                                          │
+│  private/windows.bzl                                                     │
+│  └── generate_*_script() functions for .bat files                       │
+│                                                                          │
+│  private/unix.bzl                                                        │
+│  └── generate_*_script() functions for .sh files                        │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
 
 ## Development Principles
 

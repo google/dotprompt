@@ -1,0 +1,66 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# =============================================================================
+# Dart Build Configuration
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Compilation Modes
+# -----------------------------------------------------------------------------
+build:release --compilation_mode=opt
+build:debug --compilation_mode=dbg
+
+# -----------------------------------------------------------------------------
+# Execution Strategy
+# -----------------------------------------------------------------------------
+# Default to sandboxing for hermeticity
+build --spawn_strategy=sandboxed
+
+# -----------------------------------------------------------------------------
+# Test Configuration
+# -----------------------------------------------------------------------------
+# Dart tests run 'pub get' inside the sandbox which can be network/IO bound
+# Increase timeouts to prevent flakes on slower machines/CI
+test --test_timeout=360,900,3600,10800
+
+# Always show output on failure
+test --test_output=errors
+
+# -----------------------------------------------------------------------------
+# Debugging
+# -----------------------------------------------------------------------------
+# When compiling in debug mode, preserve debugging information
+build:dbg --copt="-g"
+# Enable verbose failure logs to see script generation issues
+build --verbose_failures
+# Show subcommand output for debugging build actions
+build:verbose --subcommands
+
+# -----------------------------------------------------------------------------
+# Platform & Toolchain
+# -----------------------------------------------------------------------------
+# Ensure correct platform resolution particularly for cross-compilation
+build --incompatible_enable_cc_toolchain_resolution
+
+# Define host platform as needed (usually auto-detected, but good for reproducibility)
+# build --host_platform=@platforms//host
+
+# -----------------------------------------------------------------------------
+# Dart Specific Flags (Future Proofing)
+# -----------------------------------------------------------------------------
+# These generated flags will be available once we move to a full toolchain model
+# build --flag_alias=dart_version=@rules_dart//config:dart_version

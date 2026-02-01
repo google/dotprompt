@@ -13,6 +13,7 @@ import %workspace%/ts.bazelrc
 import %workspace%/java.bazelrc
 import %workspace%/rust.bazelrc
 import %workspace%/python.bazelrc
+import %workspace%/dart.bazelrc
 
 # Allow user overrides. This should be the very last line and this file should
 # be in .gitignore.

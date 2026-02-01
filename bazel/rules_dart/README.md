@@ -347,6 +347,66 @@ bazel test //...
 bazel run //:hello_native
 ```
 
+## Updating Dart SDK Version
+
+When a new Dart SDK version is released, update the following files:
+
+| File | What to Update |
+|------|----------------|
+| `repositories.bzl` | Add new version checksums in `DART_SDK_VERSIONS` |
+| `extensions.bzl` | Update default version if needed |
+| `examples/*/MODULE.bazel` | Update example version references |
+| `README.md` | Update version in Quick Start examples |
+| `CHANGELOG.md` | Document the new SDK support |
+
+### Adding New SDK Version
+
+Edit `repositories.bzl` and add the new version to `DART_SDK_VERSIONS`:
+
+```python
+DART_SDK_VERSIONS = {
+    "3.7.0": {
+        "linux-x64": "sha256-...",
+        "linux-arm64": "sha256-...",
+        "macos-x64": "sha256-...",
+        "macos-arm64": "sha256-...",
+        "windows-x64": "sha256-...",
+    },
+    # Add new version here:
+    "3.8.0": {
+        "linux-x64": "sha256-...",
+        # ...
+    },
+}
+```
+
+### Getting SHA256 Checksums
+
+Download the SDK and compute checksums:
+
+```bash
+# Example for Linux x64
+curl -L https://storage.googleapis.com/dart-archive/channels/stable/release/3.8.0/sdk/dartsdk-linux-x64-release.zip -o dart.zip
+shasum -a 256 dart.zip
+```
+
+Or use the official checksums from https://dart.dev/get-dart/archive.
+
+## File Structure
+
+```
+rules_dart/
+├── defs.bzl           # Public API (load this)
+├── extensions.bzl     # Bzlmod extensions
+├── repositories.bzl   # SDK download rules
+├── private/           # Internal implementation
+│   ├── helpers.bzl    # Common utilities
+│   ├── windows.bzl    # Windows script generation
+│   └── unix.bzl       # Unix script generation
+├── gazelle/           # Gazelle extension
+└── examples/          # Working examples
+```
+
 ## Contributing
 
 See [GEMINI.md](GEMINI.md) for development guidelines.
@@ -354,3 +414,4 @@ See [GEMINI.md](GEMINI.md) for development guidelines.
 ## License
 
 Apache 2.0 - See [LICENSE](../../LICENSE) for details.
+
