@@ -131,8 +131,7 @@ jobs:
           # Verify builds work in strict sandbox mode
           bazel build //... \
             --spawn_strategy=sandboxed \
-            --sandbox_debug \
-            --experimental_use_sandboxfs=false
+            --sandbox_debug
 
       - name: Check action determinism
         working-directory: bazel/rules_dart/examples/hello_world
