@@ -60,6 +60,8 @@ Requirements:
     - For gRPC: protoc-gen-dart with grpc option
 """
 
+load("@com_google_protobuf//bazel/common:proto_info.bzl", "ProtoInfo")
+
 # Proto info provider
 DartProtoInfo = provider(
     doc = "Information about generated Dart proto files.",
@@ -162,6 +164,7 @@ def _dart_grpc_library_impl(ctx):
 
     args = ctx.actions.args()
     args.add("--plugin=protoc-gen-dart=" + plugin.path)
+
     # Enable gRPC generation
     args.add("--dart_out=grpc:" + out_dir.path)
 

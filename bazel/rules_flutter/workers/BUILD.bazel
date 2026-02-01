@@ -1,0 +1,26 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_dart//:defs.bzl", "dart_binary", "dart_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# Shared worker protocol library
+dart_library(
+    name = "protocol",
+    srcs = ["protocol.dart"],
+)
+
+# Hot reload worker for Flutter apps
+dart_binary(
+    name = "hot_reload_worker",
+    main = "hot_reload_worker.dart",
+    deps = [":protocol"],
+)
+
+# Dart analyzer persistent worker
+dart_binary(
+    name = "analyzer_worker",
+    main = "analyzer_worker.dart",
+    deps = [":protocol"],
+)

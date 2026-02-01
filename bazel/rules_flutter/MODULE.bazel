@@ -1,0 +1,59 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+module(
+    name = "rules_flutter",
+    version = "0.1.0",
+    compatibility_level = 1,
+)
+
+# Core dependencies
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
+
+# rules_dart for Dart compilation (Flutter uses Dart)
+# TODO(#123): Remove local_path_override when rules_dart is published to BCR
+bazel_dep(name = "rules_dart", version = "0.1.0")
+local_path_override(
+    module_name = "rules_dart",
+    path = "../rules_dart",
+)
+
+# Optional: OCI/Docker support
+# TODO(#125): Re-enable when aspect_bazel_lib toolchain resolution issue is fixed.
+# See: https://github.com/aspect-build/bazel-lib/issues/1234
+# The issue is that aspect_bazel_lib toolchains reference @local_config_platform
+# which is not visible from external module toolchains.
+# bazel_dep(name = "aspect_bazel_lib", version = "2.16.0")
+# bazel_dep(name = "rules_oci", version = "2.2.0")
+# bazel_dep(name = "rules_pkg", version = "1.0.1")
+
+# Gazelle support
+bazel_dep(name = "rules_go", version = "0.52.0")
+bazel_dep(name = "gazelle", version = "0.41.0")
+
+go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.download(version = "1.23.0")
+
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+go_deps.from_file(go_mod = "//gazelle:go.mod")
+use_repo(
+    go_deps,
+    "in_gopkg_yaml_v3",
+)
+
+flutter = use_extension("//:extensions.bzl", "flutter")
+use_repo(flutter, "flutter_sdk")

@@ -146,8 +146,77 @@ bazel/rules_dart/
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
+## Module Documentation Standards
+
+Every module (`.bzl`, `.dart`, `.go` file) should include comprehensive documentation with the following sections:
+
+### Required Sections
+
+1. **ELI5 (Explain Like I'm 5)**: Simple analogies explaining the concept
+2. **Key Terms Table**: Terminology definitions in table format
+3. **Data Flow Diagrams**: ASCII art showing how data moves through the system
+4. **Usage Examples**: Practical code examples
+
+### ELI5 Format
+
+```
+# ELI5 (Explain Like I'm 5)
+
+## What is [Concept]?
+
+Imagine you're [simple analogy]...
+```
+
+Example:
+
+```
+# ELI5 (Explain Like I'm 5)
+
+## What is a Worker?
+
+Imagine you're building with LEGO. Without a worker, every time you
+want to build something, you have to get out the LEGO, build, then
+put it all away. A "worker" leaves the LEGO out so you can build
+faster!
+```
+
+### Key Terms Table Format
+
+```markdown
+## Key Terms
+
+| Term | Simple Explanation |
+|------|-------------------|
+| **Worker** | A helper that stays running between tasks |
+| **Flagfile** | A text file with a list of instructions |
+```
+
+### Data Flow Diagram Standards
+
+Use ASCII box drawing for all diagrams:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          Diagram Title                                          │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ┌──────────┐   ┌──────────┐   ┌──────────┐                                    │
+│  │  Step 1  │ → │  Step 2  │ → │  Step 3  │                                    │
+│  └──────────┘   └──────────┘   └──────────┘                                    │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+Box drawing characters:
+- Corners: `┌ ┐ └ ┘`
+- Lines: `─ │`
+- T-junctions: `├ ┤ ┬ ┴`
+- Cross: `┼`
+- Arrows: `→ ← ↓ ↑ ▶ ◀ ▼ ▲`
+
 
 ## Development Principles
+
 
 ### 1. No Hardcoding
 

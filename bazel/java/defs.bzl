@@ -16,6 +16,8 @@
 
 """Bazel macros for dotprompt Java spec tests."""
 
+load("@rules_java//java:java_test.bzl", "java_test")
+
 def java_spec_test(name, spec_file):
     """Creates a java_test target for a specific spec YAML file.
 
@@ -32,7 +34,7 @@ def java_spec_test(name, spec_file):
             spec_file = "//spec:metadata.yaml",
         )
     """
-    native.java_test(
+    java_test(
         name = name,
         srcs = ["SpecTest.java"],
         data = [spec_file],

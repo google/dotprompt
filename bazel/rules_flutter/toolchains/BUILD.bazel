@@ -1,0 +1,18 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
+"""Flutter toolchains package."""
+
+load(":toolchain.bzl", "declare_flutter_toolchains")
+
+package(default_visibility = ["//visibility:public"])
+
+# Declare all Flutter toolchains
+declare_flutter_toolchains()
+
+# Convenience target to register all toolchains
+# Usage: register_toolchains("@rules_flutter//toolchains:all")
+toolchain_type(
+    name = "toolchain_type",
+    visibility = ["//visibility:public"],
+)

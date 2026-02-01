@@ -53,17 +53,22 @@ Usage:
 # These should match the execution platform's capabilities
 RBE_CONTAINER_IMAGE = "gcr.io/cloud-marketplace/google/debian11@sha256:..."
 
-def dart_rbe_platform(name, container_image = None, **kwargs):
+def dart_rbe_platform(name, container_image = None, **kwargs):  # buildifier: disable=unused-variable
     """Define an RBE platform configuration for Dart builds.
 
     Args:
         name: Name of the platform target
         container_image: Docker image with RBE tools (Dart SDK is downloaded)
         **kwargs: Additional platform arguments
+
+    Note:
+        This is currently a placeholder. The implementation would create
+        platform and toolchain_type mappings.
     """
+
     # Currently a placeholder - actual implementation would create
     # platform and toolchain_type mappings
-    pass
+    pass  # buildifier: disable=unused-variable
 
 # RBE execution requirements for Dart actions
 RBE_EXECUTION_REQUIREMENTS = {

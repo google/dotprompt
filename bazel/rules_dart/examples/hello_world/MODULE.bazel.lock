@@ -211,14 +211,15 @@
   "moduleExtensions": {
     "@@rules_dart+//:extensions.bzl%dart": {
       "general": {
-        "bzlTransitiveDigest": "NjzrNH7y2sqBzwSkbzLrWiuo1aIYHDInr/w9CXokLGg=",
-        "usagesDigest": "CfzeSNqRXLzL3HgQOMpDBknmAOAwgGonrlRWE6y6sJQ=",
+        "bzlTransitiveDigest": "7pOY1rMP5QOaqkcvOKI8PGEnnNdEiC9pUg6zGTAvswI=",
+        "usagesDigest": "p6Ek2s7g7csVBBUMNIaTnQZcXcRSki8JVrGgn2dsZRM=",
         "recordedInputs": [],
         "generatedRepoSpecs": {
           "dart_sdk": {
             "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_sdk",
             "attributes": {
-              "version": "3.7.0"
+              "version": "3.7.0",
+              "disable_analytics": true
             }
           }
         }

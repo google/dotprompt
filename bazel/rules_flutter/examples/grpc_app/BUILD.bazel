@@ -1,0 +1,136 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+"""gRPC Flutter client + Dart server example.
+
+This demonstrates:
+- Flutter gRPC client app (iOS, Android, Web, macOS, Linux, Windows)
+- Dart gRPC server
+- Proto/gRPC code generation with Bazel
+
+Build with Bazel:
+    bazel build //examples/grpc_app:all
+    bazel build //examples/grpc_app:web_app
+    bazel run //examples/grpc_app:dev_server
+
+Or use the run.sh script:
+    ./run.sh bazel build    # Build all
+    ./run.sh bazel run      # Run dev server
+    ./run.sh bazel server   # Run gRPC server
+"""
+
+load("@rules_flutter//:defs.bzl", "flutter_application", "flutter_binary", "flutter_library", "flutter_test")
+load("@rules_flutter//:flutter.bzl", "flutter_dev_server", "flutter_web_app")
+
+package(default_visibility = ["//visibility:public"])
+
+# =============================================================================
+# Flutter Client
+# =============================================================================
+
+flutter_library(
+    name = "grpc_client_lib",
+    srcs = glob(["lib/**/*.dart"]),
+    pubspec = "pubspec.yaml",
+)
+
+# Development mode (hot reload) - alias for convenience
+flutter_binary(
+    name = "dev",
+    deps = [":grpc_client_lib"],
+)
+
+# Development server with hot reload (preferred for Bazel usage)
+flutter_dev_server(
+    name = "dev_server",
+    device = "chrome",
+    web_port = 8080,
+    deps = [":grpc_client_lib"],
+)
+
+# =============================================================================
+# Web Application
+# =============================================================================
+
+# Web app build (referenced by run.sh)
+flutter_web_app(
+    name = "web_app",
+    build_mode = "release",
+    tree_shake_icons = True,
+    deps = [":grpc_client_lib"],
+)
+
+# =============================================================================
+# Platform-Specific Applications
+# =============================================================================
+
+# Android
+flutter_application(
+    name = "client_android",
+    target_platform = "android",
+    deps = [":grpc_client_lib"],
+)
+
+flutter_application(
+    name = "client_android_aab",
+    target_platform = "android_aab",
+    deps = [":grpc_client_lib"],
+)
+
+# iOS
+flutter_application(
+    name = "client_ios",
+    target_platform = "ios",
+    deps = [":grpc_client_lib"],
+)
+
+# Web (alternative to web_app)
+flutter_application(
+    name = "client_web",
+    target_platform = "web",
+    deps = [":grpc_client_lib"],
+)
+
+# Desktop - macOS
+flutter_application(
+    name = "client_macos",
+    target_platform = "macos",
+    deps = [":grpc_client_lib"],
+)
+
+# Desktop - Linux
+flutter_application(
+    name = "client_linux",
+    target_platform = "linux",
+    deps = [":grpc_client_lib"],
+)
+
+# Desktop - Windows
+flutter_application(
+    name = "client_windows",
+    target_platform = "windows",
+    deps = [":grpc_client_lib"],
+)
+
+# =============================================================================
+# Tests
+# =============================================================================
+
+flutter_test(
+    name = "widget_test",
+    main = "test/widget_test.dart",
+    deps = [":grpc_client_lib"],
+)

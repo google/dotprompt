@@ -78,11 +78,11 @@ dart_grpc_library(
 dart_library(
     name = "grpc_lib",
     srcs = glob(["lib/**/*.dart"]),
+    pubspec = "pubspec.yaml",
     deps = [
         ":helloworld_dart_grpc",
         ":helloworld_dart_proto",
     ],
-    pubspec = "pubspec.yaml",
 )
 
 # =============================================================================

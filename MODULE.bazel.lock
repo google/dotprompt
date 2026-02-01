@@ -159,7 +159,8 @@
     "https://bcr.bazel.build/modules/rules_cc/0.1.5/MODULE.bazel": "88dfc9361e8b5ae1008ac38f7cdfd45ad738e4fa676a3ad67d19204f045a1fd8",
     "https://bcr.bazel.build/modules/rules_cc/0.2.0/MODULE.bazel": "b5c17f90458caae90d2ccd114c81970062946f49f355610ed89bebf954f5783c",
     "https://bcr.bazel.build/modules/rules_cc/0.2.13/MODULE.bazel": "eecdd666eda6be16a8d9dc15e44b5c75133405e820f620a234acc4b1fdc5aa37",
-    "https://bcr.bazel.build/modules/rules_cc/0.2.13/source.json": "f872e892c5265c5532e526857532f4868708f88d64e5ebe517ea72e09da61bdb",
+    "https://bcr.bazel.build/modules/rules_cc/0.2.16/MODULE.bazel": "9242fa89f950c6ef7702801ab53922e99c69b02310c39fb6e62b2bd30df2a1d4",
+    "https://bcr.bazel.build/modules/rules_cc/0.2.16/source.json": "d03d5cde49376d87e14ec14b666c56075e5e3926930327fd5d0484a1ff2ac1cc",
     "https://bcr.bazel.build/modules/rules_cc/0.2.4/MODULE.bazel": "1ff1223dfd24f3ecf8f028446d4a27608aa43c3f41e346d22838a4223980b8cc",
     "https://bcr.bazel.build/modules/rules_cc/0.2.8/MODULE.bazel": "f1df20f0bf22c28192a794f29b501ee2018fa37a3862a1a2132ae2940a23a642",
     "https://bcr.bazel.build/modules/rules_foreign_cc/0.9.0/MODULE.bazel": "c9e8c682bf75b0e7c704166d79b599f93b72cfca5ad7477df596947891feeef6",
@@ -687,8 +688,8 @@
     },
     "@@rules_dart+//:extensions.bzl%dart": {
       "general": {
-        "bzlTransitiveDigest": "NjzrNH7y2sqBzwSkbzLrWiuo1aIYHDInr/w9CXokLGg=",
-        "usagesDigest": "X2kJ0LDi5dmWRUOrIlUKGNj4PJKJGmOqeQkTx4wKUw4=",
+        "bzlTransitiveDigest": "7pOY1rMP5QOaqkcvOKI8PGEnnNdEiC9pUg6zGTAvswI=",
+        "usagesDigest": "vUtXTMja4Me/z0McMOxo+0hP7nLfBdF8RLii9SvoI6c=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -696,7 +697,8 @@
           "dart_sdk": {
             "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_sdk",
             "attributes": {
-              "version": "3.7.0"
+              "version": "3.7.0",
+              "disable_analytics": true
             }
           }
         },
@@ -705,11 +707,11 @@
     },
     "@@rules_dart+//:extensions.bzl%dart_deps": {
       "general": {
-        "bzlTransitiveDigest": "NjzrNH7y2sqBzwSkbzLrWiuo1aIYHDInr/w9CXokLGg=",
+        "bzlTransitiveDigest": "7pOY1rMP5QOaqkcvOKI8PGEnnNdEiC9pUg6zGTAvswI=",
         "usagesDigest": "bFDiWQ203dQgdrPs5klaR6X30ES6EGGPktXZBam3R6Q=",
         "recordedFileInputs": {
-          "@@//dart/dotprompt/pubspec.lock": "59a4448d34176c977b514416f2f8df17e9491464f220c7d702fe36dd93dc53eb",
-          "@@//dart/handlebarrz/pubspec.lock": "7cce9cde7998744d0fd971c4f502e5e6ea5c4ce2a91148b67dba739aef39d351"
+          "@@//dart/dotprompt/pubspec.lock": "826a885d9a3f28d70f9b64cd98ef332b172fd783eafd5de06d96d0c3bc3483ec",
+          "@@//dart/handlebarrz/pubspec.lock": "8b7a4be73a0ce637771f46936e36591fa82c78db055354849c7a3b84fc22c055"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -718,8 +720,8 @@
             "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
             "attributes": {
               "package_name": "_fe_analyzer_shared",
-              "version": "88.0.0",
-              "sha256": "f0bb5d1648339c8308cc0b9838d8456b3cfe5c91f9dc1a735b4d003269e5da9a",
+              "version": "94.0.0",
+              "sha256": "796d97d925add7ffcdf5595f33a2066a6e3cee97971e6dbef09b76b7880fd760",
               "rules_dart_label": "@rules_dart//:defs.bzl"
             }
           },
@@ -727,8 +729,8 @@
             "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
             "attributes": {
               "package_name": "analyzer",
-              "version": "8.1.1",
-              "sha256": "0b7b9c329d2879f8f05d6c05b32ee9ec025f39b077864bdb5ac9a7b63418a98f",
+              "version": "10.0.2",
+              "sha256": "9c8ebb304d72c0a0c8764344627529d9503fc83d7d73e43ed727dc532f822e4b",
               "rules_dart_label": "@rules_dart//:defs.bzl"
             }
           },
@@ -826,8 +828,8 @@
             "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
             "attributes": {
               "package_name": "checked_yaml",
-              "version": "2.0.3",
-              "sha256": "feb6bed21949061731a7a75fc5d2aa727cf160b91af9a3e464c5e3a32e28b5ff",
+              "version": "2.0.4",
+              "sha256": "959525d3162f249993882720d52b7e0c833978df229be20702b33d48d91de70f",
               "rules_dart_label": "@rules_dart//:defs.bzl"
             }
           },
@@ -889,8 +891,8 @@
             "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
             "attributes": {
               "package_name": "dart_style",
-              "version": "3.1.2",
-              "sha256": "c87dfe3d56f183ffe9106a18aebc6db431fc7c98c31a54b952a77f3d54a85697",
+              "version": "3.1.5",
+              "sha256": "15a7db352c8fc6a4d2bc475ba901c25b39fe7157541da4c16eacce6f8be83e49",
               "rules_dart_label": "@rules_dart//:defs.bzl"
             }
           },
@@ -979,8 +981,8 @@
             "repoRuleId": "@@rules_dart+//:repositories.bzl%dart_package",
             "attributes": {
               "package_name": "json_annotation",
-              "version": "4.9.0",
-              "sha256": "1ce844379ca14835a50d2f019a3099f419082cfdd231cd86a142af94dd5c6bb1",
+              "version": "4.10.0",
+              "sha256": "805fa86df56383000f640384b282ce0cb8431f1a7a2396de92fb66186d8c57df",
               "rules_dart_label": "@rules_dart//:defs.bzl"
             }
           },
@@ -1891,7 +1893,7 @@
     },
     "@@rules_rust+//crate_universe:extension.bzl%crate": {
       "general": {
-        "bzlTransitiveDigest": "gPGJjdrLRKgXLlXMK6kWseKkOlOC/yBSHtYUgLe2bCk=",
+        "bzlTransitiveDigest": "GqElh90kVYA5hYFvr09fg5T5NCzbjMYqtPh1ukdYSEk=",
         "usagesDigest": "CjgpFVuFCheh9rkTr62WitflU7Lr/QLGpPaiQz2s6RA=",
         "recordedFileInputs": {
           "@@//Cargo.lock": "523efab8a728f5b492205a94fbb673921e1fa942ab28fb8964c2087fa70b74ed",

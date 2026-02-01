@@ -51,24 +51,28 @@ exports_files(["pubspec.lock"])
 
 dart_test(
     name = "dotprompt_test",
+    data = ["//dart/handlebarrz"],
     main = "test/dotprompt_test.dart",
     deps = [":dotprompt"],
 )
 
 dart_test(
     name = "parse_test",
+    data = ["//dart/handlebarrz"],
     main = "test/parse_test.dart",
     deps = [":dotprompt"],
 )
 
 dart_test(
     name = "picoschema_test",
+    data = ["//dart/handlebarrz"],
     main = "test/picoschema_test.dart",
     deps = [":dotprompt"],
 )
 
 dart_test(
     name = "types_test",
+    data = ["//dart/handlebarrz"],
     main = "test/types_test.dart",
     deps = [":dotprompt"],
 )
@@ -139,6 +143,7 @@ dart_test(
     name = "spec_test",
     data = [
         "//:MODULE.bazel",
+        "//dart/handlebarrz",
         "//spec",
     ],
     main = "test/spec_test.dart",

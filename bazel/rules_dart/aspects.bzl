@@ -73,7 +73,7 @@ DartIdeInfo = provider(
     },
 )
 
-def _dart_ide_info_impl(target, ctx):
+def _dart_ide_info_impl(_target, ctx):
     """Aspect implementation for collecting Dart IDE information."""
 
     # Check if this is a Dart target
@@ -164,17 +164,17 @@ dart_ide_info = aspect(
 )
 
 # VSCode-specific settings generator
-def generate_vscode_settings(dart_targets):
+def generate_vscode_settings(_dart_targets):
     """Generate VSCode settings for Dart project.
 
     Args:
-        dart_targets: List of DartIdeInfo providers
+        _dart_targets: List of DartIdeInfo providers (unused, for interface compatibility)
 
     Returns:
         Dict suitable for .vscode/settings.json
     """
     return {
-        "dart.sdkPath": "${workspaceFolder}/bazel-bin/external/dart_sdk",
+        "dart.sdkPath": "${workspaceFolder}/bazel-bin/external/dart_sdk",  # buildifier: disable=external-path
         "dart.analysisExcludedFolders": [
             "bazel-bin",
             "bazel-out",
@@ -184,11 +184,11 @@ def generate_vscode_settings(dart_targets):
     }
 
 # IntelliJ-specific settings generator
-def generate_intellij_facet(dart_targets):
+def generate_intellij_facet(_dart_targets):
     """Generate IntelliJ Dart facet configuration.
 
     Args:
-        dart_targets: List of DartIdeInfo providers
+        _dart_targets: List of DartIdeInfo providers (unused, for interface compatibility)
 
     Returns:
         Dict suitable for .idea facet configuration
@@ -196,6 +196,6 @@ def generate_intellij_facet(dart_targets):
     return {
         "type": "Dart",
         "configuration": {
-            "sdkPath": "bazel-bin/external/dart_sdk",
+            "sdkPath": "bazel-bin/external/dart_sdk",  # buildifier: disable=external-path
         },
     }

@@ -155,15 +155,18 @@ current_dart_toolchain = rule(
     toolchains = [DART_TOOLCHAIN_TYPE],
 )
 
-def dart_register_toolchains(version = None, name = "dart_default"):
+def dart_register_toolchains(version = None, name = "dart_default"):  # buildifier: disable=unused-variable
     """Registers Dart toolchains for the given version.
 
     This macro should be called from WORKSPACE or MODULE.bazel to register
     the Dart toolchain for all supported platforms.
 
     Args:
-        version: The Dart SDK version. If None, uses the default.
+        version: The Dart SDK version. If None, uses the default. (Reserved for future use)
         name: Base name for the toolchain repos.
+
+    Returns:
+        List of registered toolchain names.
     """
 
     # Platform configurations

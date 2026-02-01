@@ -1,0 +1,12 @@
+{
+  "homepage_url": "https://github.com/google/dotprompt",
+  "maintainers": [
+    {
+      "email": "noreply@google.com",
+      "github": "google"
+    }
+  ],
+  "repository": ["github:google/dotprompt"],
+  "versions": ["0.1.0"],
+  "yanked_versions": {}
+}

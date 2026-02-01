@@ -161,6 +161,22 @@ def _dart_sdk_impl(repository_ctx):
     # Create the BUILD.bazel file (Common logic)
     _generate_build_file(repository_ctx, version, platform)
 
+    # Disable analytics if requested
+    disable_analytics = repository_ctx.attr.disable_analytics
+    if disable_analytics:
+        # Create a script to disable analytics on first use
+        analytics_script = '''#!/bin/bash
+# Disable Dart analytics
+"$1/bin/dart" --disable-analytics 2>/dev/null || true
+'''
+        repository_ctx.file("disable_analytics.sh", content = analytics_script, executable = True)
+
+        analytics_script_bat = '''@echo off
+REM Disable Dart analytics
+"%~1\\bin\\dart.exe" --disable-analytics 2>nul
+'''
+        repository_ctx.file("disable_analytics.bat", content = analytics_script_bat, executable = True)
+
     # Create a wrapper script that sets up the environment
     dart_ext = ".exe" if "windows" in platform else ""
     repository_ctx.file("dart_wrapper.sh", content = """#!/bin/bash
@@ -209,6 +225,10 @@ dart_sdk = repository_rule(
         "version": attr.string(
             default = DART_VERSION,
             doc = "The Dart SDK version to download.",
+        ),
+        "disable_analytics": attr.bool(
+            default = True,
+            doc = "Disable Dart analytics for hermetic builds.",
         ),
     },
     environ = ["DART_HOME"],

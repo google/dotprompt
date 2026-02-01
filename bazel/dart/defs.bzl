@@ -21,11 +21,12 @@ spec test runners. These are NOT part of the generic rules_dart package.
 """
 
 load("@rules_dart//:defs.bzl", "DART_SDK")
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
 
 # Runfiles path to the Dart SDK binary
 # Removed: _DART_SDK_RUNFILES_PATH (using dynamic resolution now)
 
-def dart_spec_test(name, spec_file, deps = [], **kwargs):
+def dart_spec_test(name, spec_file, **kwargs):
     """Creates a Dart spec test target that runs against a YAML spec file.
 
     This is a Dotprompt-specific macro that creates a Dart test target
@@ -43,7 +44,6 @@ def dart_spec_test(name, spec_file, deps = [], **kwargs):
     Args:
         name: Name of the test target.
         spec_file: Label of the YAML spec file to test against.
-        deps: Additional dependencies for the test (unused, kept for API compat).
         **kwargs: Additional arguments to pass to the test.
     """
 
@@ -125,7 +125,7 @@ chmod +x $@
         executable = True,
     )
 
-    native.sh_test(
+    sh_test(
         name = name,
         srcs = [":" + script_name],
         data = [

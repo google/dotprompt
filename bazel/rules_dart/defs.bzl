@@ -59,29 +59,186 @@ def _runfiles_path(file):
         return sp[3:]  # Strip leading "../"
     return sp
 
-def dart_library(name, srcs = [], deps = [], pubspec = None, visibility = None, **kwargs):
-    """Creates a Dart library target.
+DartPackageInfo = provider(
+    doc = "Information about a Dart package for dependency tracking and transitive resolution.",
+    fields = {
+        "name": "Package name",
+        "version": "Package version",
+        "lib_root": "Path to lib directory (File)",
+        "srcs": "Depset of source files (direct)",
+        "data": "Depset of data files (direct)",
+        "transitive_srcs": "Depset of all transitive source files",
+        "transitive_data": "Depset of all transitive data files",
+        "transitive_packages": "Depset of transitive package infos",
+    },
+)
 
-    This is a lightweight wrapper that creates a filegroup for Dart sources.
-    Dart's module system handles the actual compilation.
+def _dart_library_impl(ctx):
+    package_name = ctx.attr.package_name
 
-    Args:
-        name: Name of the library target.
-        srcs: List of Dart source files.
-        deps: List of dependencies (other dart_library targets).
-        pubspec: The pubspec.yaml file (optional).
-        visibility: Visibility declaration.
-        **kwargs: Additional arguments passed to native.filegroup.
-    """
-    all_srcs = srcs + deps
-    if pubspec and pubspec not in all_srcs:
-        all_srcs.append(pubspec)
+    # Collect transitive info
+    transitive_packages_list = []
+    transitive_srcs_list = []
+    transitive_data_list = []
 
-    native.filegroup(
+    for dep in ctx.attr.deps:
+        if DartPackageInfo in dep:
+            transitive_packages_list.append(dep[DartPackageInfo].transitive_packages)
+            transitive_srcs_list.append(dep[DartPackageInfo].transitive_srcs)
+            transitive_data_list.append(dep[DartPackageInfo].transitive_data)
+
+    # Current target files
+    current_srcs = depset(ctx.files.srcs)
+    current_data = depset(ctx.files.data)
+
+    transitive_srcs_list.append(current_srcs)
+    transitive_data_list.append(current_data)
+
+    current_info = None
+    if package_name:
+        # Determine lib root from sources
+        # We assume the first source file in lib/ determines the root
+        lib_root = None
+        for f in ctx.files.srcs:
+            # Check if file is in a 'lib' directory
+            # This is a heuristic. For generated repos, it's reliable.
+            # For local code, it might be tricky if srcs are scattered.
+            # We'll use the package's root directory.
+            lib_root = f.dirname
+            break
+
+        # If no sources, we can't determine lib_root easily, but maybe from pubspec?
+        if not lib_root and ctx.file.pubspec:
+            lib_root = ctx.file.pubspec.dirname + "/lib"
+
+        if lib_root:
+            current_info = struct(
+                name = package_name,
+                version = "0.0.0",  # TODO: Parse from pubspec if needed
+                lib_root = lib_root,
+                srcs = current_srcs,
+            )
+
+    # Add current package to transitive set if it exists
+    if current_info:
+        transitive_packages_list.append(depset([current_info]))
+
+    # Include pubspec in files for runfiles propagation
+    all_files = ctx.files.srcs + ctx.files.data
+    if ctx.file.pubspec:
+        all_files = all_files + [ctx.file.pubspec]
+
+    runfiles = ctx.runfiles(files = all_files)
+
+    # Merge in transitive runfiles from dependencies
+    for dep in ctx.attr.deps:
+        if DefaultInfo in dep:
+            runfiles = runfiles.merge(dep[DefaultInfo].default_runfiles)
+
+    return [
+        DefaultInfo(
+            files = depset(all_files),
+            runfiles = runfiles,
+        ),
+        DartPackageInfo(
+            name = package_name,
+            version = "0.0.0",
+            lib_root = current_info.lib_root if current_info else None,
+            srcs = current_srcs,
+            data = current_data,
+            transitive_srcs = depset(transitive = transitive_srcs_list),
+            transitive_data = depset(transitive = transitive_data_list),
+            transitive_packages = depset(transitive = transitive_packages_list),
+        ),
+    ]
+
+_dart_library = rule(
+    implementation = _dart_library_impl,
+    attrs = {
+        "srcs": attr.label_list(allow_files = True),
+        "data": attr.label_list(allow_files = True),
+        "deps": attr.label_list(providers = [DartPackageInfo]),
+        "package_name": attr.string(),
+        "pubspec": attr.label(allow_single_file = True),
+    },
+)
+
+def dart_library(name, srcs = [], deps = [], pubspec = None, package_name = None, visibility = None, **kwargs):
+    """Creates a Dart library target."""
+    _dart_library(
         name = name,
-        srcs = all_srcs,
+        srcs = srcs,
+        deps = deps,
+        pubspec = pubspec,
+        package_name = package_name,
         visibility = visibility,
         **kwargs
+    )
+
+def _generate_package_config(ctx, deps, output_file):
+    """Generates .dart_tool/package_config.json."""
+    packages = []
+    seen_packages = {}
+
+    # Collect all transitive packages
+    transitive_infos = []
+    for dep in deps:
+        if DartPackageInfo in dep:
+            transitive_infos.append(dep[DartPackageInfo].transitive_packages)
+
+    all_packages = depset(transitive = transitive_infos).to_list()
+
+    for pkg in all_packages:
+        if pkg.name in seen_packages:
+            continue
+        seen_packages[pkg.name] = True
+
+        # Calculate relative path from output_file to lib_root
+        # output_file is .dart_tool/package_config.json
+        # lib_root is .../lib
+        # We need relative path.
+        # Since we can't easily compute relative paths between arbitrary artifacts in Starlark phase
+        # without strict root knowledge, we might use absolute paths or runfiles paths.
+        # Dart supports "rootUri" as relative.
+
+        # For now, let's use a simplified approach:
+        # We assume we are running in the runfiles tree.
+        # The runfiles tree structure mirrors the repo structure.
+        # So we can use the workspace-relative path.
+
+        # pkg.lib_root is a string (dirname)
+        # We need to construct the URI.
+
+        # If it's an external repo: ../repo_name/lib
+        # If it's local: package/path/lib
+
+        # We need to handle the fact that lib_root is a path string here.
+        # In _dart_library_impl, lib_root was f.dirname.
+
+        # The package_config.json is inside .dart_tool/
+        # So we need ../ to get to workspace root.
+
+        root_uri = "../" + pkg.lib_root.rsplit("/", 1)[0]  # Parent of lib
+        package_uri = "lib/"
+
+        packages.append({
+            "name": pkg.name,
+            "rootUri": root_uri,
+            "packageUri": package_uri,
+            "languageVersion": "3.0",
+        })
+
+    config = {
+        "configVersion": 2,
+        "packages": packages,
+        "generated": "2026-01-01T00:00:00.000000Z",
+        "generator": "bazel",
+        "generatorVersion": "0.1.0",
+    }
+
+    ctx.actions.write(
+        output = output_file,
+        content = json.encode(config),
     )
 
 def _dart_binary_impl(ctx):
@@ -95,6 +252,10 @@ def _dart_binary_impl(ctx):
     dart_short_path = _runfiles_path(dart_bin)
     main_path = ctx.file.main.path
 
+    # Generate package config
+    package_config = ctx.actions.declare_file(".dart_tool/package_config.json")
+    _generate_package_config(ctx, ctx.attr.deps, package_config)
+
     if is_windows:
         content = """@echo off
 setlocal
@@ -107,8 +268,12 @@ if not exist "%DART_BIN%" (
     set "DART_BIN=dart"
 )
 
-"%DART_BIN%" run {main} %*
-""".format(dart_path = dart_short_path.replace("/", "\\"), main = main_path.replace("/", "\\"))
+"%DART_BIN%" run --packages="%RUNFILES%\\_main\\{package_config}" {main} %*
+""".format(
+            dart_path = dart_short_path.replace("/", "\\"),
+            main = main_path.replace("/", "\\"),
+            package_config = package_config.short_path.replace("/", "\\"),
+        )
     else:
         content = """#!/bin/bash
 set -e
@@ -121,14 +286,22 @@ if [ ! -f "$DART_BIN" ]; then
     DART_BIN="dart"
 fi
 
-exec "$DART_BIN" run {main} "$@"
-""".format(dart_path = dart_short_path, main = main_path)
+exec "$DART_BIN" run --packages="$RUNFILES/_main/{package_config}" {main} "$@"
+""".format(
+            dart_path = dart_short_path,
+            main = main_path,
+            package_config = package_config.short_path,
+        )
 
     ctx.actions.write(runner_script, content, is_executable = True)
 
     runfiles = ctx.runfiles(
-        files = [dart_bin, ctx.file.main] + ctx.files.srcs + ctx.files.deps,
+        files = [dart_bin, ctx.file.main, package_config] + ctx.files.srcs + ctx.files.deps,
     )
+
+    # Also collect transitive runfiles from deps
+    for dep in ctx.attr.deps:
+        runfiles = runfiles.merge(dep[DefaultInfo].default_runfiles)
 
     return [DefaultInfo(
         executable = runner_script,
@@ -179,10 +352,11 @@ def _dart_test_impl(ctx):
     main_path = ctx.file.main.path
     pkg_dir = ctx.attr.package_dir or ctx.label.package
 
+    # Generate package config
+    package_config = ctx.actions.declare_file(".dart_tool/package_config.json")
+    _generate_package_config(ctx, ctx.attr.deps, package_config)
+
     # Compute relative path of test file from package directory
-    # main_path is like "dart/dotprompt/test/foo_test.dart"
-    # pkg_dir is like "dart/dotprompt"
-    # We need just "test/foo_test.dart" for the dart test command
     if pkg_dir and main_path.startswith(pkg_dir + "/"):
         test_file = main_path[len(pkg_dir) + 1:]
     else:
@@ -211,14 +385,40 @@ mkdir "%PUB_CACHE%"
 xcopy "%WORKSPACE_ROOT%" "%TEMP_DIR%" /E /I /Q >nul
 cd /d "%TEMP_DIR%\\{pkg_dir}"
 
+REM Run pub get to resolve dependencies (including path deps)
 call "%DART_BIN%" pub get --offline 2>nul || call "%DART_BIN%" pub get
-"%DART_BIN%" test {main}
+
+REM Sharding support
+set "SHARD_ARGS="
+if defined TEST_TOTAL_SHARDS (
+    set "SHARD_ARGS=--total-shards=%TEST_TOTAL_SHARDS% --shard-index=%TEST_SHARD_INDEX%"
+)
+
+if defined COVERAGE_OUTPUT_FILE (
+    echo Running with coverage...
+    set "COVERAGE_DIR=%TEMP_DIR%\\coverage"
+    call "%DART_BIN%" test %SHARD_ARGS% --coverage="!COVERAGE_DIR!" {main}
+    
+    if exist "!COVERAGE_DIR!\\coverage.json" (
+        call "%DART_BIN%" run coverage:format_coverage ^
+            --lcov ^
+            --in="!COVERAGE_DIR!" ^
+            --out="%COVERAGE_OUTPUT_FILE%" ^
+            --report-on=lib
+    )
+) else (
+    "%DART_BIN%" test %SHARD_ARGS% {main}
+)
 set "RESULT=%errorlevel%"
 
 cd /d "%TEMP%"
 rmdir /s /q "%TEMP_DIR%" 2>nul
 exit /b %RESULT%
-""".format(dart_path = dart_short_path.replace("/", "\\"), pkg_dir = pkg_dir.replace("/", "\\"), main = test_file.replace("/", "\\"))
+""".format(
+            dart_path = dart_short_path.replace("/", "\\"),
+            pkg_dir = pkg_dir.replace("/", "\\"),
+            main = test_file.replace("/", "\\"),
+        )
     else:
         content = """#!/bin/bash
 set -e
@@ -249,13 +449,45 @@ mkdir -p "$PUB_CACHE"
 cp -R "$WORKSPACE_ROOT"/. "$TEMP_DIR/"
 cd "$TEMP_DIR/{pkg_dir}"
 
+# Run pub get to resolve dependencies (including path deps)
 "$DART_BIN" pub get --offline 2>/dev/null || "$DART_BIN" pub get
-"$DART_BIN" test {main}
-""".format(dart_path = dart_short_path, pkg_dir = pkg_dir, main = test_file)
+
+# Sharding support
+SHARD_ARGS=""
+if [[ -n "$TEST_TOTAL_SHARDS" ]]; then
+    SHARD_ARGS="--total-shards=$TEST_TOTAL_SHARDS --shard-index=$TEST_SHARD_INDEX"
+fi
+
+if [ -n "$COVERAGE_OUTPUT_FILE" ]; then
+    echo "Running with coverage..."
+    COVERAGE_DIR="$TEMP_DIR/coverage"
+    "$DART_BIN" test $SHARD_ARGS --coverage="$COVERAGE_DIR" {main}
+    
+    if [ -f "$COVERAGE_DIR/coverage.json" ]; then
+        "$DART_BIN" run coverage:format_coverage \\
+            --lcov \\
+            --in="$COVERAGE_DIR" \\
+            --out="$COVERAGE_OUTPUT_FILE" \\
+            --report-on=lib
+    fi
+else
+    "$DART_BIN" test $SHARD_ARGS {main}
+fi
+""".format(
+            dart_path = dart_short_path,
+            pkg_dir = pkg_dir,
+            main = test_file,
+        )
 
     ctx.actions.write(runner_script, content, is_executable = True)
-    all_files = [dart_bin, ctx.file.main] + ctx.files.srcs + ctx.files.deps + ctx.files.data
-    runfiles = ctx.runfiles(files = all_files)
+
+    runfiles = ctx.runfiles(
+        files = [dart_bin, ctx.file.main, package_config] + ctx.files.srcs + ctx.files.deps + ctx.files.data,
+    )
+
+    # Also collect transitive runfiles from deps
+    for dep in ctx.attr.deps:
+        runfiles = runfiles.merge(dep[DefaultInfo].default_runfiles)
 
     return [DefaultInfo(executable = runner_script, runfiles = runfiles)]
 
@@ -264,7 +496,7 @@ _dart_test = rule(
     attrs = {
         "main": attr.label(allow_single_file = True, mandatory = True),
         "srcs": attr.label_list(allow_files = True),
-        "deps": attr.label_list(),
+        "deps": attr.label_list(providers = [DartPackageInfo]),
         "data": attr.label_list(allow_files = True),
         "package_dir": attr.string(),
         "dart_sdk": attr.label(default = Label("@dart_sdk//:dart_bin"), executable = True, cfg = "exec", allow_single_file = True),
@@ -657,11 +889,14 @@ def _dart_compile(
         srcs = [],
         deps = [],
         package_dir = None,
+        pubspec = None,
         output_extensions = [],
         extra_args = [],
         visibility = None,
         **kwargs):
     """Internal helper to instantiate _dart_compile_rule."""
+    pkg_dir = package_dir or native.package_name() or "."
+    effective_pubspec = pubspec or (pkg_dir + "/pubspec.yaml" if pkg_dir != "." else "pubspec.yaml")
 
     _dart_compile_rule(
         name = name,
@@ -670,6 +905,7 @@ def _dart_compile(
         srcs = srcs,
         deps = deps,
         package_dir = package_dir,
+        pubspec = effective_pubspec,
         output_extensions = output_extensions,
         extra_args = extra_args,
         visibility = visibility,
@@ -693,7 +929,8 @@ def _dart_compile_impl(ctx):
     dart_bin = ctx.executable.dart_sdk
     srcs = ctx.files.srcs
     deps = ctx.files.deps
-    all_inputs = srcs + deps + [dart_bin, ctx.file.main]
+    pubspec_files = [ctx.file.pubspec] if ctx.file.pubspec else []
+    all_inputs = srcs + deps + pubspec_files + [dart_bin, ctx.file.main]
 
     runner_script_name = ctx.label.name + "_builder" + (".bat" if is_windows else ".sh")
     runner_script = ctx.actions.declare_file(runner_script_name)
@@ -701,7 +938,11 @@ def _dart_compile_impl(ctx):
     dart_path = dart_bin.path
     out_path = out_file.path
     main_path = ctx.file.main.path
-    pkg_dir = ctx.attr.package_dir or ctx.label.package
+
+    # Determine package directory: use explicit attr, or derive from label package
+    # For targets at workspace root (empty package), use "." to indicate current directory
+    pkg_dir = ctx.attr.package_dir or ctx.label.package or "."
+
     extra_args = " ".join(ctx.attr.extra_args)
 
     if is_windows:
@@ -722,13 +963,10 @@ set "PUB_CACHE=%TEMP%\\pub_cache_%RANDOM%"
 if not exist "%PUB_CACHE%" mkdir "%PUB_CACHE%"
 set "HOME=%PUB_CACHE%"
 
-if not "%PKG_DIR%"=="" (
-  pushd "%PKG_DIR%"
-  call "%DART%" pub get
-  popd
-) else (
-  call "%DART%" pub get
-)
+REM cd to package dir for pub get
+cd /d "%TEMP_DIR%\\%PKG_DIR%"
+call "%DART%" pub get
+cd /d "%TEMP_DIR%"
 
 echo Compiling...
 call "%DART%" compile {command} {extra_args} -o "%ABS_OUT%" "%MAIN%"
@@ -758,13 +996,10 @@ cd "$TEMP_DIR"
 export PUB_CACHE=$(mktemp -d)
 trap "rm -rf $TEMP_DIR $PUB_CACHE" EXIT
 
-if [ -n "$PKG_DIR" ]; then
-    pushd "$PKG_DIR" > /dev/null
-    "$DART" pub get
-    popd > /dev/null
-else
-    "$DART" pub get
-fi
+# cd to package dir for pub get
+cd "$TEMP_DIR/$PKG_DIR"
+"$DART" pub get
+cd "$TEMP_DIR"
 
 echo "Compiling..."
 "$DART" compile {command} {extra_args} -o "$ABS_OUT" "$MAIN"
@@ -779,12 +1014,13 @@ echo "Compiling..."
 
     ctx.actions.write(runner_script, content, is_executable = True)
 
-    # Execution requirements for worker support
-    # When --strategy=DartCompile=worker is set, Bazel will use persistent workers
-    execution_requirements = {
-        "supports-workers": "1",
-        "requires-worker-protocol": "json",
-    }
+    # Note: Worker support is disabled for shell-script based execution.
+    # To enable persistent workers, the action would need to implement the
+    # Bazel worker protocol (JSON requests/responses via stdin/stdout).
+    # See: https://bazel.build/remote/persistent
+    #
+    # For now, we rely on Bazel's action caching for build performance.
+    # TODO(#124): Implement proper persistent worker binary for Dart compilation.
 
     ctx.actions.run(
         executable = runner_script,
@@ -792,19 +1028,26 @@ echo "Compiling..."
         inputs = all_inputs,
         tools = [dart_bin],
         mnemonic = "DartCompile",
-        arguments = [],
-        execution_requirements = execution_requirements,
+        progress_message = "Compiling Dart %{label}",
+        # Explicitly disable worker strategy for shell-script based execution.
+        # Shell scripts don't implement the Bazel worker protocol (flagfile pattern).
+        # TODO(#124): Implement proper persistent worker binary for Dart compilation.
+        execution_requirements = {
+            "no-remote": "1",  # Shell scripts need local execution
+            "supports-workers": "0",  # Disable worker strategy
+        },
     )
 
     return [DefaultInfo(executable = out_file, files = depset(outputs))]
 
-dart_native_binary = rule(
+_dart_native_binary_rule = rule(
     implementation = _dart_compile_impl,
     attrs = {
         "main": attr.label(allow_single_file = True, mandatory = True),
         "srcs": attr.label_list(allow_files = True),
         "deps": attr.label_list(),
         "package_dir": attr.string(),
+        "pubspec": attr.label(allow_single_file = True, doc = "The pubspec.yaml file for the package."),
         "dart_sdk": attr.label(default = Label("@dart_sdk//:dart_bin"), executable = True, cfg = "exec", allow_single_file = True),
         "_windows_constraint": attr.label(default = Label("@platforms//os:windows")),
         "command": attr.string(default = "exe"),
@@ -814,6 +1057,33 @@ dart_native_binary = rule(
     executable = True,
 )
 
+def dart_native_binary(name, main, srcs = [], deps = [], package_dir = None, pubspec = None, visibility = None, **kwargs):
+    """Compiles a Dart program to a native executable.
+
+    Args:
+        name: Name of the target.
+        main: Main Dart file.
+        srcs: Source files.
+        deps: Dependencies.
+        package_dir: Package directory containing pubspec.yaml.
+        pubspec: Path to pubspec.yaml (defaults to pubspec.yaml in the package).
+        visibility: Target visibility.
+        **kwargs: Additional arguments passed to the underlying rule.
+    """
+    pkg_dir = package_dir or native.package_name() or "."
+    effective_pubspec = pubspec or (pkg_dir + "/pubspec.yaml" if pkg_dir != "." else "pubspec.yaml")
+
+    _dart_native_binary_rule(
+        name = name,
+        main = main,
+        srcs = srcs,
+        deps = deps,
+        package_dir = package_dir,
+        pubspec = effective_pubspec,
+        visibility = visibility,
+        **kwargs
+    )
+
 _dart_compile_rule = rule(
     implementation = _dart_compile_impl,
     attrs = {
@@ -821,6 +1091,7 @@ _dart_compile_rule = rule(
         "srcs": attr.label_list(allow_files = True),
         "deps": attr.label_list(),
         "package_dir": attr.string(),
+        "pubspec": attr.label(allow_single_file = True, doc = "The pubspec.yaml file for the package."),
         "dart_sdk": attr.label(default = Label("@dart_sdk//:dart_bin"), executable = True, cfg = "exec", allow_single_file = True),
         "_windows_constraint": attr.label(default = Label("@platforms//os:windows")),
         "command": attr.string(mandatory = True),
@@ -840,7 +1111,10 @@ def dart_js_binary(name, main, srcs = [], deps = [], package_dir = None, visibil
         main: Main Dart file.
         srcs: Source files.
         deps: Dependencies.
+        package_dir: Package directory containing pubspec.yaml.
+        visibility: Target visibility.
         minified: Whether to minify the output (default True).
+        **kwargs: Additional arguments passed to the underlying rule.
     """
     extra_args = ["-O4"] if minified else ["-O0"]
     _dart_compile(
@@ -865,6 +1139,10 @@ def dart_wasm_binary(name, main, srcs = [], deps = [], package_dir = None, visib
         name: Name of the target.
         main: Main Dart file.
         srcs: Source files.
+        deps: Dependencies.
+        package_dir: Package directory containing pubspec.yaml.
+        visibility: Target visibility.
+        **kwargs: Additional arguments passed to the underlying rule.
     """
     _dart_compile(
         name = name,
@@ -886,6 +1164,11 @@ def dart_aot_snapshot(name, main, srcs = [], deps = [], package_dir = None, visi
     Args:
         name: Name of the target.
         main: Main Dart file.
+        srcs: Source files.
+        deps: Dependencies.
+        package_dir: Package directory containing pubspec.yaml.
+        visibility: Target visibility.
+        **kwargs: Additional arguments passed to the underlying rule.
     """
     _dart_compile(
         name = name,

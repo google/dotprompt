@@ -18,13 +18,52 @@
 
 This package provides the Bazel persistent worker implementation
 that accelerates Dart compilation by keeping the Dart VM warm.
+
+# ELI5 (Explain Like I'm 5)
+
+Imagine you're starting a car every time you want to drive to school.
+That's slow! A worker is like keeping the car running - you just hop in
+and drive. The Dart VM (the car) stays warm and ready.
+
+# Key Terms
+
+| Term | What It Means |
+|------|---------------|
+| **Worker** | A program that stays running between builds |
+| **Protocol** | How Bazel and workers talk to each other |
+| **Flagfile** | A file with arguments (like a to-do list) |
 """
 
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("//:defs.bzl", "dart_library")
 
 package(default_visibility = ["//visibility:public"])
 
-# Worker library (zero external dependencies)
+# Protocol library - shared worker communication code
+dart_library(
+    name = "protocol",
+    srcs = ["lib/protocol.dart"],
+    pubspec = "pubspec.yaml",
+)
+
+# Compile worker - persistent worker for dart compile commands
+dart_library(
+    name = "compile_worker",
+    srcs = ["lib/compile_worker.dart"],
+    pubspec = "pubspec.yaml",
+    deps = [":protocol"],
+)
+
+# Analyzer worker - persistent worker for dart analyze commands
+dart_library(
+    name = "analyzer_worker",
+    srcs = ["lib/analyzer_worker.dart"],
+    pubspec = "pubspec.yaml",
+    deps = [":protocol"],
+)
+
+# Legacy worker library (zero external dependencies)
 dart_library(
     name = "worker_lib",
     srcs = ["bin/worker.dart"],
@@ -41,11 +80,26 @@ sh_binary(
     ],
 )
 
+# Unix compile worker executable
+sh_binary(
+    name = "compile_worker_unix",
+    srcs = ["worker_wrapper.sh"],
+    args = ["--worker-main=lib/compile_worker.dart"],
+    data = [
+        "lib/compile_worker.dart",
+        "lib/protocol.dart",
+        "@dart_sdk//:dart_bin",
+    ],
+)
+
 # Export wrapper scripts for direct use
 exports_files([
     "worker_wrapper.sh",
     "worker_wrapper.bat",
     "bin/worker.dart",
+    "lib/protocol.dart",
+    "lib/compile_worker.dart",
+    "lib/analyzer_worker.dart",
 ])
 
 # Alias for the worker (platform-agnostic reference)
@@ -60,8 +114,8 @@ sh_test(
     name = "worker_smoke_test",
     srcs = ["tests/smoke_test.sh"],
     data = [
-        ":worker_unix",
         "bin/worker.dart",
+        ":worker_unix",
         "@dart_sdk//:dart_bin",
     ],
     tags = ["local"],  # Requires local execution for stdin/stdout

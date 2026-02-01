@@ -29,6 +29,7 @@ def _dart_impl(module_ctx):
     # Defaults
     version = DART_VERSION
     sdk_path = None
+    disable_analytics = True
 
     # Bzlmod iterates modules in BFS order, allowing the root module to override.
 
@@ -38,6 +39,8 @@ def _dart_impl(module_ctx):
                 version = config.version
             if config.sdk_home:
                 sdk_path = config.sdk_home
+            if hasattr(config, "disable_analytics"):
+                disable_analytics = config.disable_analytics
 
     if sdk_path:
         dart_local_sdk(
@@ -49,6 +52,7 @@ def _dart_impl(module_ctx):
         dart_sdk(
             name = "dart_sdk",
             version = version,
+            disable_analytics = disable_analytics,
         )
 
 _configure = tag_class(
@@ -60,6 +64,10 @@ _configure = tag_class(
         "sdk_home": attr.string(
             default = "",
             doc = "Absolute path to local Dart SDK home directory. Overrides version if set.",
+        ),
+        "disable_analytics": attr.bool(
+            default = True,
+            doc = "Disable Dart analytics for hermetic builds. Default: True.",
         ),
     },
 )

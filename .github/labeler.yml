@@ -77,6 +77,11 @@ rules_dart:
       - any-glob-to-any-file:
           - "bazel/rules_dart/**"
 
+rules_flutter:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "bazel/rules_flutter/**"
+
 dotprompt-dart:
   - changed-files:
       - any-glob-to-any-file:

@@ -91,7 +91,13 @@
     },
     "bazel/rules_dart": {
       "release-type": "simple",
-      "component": "rules_dart"
+      "component": "rules_dart",
+      "extra-files": ["MODULE.bazel", ".bcr/metadata.json"]
+    },
+    "bazel/rules_flutter": {
+      "release-type": "simple",
+      "component": "rules_flutter",
+      "extra-files": ["MODULE.bazel", ".bcr/metadata.json"]
     },
     "packages/vscode": {
       "release-type": "node",

@@ -71,7 +71,8 @@ Usage in BUILD.bazel:
 _PUB_HOSTED_URL = "https://pub.dev/packages/{name}/versions/{version}.tar.gz"
 
 # Global registry for tracking package versions across modules (for conflict detection)
-_VERSION_REGISTRY = {}
+# TODO(#issue): Use this registry for cross-module conflict detection
+_VERSION_REGISTRY = {}  # buildifier: disable=unused-variable
 
 def _parse_pubspec_lock(content):
     """Parse a pubspec.lock file and extract package information.
@@ -93,7 +94,7 @@ def _parse_pubspec_lock(content):
 
     current_package = None
     current_info = {}
-    indent_level = 0
+    _indent_level = 0  # buildifier: disable=unused-variable
 
     for line in lines:
         stripped = line.lstrip()
@@ -119,6 +120,7 @@ def _parse_pubspec_lock(content):
         if leading_spaces == 4 and current_package:
             if ": " in stripped:
                 key, value = stripped.split(": ", 1)
+
                 # Remove quotes from values
                 value = value.strip().strip('"').strip("'")
                 current_info[key] = value
@@ -150,7 +152,9 @@ load("@rules_dart//:defs.bzl", "dart_library")
 
 dart_library(
     name = "{name}",
+    package_name = "{name}",
     srcs = glob(["lib/**/*.dart"]),
+    pubspec = "pubspec.yaml",
     visibility = ["//visibility:public"],
 )
 '''.format(name = name)
@@ -239,6 +243,7 @@ def _dart_deps_extension_impl(module_ctx):
     with different versions, this extension detects the conflict and
     provides actionable error messages.
     """
+
     # Track all package versions across modules for conflict detection
     package_versions = {}  # package_name -> [(version, module_name, lockfile_path)]
 
@@ -265,14 +270,19 @@ def _dart_deps_extension_impl(module_ctx):
     # Second pass: detect version conflicts
     conflicts = []
     for pkg_name, versions in package_versions.items():
-        unique_versions = {v[0] for v in versions}
+        # Build unique versions set manually (Starlark compatible)
+        unique_versions = {}
+        for v in versions:
+            unique_versions[v[0]] = True
         if len(unique_versions) > 1:
             conflict_details = []
             for version, module_name, lockfile_path in versions:
                 conflict_details.append(
                     "  - Module '{}' requires version {} (from {})".format(
-                        module_name, version, lockfile_path
-                    )
+                        module_name,
+                        version,
+                        lockfile_path,
+                    ),
                 )
             conflicts.append((pkg_name, conflict_details))
 

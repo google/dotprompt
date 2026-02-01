@@ -1,0 +1,275 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: "Flutter Rules checks"
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check-paths:
+    runs-on: ubuntu-latest
+    outputs:
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            bazel/rules_flutter/**
+            bazel/rules_dart/**
+            .github/workflows/flutter.yml
+
+  bazel-build:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
+    name: Bazel Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Bazel
+        uses: bazel-contrib/setup-bazel@0.18.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}-${{ matrix.os }}
+          repository-cache: true
+
+      - name: Build rules_flutter
+        working-directory: bazel/rules_flutter
+        run: bazel build //...
+
+      - name: Query all targets
+        working-directory: bazel/rules_flutter
+        run: bazel query //...
+
+  starlark-lint:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
+    name: Starlark Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install buildifier
+        run: |
+          wget -q https://github.com/bazelbuild/buildtools/releases/download/v7.1.2/buildifier-linux-amd64
+          chmod +x buildifier-linux-amd64
+          sudo mv buildifier-linux-amd64 /usr/local/bin/buildifier
+
+      - name: Check formatting (rules_flutter)
+        working-directory: bazel/rules_flutter
+        run: |
+          buildifier --mode=check --lint=warn -r .
+
+      - name: Check formatting (rules_dart)
+        working-directory: bazel/rules_dart
+        run: |
+          buildifier --mode=check --lint=warn -r .
+
+  grpc-example:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
+    name: gRPC Example (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          version: '28.x'
+
+      - name: Install protoc-gen-dart
+        run: dart pub global activate protoc_plugin
+
+      - name: Setup gRPC example
+        working-directory: bazel/rules_flutter/examples/grpc_app
+        run: |
+          # Get dependencies
+          flutter pub get
+          cd server && dart pub get && cd ..
+
+          # Add platform support
+          flutter create --platforms=web,linux . 2>/dev/null || true
+
+          # Generate proto files
+          mkdir -p lib/generated server/lib/generated
+          export PATH="$HOME/.pub-cache/bin:$PATH"
+          protoc --dart_out=grpc:lib/generated -Iproto proto/helloworld.proto
+          cp lib/generated/*.dart server/lib/generated/
+
+      - name: Analyze Flutter client
+        working-directory: bazel/rules_flutter/examples/grpc_app
+        run: flutter analyze
+
+      - name: Analyze Dart server
+        working-directory: bazel/rules_flutter/examples/grpc_app/server
+        run: dart analyze
+
+      - name: Build Flutter web
+        working-directory: bazel/rules_flutter/examples/grpc_app
+        run: flutter build web
+
+      - name: Test server startup
+        working-directory: bazel/rules_flutter/examples/grpc_app/server
+        run: |
+          # Start server in background
+          dart run bin/server.dart &
+          SERVER_PID=$!
+          sleep 3
+
+          # Check if server is running
+          if kill -0 $SERVER_PID 2>/dev/null; then
+            echo "Server started successfully"
+            kill $SERVER_PID
+          else
+            echo "Server failed to start"
+            exit 1
+          fi
+
+  container-proxy:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
+    name: Container Proxy Config
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Validate Envoy config syntax
+        working-directory: bazel/rules_flutter/examples/grpc_app/proxy
+        run: |
+          # Basic YAML validation
+          python3 -c "import yaml; yaml.safe_load(open('envoy.yaml'))"
+          echo "Envoy config is valid YAML"
+
+      - name: Validate docker-compose.yaml
+        working-directory: bazel/rules_flutter/examples/grpc_app/proxy
+        run: |
+          # Basic YAML validation
+          python3 -c "import yaml; yaml.safe_load(open('docker-compose.yaml'))"
+          echo "docker-compose.yaml is valid YAML"
+
+      - name: Test Envoy container start (Podman preferred)
+        working-directory: bazel/rules_flutter/examples/grpc_app/proxy
+        run: |
+          # Prefer Podman, fall back to Docker
+          if command -v podman &> /dev/null; then
+            RUNTIME="podman"
+          else
+            RUNTIME="docker"
+          fi
+          echo "Using container runtime: $RUNTIME"
+          
+          $RUNTIME run -d --name envoy-test \
+            -v $(pwd)/envoy.yaml:/etc/envoy/envoy.yaml:ro \
+            -p 8080:8080 -p 9901:9901 \
+            envoyproxy/envoy:distroless-v1.28-latest -c /etc/envoy/envoy.yaml
+
+          # Give it time to start
+          sleep 5
+
+          # Check if container is running
+          if $RUNTIME ps | grep envoy-test; then
+            echo "Envoy container started successfully"
+            
+            # Check admin endpoint
+            curl -s http://localhost:9901/ready || true
+            
+            $RUNTIME stop envoy-test
+            $RUNTIME rm envoy-test
+          else
+            echo "Envoy container failed to start"
+            $RUNTIME logs envoy-test || true
+            $RUNTIME rm envoy-test || true
+            exit 1
+          fi
+
+  windows-build:
+    needs: check-paths
+    if: needs.check-paths.outputs.any_changed == 'true'
+    name: Windows Build
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Bazel
+        uses: bazel-contrib/setup-bazel@0.18.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}-windows
+          repository-cache: true
+
+      - name: Build rules_flutter
+        working-directory: bazel/rules_flutter
+        run: bazel build //...
+
+      - name: Query all targets
+        working-directory: bazel/rules_flutter
+        run: bazel query //...
+
+  flutter-checks-all:
+    if: always()
+    needs: [bazel-build, starlark-lint, grpc-example, container-proxy, windows-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check overall status
+        run: |
+          if [[ "${{ needs.bazel-build.result }}" == "failure" || \
+                "${{ needs.starlark-lint.result }}" == "failure" || \
+                "${{ needs.grpc-example.result }}" == "failure" || \
+                "${{ needs.container-proxy.result }}" == "failure" || \
+                "${{ needs.windows-build.result }}" == "failure" ]]; then
+            echo "Flutter rules checks failed"
+            exit 1
+          fi
+          echo "Flutter rules checks passed or were skipped"
+          exit 0

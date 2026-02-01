@@ -1,0 +1,6 @@
+{
+  "integrity": "sha256-0000000000000000000000000000000000000000000000000000000000000000",
+  "patch_strip": 0,
+  "patches": {},
+  "url": "https://github.com/google/dotprompt/releases/download/rules_dart-0.1.0/rules_dart-0.1.0.tar.gz"
+}

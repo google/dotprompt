@@ -16,7 +16,7 @@
 
 module(
     name = "rules_dart",
-    version = "0.0.1",
+    version = "0.1.0",
 )
 
 dart = use_extension("//:extensions.bzl", "dart")

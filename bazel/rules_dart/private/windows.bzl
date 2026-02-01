@@ -49,7 +49,7 @@ Key Patterns:
 - Use `exit /b` (not `exit`) to preserve parent shell
 """
 
-load("@rules_dart//private:helpers.bzl", "runfiles_path", "to_windows_path")
+load("@rules_dart//private:helpers.bzl", "to_windows_path")  # runfiles_path available if needed
 
 def generate_binary_script(dart_path, main_path):
     """Generate a Windows script to run a Dart binary.
@@ -63,7 +63,9 @@ def generate_binary_script(dart_path, main_path):
     """
     return """@echo off
 setlocal
-cd /d "%BUILD_WORKSPACE_DIRECTORY%"
+if defined BUILD_WORKSPACE_DIRECTORY (
+    cd /d "%BUILD_WORKSPACE_DIRECTORY%"
+)
 
 set "RUNFILES=%~dp0.runfiles"
 set "DART_BIN=%RUNFILES%\\{dart_path}"
@@ -270,14 +272,14 @@ echo Executing: %DART_BIN% {command} {args} %*
         args = args_str,
     )
 
-def generate_compile_script(dart_path, pkg_dir, main_path, output_path, compile_cmd, extra_args = ""):
+def generate_compile_script(dart_path, pkg_dir, main_path, _output_path, compile_cmd, extra_args = ""):
     """Generate a Windows script for Dart compilation.
 
     Args:
         dart_path: Runfiles path to Dart SDK binary
         pkg_dir: Package directory path
         main_path: Path to main Dart file
-        output_path: Path for compiled output
+        _output_path: Path for compiled output (managed internally)
         compile_cmd: Compile target (exe, js, wasm, aot-snapshot)
         extra_args: Additional compile arguments
 

@@ -63,10 +63,15 @@ build --incompatible_enable_cc_toolchain_resolution
 # -----------------------------------------------------------------------------
 # Worker Configuration
 # -----------------------------------------------------------------------------
-# Enable persistent workers for Dart compilation (opt-in)
-# Usage: bazel build --config=dart_worker //...
-build:dart_worker --strategy=DartCompile=worker
-build:dart_worker --worker_sandboxing
+# Persistent workers are NOT currently implemented for Dart compilation.
+# The config below is a placeholder for future implementation.
+# Workers require a proper binary implementing the Bazel worker protocol
+# (JSON requests/responses via stdin/stdout).
+# TODO(#124): Implement proper persistent worker binary for Dart compilation.
+#
+# Usage (once implemented): bazel build --config=dart_worker //...
+# build:dart_worker --strategy=DartCompile=worker
+# build:dart_worker --worker_sandboxing
 
 # -----------------------------------------------------------------------------
 # Strict Mode (for CI - maximum hermeticity)

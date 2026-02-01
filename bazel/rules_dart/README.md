@@ -459,6 +459,29 @@ dart.configure(
 )
 ```
 
+### Disabling Analytics
+
+By default, Dart analytics are disabled for hermetic builds. You can control this:
+
+```python
+dart.configure(
+    version = "3.7.0",
+    disable_analytics = True,   # Default: analytics disabled
+)
+```
+
+To enable analytics (not recommended for CI/hermetic builds):
+
+```python
+dart.configure(
+    version = "3.7.0",
+    disable_analytics = False,
+)
+```
+
+**Note**: Disabling analytics creates `disable_analytics.sh` and `disable_analytics.bat` 
+scripts in the SDK repository that you can run to permanently disable analytics.
+
 ### Gazelle Integration
 
 Generate BUILD files from `pubspec.yaml`:

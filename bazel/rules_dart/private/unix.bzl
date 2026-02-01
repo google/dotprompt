@@ -48,7 +48,8 @@ Key Patterns:
 - Use `exec` for final command when possible
 """
 
-load("@rules_dart//private:helpers.bzl", "runfiles_path")
+# Note: runfiles_path is available from helpers.bzl if needed
+# load("@rules_dart//private:helpers.bzl", "runfiles_path")  # @unused
 
 def generate_binary_script(dart_path, main_path):
     """Generate a Unix script to run a Dart binary.
@@ -277,14 +278,14 @@ exec "$DART_BIN" {command} {args} "$@"
         args = args_str,
     )
 
-def generate_compile_script(dart_path, pkg_dir, main_path, output_path, compile_cmd, extra_args = ""):
+def generate_compile_script(dart_path, pkg_dir, main_path, _output_path, compile_cmd, extra_args = ""):
     """Generate a Unix script for Dart compilation.
 
     Args:
         dart_path: Runfiles path to Dart SDK binary
         pkg_dir: Package directory path
         main_path: Path to main Dart file
-        output_path: Path for compiled output
+        _output_path: Path for compiled output (managed internally)
         compile_cmd: Compile target (exe, js, wasm, aot-snapshot)
         extra_args: Additional compile arguments
 

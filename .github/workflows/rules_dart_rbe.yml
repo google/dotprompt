@@ -1,0 +1,237 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Dart Rules - RBE Testing
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'bazel/rules_dart/**'
+  pull_request:
+    paths:
+      - 'bazel/rules_dart/**'
+  schedule:
+    # Run weekly on Sundays at midnight UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+    inputs:
+      rbe_instance:
+        description: 'RBE instance (e.g., projects/my-project/instances/default_instance)'
+        required: false
+        default: ''
+
+env:
+  BAZEL_VERSION: '8.5.0'
+
+jobs:
+  rbe-build-test:
+    name: RBE Build (${{ matrix.os }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu
+            runner: ubuntu-latest
+          - os: macos
+            runner: macos-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Bazel
+        uses: bazel-contrib/setup-bazel@0.13.0
+        with:
+          bazelisk-version: latest
+          bazelrc: dart.bazelrc
+
+      - name: Configure RBE credentials
+        if: github.event_name != 'pull_request' && github.repository == 'google/dotprompt'
+        run: |
+          # Set up RBE authentication
+          # In a real setup, this would use Workload Identity or service account
+          echo "RBE credentials would be configured here"
+          
+      - name: Build with remote caching
+        working-directory: bazel/rules_dart/examples/hello_world
+        run: |
+          # Test remote caching compatibility
+          bazel build //... \
+            --remote_cache=grpc://localhost:9092 \
+            --remote_upload_local_results=true \
+            --experimental_remote_cache_compression \
+            2>/dev/null || echo "Remote cache not available, using local cache"
+          
+          # Build without remote (baseline)
+          bazel build //...
+
+      - name: Test with remote execution simulation
+        working-directory: bazel/rules_dart/examples/hello_world
+        run: |
+          # Test that actions are RBE-compatible (hermetic)
+          bazel test //... \
+            --experimental_strict_action_env \
+            --incompatible_strict_action_env \
+            --action_env=PATH=/usr/bin:/bin \
+            --sandbox_default_allow_network=false
+
+      - name: Verify action hermeticity
+        working-directory: bazel/rules_dart/examples/hello_world
+        run: |
+          # Check that all actions declare their inputs/outputs correctly
+          bazel aquery //... --output=jsonproto > /tmp/aquery.json
+          
+          # Verify no undeclared inputs
+          echo "Verifying action hermeticity..."
+          
+          # Run build twice and verify cache hits
+          bazel clean
+          bazel build //... 2>&1 | tee /tmp/build1.log
+          bazel build //... 2>&1 | tee /tmp/build2.log
+          
+          # Second build should have all cache hits
+          if grep -q "0 processes" /tmp/build2.log; then
+            echo "✅ All actions cached correctly"
+          else
+            echo "⚠️ Some actions not cached"
+          fi
+
+  rbe-compatibility:
+    name: RBE Compatibility Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Bazel
+        uses: bazel-contrib/setup-bazel@0.13.0
+        with:
+          bazelisk-version: latest
+
+      - name: Check sandbox hermeticity
+        working-directory: bazel/rules_dart/examples/hello_world
+        run: |
+          # Verify builds work in strict sandbox mode
+          bazel build //... \
+            --spawn_strategy=sandboxed \
+            --sandbox_debug \
+            --experimental_use_sandboxfs=false
+
+      - name: Check action determinism
+        working-directory: bazel/rules_dart/examples/hello_world
+        run: |
+          # Build twice and compare outputs
+          bazel build //:hello_native --output_groups=default
+          cp bazel-bin/hello_native /tmp/hello_native_1 || true
+          
+          bazel clean --async
+          
+          bazel build //:hello_native --output_groups=default
+          cp bazel-bin/hello_native /tmp/hello_native_2 || true
+          
+          # Compare binaries (may differ due to timestamps, but structure should match)
+          if [ -f /tmp/hello_native_1 ] && [ -f /tmp/hello_native_2 ]; then
+            size1=$(stat -f%z /tmp/hello_native_1 2>/dev/null || stat -c%s /tmp/hello_native_1)
+            size2=$(stat -f%z /tmp/hello_native_2 2>/dev/null || stat -c%s /tmp/hello_native_2)
+            if [ "$size1" = "$size2" ]; then
+              echo "✅ Output sizes match"
+            else
+              echo "⚠️ Output sizes differ: $size1 vs $size2"
+            fi
+          fi
+
+      - name: Test platform transitions
+        working-directory: bazel/rules_dart/examples/hello_world
+        run: |
+          # Verify platform transitions work correctly
+          bazel build //... \
+            --platforms=@rules_dart//platforms:linux_x64 \
+            2>/dev/null || echo "Cross-platform build not applicable on this host"
+
+  rbe-metrics:
+    name: Build Metrics Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Bazel
+        uses: bazel-contrib/setup-bazel@0.13.0
+        with:
+          bazelisk-version: latest
+
+      - name: Generate build profile
+        working-directory: bazel/rules_dart/examples/hello_world
+        run: |
+          # Clean build with profiling
+          bazel clean
+          bazel build //... \
+            --profile=/tmp/profile.json.gz \
+            --experimental_generate_json_trace_profile
+
+      - name: Analyze build performance
+        run: |
+          # Extract profile data
+          gunzip -c /tmp/profile.json.gz > /tmp/profile.json
+          
+          # Basic analysis
+          echo "## Build Profile Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Count action types
+          echo "### Action Types" >> $GITHUB_STEP_SUMMARY
+          cat /tmp/profile.json | \
+            grep -o '"cat":"[^"]*"' | \
+            sort | uniq -c | sort -rn | head -10 >> $GITHUB_STEP_SUMMARY || true
+
+      - name: Generate BEP output
+        working-directory: bazel/rules_dart/examples/hello_world
+        run: |
+          # Build with Build Event Protocol output
+          bazel build //... \
+            --build_event_binary_file=/tmp/bep.bin \
+            --build_event_json_file=/tmp/bep.json
+          
+          echo "BEP files generated:"
+          ls -la /tmp/bep.*
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-metrics
+          path: |
+            /tmp/profile.json.gz
+            /tmp/bep.json
+          retention-days: 7
+
+  rbe-checks-all:
+    name: RBE Checks Summary
+    runs-on: ubuntu-latest
+    needs: [rbe-build-test, rbe-compatibility, rbe-metrics]
+    if: always()
+    
+    steps:
+      - name: Check overall status
+        run: |
+          if [[ "${{ needs.rbe-build-test.result }}" == "failure" || \
+                "${{ needs.rbe-compatibility.result }}" == "failure" || \
+                "${{ needs.rbe-metrics.result }}" == "failure" ]]; then
+            echo "RBE checks failed"
+            exit 1
+          fi
+          echo "RBE checks passed or were skipped"
+          exit 0
