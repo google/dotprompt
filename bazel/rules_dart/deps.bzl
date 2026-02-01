@@ -31,10 +31,23 @@ Architecture:
 │  dart_deps() repository rule                                             │
 │       │                                                                  │
 │       ├── Parses lockfile                                               │
+│       ├── Detects version conflicts                                     │
 │       ├── Downloads archives from pub.dev                               │
 │       └── Generates BUILD.bazel for each package                        │
 │                                                                          │
 │  Result: @pub_deps//package_name becomes a dart_library                 │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+Version Conflict Detection:
+┌──────────────────────────────────────────────────────────────────────────┐
+│  When multiple modules depend on the same package with different         │
+│  versions, rules_dart detects and reports the conflict:                  │
+│                                                                          │
+│  ERROR: Version conflict for package 'http':                             │
+│    - Module 'foo' requires version 1.0.0                                │
+│    - Module 'bar' requires version 2.0.0                                │
+│  Resolution: Pin a single version in your root pubspec.yaml             │
 │                                                                          │
 └──────────────────────────────────────────────────────────────────────────┘
 
@@ -56,6 +69,9 @@ Usage in BUILD.bazel:
 
 # Pub.dev hosted archive URL pattern
 _PUB_HOSTED_URL = "https://pub.dev/packages/{name}/versions/{version}.tar.gz"
+
+# Global registry for tracking package versions across modules (for conflict detection)
+_VERSION_REGISTRY = {}
 
 def _parse_pubspec_lock(content):
     """Parse a pubspec.lock file and extract package information.
@@ -215,15 +231,86 @@ dart_deps = repository_rule(
     doc = "Creates a repository with all Dart dependencies from a lockfile.",
 )
 
-# Extension for Bzlmod
+# Extension for Bzlmod with version conflict detection
 def _dart_deps_extension_impl(module_ctx):
-    """Module extension for dart_deps."""
+    """Module extension for dart_deps with version conflict detection.
+
+    When multiple modules declare dependencies on the same Dart package
+    with different versions, this extension detects the conflict and
+    provides actionable error messages.
+    """
+    # Track all package versions across modules for conflict detection
+    package_versions = {}  # package_name -> [(version, module_name, lockfile_path)]
+
+    # First pass: collect all package versions from all modules
+    for mod in module_ctx.modules:
+        module_name = mod.name
+        for config in mod.tags.from_lockfile:
+            lockfile = config.lockfile
+            lockfile_content = module_ctx.read(lockfile)
+            packages = _parse_pubspec_lock(lockfile_content)
+
+            for pkg_name, pkg_info in packages.items():
+                version = pkg_info.get("version", "")
+                source = pkg_info.get("dependency", "")
+
+                # Skip SDK and path dependencies
+                if source in ["sdk", "path"] or not version:
+                    continue
+
+                if pkg_name not in package_versions:
+                    package_versions[pkg_name] = []
+                package_versions[pkg_name].append((version, module_name, str(lockfile)))
+
+    # Second pass: detect version conflicts
+    conflicts = []
+    for pkg_name, versions in package_versions.items():
+        unique_versions = {v[0] for v in versions}
+        if len(unique_versions) > 1:
+            conflict_details = []
+            for version, module_name, lockfile_path in versions:
+                conflict_details.append(
+                    "  - Module '{}' requires version {} (from {})".format(
+                        module_name, version, lockfile_path
+                    )
+                )
+            conflicts.append((pkg_name, conflict_details))
+
+    # Report conflicts if any
+    if conflicts:
+        error_lines = [
+            "",
+            "=" * 70,
+            "VERSION CONFLICT DETECTED",
+            "=" * 70,
+            "",
+        ]
+        for pkg_name, details in conflicts:
+            error_lines.append("Package '{}':".format(pkg_name))
+            error_lines.extend(details)
+            error_lines.append("")
+
+        error_lines.extend([
+            "Resolution:",
+            "  1. Pin a single version in your root pubspec.yaml",
+            "  2. Run 'dart pub get' to update pubspec.lock",
+            "  3. Ensure all modules use compatible versions",
+            "",
+            "=" * 70,
+        ])
+        fail("\n".join(error_lines))
+
+    # Third pass: create repositories (conflict-free)
+    created_repos = {}  # Track created repos to avoid duplicates
     for mod in module_ctx.modules:
         for config in mod.tags.from_lockfile:
-            dart_deps(
-                name = config.name or "pub_deps",
-                lockfile = config.lockfile,
-            )
+            repo_name = config.name or "pub_deps"
+            if repo_name not in created_repos:
+                dart_deps(
+                    name = repo_name,
+                    lockfile = config.lockfile,
+                )
+                created_repos[repo_name] = True
 
 _from_lockfile = tag_class(
     attrs = {

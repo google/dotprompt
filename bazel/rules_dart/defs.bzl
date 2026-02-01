@@ -273,8 +273,20 @@ _dart_test = rule(
     test = True,
 )
 
-def dart_test(name, main, srcs = [], deps = [], data = [], visibility = None, package_dir = None, **kwargs):
-    """Creates a Dart test target."""
+def dart_test(name, main, srcs = [], deps = [], data = [], visibility = None, package_dir = None, shard_count = None, **kwargs):
+    """Creates a Dart test target.
+
+    Args:
+        name: Target name.
+        main: Main test file.
+        srcs: Additional source files.
+        deps: Dependencies.
+        data: Runtime data files.
+        visibility: Target visibility.
+        package_dir: Package directory containing pubspec.yaml.
+        shard_count: Number of parallel test shards (for large test suites).
+        **kwargs: Additional arguments passed to the test rule.
+    """
     _dart_test(
         name = name,
         main = main,
@@ -283,6 +295,7 @@ def dart_test(name, main, srcs = [], deps = [], data = [], visibility = None, pa
         data = data,
         package_dir = package_dir,
         visibility = visibility,
+        shard_count = shard_count,
         **kwargs
     )
 

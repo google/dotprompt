@@ -1,0 +1,114 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+"""Example demonstrating dart_proto_library and dart_grpc_library rules.
+
+This example follows the official gRPC Dart quickstart:
+https://grpc.io/docs/languages/dart/quickstart/
+"""
+
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//:defs.bzl", "dart_library", "dart_native_binary", "dart_test")
+load("//:proto.bzl", "dart_grpc_library", "dart_proto_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# =============================================================================
+# Proto Libraries
+# =============================================================================
+
+# Helloworld proto (matches official gRPC quickstart)
+proto_library(
+    name = "helloworld_proto",
+    srcs = ["proto/helloworld.proto"],
+)
+
+# User proto (more complex example)
+proto_library(
+    name = "user_proto",
+    srcs = ["proto/user.proto"],
+)
+
+# =============================================================================
+# Dart Proto Generation
+# =============================================================================
+
+# Generate Dart proto messages from helloworld.proto
+dart_proto_library(
+    name = "helloworld_dart_proto",
+    deps = [":helloworld_proto"],
+)
+
+# Generate Dart gRPC service stubs from helloworld.proto
+dart_grpc_library(
+    name = "helloworld_dart_grpc",
+    deps = [":helloworld_proto"],
+)
+
+# Generate Dart proto messages from user.proto
+dart_proto_library(
+    name = "user_dart_proto",
+    deps = [":user_proto"],
+)
+
+# Generate Dart gRPC service stubs from user.proto
+dart_grpc_library(
+    name = "user_dart_grpc",
+    deps = [":user_proto"],
+)
+
+# =============================================================================
+# Dart Libraries
+# =============================================================================
+
+# Library combining all generated gRPC code
+dart_library(
+    name = "grpc_lib",
+    srcs = glob(["lib/**/*.dart"]),
+    deps = [
+        ":helloworld_dart_grpc",
+        ":helloworld_dart_proto",
+    ],
+    pubspec = "pubspec.yaml",
+)
+
+# =============================================================================
+# Binaries
+# =============================================================================
+
+# gRPC client binary
+dart_native_binary(
+    name = "client",
+    main = "lib/client.dart",
+    deps = [":grpc_lib"],
+)
+
+# gRPC server binary
+dart_native_binary(
+    name = "server",
+    main = "lib/server.dart",
+    deps = [":grpc_lib"],
+)
+
+# =============================================================================
+# Tests
+# =============================================================================
+
+dart_test(
+    name = "grpc_test",
+    main = "test/user_test.dart",
+    deps = [":grpc_lib"],
+)

@@ -1,0 +1,14 @@
+module(
+    name = "freezed_example",
+    version = "0.1.0",
+)
+
+bazel_dep(name = "rules_dart")
+local_path_override(
+    module_name = "rules_dart",
+    path = "../..",
+)
+
+dart = use_extension("@rules_dart//:extensions.bzl", "dart")
+dart.configure(version = "3.7.0")
+use_repo(dart, "dart_sdk")

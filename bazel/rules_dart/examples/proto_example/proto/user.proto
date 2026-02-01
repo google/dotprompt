@@ -1,0 +1,88 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package example;
+
+option java_package = "com.example.proto";
+option java_multiple_files = true;
+
+// A simple user message for demonstrating Dart proto generation.
+message User {
+  // Unique identifier for the user.
+  int64 id = 1;
+  
+  // User's display name.
+  string name = 2;
+  
+  // User's email address.
+  string email = 3;
+  
+  // User's profile information.
+  Profile profile = 4;
+}
+
+// User profile information.
+message Profile {
+  // User's bio/description.
+  string bio = 1;
+  
+  // URL to user's avatar image.
+  string avatar_url = 2;
+  
+  // When the profile was created.
+  int64 created_at = 3;
+}
+
+// Request for getting a user.
+message GetUserRequest {
+  // ID of the user to retrieve.
+  int64 user_id = 1;
+}
+
+// Response containing a user.
+message GetUserResponse {
+  // The requested user.
+  User user = 1;
+}
+
+// Request for listing users.
+message ListUsersRequest {
+  // Maximum number of users to return.
+  int32 page_size = 1;
+  
+  // Token for pagination.
+  string page_token = 2;
+}
+
+// Response containing a list of users.
+message ListUsersResponse {
+  // The list of users.
+  repeated User users = 1;
+  
+  // Token for the next page.
+  string next_page_token = 2;
+}
+
+// User management service.
+service UserService {
+  // Get a single user by ID.
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  
+  // List all users with pagination.
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+}

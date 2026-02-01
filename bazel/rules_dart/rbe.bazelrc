@@ -1,0 +1,77 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
+# Remote Build Execution (RBE) configuration for rules_dart
+# Include this in your .bazelrc with: try-import %workspace%/bazel/rules_dart/rbe.bazelrc
+
+# =============================================================================
+# Remote Caching (Read-Only)
+# =============================================================================
+# Safe to use - only downloads cached results, never uploads
+build:remote-cache --remote_cache=grpcs://your-cache-endpoint.com
+build:remote-cache --remote_upload_local_results=false
+build:remote-cache --remote_download_outputs=toplevel
+
+# =============================================================================
+# Remote Caching (Read-Write)
+# =============================================================================
+# Uploads build results to shared cache
+build:remote-cache-rw --remote_cache=grpcs://your-cache-endpoint.com
+build:remote-cache-rw --remote_upload_local_results=true
+build:remote-cache-rw --remote_download_outputs=toplevel
+
+# =============================================================================
+# Full Remote Execution
+# =============================================================================
+# Run builds on remote workers
+build:remote --remote_executor=grpcs://your-rbe-endpoint.com
+build:remote --remote_instance_name=default
+build:remote --jobs=500
+
+# Platform configuration for remote execution
+build:remote --host_platform=@rules_dart//platforms:rbe_linux_x64
+build:remote --platforms=@rules_dart//platforms:rbe_linux_x64
+build:remote --extra_execution_platforms=@rules_dart//platforms:rbe_linux_x64
+
+# Dart-specific action strategies
+build:remote --strategy=DartCompile=remote
+build:remote --strategy=DartTest=remote
+build:remote --strategy=DartPubGet=remote
+
+# Optimize for remote execution
+build:remote --spawn_strategy=remote,sandboxed,standalone
+build:remote --remote_timeout=3600
+build:remote --remote_retries=5
+
+# =============================================================================
+# BuildBuddy Configuration
+# =============================================================================
+# Uncomment and configure for BuildBuddy
+# build:buildbuddy --bes_backend=grpcs://remote.buildbuddy.io
+# build:buildbuddy --bes_results_url=https://app.buildbuddy.io/invocation/
+# build:buildbuddy --remote_cache=grpcs://remote.buildbuddy.io
+# build:buildbuddy --remote_executor=grpcs://remote.buildbuddy.io
+# build:buildbuddy --remote_header=x-buildbuddy-api-key=YOUR_API_KEY
+# build:buildbuddy --remote_timeout=3600
+
+# =============================================================================
+# Google Cloud Build Configuration
+# =============================================================================
+# Uncomment and configure for Google RBE
+# build:google --remote_instance_name=projects/YOUR_PROJECT/instances/default_instance
+# build:google --google_default_credentials=true
+# build:google --remote_cache=grpcs://remotebuildexecution.googleapis.com
+# build:google --remote_executor=grpcs://remotebuildexecution.googleapis.com
+
+# =============================================================================
+# Test-specific settings for RBE
+# =============================================================================
+test:remote --test_env=HOME=/tmp
+test:remote --test_env=USER=remote
+test:remote --test_tmpdir=/tmp
+
+# =============================================================================
+# Coverage with RBE
+# =============================================================================
+coverage:remote --strategy=CoverageReport=standalone
+coverage:remote --experimental_fetch_all_coverage_outputs

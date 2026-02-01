@@ -17,7 +17,20 @@
 """Custom Bazel rules for Dart language support."""
 
 exports_files([
+    "aspects.bzl",
+    "build_runner.bzl",
     "defs.bzl",
+    "deps.bzl",
     "extensions.bzl",
+    "proto.bzl",
+    "rbe.bazelrc",
     "repositories.bzl",
+    "toolchain.bzl",
 ])
+
+# Toolchain type for Dart
+# Rules use this to request a Dart toolchain via ctx.toolchains
+toolchain_type(
+    name = "toolchain_type",
+    visibility = ["//visibility:public"],
+)

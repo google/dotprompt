@@ -23,7 +23,9 @@ Do not depend on these directly; use the public API in defs.bzl instead.
 package(default_visibility = ["//visibility:public"])
 
 exports_files([
+    "coverage.bzl",
     "helpers.bzl",
+    "rbe.bzl",
     "windows.bzl",
     "unix.bzl",
 ])
