@@ -54,10 +54,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Bazel
-        uses: bazel-contrib/setup-bazel@0.13.0
+        uses: bazel-contrib/setup-bazel@0.18.0
         with:
-          bazelisk-version: latest
-          bazelrc: dart.bazelrc
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}-${{ matrix.os }}
+          repository-cache: true
 
       - name: Configure RBE credentials
         if: github.event_name != 'pull_request' && github.repository == 'google/dotprompt'
@@ -118,9 +119,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Bazel
-        uses: bazel-contrib/setup-bazel@0.13.0
+        uses: bazel-contrib/setup-bazel@0.18.0
         with:
-          bazelisk-version: latest
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}-compatibility
+          repository-cache: true
 
       - name: Check sandbox hermeticity
         working-directory: bazel/rules_dart/examples/hello_world
@@ -170,9 +173,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Bazel
-        uses: bazel-contrib/setup-bazel@0.13.0
+        uses: bazel-contrib/setup-bazel@0.18.0
         with:
-          bazelisk-version: latest
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}-metrics
+          repository-cache: true
 
       - name: Generate build profile
         working-directory: bazel/rules_dart/examples/hello_world
