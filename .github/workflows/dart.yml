@@ -131,7 +131,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup Bazel
-        uses: bazel-contrib/setup-bazel@0.14.0
+        uses: bazel-contrib/setup-bazel@0.18.0
         with:
           bazelisk-cache: true
           disk-cache: ${{ github.workflow }}
@@ -141,7 +141,7 @@ jobs:
         run: bazel build //dart/...
 
       - name: Run Dart tests via Bazel
-        run: bazel test //dart/dotprompt/test:... --test_output=errors
+        run: bazel test //dart/... --test_output=errors
         continue-on-error: true  # Tests may need network access
 
   antlr-grammar:

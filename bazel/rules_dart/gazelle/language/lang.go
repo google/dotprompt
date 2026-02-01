@@ -18,8 +18,11 @@ package language
 
 import (
 	"flag"
+	"io/fs"
+	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/bazelbuild/bazel-gazelle/config"
 	"github.com/bazelbuild/bazel-gazelle/label"
@@ -125,7 +128,25 @@ func (d *dartLang) GenerateRules(args language.GenerateArgs) language.GenerateRe
 
 	// Generate dart_library
 	r := rule.NewRule("dart_library", p.Name)
-	r.SetAttr("srcs", []string{"glob([\"lib/**/*.dart\"])"}) // Simplified glob (string literal for now)
+
+	// Collect srcs (pubspec.yaml + lib/**/*.dart)
+	srcs := []string{"pubspec.yaml"}
+	libDir := filepath.Join(args.Dir, "lib")
+	filepath.WalkDir(libDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if !d.IsDir() && strings.HasSuffix(d.Name(), ".dart") {
+			rel, err := filepath.Rel(args.Dir, path)
+			if err == nil {
+				srcs = append(srcs, rel)
+			}
+		}
+		return nil
+	})
+	sort.Strings(srcs)
+	r.SetAttr("srcs", srcs)
+
 	r.SetAttr("pubspec", "pubspec.yaml")
 
 	// Add imports (dependencies)
@@ -138,5 +159,22 @@ func (d *dartLang) GenerateRules(args language.GenerateArgs) language.GenerateRe
 
 	res.Gen = append(res.Gen, r)
 	res.Imports = append(res.Imports, imports)
+
+	// Generate dart_test targets
+	testDir := filepath.Join(args.Dir, "test")
+	entries, err := os.ReadDir(testDir)
+	if err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() && strings.HasSuffix(entry.Name(), "_test.dart") {
+				name := strings.TrimSuffix(entry.Name(), ".dart")
+				t := rule.NewRule("dart_test", name)
+				t.SetAttr("main", "test/"+entry.Name())
+				t.SetAttr("deps", []string{":" + p.Name})
+				res.Gen = append(res.Gen, t)
+				res.Imports = append(res.Imports, []string{})
+			}
+		}
+	}
+
 	return res
 }

@@ -38,3 +38,5 @@ npm_link_package(
 # This macro expands to a npm_link_package for each of the dependencies in
 # package.json.
 npm_link_all_packages(name = "node_modules")
+
+exports_files(["MODULE.bazel"])

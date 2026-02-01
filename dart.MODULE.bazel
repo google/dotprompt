@@ -45,7 +45,6 @@ dart_deps.from_file(
     lock_file = "//dart/handlebarrz:pubspec.lock",
     rules_dart_label = "@rules_dart//:defs.bzl",
 )
-
 use_repo(
     dart_deps,
     "dart_deps__fe_analyzer_shared",

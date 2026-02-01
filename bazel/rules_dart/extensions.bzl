@@ -21,31 +21,45 @@ It downloads the SDK from Google's official CDN.
 It also manages Dart package dependencies from pubspec.lock files.
 """
 
-load(":repositories.bzl", "DART_VERSION", "dart_package", "dart_sdk")
+load(":repositories.bzl", "DART_VERSION", "dart_local_sdk", "dart_package", "dart_sdk")
 
 def _dart_impl(module_ctx):
     """Implementation of the dart module extension."""
 
-    # Get the version from the first module that uses this extension
+    # Defaults
     version = DART_VERSION
+    sdk_path = None
+
+    # Bzlmod iterates modules in BFS order, allowing the root module to override.
 
     for mod in module_ctx.modules:
         for config in mod.tags.configure:
             if config.version:
                 version = config.version
-                break
+            if config.sdk_home:
+                sdk_path = config.sdk_home
 
-    # Create the dart_sdk repository
-    dart_sdk(
-        name = "dart_sdk",
-        version = version,
-    )
+    if sdk_path:
+        dart_local_sdk(
+            name = "dart_sdk",
+            path = sdk_path,
+        )
+    else:
+        # Create the dart_sdk repository
+        dart_sdk(
+            name = "dart_sdk",
+            version = version,
+        )
 
 _configure = tag_class(
     attrs = {
         "version": attr.string(
             default = "",
             doc = "The Dart SDK version to use. Defaults to the version in repositories.bzl.",
+        ),
+        "sdk_home": attr.string(
+            default = "",
+            doc = "Absolute path to local Dart SDK home directory. Overrides version if set.",
         ),
     },
 )
@@ -64,26 +78,26 @@ def _parse_pubspec_lock(content):
     lines = content.split("\n")
     current_pkg = None
     pkg_data = {}
-    
+
     for line in lines:
         line = line.rstrip()
         if not line or line.startswith("#"):
             continue
-            
+
         indent = len(line) - len(line.lstrip())
         stripped = line.strip()
-        
+
         if stripped == "packages:":
             continue
-            
+
         if indent == 2 and stripped.endswith(":"):
             # New package
             if current_pkg and pkg_data.get("source") == "hosted" and "sha256" in pkg_data:
                 packages[current_pkg] = pkg_data
-            
+
             current_pkg = stripped[:-1]
             pkg_data = {}
-            
+
         elif current_pkg:
             parts = stripped.split(":", 1)
             if len(parts) == 2:
@@ -99,22 +113,22 @@ def _parse_pubspec_lock(content):
     # Add last package
     if current_pkg and pkg_data.get("source") == "hosted" and "sha256" in pkg_data:
         packages[current_pkg] = pkg_data
-        
+
     return packages
 
 def _dart_deps_impl(ctx):
     all_packages = {}
     rules_label = "@rules_dart//:defs.bzl"
-    
+
     for mod in ctx.modules:
         for config in mod.tags.from_file:
             if config.rules_dart_label != "@rules_dart//:defs.bzl":
-                 rules_label = config.rules_dart_label
-            
+                rules_label = config.rules_dart_label
+
             content = ctx.read(config.lock_file)
             pkgs = _parse_pubspec_lock(content)
             all_packages.update(pkgs)
-            
+
     for name, data in all_packages.items():
         dart_package(
             name = "dart_deps_" + name,

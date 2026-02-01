@@ -687,7 +687,7 @@
     },
     "@@rules_dart+//:extensions.bzl%dart": {
       "general": {
-        "bzlTransitiveDigest": "FfYn5kXYuuDJT5f57W8fLDUFEGXW443hYPHJCOPb/hI=",
+        "bzlTransitiveDigest": "NjzrNH7y2sqBzwSkbzLrWiuo1aIYHDInr/w9CXokLGg=",
         "usagesDigest": "X2kJ0LDi5dmWRUOrIlUKGNj4PJKJGmOqeQkTx4wKUw4=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -705,7 +705,7 @@
     },
     "@@rules_dart+//:extensions.bzl%dart_deps": {
       "general": {
-        "bzlTransitiveDigest": "FfYn5kXYuuDJT5f57W8fLDUFEGXW443hYPHJCOPb/hI=",
+        "bzlTransitiveDigest": "NjzrNH7y2sqBzwSkbzLrWiuo1aIYHDInr/w9CXokLGg=",
         "usagesDigest": "bFDiWQ203dQgdrPs5klaR6X30ES6EGGPktXZBam3R6Q=",
         "recordedFileInputs": {
           "@@//dart/dotprompt/pubspec.lock": "59a4448d34176c977b514416f2f8df17e9491464f220c7d702fe36dd93dc53eb",

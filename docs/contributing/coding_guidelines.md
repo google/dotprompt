@@ -372,6 +372,8 @@ bazel test --test_output=errors //java/com/google/dotprompt/...
 
 * **Dart Version**: Support Dart 3.7 and newer (stable channel).
 * **Build System**: Supports both standalone Dart and Bazel (via `rules_dart`).
+  * Run `bazel run //:gazelle` to generate/update BUILD files.
+  * Gazelle automatically generates `dart_library` and `dart_test` targets.
 
 ### Type Checking
 

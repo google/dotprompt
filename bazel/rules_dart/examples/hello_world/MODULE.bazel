@@ -1,4 +1,4 @@
-# Copyright 2025 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,26 +14,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Google Dotprompt."""
-
 module(
-    name = "dotprompt",
-    version = "0.0.1",
+    name = "examples_hello_world",
+    version = "0.0.0",
 )
 
-bazel_dep(name = "bazel_skylib", version = "1.8.2")
-bazel_dep(name = "gazelle", version = "0.47.0")
-bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_dart", version = "0.0.1")
 local_path_override(
     module_name = "rules_dart",
-    path = "bazel/rules_dart",
+    path = "../../",
 )
-
-include("//:dart.MODULE.bazel")
-include("//:go.MODULE.bazel")
-include("//:java.MODULE.bazel")
-include("//:rust.MODULE.bazel")
-include("//:kotlin.MODULE.bazel")
-include("//:python.MODULE.bazel")
-include("//:ts.MODULE.bazel")

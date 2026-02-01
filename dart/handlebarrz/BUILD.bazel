@@ -16,7 +16,7 @@
 
 """Handlebarrz - A pure Dart implementation of Handlebars template engine."""
 
-load("@rules_dart//:defs.bzl", "dart_library")
+load("@rules_dart//:defs.bzl", "dart_library", "dart_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -34,3 +34,15 @@ exports_files([
 ])
 
 exports_files(["pubspec.lock"])
+
+dart_test(
+    name = "antlr_parser_test",
+    main = "test/antlr_parser_test.dart",
+    deps = [":handlebarrz"],
+)
+
+dart_test(
+    name = "handlebars_test",
+    main = "test/handlebars_test.dart",
+    deps = [":handlebarrz"],
+)

@@ -133,7 +133,7 @@ chmod +x $@
             DART_SDK,
             "//dart/dotprompt:dotprompt",
             "//dart/dotprompt:pubspec.yaml",
-            "//dart/dotprompt/test:spec_test.dart",
+            "//dart/dotprompt:test/spec_test.dart",
             # Include handlebarrz as it's a path dependency
             "//dart/handlebarrz:handlebarrz",
             "//dart/handlebarrz:pubspec.yaml",

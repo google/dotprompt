@@ -16,9 +16,12 @@
 
 """Dotprompt Dart implementation."""
 
-load("@rules_dart//:defs.bzl", "dart_library")
+load("@rules_dart//:defs.bzl", "dart_library", "dart_test")
+load("//bazel/dart:defs.bzl", "dart_spec_test")
 
 package(default_visibility = ["//visibility:public"])
+
+# gazelle:exclude test/spec_test.dart
 
 # Export the Dart library
 dart_library(
@@ -42,4 +45,102 @@ exports_files([
     "analysis_options.yaml",
 ])
 
+exports_files(glob(["test/**/*.dart"]))
+
 exports_files(["pubspec.lock"])
+
+dart_test(
+    name = "dotprompt_test",
+    main = "test/dotprompt_test.dart",
+    deps = [":dotprompt"],
+)
+
+dart_test(
+    name = "parse_test",
+    main = "test/parse_test.dart",
+    deps = [":dotprompt"],
+)
+
+dart_test(
+    name = "picoschema_test",
+    main = "test/picoschema_test.dart",
+    deps = [":dotprompt"],
+)
+
+dart_test(
+    name = "types_test",
+    main = "test/types_test.dart",
+    deps = [":dotprompt"],
+)
+
+# Spec-based tests
+# Note: deps are managed by the dart_spec_test macro
+dart_spec_test(
+    name = "SpecTest_metadata",
+    spec_file = "//spec:metadata.yaml",
+)
+
+dart_spec_test(
+    name = "SpecTest_partials",
+    spec_file = "//spec:partials.yaml",
+)
+
+dart_spec_test(
+    name = "SpecTest_picoschema",
+    spec_file = "//spec:picoschema.yaml",
+)
+
+dart_spec_test(
+    name = "SpecTest_variables",
+    spec_file = "//spec:variables.yaml",
+)
+
+dart_spec_test(
+    name = "SpecTest_helper_history",
+    spec_file = "//spec:helpers/history.yaml",
+)
+
+dart_spec_test(
+    name = "SpecTest_helper_ifEquals",
+    spec_file = "//spec:helpers/ifEquals.yaml",
+)
+
+dart_spec_test(
+    name = "SpecTest_helper_json",
+    spec_file = "//spec:helpers/json.yaml",
+)
+
+dart_spec_test(
+    name = "SpecTest_helper_media",
+    spec_file = "//spec:helpers/media.yaml",
+)
+
+dart_spec_test(
+    name = "SpecTest_helper_role",
+    spec_file = "//spec:helpers/role.yaml",
+)
+
+dart_spec_test(
+    name = "SpecTest_helper_section",
+    spec_file = "//spec:helpers/section.yaml",
+)
+
+dart_spec_test(
+    name = "SpecTest_helper_unlessEquals",
+    spec_file = "//spec:helpers/unlessEquals.yaml",
+)
+
+dart_spec_test(
+    name = "SpecTest_whitespace",
+    spec_file = "//spec:whitespace.yaml",
+)
+
+dart_test(
+    name = "spec_test",
+    data = [
+        "//:MODULE.bazel",
+        "//spec",
+    ],
+    main = "test/spec_test.dart",
+    deps = [":dotprompt"],
+)
