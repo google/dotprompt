@@ -25,10 +25,14 @@ build:release --compilation_mode=opt
 build:debug --compilation_mode=dbg
 
 # -----------------------------------------------------------------------------
-# Execution Strategy
+# Sandboxing Strategy
 # -----------------------------------------------------------------------------
-# Default to sandboxing for hermeticity
-build --spawn_strategy=sandboxed
+# Use sandboxed execution with fallback to local for actions that don't support it
+# This provides hermeticity while allowing CopyFile and similar actions to work
+build --spawn_strategy=sandboxed,standalone
+
+# Enable sandbox debugging (shows what's happening in the sandbox)
+build:sandbox_debug --sandbox_debug
 
 # -----------------------------------------------------------------------------
 # Test Configuration
@@ -56,11 +60,17 @@ build:verbose --subcommands
 # Ensure correct platform resolution particularly for cross-compilation
 build --incompatible_enable_cc_toolchain_resolution
 
-# Define host platform as needed (usually auto-detected, but good for reproducibility)
-# build --host_platform=@platforms//host
+# -----------------------------------------------------------------------------
+# Worker Configuration
+# -----------------------------------------------------------------------------
+# Enable persistent workers for Dart compilation (opt-in)
+# Usage: bazel build --config=dart_worker //...
+build:dart_worker --strategy=DartCompile=worker
+build:dart_worker --worker_sandboxing
 
 # -----------------------------------------------------------------------------
-# Dart Specific Flags (Future Proofing)
+# Strict Mode (for CI - maximum hermeticity)
 # -----------------------------------------------------------------------------
-# These generated flags will be available once we move to a full toolchain model
-# build --flag_alias=dart_version=@rules_dart//config:dart_version
+# Usage: bazel build --config=strict //...
+build:strict --spawn_strategy=sandboxed
+build:strict --experimental_strict_action_env

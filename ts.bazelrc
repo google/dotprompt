@@ -57,3 +57,8 @@ common --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
 # Setting the transpiler to `tsc`.
 # See: https://docs.aspect.build/rulesets/aspect_rules_ts/docs/transpiler/
 common --@aspect_rules_ts//ts:default_to_tsc_transpiler
+
+# Fix for CopyFile action from aspect_rules_js not supporting sandboxed execution
+# This allows CopyFile to fall back to standalone while other actions use sandbox
+# See: https://github.com/bazelbuild/bazel/issues/7480
+build --strategy=CopyFile=standalone

@@ -766,6 +766,13 @@ echo "Compiling..."
 
     ctx.actions.write(runner_script, content, is_executable = True)
 
+    # Execution requirements for worker support
+    # When --strategy=DartCompile=worker is set, Bazel will use persistent workers
+    execution_requirements = {
+        "supports-workers": "1",
+        "requires-worker-protocol": "json",
+    }
+
     ctx.actions.run(
         executable = runner_script,
         outputs = outputs,
@@ -773,6 +780,7 @@ echo "Compiling..."
         tools = [dart_bin],
         mnemonic = "DartCompile",
         arguments = [],
+        execution_requirements = execution_requirements,
     )
 
     return [DefaultInfo(executable = out_file, files = depset(outputs))]

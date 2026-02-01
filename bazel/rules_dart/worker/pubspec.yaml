@@ -1,0 +1,10 @@
+name: rules_dart_worker
+description: Persistent worker for Bazel rules_dart - zero dependencies
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+# No external dependencies - this allows the worker to bootstrap itself
+# without requiring pub get or hermetic dependency resolution

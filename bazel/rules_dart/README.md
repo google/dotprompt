@@ -347,6 +347,64 @@ bazel test //...
 bazel run //:hello_native
 ```
 
+## Performance
+
+### Persistent Workers
+
+`rules_dart` supports Bazel's persistent worker mode for faster incremental builds.
+Workers keep a Dart VM process alive across multiple build actions, reducing startup overhead.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    Worker-Enabled Compilation                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Without Workers:                                                           │
+│  Bazel → Spawn → Script → dart compile → Exit (repeat for each action)    │
+│                                                                             │
+│  With Workers:                                                              │
+│  Bazel → Worker (stays alive)                                               │
+│         ├── Request 1 → compile → Response                                 │
+│         ├── Request 2 → compile → Response                                 │
+│         └── Request N → compile → Response                                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Enable Workers
+
+**Option 1: Via config flag**
+```bash
+bazel build --config=dart_worker //...
+```
+
+**Option 2: In `.bazelrc` (always enabled)**
+```bash
+# Enable persistent workers for Dart compilation
+build --strategy=DartCompile=worker
+build --worker_sandboxing
+```
+
+#### Worker Protocol
+
+The worker uses JSON protocol for communication:
+- Request: `{"arguments": ["dart", "compile", "exe", ...]}`
+- Response: `{"exitCode": 0, "output": "..."}`
+
+### Sandboxing
+
+For hermetic builds with fallback support:
+
+```bash
+# In .bazelrc - sandbox with fallback
+build --spawn_strategy=sandboxed,standalone
+```
+
+For maximum hermeticity (may break some third-party rules):
+```bash
+bazel build --config=strict //...
+```
+
 ## Updating Dart SDK Version
 
 When a new Dart SDK version is released, update the following files:
@@ -397,12 +455,17 @@ Or use the official checksums from https://dart.dev/get-dart/archive.
 ```
 rules_dart/
 ├── defs.bzl           # Public API (load this)
+├── deps.bzl           # Hermetic dependency resolution
 ├── extensions.bzl     # Bzlmod extensions
 ├── repositories.bzl   # SDK download rules
 ├── private/           # Internal implementation
 │   ├── helpers.bzl    # Common utilities
 │   ├── windows.bzl    # Windows script generation
 │   └── unix.bzl       # Unix script generation
+├── worker/            # Persistent worker
+│   ├── bin/worker.dart  # JSON protocol implementation
+│   ├── worker_wrapper.sh   # Unix wrapper
+│   └── worker_wrapper.bat  # Windows wrapper
 ├── gazelle/           # Gazelle extension
 └── examples/          # Working examples
 ```
