@@ -16,3 +16,6 @@ python/handlebarrz/target
 site/
 target/
 .genkit/
+.dart_tool/
+.packages
+.pub-cache/

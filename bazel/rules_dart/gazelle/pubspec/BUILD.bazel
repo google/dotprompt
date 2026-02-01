@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "pubspec",
+    srcs = [
+        "parser.go",
+        "types.go",
+    ],
+    importpath = "github.com/google/rules_dart/gazelle/pubspec",
+    visibility = ["//visibility:public"],
+    deps = ["@in_gopkg_yaml_v3//:yaml_v3"],
+)

@@ -4,7 +4,7 @@
 
 Dotprompt is a multi-language library implementing an executable prompt template file format
 for Generative AI. The codebase supports **Go**, **Python**, **JavaScript/TypeScript**,
-**Java**, and **Rust** implementations.
+**Java**, **Rust**, and **Dart** implementations.
 
 ## Code Quality & Linting
 
@@ -155,6 +155,76 @@ unless there is a compelling, documented reason.
   to reflect updated reality of any file you add or modify.
 * Scan documentation for every module you edit and keep it up-to-date.
 
+### Avoiding Hardcoding
+
+Avoid hardcoding region-specific values, URLs, or other configuration that varies by
+deployment environment. This makes the code more portable and user-friendly globally.
+
+* **Environment Variables First**: Always check environment variables before falling back
+  to defaults. Prefer raising clear errors over silently using defaults that may not work
+  for all users.
+
+  ```python
+  # Good: Clear error if not configured
+  region = os.environ.get('AWS_REGION') or os.environ.get('AWS_DEFAULT_REGION')
+  if region is None:
+      raise ValueError('AWS region is required. Set AWS_REGION environment variable.')
+
+  # Bad: Silent default that only works in US
+  region = os.environ.get('AWS_REGION', 'us-east-1')
+  ```
+
+* **Named Constants**: Extract hardcoded values into named constants at module level.
+  This makes them discoverable and documents their purpose.
+
+  ```python
+  # Good: Named constant with clear purpose
+  DEFAULT_OLLAMA_SERVER_URL = 'http://127.0.0.1:11434'
+
+  class OllamaPlugin:
+      def __init__(self, server_url: str | None = None):
+          self.server_url = server_url or DEFAULT_OLLAMA_SERVER_URL
+
+  # Bad: Inline hardcoded value
+  class OllamaPlugin:
+      def __init__(self, server_url: str = 'http://127.0.0.1:11434'):
+          ...
+  ```
+
+* **Region-Agnostic Helpers**: For cloud services with regional endpoints, provide helper
+  functions that auto-detect the region instead of hardcoding a specific region.
+
+  ```python
+  # Good: Helper that detects region from environment
+  def get_inference_profile_prefix(region: str | None = None) -> str:
+      if region is None:
+          region = os.environ.get('AWS_REGION')
+      if region is None:
+          raise ValueError('Region is required.')
+      # Map region to prefix...
+
+  # Bad: Hardcoded US default
+  def get_inference_profile_prefix(region: str = 'us-east-1') -> str:
+      ...
+  ```
+
+* **Documentation Examples**: In documentation and docstrings, use placeholder values
+  that are clearly examples, not real values users might accidentally copy.
+
+  ```python
+  # Good: Clear placeholder
+  endpoint='https://your-resource.openai.azure.com/'
+
+  # Bad: Looks like it might work
+  endpoint='https://eastus.api.example.com/'
+  ```
+
+* **What IS Acceptable to Hardcode**:
+  * Official API endpoints that don't vary (e.g., `https://api.deepseek.com`)
+  * Default ports for local services (e.g., `11434` for Ollama)
+  * AWS/cloud service names (e.g., `'bedrock-runtime'`)
+  * Factual values from documentation (e.g., embedding dimensions)
+
 ***
 
 ## JavaScript/TypeScript Development
@@ -296,6 +366,65 @@ bazel test --test_output=errors //java/com/google/dotprompt/...
 
 ***
 
+## Dart Development
+
+### Target Environment
+
+* **Dart Version**: Support Dart 3.7 and newer (stable channel).
+* **Build System**: Supports both standalone Dart and Bazel (via `rules_dart`).
+
+### Type Checking
+
+Dart uses strict type checking configured in `analysis_options.yaml`:
+
+* `strict-casts: true` - No implicit casts
+* `strict-inference: true` - Enforce type inference strictness
+* `strict-raw-types: true` - No raw generic types
+
+### Linting
+
+* **Analyzer**: Use `dart analyze` with `--fatal-infos --fatal-warnings`.
+* **Config**: See `dart/dotprompt/analysis_options.yaml` for rules.
+
+```bash
+cd dart/dotprompt
+dart analyze --fatal-infos --fatal-warnings
+```
+
+### Formatting
+
+* **Tool**: Use `dart format`.
+* **Check**: Run `dart format --set-exit-if-changed --output=none .`
+* **Fix**: Run `dart format .`
+
+### Testing
+
+```bash
+cd dart/dotprompt
+dart pub get
+dart test
+```
+
+Or via Bazel:
+
+```bash
+bazel test //dart/dotprompt/test:...
+```
+
+Or use the comprehensive check script:
+
+```bash
+./scripts/run_dart_checks
+```
+
+### Docstrings
+
+* **Format**: Use `///` doc comments for all public APIs.
+* **Required sections**: Description, parameters, return values, exceptions.
+* **All public APIs must be documented** (enforced by `public_member_api_docs` lint).
+
+***
+
 ## Cross-Language Specifications
 
 The `spec/` directory contains YAML specification files that define expected
@@ -336,7 +465,7 @@ Include the Apache 2.0 license header at the top of each file (update year as ne
 # SPDX-License-Identifier: Apache-2.0
 ```
 
-### JavaScript/TypeScript/Java/Rust
+### JavaScript/TypeScript/Java/Rust/Dart
 
 ```javascript
 // Copyright 2026 Google LLC
@@ -401,6 +530,8 @@ names in `.release-please-config.json` and are used to generate release PRs.
 | `dotpromptz-handlebars` | `python/handlebarrz/` | Python Handlebars bindings (PyPI: dotpromptz-handlebars) |
 | `dotprompt-go` | `go/` | Go implementation |
 | `dotprompt-rs` | `rs/` | Rust implementation |
+| `dotprompt-dart` | `dart/dotprompt/` | Dart implementation |
+| `rules_dart` | `bazel/rules_dart/` | Bazel rules for Dart |
 | `dotprompt-java` | `java/` | Java implementation |
 | `dotprompt-vscode` | `packages/vscode/` | VS Code extension |
 | `dotprompt-vim` | `packages/vim/` | Vim plugin |
@@ -450,6 +581,7 @@ chore: update dependencies across all packages
 | `scripts/run_go_checks` | Run all Go checks and tests |
 | `scripts/run_rust_checks` | Run all Rust checks and tests |
 | `scripts/run_js_checks` | Run all JS/TS checks and tests |
+| `scripts/run_dart_checks` | Run all Dart checks and tests |
 | `scripts/run_python_checks` | Run Python checks |
 | `scripts/run_python_security_checks` | Run security scanning |
 | `scripts/build_dists` | Build distribution packages |
@@ -465,5 +597,6 @@ All pull requests trigger GitHub Actions workflows for each language:
 * `.github/workflows/js.yml` - JavaScript/TypeScript checks
 * `.github/workflows/java.yml` - Java checks
 * `.github/workflows/rust.yml` - Rust checks
+* `.github/workflows/dart.yml` - Dart checks
 
 All checks must pass before merging.

@@ -9,3 +9,4 @@ js/node_modules
 node_modules
 target/
 third_party/docsite/node_modules
+bazel/rules_dart

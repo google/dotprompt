@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "language",
+    srcs = ["lang.go"],
+    importpath = "github.com/google/rules_dart/gazelle/language",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//gazelle/pubspec",
+        "@gazelle//config",
+        "@gazelle//label",
+        "@gazelle//language",
+        "@gazelle//repo",
+        "@gazelle//resolve",
+        "@gazelle//rule",
+    ],
+)

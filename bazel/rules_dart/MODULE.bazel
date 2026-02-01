@@ -1,0 +1,27 @@
+module(
+    name = "rules_dart",
+    version = "0.0.1",
+)
+
+dart = use_extension("//:extensions.bzl", "dart")
+use_repo(dart, "dart_sdk")
+
+bazel_dep(name = "rules_go", version = "0.59.0", repo_name = "io_bazel_rules_go")
+bazel_dep(name = "gazelle", version = "0.47.0")
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
+bazel_dep(name = "platforms", version = "1.0.0")
+
+# Go SDK for building gazelle extension
+go_sdk = use_extension("@io_bazel_rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.download(version = "1.24.11")
+use_repo(go_sdk, "go_default_sdk")
+
+# Register the Go toolchain
+register_toolchains("@go_default_sdk//:all")
+
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+go_deps.from_file(go_mod = "//gazelle:go.mod")
+use_repo(
+    go_deps,
+    "in_gopkg_yaml_v3",
+)

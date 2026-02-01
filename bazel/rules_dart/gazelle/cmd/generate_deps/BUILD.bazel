@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "generate_deps_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/google/rules_dart/gazelle/cmd/generate_deps",
+    visibility = ["//visibility:private"],
+    deps = ["//gazelle/pubspec"],
+)
+
+go_binary(
+    name = "generate_deps",
+    embed = [":generate_deps_lib"],
+    visibility = ["//visibility:public"],
+)
