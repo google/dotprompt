@@ -22,20 +22,20 @@ NODE_VERSION = "22.8.0"
 
 # Node.js
 # See: https://github.com/bazel-contrib/rules_nodejs/blob/main/nodejs/private/node_versions.bzl
-bazel_dep(name = "rules_nodejs", version = "6.6.2")
+bazel_dep(name = "rules_nodejs", version = "6.7.3")
 
 node = use_extension("@rules_nodejs//nodejs:extensions.bzl", "node", dev_dependency = True)
 node.toolchain(node_version = NODE_VERSION)
 
 # TypeScript.
-bazel_dep(name = "aspect_rules_ts", version = "3.8.0")
+bazel_dep(name = "aspect_rules_ts", version = "3.8.3")
 
 rules_ts_ext = use_extension("@aspect_rules_ts//ts:extensions.bzl", "ext", dev_dependency = True)
 rules_ts_ext.deps(ts_version_from = "//:package.json")
 use_repo(rules_ts_ext, "npm_typescript")
 
 # JavaScript.
-bazel_dep(name = "aspect_rules_js", version = "2.8.3")
+bazel_dep(name = "aspect_rules_js", version = "2.9.2")
 
 npm = use_extension("@aspect_rules_js//npm:extensions.bzl", "npm", dev_dependency = True)
 npm.npm_translate_lock(

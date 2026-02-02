@@ -22,7 +22,7 @@ module(
 
 # Core dependencies
 bazel_dep(name = "platforms", version = "1.0.0")
-bazel_dep(name = "bazel_skylib", version = "1.8.2")
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
 
 # rules_dart for Dart compilation (Flutter uses Dart)
 # TODO(#123): Remove local_path_override when rules_dart is published to BCR
@@ -42,11 +42,11 @@ local_path_override(
 # bazel_dep(name = "rules_pkg", version = "1.0.1")
 
 # Gazelle support
-bazel_dep(name = "rules_go", version = "0.52.0")
-bazel_dep(name = "gazelle", version = "0.41.0")
+bazel_dep(name = "rules_go", version = "0.59.0")
+bazel_dep(name = "gazelle", version = "0.47.0")
 
 go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
-go_sdk.download(version = "1.23.0")
+go_sdk.download(version = "1.24.11")
 
 go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
 go_deps.from_file(go_mod = "//gazelle:go.mod")

@@ -26,7 +26,7 @@ local_path_override(
 )
 
 bazel_dep(name = "rules_proto", version = "7.1.0")
-bazel_dep(name = "protobuf", version = "29.3")
+bazel_dep(name = "protobuf", version = "33.5")
 
 dart = use_extension("@rules_dart//:extensions.bzl", "dart")
 dart.configure(version = "3.7.0")
