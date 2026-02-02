@@ -19,3 +19,4 @@ target/
 .dart_tool/
 .packages
 .pub-cache/
+packages/jetbrains/.gradle
