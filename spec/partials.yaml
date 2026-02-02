@@ -75,3 +75,47 @@
         messages:
           - role: user
             content: [{ text: "Hello from a nested resolved partial!" }]
+
+# Tests that Handlebars comments in partials (used for license headers) are
+# stripped during rendering and do not appear in the output.
+#
+# NOTE: Partials do not go through frontmatter parsing, so `#`-style comments
+# would be rendered as literal text. Use Handlebars comments `{{!-- --}}` for
+# license headers in partials.
+- name: partial_with_license_header
+  template: |
+    {{> licensedPartial name="World"}}
+  partials:
+    licensedPartial: |
+      {{!--
+        Copyright 2025 Google LLC
+        Licensed under the Apache License, Version 2.0
+        SPDX-License-Identifier: Apache-2.0
+      --}}
+      Hello, {{name}}!
+  tests:
+    - desc: strips Handlebars comments (license header) from partial output
+      data:
+        input: {}
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "Hello, World!\n" }]
+
+# Tests that regular `#` comments in partials are NOT stripped and appear in
+# the output (this is intentional - use Handlebars comments for license headers).
+- name: partial_with_hash_comment
+  template: |
+    {{> hashPartial}}
+  partials:
+    hashPartial: |
+      # This is NOT a comment in partials
+      Content here.
+  tests:
+    - desc: renders hash comments as literal text (not stripped)
+      data:
+        input: {}
+      expect:
+        messages:
+          - role: user
+            content: [{ text: "# This is NOT a comment in partials\nContent here.\n" }]

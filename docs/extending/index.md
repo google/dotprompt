@@ -486,6 +486,53 @@ ai.definePartial(
 
 Code-defined partials are available in all prompts.
 
+### License headers in partials
+
+Partials are pure template fragments and do **not** go through frontmatter 
+parsing. This means `#`-style comments (like those used in prompt files before 
+the `---` frontmatter delimiter) will be rendered as literal text in the output.
+
+To add license headers to partial files, use **Handlebars comments** which are 
+stripped during template rendering:
+
+=== "_personality.prompt"
+
+    ```handlebars
+    {{!--
+      Copyright 2025 Google LLC
+
+      Licensed under the Apache License, Version 2.0 (the "License");
+      you may not use this file except in compliance with the License.
+      You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+      SPDX-License-Identifier: Apache-2.0
+    --}}
+    You should speak like a {{#if style}}{{style}}{{else}}helpful assistant{{/if}}.
+    ```
+
+!!! warning "Do not use `#` comments in partials"
+    
+    Unlike prompt files, `#` comments in partials are **not** stripped:
+    
+    ```handlebars
+    # This comment will appear in the output!
+    Hello, {{name}}!
+    ```
+    
+    This would render as:
+    
+    ```
+    # This comment will appear in the output!
+    Hello, Alice!
+    ```
+
+| File Type | License Header Format | Stripped By |
+|-----------|----------------------|-------------|
+| Prompt (`.prompt`) | `# Copyright...` before `---` | Frontmatter parser |
+| Partial (`_*.prompt`) | `{{!-- Copyright... --}}` | Handlebars engine |
+
 ## Prompt variants
 
 Because prompt files are just text, you should commit them to your version

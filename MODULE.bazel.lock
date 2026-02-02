@@ -290,8 +290,8 @@
   "moduleExtensions": {
     "@@aspect_rules_js+//npm:extensions.bzl%pnpm": {
       "general": {
-        "bzlTransitiveDigest": "gS/+Eybvs3JJcR90LPE6FgwdK80J/hprMpoEtrzTafs=",
-        "usagesDigest": "h9/WVkf5MSt0JMm0sUw3d1fgKGQgQDuuOzPzXFrP/2k=",
+        "bzlTransitiveDigest": "qXeSGib5uDmVfjDdND5ilsPUpjCp9E+5FJOgxzR1gx4=",
+        "usagesDigest": "5oGd3W7fL6MccpydTlF6OVyQs3//7EiM2ZC+DGhm38c=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -434,7 +434,7 @@
     },
     "@@aspect_rules_ts+//ts:extensions.bzl%ext": {
       "general": {
-        "bzlTransitiveDigest": "vNLGL9GTi8PaP46e/11lxRuFDmmGkBjize7/iPfRypI=",
+        "bzlTransitiveDigest": "gyALvLdd/1AuLPFXhzNeabk2DMLHf32oxn8qKfEK8UA=",
         "usagesDigest": "DERK4k9FbVzQIB4bXDGJ1nM+IQ2xMRKyoKFkkDE1cIk=",
         "recordedFileInputs": {
           "@@//package.json": "306f2484ca1c40120233bf514d60fb586f457facb4e84cc7bbb1d3a1acdf6e81"
@@ -471,7 +471,7 @@
     "@@aspect_tools_telemetry+//:extension.bzl%telemetry": {
       "general": {
         "bzlTransitiveDigest": "cl5A2O84vDL6Tt+Qga8FCj1DUDGqn+e7ly5rZ+4xvcc=",
-        "usagesDigest": "4jF5WG3v35ouwe+i1S5svl2gwZuudM/W71u4fujWOUU=",
+        "usagesDigest": "6y50glSsTgpSjdwthDXeuRvBwnaUpoQG/ErtejBia5k=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -480,8 +480,8 @@
             "repoRuleId": "@@aspect_tools_telemetry+//:extension.bzl%tel_repository",
             "attributes": {
               "deps": {
-                "aspect_rules_ts": "3.8.0",
-                "aspect_rules_js": "2.8.3",
+                "aspect_rules_ts": "3.8.3",
+                "aspect_rules_js": "2.9.2",
                 "aspect_tools_telemetry": "0.3.3"
               }
             }
@@ -1899,7 +1899,7 @@
     },
     "@@rules_rust+//crate_universe:extension.bzl%crate": {
       "general": {
-        "bzlTransitiveDigest": "GqElh90kVYA5hYFvr09fg5T5NCzbjMYqtPh1ukdYSEk=",
+        "bzlTransitiveDigest": "GNKZUr+dgYqFEFd4TsYun60dE0FioZeFGjYPFUMBNdk=",
         "usagesDigest": "CjgpFVuFCheh9rkTr62WitflU7Lr/QLGpPaiQz2s6RA=",
         "recordedFileInputs": {
           "@@//Cargo.lock": "523efab8a728f5b492205a94fbb673921e1fa942ab28fb8964c2087fa70b74ed",
