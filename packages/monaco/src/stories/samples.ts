@@ -33,6 +33,7 @@ import multiTurnHistory from '../../samples/07-multi-turn-history.prompt?raw';
 import sectionsThinking from '../../samples/08-sections-thinking.prompt?raw';
 import complexSchema from '../../samples/09-complex-schema.prompt?raw';
 import kitchenSink from '../../samples/10-kitchen-sink.prompt?raw';
+import multilingualUnicode from '../../samples/11-multilingual-unicode.prompt?raw';
 
 export interface Sample {
   /** Sample identifier for selection */
@@ -112,6 +113,13 @@ export const samples: Sample[] = [
     description:
       'Comprehensive example with ALL major Dotprompt features combined',
     content: kitchenSink,
+  },
+  {
+    id: 'multilingual',
+    name: 'Multilingual & Unicode',
+    description:
+      'CJK, Arabic, Cyrillic, Devanagari, Thai, emoji, and special characters',
+    content: multilingualUnicode,
   },
 ];
 

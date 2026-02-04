@@ -88,7 +88,7 @@ const meta: Meta<CodeMirrorEditorProps & { sample: string }> = {
     theme: 'dark',
     lineNumbers: true,
     lineWrapping: true,
-    vimMode: true,
+    vimMode: false,
     readOnly: false,
   },
 };
@@ -98,7 +98,6 @@ type Story = StoryObj<CodeMirrorEditorProps & { sample: string }>;
 
 /**
  * Basic prompt with minimal frontmatter.
- * Vim mode enabled by default for power users.
  */
 export const Basic: Story = {
   args: {
@@ -203,12 +202,22 @@ export const LightTheme: Story = {
 };
 
 /**
- * Standard editing mode (no Vim keybindings).
+ * Vim keybinding mode for power users.
  */
-export const StandardMode: Story = {
+export const VimMode: Story = {
   args: {
     sample: 'basic',
-    vimMode: false,
+    vimMode: true,
+  },
+};
+
+/**
+ * Multilingual and Unicode support with CJK, Arabic, Cyrillic, emoji.
+ */
+export const Multilingual: Story = {
+  args: {
+    sample: 'multilingual',
+    height: '700px',
   },
 };
 

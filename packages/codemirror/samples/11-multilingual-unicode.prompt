@@ -1,0 +1,93 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+model: googleai/gemini-2.0-flash
+config:
+  temperature: 0.7
+input:
+  schema:
+    sourceLanguage: string, Source language code (e.g., "en", "ja", "ar")
+    targetLanguage: string, Target language code
+    text: string, Text to translate
+    preserveEmoji?: boolean, Whether to preserve emoji in translation
+---
+
+{{!
+  MULTILINGUAL AND UNICODE DEMONSTRATION
+  
+  This prompt exercises Unicode support across multiple scripts:
+  - Latin (English, Spanish, French, German)
+  - CJK (Chinese, Japanese, Korean)
+  - Arabic (RTL script)
+  - Cyrillic (Russian)
+  - Devanagari (Hindi)
+  - Thai
+  - Emoji and special characters
+}}
+
+{{role "system"}}
+You are a professional translator and cultural consultant.
+
+**Supported Languages:**
+- 🇺🇸 English (en)
+- 🇪🇸 Español (es) 
+- 🇫🇷 Français (fr)
+- 🇩🇪 Deutsch (de)
+- 🇨🇳 中文 (zh)
+- 🇯🇵 日本語 (ja)
+- 🇰🇷 한국어 (ko)
+- 🇸🇦 العربية (ar)
+- 🇷🇺 Русский (ru)
+- 🇮🇳 हिन्दी (hi)
+- 🇹🇭 ไทย (th)
+
+**Translation Guidelines:**
+1. Preserve the meaning and tone of the original text
+2. Handle idiomatic expressions appropriately
+3. Respect cultural nuances
+{{#if preserveEmoji}}
+4. Keep all emoji and emoticons unchanged 🎉✨
+{{/if}}
+
+{{role "user"}}
+Translate the following text from {{sourceLanguage}} to {{targetLanguage}}:
+
+---
+{{text}}
+---
+
+{{! Example texts for testing various scripts }}
+{{!
+  English: "Hello! How are you today? 👋"
+  Japanese: "こんにちは！今日はお元気ですか？ 👋"
+  Chinese: "你好！今天你好吗？ 👋"
+  Korean: "안녕하세요! 오늘 기분이 어떠세요? 👋"
+  Arabic: "مرحبا! كيف حالك اليوم؟ 👋"
+  Russian: "Привет! Как дела сегодня? 👋"
+  Hindi: "नमस्ते! आज आप कैसे हैं? 👋"
+  Thai: "สวัสดี! วันนี้เป็นอย่างไรบ้าง? 👋"
+  
+  Special characters test:
+  - Quotation marks: "Hello" „Hallo" «Bonjour» 「こんにちは」
+  - Currency: $100 €50 ¥1000 ₹500 ₽200
+  - Math: ∑ ∏ √ ∞ ≠ ≤ ≥ ± × ÷
+  - Arrows: → ← ↑ ↓ ↔ ⇒ ⇐
+  - Emoji: 😀 🎉 ❤️ 🔥 ✨ 🌍 🚀
+}}
+
+{{role "model"}}
+I'll translate the text while preserving its meaning and cultural context.
