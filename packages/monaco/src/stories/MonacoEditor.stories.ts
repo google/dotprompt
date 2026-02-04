@@ -109,7 +109,7 @@ const meta: Meta<MonacoEditorProps & { sample: string }> = {
     sample: 'basic',
     value: '',
     width: '100%',
-    height: '500px',
+    height: 'calc(100vh - 40px)',
     theme: 'vs-dark',
     lineNumbers: true,
     minimap: false,
@@ -140,7 +140,6 @@ export const Basic: Story = {
 export const SchemaAndConfig: Story = {
   args: {
     sample: 'schema-config',
-    height: '600px',
   },
 };
 
@@ -159,7 +158,6 @@ export const MultimodalMedia: Story = {
 export const ToolCalling: Story = {
   args: {
     sample: 'tools',
-    height: '600px',
   },
 };
 
@@ -169,7 +167,6 @@ export const ToolCalling: Story = {
 export const HandlebarsHelpers: Story = {
   args: {
     sample: 'helpers',
-    height: '700px',
   },
 };
 
@@ -206,7 +203,6 @@ export const SectionsAndThinking: Story = {
 export const ComplexSchema: Story = {
   args: {
     sample: 'complex-schema',
-    height: '800px',
   },
 };
 
@@ -216,7 +212,6 @@ export const ComplexSchema: Story = {
 export const KitchenSink: Story = {
   args: {
     sample: 'kitchen-sink',
-    height: '900px',
   },
 };
 
@@ -237,7 +232,6 @@ export const DotpromptDarkTheme: Story = {
   args: {
     sample: 'kitchen-sink',
     theme: 'dotprompt-dark',
-    height: '900px',
   },
 };
 
@@ -257,7 +251,6 @@ export const VimMode: Story = {
 export const Multilingual: Story = {
   args: {
     sample: 'multilingual',
-    height: '700px',
   },
 };
 
@@ -269,7 +262,6 @@ export const ReadOnly: Story = {
     sample: 'kitchen-sink',
     readOnly: true,
     vimMode: false,
-    height: '900px',
   },
 };
 
@@ -280,7 +272,6 @@ export const LargeFont: Story = {
   args: {
     sample: 'basic',
     fontSize: 20,
-    height: '500px',
   },
 };
 

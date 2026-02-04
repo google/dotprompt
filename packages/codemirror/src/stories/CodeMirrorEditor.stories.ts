@@ -89,7 +89,7 @@ const meta: Meta<CodeMirrorEditorProps & { sample: string }> = {
     sample: 'basic',
     value: '',
     width: '100%',
-    height: '500px',
+    height: 'calc(100vh - 40px)',
     theme: 'dark',
     lineNumbers: true,
     lineWrapping: true,
@@ -116,7 +116,6 @@ export const Basic: Story = {
 export const SchemaAndConfig: Story = {
   args: {
     sample: 'schema-config',
-    height: '600px',
   },
 };
 
@@ -135,7 +134,6 @@ export const MultimodalMedia: Story = {
 export const ToolCalling: Story = {
   args: {
     sample: 'tools',
-    height: '600px',
   },
 };
 
@@ -145,7 +143,6 @@ export const ToolCalling: Story = {
 export const HandlebarsHelpers: Story = {
   args: {
     sample: 'helpers',
-    height: '700px',
   },
 };
 
@@ -182,7 +179,6 @@ export const SectionsAndThinking: Story = {
 export const ComplexSchema: Story = {
   args: {
     sample: 'complex-schema',
-    height: '800px',
   },
 };
 
@@ -192,7 +188,6 @@ export const ComplexSchema: Story = {
 export const KitchenSink: Story = {
   args: {
     sample: 'kitchen-sink',
-    height: '900px',
   },
 };
 
@@ -232,7 +227,6 @@ export const EmacsMode: Story = {
 export const Multilingual: Story = {
   args: {
     sample: 'multilingual',
-    height: '700px',
   },
 };
 
@@ -243,7 +237,6 @@ export const ReadOnly: Story = {
   args: {
     sample: 'kitchen-sink',
     readOnly: true,
-    height: '900px',
   },
 };
 
