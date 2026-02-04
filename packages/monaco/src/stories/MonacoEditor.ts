@@ -19,9 +19,9 @@
 import * as monaco from 'monaco-editor';
 import { initVimMode } from 'monaco-vim';
 import {
-  registerDotpromptLanguage,
   createDotpromptTheme,
   LANGUAGE_ID,
+  registerDotpromptLanguage,
 } from '../index';
 
 export interface MonacoEditorProps {
@@ -120,4 +120,3 @@ export const createMonacoEditor = (props: MonacoEditorProps): HTMLElement => {
 
   return wrapper;
 };
-

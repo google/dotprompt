@@ -18,7 +18,7 @@
 
 import type { Meta, StoryObj } from '@storybook/html';
 import { createMonacoEditor, type MonacoEditorProps } from './MonacoEditor';
-import { samples, getSampleContent, getSampleIds } from './samples';
+import { getSampleContent, getSampleIds, samples } from './samples';
 
 // Build sample options for the dropdown
 const sampleOptions = samples.reduce(
@@ -43,7 +43,10 @@ const meta: Meta<MonacoEditorProps & { sample: string }> = {
     sample: {
       control: 'select',
       options: ['custom', ...getSampleIds()],
-      mapping: { custom: 'custom', ...Object.fromEntries(getSampleIds().map((id) => [id, id])) },
+      mapping: {
+        custom: 'custom',
+        ...Object.fromEntries(getSampleIds().map((id) => [id, id])),
+      },
       description: 'Load a sample prompt file',
       table: {
         category: 'Sample',

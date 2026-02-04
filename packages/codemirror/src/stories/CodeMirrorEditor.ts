@@ -16,11 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EditorState, Extension } from '@codemirror/state';
-import { EditorView, lineNumbers, keymap } from '@codemirror/view';
 import { defaultKeymap } from '@codemirror/commands';
+import { EditorState, Extension } from '@codemirror/state';
+import { EditorView, keymap, lineNumbers } from '@codemirror/view';
+import { emacs } from '@replit/codemirror-emacs';
 import { vim } from '@replit/codemirror-vim';
 import { dotprompt, dotpromptDarkTheme, dotpromptLightTheme } from '../index';
+
+/** Editor keybinding mode */
+export type EditorMode = 'standard' | 'vim' | 'emacs';
 
 export interface CodeMirrorEditorProps {
   /** Initial content for the editor */
@@ -35,8 +39,8 @@ export interface CodeMirrorEditorProps {
   lineNumbers: boolean;
   /** Enable line wrapping */
   lineWrapping: boolean;
-  /** Enable Vim keybindings */
-  vimMode: boolean;
+  /** Editor keybinding mode */
+  editorMode: EditorMode;
   /** Read-only mode */
   readOnly: boolean;
 }
@@ -64,9 +68,11 @@ export const createCodeMirrorEditor = (
     keymap.of(defaultKeymap),
   ];
 
-  // Optional extensions
-  if (props.vimMode) {
+  // Editor mode keybindings
+  if (props.editorMode === 'vim') {
     extensions.push(vim());
+  } else if (props.editorMode === 'emacs') {
+    extensions.push(emacs());
   }
 
   if (props.lineNumbers) {

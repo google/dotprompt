@@ -57,6 +57,7 @@
     "@codemirror/view": "^6.35.0",
     "@lezer/highlight": "^1.2.0",
     "@lezer/lr": "^1.4.0",
+    "@replit/codemirror-emacs": "^6.1.0",
     "@replit/codemirror-vim": "^6.2.0",
     "@storybook/html-vite": "^10.2.5",
     "storybook": "^10.2.5",

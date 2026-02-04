@@ -18,10 +18,10 @@
 
 import type { Meta, StoryObj } from '@storybook/html';
 import {
-  createCodeMirrorEditor,
   type CodeMirrorEditorProps,
+  createCodeMirrorEditor,
 } from './CodeMirrorEditor';
-import { samples, getSampleContent, getSampleIds } from './samples';
+import { getSampleContent, getSampleIds, samples } from './samples';
 
 const meta: Meta<CodeMirrorEditorProps & { sample: string }> = {
   title: 'CodeMirror Editor/Dotprompt',
@@ -37,7 +37,10 @@ const meta: Meta<CodeMirrorEditorProps & { sample: string }> = {
     sample: {
       control: 'select',
       options: ['custom', ...getSampleIds()],
-      mapping: { custom: 'custom', ...Object.fromEntries(getSampleIds().map((id) => [id, id])) },
+      mapping: {
+        custom: 'custom',
+        ...Object.fromEntries(getSampleIds().map((id) => [id, id])),
+      },
       description: 'Load a sample prompt file',
       table: {
         category: 'Sample',
@@ -71,8 +74,10 @@ const meta: Meta<CodeMirrorEditorProps & { sample: string }> = {
       control: 'boolean',
       table: { category: 'Appearance' },
     },
-    vimMode: {
-      control: 'boolean',
+    editorMode: {
+      control: 'select',
+      options: ['standard', 'vim', 'emacs'],
+      description: 'Editor keybinding mode',
       table: { category: 'Features' },
     },
     readOnly: {
@@ -88,7 +93,7 @@ const meta: Meta<CodeMirrorEditorProps & { sample: string }> = {
     theme: 'dark',
     lineNumbers: true,
     lineWrapping: true,
-    vimMode: false,
+    editorMode: 'standard',
     readOnly: false,
   },
 };
@@ -207,7 +212,17 @@ export const LightTheme: Story = {
 export const VimMode: Story = {
   args: {
     sample: 'basic',
-    vimMode: true,
+    editorMode: 'vim',
+  },
+};
+
+/**
+ * Emacs keybinding mode for Emacs users.
+ */
+export const EmacsMode: Story = {
+  args: {
+    sample: 'basic',
+    editorMode: 'emacs',
   },
 };
 
@@ -228,7 +243,6 @@ export const ReadOnly: Story = {
   args: {
     sample: 'kitchen-sink',
     readOnly: true,
-    vimMode: false,
     height: '900px',
   },
 };
@@ -240,6 +254,5 @@ export const Minimal: Story = {
   args: {
     sample: 'basic',
     lineNumbers: false,
-    vimMode: false,
   },
 };
