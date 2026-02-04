@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/google/dotprompt/compare/rules_flutter-0.1.0...rules_flutter-0.1.1) (2026-02-04)
+
+
+### Features
+
+* **rules_dart,rules_flutter:** enhance Bazel rules with workers and linting fixes ([#513](https://github.com/google/dotprompt/issues/513)) ([5369b40](https://github.com/google/dotprompt/commit/5369b4046eea9805f7dbcf026434035d55e2b095))
+
 ## [0.1.0](https://github.com/google/dotprompt/releases/tag/rules_flutter-0.1.0) (2026-02-01)
 
 ### Features
