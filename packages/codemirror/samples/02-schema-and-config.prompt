@@ -1,0 +1,62 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+model: googleai/gemini-2.0-flash
+config:
+  temperature: 0.7
+  maxOutputTokens: 2048
+  topK: 40
+  topP: 0.95
+  stopSequences:
+    - "END"
+    - "STOP"
+input:
+  schema:
+    name: string, The user's name
+    topic: string, Topic to write about
+    style?: "formal" | "casual" | "technical"
+    wordCount?: integer, Target word count
+output:
+  format: json
+  schema:
+    article:
+      title: string
+      content: string
+      wordCount: integer
+      tags: string[]
+---
+
+{{! This prompt demonstrates advanced schema definitions with Picoschema }}
+
+{{role "system"}}
+You are an expert content writer named {{name}}.
+
+WRITING GUIDELINES:
+{{#if style}}
+- Write in a {{style}} style
+{{else}}
+- Write in a professional but approachable style
+{{/if}}
+
+{{#if wordCount}}
+- Target approximately {{wordCount}} words
+{{/if}}
+
+{{role "user"}}
+Write an article about: {{topic}}
+
+Return a JSON response with title, content, wordCount, and relevant tags.

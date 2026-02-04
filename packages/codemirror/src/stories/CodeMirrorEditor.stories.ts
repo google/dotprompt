@@ -1,0 +1,236 @@
+/**
+ * Copyright 2026 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import type { Meta, StoryObj } from '@storybook/html';
+import {
+  createCodeMirrorEditor,
+  type CodeMirrorEditorProps,
+} from './CodeMirrorEditor';
+import { samples, getSampleContent, getSampleIds } from './samples';
+
+const meta: Meta<CodeMirrorEditorProps & { sample: string }> = {
+  title: 'CodeMirror Editor/Dotprompt',
+  render: (args) => {
+    // Get content from selected sample if sample is specified
+    const content =
+      args.sample && args.sample !== 'custom'
+        ? getSampleContent(args.sample)
+        : args.value;
+    return createCodeMirrorEditor({ ...args, value: content });
+  },
+  argTypes: {
+    sample: {
+      control: 'select',
+      options: ['custom', ...getSampleIds()],
+      mapping: { custom: 'custom', ...Object.fromEntries(getSampleIds().map((id) => [id, id])) },
+      description: 'Load a sample prompt file',
+      table: {
+        category: 'Sample',
+      },
+    },
+    value: {
+      control: 'text',
+      description: 'Custom prompt content (used when sample is "custom")',
+      table: {
+        category: 'Content',
+      },
+    },
+    width: {
+      control: 'text',
+      table: { category: 'Layout' },
+    },
+    height: {
+      control: 'text',
+      table: { category: 'Layout' },
+    },
+    theme: {
+      control: 'select',
+      options: ['dark', 'light'],
+      table: { category: 'Appearance' },
+    },
+    lineNumbers: {
+      control: 'boolean',
+      table: { category: 'Appearance' },
+    },
+    lineWrapping: {
+      control: 'boolean',
+      table: { category: 'Appearance' },
+    },
+    vimMode: {
+      control: 'boolean',
+      table: { category: 'Features' },
+    },
+    readOnly: {
+      control: 'boolean',
+      table: { category: 'Features' },
+    },
+  },
+  args: {
+    sample: 'basic',
+    value: '',
+    width: '100%',
+    height: '500px',
+    theme: 'dark',
+    lineNumbers: true,
+    lineWrapping: true,
+    vimMode: true,
+    readOnly: false,
+  },
+};
+
+export default meta;
+type Story = StoryObj<CodeMirrorEditorProps & { sample: string }>;
+
+/**
+ * Basic prompt with minimal frontmatter.
+ * Vim mode enabled by default for power users.
+ */
+export const Basic: Story = {
+  args: {
+    sample: 'basic',
+  },
+};
+
+/**
+ * Schema and configuration options with Picoschema and JSON output.
+ */
+export const SchemaAndConfig: Story = {
+  args: {
+    sample: 'schema-config',
+    height: '600px',
+  },
+};
+
+/**
+ * Multimodal prompt with media helper for images and audio.
+ */
+export const MultimodalMedia: Story = {
+  args: {
+    sample: 'multimodal',
+  },
+};
+
+/**
+ * Tool-enabled prompt with detailed system instructions.
+ */
+export const ToolCalling: Story = {
+  args: {
+    sample: 'tools',
+    height: '600px',
+  },
+};
+
+/**
+ * Handlebars helpers demonstration with if/else/each/with.
+ */
+export const HandlebarsHelpers: Story = {
+  args: {
+    sample: 'helpers',
+    height: '700px',
+  },
+};
+
+/**
+ * Partials demonstration with inclusion and hash parameters.
+ */
+export const Partials: Story = {
+  args: {
+    sample: 'partials',
+  },
+};
+
+/**
+ * Multi-turn conversation with history helper.
+ */
+export const MultiTurnHistory: Story = {
+  args: {
+    sample: 'history',
+  },
+};
+
+/**
+ * Sections and Chain-of-Thought reasoning patterns.
+ */
+export const SectionsAndThinking: Story = {
+  args: {
+    sample: 'sections',
+  },
+};
+
+/**
+ * Complex nested JSON Schema definitions.
+ */
+export const ComplexSchema: Story = {
+  args: {
+    sample: 'complex-schema',
+    height: '800px',
+  },
+};
+
+/**
+ * Kitchen sink example with ALL Dotprompt features.
+ */
+export const KitchenSink: Story = {
+  args: {
+    sample: 'kitchen-sink',
+    height: '900px',
+  },
+};
+
+/**
+ * Light theme variant.
+ */
+export const LightTheme: Story = {
+  args: {
+    sample: 'basic',
+    theme: 'light',
+  },
+};
+
+/**
+ * Standard editing mode (no Vim keybindings).
+ */
+export const StandardMode: Story = {
+  args: {
+    sample: 'basic',
+    vimMode: false,
+  },
+};
+
+/**
+ * Read-only mode for viewing prompts without editing.
+ */
+export const ReadOnly: Story = {
+  args: {
+    sample: 'kitchen-sink',
+    readOnly: true,
+    vimMode: false,
+    height: '900px',
+  },
+};
+
+/**
+ * Minimal editor without line numbers.
+ */
+export const Minimal: Story = {
+  args: {
+    sample: 'basic',
+    lineNumbers: false,
+    vimMode: false,
+  },
+};

@@ -1,0 +1,61 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+model: googleai/gemini-2.0-flash
+config:
+  temperature: 0.5
+input:
+  schema:
+    problem: string
+    showThinking?: boolean
+output:
+  format: json
+  schema:
+    thinking?: string, Internal reasoning (if enabled)
+    answer: string
+    confidence: number
+---
+
+{{!
+  SECTIONS AND THINKING DEMONSTRATION
+  
+  The section helper allows you to mark parts of the output
+  for special handling, like Chain-of-Thought reasoning.
+}}
+
+{{role "system"}}
+You are an analytical problem solver. When asked to show your thinking,
+use a step-by-step reasoning approach.
+
+{{role "user"}}
+Please solve this problem: {{problem}}
+
+{{#if showThinking}}
+Show your reasoning process.
+{{/if}}
+
+{{role "model"}}
+{{#if showThinking}}
+{{section "thought"}}
+Let me think through this step by step:
+1. First, I'll identify the key components of the problem
+2. Then, I'll consider different approaches
+3. Finally, I'll evaluate and select the best solution
+{{/section}}
+{{/if}}
+
+Based on my analysis, here is my answer:

@@ -1,0 +1,138 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+model: googleai/gemini-2.0-flash
+config:
+  temperature: 0.8
+  maxOutputTokens: 4096
+  topP: 0.95
+  topK: 40
+  stopSequences:
+    - "<<END>>"
+tools:
+  - searchDatabase
+  - generateChart
+  - sendNotification
+input:
+  schema:
+    projectName: string, Name of the project
+    teamMembers: { name: string, role: string, email: string }[]
+    requirements: string[], List of project requirements
+    deadline: string, Project deadline (ISO date)
+    budget?: number, Optional budget in USD
+    images?: string[], Optional reference images
+    previousNotes?: string, Notes from previous sessions
+output:
+  format: json
+  schema:
+    projectPlan:
+      overview: string
+      phases: { name: string, duration: string, tasks: string[] }[]
+      risks: { description: string, mitigation: string, severity: "low" | "medium" | "high" }[]
+      milestones: { name: string, date: string, deliverables: string[] }[]
+    resourceAllocation:
+      assignments: { member: string, tasks: string[], hoursEstimate: integer }[]
+      totalHours: integer
+    budgetBreakdown?: { category: string, amount: number }[]
+    nextSteps: string[]
+---
+
+{{!
+  KITCHEN SINK EXAMPLE
+  
+  This comprehensive prompt demonstrates ALL major Dotprompt features:
+  - Full frontmatter with config, tools, input/output schemas
+  - Complex Picoschema with nested objects and arrays
+  - All role types (system, user, model)
+  - Media helper for images
+  - History helper for conversation continuity
+  - Section helper for structured thinking
+  - Handlebars helpers (if, unless, each, with)
+  - Partials
+  - JSON helper
+  - Comments (block and inline)
+}}
+
+{{role "system"}}
+You are an expert project manager assistant. You help teams plan and execute projects
+efficiently by analyzing requirements, allocating resources, and identifying risks.
+
+Available tools:
+{{#each @root.tools}}
+- {{this}}
+{{/each}}
+
+{{role "user"}}
+{{! Include conversation history if available }}
+{{#if previousNotes}}
+Previous session notes:
+{{previousNotes}}
+
+---
+{{/if}}
+
+I need help planning a project.
+
+**Project:** {{projectName}}
+**Deadline:** {{deadline}}
+{{#if budget}}
+**Budget:** ${{budget}}
+{{/if}}
+
+**Team Members:**
+{{#each teamMembers}}
+{{! Show each team member with their role }}
+- {{name}} ({{role}}) - {{email}}
+{{/each}}
+
+**Requirements:**
+{{#each requirements}}
+{{add @index 1}}. {{this}}
+{{/each}}
+
+{{! Include reference images if provided }}
+{{#if images}}
+
+**Reference Images:**
+{{#each images}}
+{{media url=this}}
+{{/each}}
+{{/if}}
+
+Please create a comprehensive project plan with phases, risks, milestones, and resource allocation.
+
+{{role "model"}}
+{{section "analysis"}}
+Let me analyze the project requirements:
+
+{{#with this}}
+- Project: {{projectName}}
+- Team size: {{teamMembers.length}} members
+- Requirements count: {{requirements.length}}
+- Timeline: Must complete by {{deadline}}
+{{#if budget}}
+- Budget constraint: ${{budget}}
+{{/if}}
+{{/with}}
+{{/section}}
+
+Based on my analysis, here is the recommended project plan:
+
+{{! The model will generate the structured JSON output }}
+{{json output indent=2}}
+
+<<END>>
