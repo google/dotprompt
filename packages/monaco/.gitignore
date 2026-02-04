@@ -1,9 +1,6 @@
 # Dependencies
 node_modules/
 
-# Build output
-dist/
-
 # Package files
 *.tgz
 
@@ -15,3 +12,7 @@ dist/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Note: dist/ is intentionally NOT ignored so the package can be
+# installed directly from GitHub without requiring a build step.
+# See: https://github.com/google/dotprompt/issues/XXX
