@@ -15,7 +15,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 name: dotprompt
-publish_to: none
 description: >-
   Dart implementation of Dotprompt, an executable prompt template file format
   for Generative AI. This library provides parsing, rendering, and management
@@ -35,8 +34,7 @@ dependencies:
   # Crypto for hashing
   crypto: ^3.0.6
   # Handlebars templating (our pure Dart implementation)
-  handlebarrz:
-    path: ../handlebarrz
+  handlebarrz: ^0.0.1
   # JSON schema support
   json_schema: ^5.2.2
   # Meta annotations
@@ -45,6 +43,11 @@ dependencies:
   path: ^1.9.0
   # YAML parsing for frontmatter
   yaml: ^3.1.2
+
+# Local development overrides (not included in published package).
+dependency_overrides:
+  handlebarrz:
+    path: ../handlebarrz
 
 dev_dependencies:
   build_runner: ^2.4.13

@@ -62,6 +62,8 @@ func (d *dartLang) Kinds() map[string]rule.KindInfo {
 			MergeableAttrs: map[string]bool{"srcs": true, "deps": true},
 			ResolveAttrs:   map[string]bool{"deps": true},
 		},
+		"dart_pub_get":     {},
+		"dart_pub_publish": {},
 	}
 }
 
@@ -69,7 +71,7 @@ func (d *dartLang) Loads() []rule.LoadInfo {
 	return []rule.LoadInfo{
 		{
 			Name:    "@rules_dart//:defs.bzl",
-			Symbols: []string{"dart_library", "dart_test"},
+			Symbols: []string{"dart_library", "dart_pub_get", "dart_pub_publish", "dart_test"},
 		},
 	}
 }
@@ -174,6 +176,18 @@ func (d *dartLang) GenerateRules(args language.GenerateArgs) language.GenerateRe
 				res.Imports = append(res.Imports, []string{})
 			}
 		}
+	}
+
+	// Generate dart_pub_get target (always, for dependency resolution)
+	pubGet := rule.NewRule("dart_pub_get", "pub_get")
+	res.Gen = append(res.Gen, pubGet)
+	res.Imports = append(res.Imports, []string{})
+
+	// Generate dart_pub_publish target (only if package is publishable)
+	if p.IsPublishable() {
+		pubPublish := rule.NewRule("dart_pub_publish", "publish")
+		res.Gen = append(res.Gen, pubPublish)
+		res.Imports = append(res.Imports, []string{})
 	}
 
 	return res

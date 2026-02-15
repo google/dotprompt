@@ -16,7 +16,7 @@
 
 """Handlebarrz - A pure Dart implementation of Handlebars template engine."""
 
-load("@rules_dart//:defs.bzl", "dart_library", "dart_test")
+load("@rules_dart//:defs.bzl", "dart_library", "dart_pub_get", "dart_pub_publish", "dart_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -45,4 +45,12 @@ dart_test(
     name = "handlebars_test",
     main = "test/handlebars_test.dart",
     deps = [":handlebarrz"],
+)
+
+dart_pub_get(
+    name = "pub_get",
+)
+
+dart_pub_publish(
+    name = "publish",
 )

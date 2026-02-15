@@ -19,9 +19,16 @@ package pubspec
 // Pubspec represents pubspec.yaml
 type Pubspec struct {
 	Name            string                 `yaml:"name"`
+	PublishTo       string                 `yaml:"publish_to"`
 	Dependencies    map[string]interface{} `yaml:"dependencies"`
 	DevDependencies map[string]interface{} `yaml:"dev_dependencies"`
 	Environment     map[string]string      `yaml:"environment"`
+}
+
+// IsPublishable returns true if the package can be published to pub.dev.
+// A package is publishable unless publish_to is explicitly set to "none".
+func (p *Pubspec) IsPublishable() bool {
+	return p.PublishTo != "none"
 }
 
 // Lockfile represents pubspec.lock
