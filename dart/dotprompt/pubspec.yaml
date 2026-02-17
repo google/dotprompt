@@ -21,6 +21,7 @@ description: >-
   for Generative AI. This library provides parsing, rendering, and management
   of .prompt files with YAML frontmatter and Handlebars templating.
 version: 0.0.1
+license: Apache-2.0
 homepage: https://github.com/google/dotprompt
 repository: https://github.com/google/dotprompt
 documentation: https://google.github.io/dotprompt/

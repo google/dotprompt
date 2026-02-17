@@ -21,14 +21,14 @@ requires      = ["setuptools>=42", "wheel"]
 [project]
 classifiers = [
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: MIT License",
+  "License :: OSI Approved :: Apache Software License",
   "Topic :: Software Development :: Compilers",
   "Topic :: Text Processing :: Linguistic",
   "Typing :: Typed",
 ]
 description = "Dotprompt grammar for tree-sitter"
 keywords = ["incremental", "parsing", "tree-sitter", "dotprompt"]
-license.text = "MIT"
+license = "Apache-2.0"
 name = "tree-sitter-dotprompt"
 readme = "README.md"
 requires-python = ">=3.8"
