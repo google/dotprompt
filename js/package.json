@@ -24,8 +24,8 @@
     "templating",
     "handlebars"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Google LLC",
+  "license": "Apache-2.0",
   "devDependencies": {
     "@types/node": "25.0.10",
     "@typescript/native-preview": "7.0.0-dev.20260122.3",
