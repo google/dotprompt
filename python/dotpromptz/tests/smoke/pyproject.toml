@@ -20,6 +20,7 @@ classifiers = [
   "Environment :: Console",
   "Environment :: Web Environment",
   "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
 
   "Programming Language :: Python",
