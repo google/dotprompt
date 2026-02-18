@@ -62,7 +62,7 @@ jobs:
       - name: Check if this is a release-please PR
         id: check-release-please
         run: |
-          if [[ "${{ github.head_ref }}" == release-please--* ]]; then
+          if [[ "${GITHUB_HEAD_REF}" == release-please--* ]]; then
             echo "is_release_please=true" >> $GITHUB_OUTPUT
           else
             echo "is_release_please=false" >> $GITHUB_OUTPUT
@@ -165,9 +165,16 @@ jobs:
     steps:
       - name: Check overall status
         run: |
-          if [[ "${{ needs.go-mod-tidy-check.result }}" == "failure" || "${{ needs.format-check.result }}" == "failure" || "${{ needs.tests.result }}" == "failure" ]]; then
+          if [[ "${NEEDS_GO_MOD_TIDY_CHECK_RESULT}" == "failure" || "${NEEDS_FORMAT_CHECK_RESULT}" == "failure" || "${NEEDS_TESTS_RESULT}" == "failure" ]]; then
             echo "Go checks failed"
             exit 1
           fi
           echo "Go checks passed or were skipped"
           exit 0
+
+        env:
+          NEEDS_GO_MOD_TIDY_CHECK_RESULT: ${{ needs.go-mod-tidy-check.result }}
+
+          NEEDS_FORMAT_CHECK_RESULT: ${{ needs.format-check.result }}
+
+          NEEDS_TESTS_RESULT: ${{ needs.tests.result }}

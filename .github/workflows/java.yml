@@ -114,9 +114,14 @@ jobs:
     steps:
       - name: Check overall status
         run: |
-          if [[ "${{ needs.format-check.result }}" == "failure" || "${{ needs.tests.result }}" == "failure" ]]; then
+          if [[ "${NEEDS_FORMAT_CHECK_RESULT}" == "failure" || "${NEEDS_TESTS_RESULT}" == "failure" ]]; then
             echo "Java checks failed"
             exit 1
           fi
           echo "Java checks passed or were skipped"
           exit 0
+
+        env:
+          NEEDS_FORMAT_CHECK_RESULT: ${{ needs.format-check.result }}
+
+          NEEDS_TESTS_RESULT: ${{ needs.tests.result }}

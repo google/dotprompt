@@ -112,9 +112,11 @@ jobs:
     steps:
       - name: Check overall status
         run: |
-          if [[ "${{ needs.engdoc-checks.result }}" == "failure" ]]; then
+          if [[ "${NEEDS_ENGDOC_CHECKS_RESULT}" == "failure" ]]; then
             echo "Eng documentation checks failed"
             exit 1
           fi
           echo "Eng documentation checks passed or were skipped"
           exit 0
+        env:
+          NEEDS_ENGDOC_CHECKS_RESULT: ${{ needs.engdoc-checks.result }}
