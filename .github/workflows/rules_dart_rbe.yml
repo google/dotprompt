@@ -236,15 +236,15 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| RBE Build Test | ${{ needs.rbe-build-test.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| RBE Compatibility | ${{ needs.rbe-compatibility.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| RBE Metrics | ${{ needs.rbe-metrics.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| RBE Build Test | ${NEEDS_RBE_BUILD_TEST_RESULT} |" >> $GITHUB_STEP_SUMMARY
+          echo "| RBE Compatibility | ${NEEDS_RBE_COMPATIBILITY_RESULT} |" >> $GITHUB_STEP_SUMMARY
+          echo "| RBE Metrics | ${NEEDS_RBE_METRICS_RESULT} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Report status but don't fail - RBE tests are informational
-          if [[ "${{ needs.rbe-build-test.result }}" == "failure" || \
-                "${{ needs.rbe-compatibility.result }}" == "failure" || \
-                "${{ needs.rbe-metrics.result }}" == "failure" ]]; then
+          if [[ "${NEEDS_RBE_BUILD_TEST_RESULT}" == "failure" || \
+                "${NEEDS_RBE_COMPATIBILITY_RESULT}" == "failure" || \
+                "${NEEDS_RBE_METRICS_RESULT}" == "failure" ]]; then
             echo "⚠️ Some RBE checks failed. This is informational and does not block the PR." >> $GITHUB_STEP_SUMMARY
             echo "RBE checks had failures (informational only)"
           else
@@ -253,3 +253,10 @@ jobs:
           fi
           # Always exit successfully - RBE tests are informational
           exit 0
+
+        env:
+          NEEDS_RBE_BUILD_TEST_RESULT: ${{ needs.rbe-build-test.result }}
+
+          NEEDS_RBE_COMPATIBILITY_RESULT: ${{ needs.rbe-compatibility.result }}
+
+          NEEDS_RBE_METRICS_RESULT: ${{ needs.rbe-metrics.result }}
