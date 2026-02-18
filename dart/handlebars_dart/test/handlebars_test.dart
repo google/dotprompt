@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import "package:handlebarrz/handlebarrz.dart";
+import "package:handlebars_dart/handlebars_dart.dart";
 import "package:test/test.dart";
 
 void main() {

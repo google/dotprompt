@@ -16,7 +16,7 @@
 
 /// A pure Dart implementation of the Handlebars template engine.
 ///
-/// Handlebarrz provides Handlebars-compatible templating with support for:
+/// handlebars_dart provides Handlebars-compatible templating with support for:
 /// - Variable substitution: `{{name}}`
 /// - Dot notation paths: `{{user.name}}`
 /// - Helpers with arguments: `{{helper arg1 arg2}}`
@@ -33,7 +33,7 @@
 ///
 /// ```
 /// ┌─────────────────────────────────────────────────────────────────────────┐
-/// │                    HANDLEBARRZ COMPILATION PIPELINE                     │
+/// │                    handlebars_dart COMPILATION PIPELINE                     │
 /// └─────────────────────────────────────────────────────────────────────────┘
 ///
 ///   Template Source                   Context Data
@@ -123,7 +123,7 @@
 /// ## Example
 ///
 /// ```dart
-/// import 'package:handlebarrz/handlebarrz.dart';
+/// import 'package:handlebars_dart/handlebars_dart.dart';
 ///
 /// void main() {
 ///   final hb = Handlebars();

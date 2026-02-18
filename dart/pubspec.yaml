@@ -1,0 +1,10 @@
+name: genkit_workspace
+description: Genkit Dart Monorepo
+publish_to: none
+
+environment:
+  sdk: ^3.10.0
+
+workspace:
+  - dotprompt
+  - handlebars_dart

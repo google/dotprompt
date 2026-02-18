@@ -20,9 +20,9 @@
 /// to the hand-written parser.
 library;
 
-import "package:handlebarrz/src/antlr_parser.dart";
-import "package:handlebarrz/src/parser.dart";
-import "package:handlebarrz/src/parser_facade.dart";
+import "package:handlebars_dart/src/antlr_parser.dart";
+import "package:handlebars_dart/src/parser.dart";
+import "package:handlebars_dart/src/parser_facade.dart";
 import "package:test/test.dart";
 
 /// Helper to convert a node to a debugging string.

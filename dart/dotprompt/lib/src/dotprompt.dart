@@ -53,7 +53,7 @@ library;
 import "dart:async";
 import "dart:convert";
 
-import "package:handlebarrz/handlebarrz.dart";
+import "package:handlebars_dart/handlebars_dart.dart";
 
 import "error.dart";
 import "helpers/media_helper.dart";

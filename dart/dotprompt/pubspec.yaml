@@ -25,6 +25,7 @@ license: Apache-2.0
 homepage: https://github.com/google/dotprompt
 repository: https://github.com/google/dotprompt
 documentation: https://google.github.io/dotprompt/
+resolution: workspace
 
 environment:
   sdk: ^3.5.0
@@ -35,8 +36,7 @@ dependencies:
   # Crypto for hashing
   crypto: ^3.0.6
   # Handlebars templating (our pure Dart implementation)
-  handlebarrz:
-    path: ../handlebarrz
+  handlebars_dart: ^0.0.1
   # JSON schema support
   json_schema: ^5.2.2
   # Meta annotations

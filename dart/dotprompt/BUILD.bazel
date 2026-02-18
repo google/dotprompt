@@ -35,7 +35,7 @@ dart_library(
         "@dart_deps_meta//:meta",
         "@dart_deps_path//:path",
         "@dart_deps_yaml//:yaml",
-        "@dotprompt//dart/handlebarrz",
+        "@dotprompt//dart/handlebars_dart",
     ],
 )
 
@@ -51,28 +51,28 @@ exports_files(["pubspec.lock"])
 
 dart_test(
     name = "dotprompt_test",
-    data = ["//dart/handlebarrz"],
+    data = ["//dart/handlebars_dart"],
     main = "test/dotprompt_test.dart",
     deps = [":dotprompt"],
 )
 
 dart_test(
     name = "parse_test",
-    data = ["//dart/handlebarrz"],
+    data = ["//dart/handlebars_dart"],
     main = "test/parse_test.dart",
     deps = [":dotprompt"],
 )
 
 dart_test(
     name = "picoschema_test",
-    data = ["//dart/handlebarrz"],
+    data = ["//dart/handlebars_dart"],
     main = "test/picoschema_test.dart",
     deps = [":dotprompt"],
 )
 
 dart_test(
     name = "types_test",
-    data = ["//dart/handlebarrz"],
+    data = ["//dart/handlebars_dart"],
     main = "test/types_test.dart",
     deps = [":dotprompt"],
 )
@@ -143,7 +143,7 @@ dart_test(
     name = "spec_test",
     data = [
         "//:MODULE.bazel",
-        "//dart/handlebarrz",
+        "//dart/handlebars_dart",
         "//spec",
     ],
     main = "test/spec_test.dart",

@@ -134,9 +134,9 @@ chmod +x $@
             "//dart/dotprompt:dotprompt",
             "//dart/dotprompt:pubspec.yaml",
             "//dart/dotprompt:test/spec_test.dart",
-            # Include handlebarrz as it's a path dependency
-            "//dart/handlebarrz:handlebarrz",
-            "//dart/handlebarrz:pubspec.yaml",
+            # Include handlebars_dart as it's a path dependency
+            "//dart/handlebars_dart:handlebars_dart",
+            "//dart/handlebars_dart:pubspec.yaml",
         ],
         tags = kwargs.pop("tags", []) + ["requires-network"],
         **kwargs
