@@ -23,7 +23,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 GRAMMAR_DIR="${REPO_ROOT}/spec/handlebars/antlr"
-OUTPUT_DIR="${REPO_ROOT}/dart/handlebarrz/lib/src/antlr"
+OUTPUT_DIR="${REPO_ROOT}/dart/handlebars_dart/lib/src/antlr"
 
 # Colors for output
 RED='\033[0;31m'
@@ -116,6 +116,6 @@ echo "Generated files:"
 ls -la "${OUTPUT_DIR}"/*.dart
 echo ""
 echo "Next steps:"
-echo "1. Add 'antlr4: ^4.13.2' to dart/handlebarrz/pubspec.yaml"
+echo "1. Add 'antlr4: ^4.13.2' to dart/handlebars_dart/pubspec.yaml"
 echo "2. Create visitor to build AST nodes"
 echo "3. Run tests to verify parity with hand-written parser"

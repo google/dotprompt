@@ -20,7 +20,7 @@ spec/handlebars/antlr/
 ├── Handlebars.g4           # ANTLR4 grammar (converted from Jison)
 └── README.md               # Grammar documentation
 
-dart/handlebarrz/
+dart/handlebars_dart/
 ├── lib/src/
 │   ├── parser.dart         # Hand-written parser (fallback)
 │   ├── antlr/              # Generated ANTLR parser
@@ -122,9 +122,9 @@ dart/handlebarrz/
 | File | Action | Description |
 |------|--------|-------------|
 | `spec/handlebars/antlr/Handlebars.g4` | Create | ANTLR4 grammar |
-| `dart/handlebarrz/pubspec.yaml` | Modify | Add antlr4 dependency |
-| `dart/handlebarrz/lib/src/antlr/` | Create | Generated parser files |
-| `dart/handlebarrz/lib/src/parser_facade.dart` | Create | Unified parser interface |
+| `dart/handlebars_dart/pubspec.yaml` | Modify | Add antlr4 dependency |
+| `dart/handlebars_dart/lib/src/antlr/` | Create | Generated parser files |
+| `dart/handlebars_dart/lib/src/parser_facade.dart` | Create | Unified parser interface |
 | `.github/workflows/dart.yml` | Modify | Add ANTLR validation |
 | `scripts/generate_antlr_parser` | Create | Parser generation script |
 

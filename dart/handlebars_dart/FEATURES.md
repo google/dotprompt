@@ -1,7 +1,7 @@
-# Handlebarrz Feature Implementation Status
+# handlebars_dart Feature Implementation Status
 
 This document tracks the implementation status of Handlebars features in the
-Dart `handlebarrz` library.
+Dart `handlebars_dart` library.
 
 ## Implemented Features ✅
 
@@ -142,7 +142,7 @@ Generated files are in `lib/src/antlr/`. To regenerate:
 The `ParserFacade` class provides a unified interface for both parsers:
 
 ```dart
-import 'package:handlebarrz/handlebarrz.dart';
+import 'package:handlebars_dart/handlebars_dart.dart';
 
 // Parse with default (hand-written) parser
 final ast = ParserFacade.parse('Hello {{name}}!');

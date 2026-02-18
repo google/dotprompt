@@ -14,15 +14,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Handlebarrz - A pure Dart implementation of Handlebars template engine."""
+"""handlebars_dart - A pure Dart implementation of Handlebars template engine."""
 
 load("@rules_dart//:defs.bzl", "dart_library", "dart_test")
 
 package(default_visibility = ["//visibility:public"])
 
-# Core handlebarrz library
+# Core handlebars_dart library
 dart_library(
-    name = "handlebarrz",
+    name = "handlebars_dart",
     srcs = glob(["lib/**/*.dart"]) + ["pubspec.yaml"],
     pubspec = "pubspec.yaml",
     deps = ["@dart_deps_antlr4//:antlr4"],
@@ -38,11 +38,11 @@ exports_files(["pubspec.lock"])
 dart_test(
     name = "antlr_parser_test",
     main = "test/antlr_parser_test.dart",
-    deps = [":handlebarrz"],
+    deps = [":handlebars_dart"],
 )
 
 dart_test(
     name = "handlebars_test",
     main = "test/handlebars_test.dart",
-    deps = [":handlebarrz"],
+    deps = [":handlebars_dart"],
 )
