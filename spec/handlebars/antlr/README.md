@@ -21,7 +21,7 @@ Run the generation script:
 ./scripts/generate_handlebars_parser
 ```
 
-This generates Dart files in `dart/handlebarrz/lib/src/antlr/`.
+This generates Dart files in `dart/handlebars_dart/lib/src/antlr/`.
 
 ## Manual Generation
 

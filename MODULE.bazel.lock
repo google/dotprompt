@@ -717,7 +717,7 @@
         "usagesDigest": "bFDiWQ203dQgdrPs5klaR6X30ES6EGGPktXZBam3R6Q=",
         "recordedFileInputs": {
           "@@//dart/dotprompt/pubspec.lock": "826a885d9a3f28d70f9b64cd98ef332b172fd783eafd5de06d96d0c3bc3483ec",
-          "@@//dart/handlebarrz/pubspec.lock": "8b7a4be73a0ce637771f46936e36591fa82c78db055354849c7a3b84fc22c055"
+          "@@//dart/handlebars_dart/pubspec.lock": "8b7a4be73a0ce637771f46936e36591fa82c78db055354849c7a3b84fc22c055"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
