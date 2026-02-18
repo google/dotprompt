@@ -198,12 +198,17 @@ jobs:
     steps:
       - name: Check overall status
         run: |
-          if [[ "${{ needs.format-check.result }}" == "failure" || \
-                "${{ needs.analyze.result }}" == "failure" || \
-                "${{ needs.test.result }}" == "failure" || \
-                "${{ needs.antlr-grammar.result }}" == "failure" ]]; then
+          if [[ "${NEEDS_FORMAT_CHECK_RESULT}" == "failure" || \
+                "${NEEDS_ANALYZE_RESULT}" == "failure" || \
+                "${NEEDS_TEST_RESULT}" == "failure" || \
+                "${NEEDS_ANTLR_GRAMMAR_RESULT}" == "failure" ]]; then
             echo "Dart checks failed"
             exit 1
           fi
           echo "Dart checks passed or were skipped"
           exit 0
+        env:
+          NEEDS_FORMAT_CHECK_RESULT: ${{ needs.format-check.result }}
+          NEEDS_ANALYZE_RESULT: ${{ needs.analyze.result }}
+          NEEDS_TEST_RESULT: ${{ needs.test.result }}
+          NEEDS_ANTLR_GRAMMAR_RESULT: ${{ needs.antlr-grammar.result }}

@@ -61,7 +61,7 @@ jobs:
       - name: Check if this is a release-please PR
         id: check-release-please
         run: |
-          if [[ "${{ github.head_ref }}" == release-please--* ]]; then
+          if [[ "${GITHUB_HEAD_REF}" == release-please--* ]]; then
             echo "is_release_please=true" >> $GITHUB_OUTPUT
           else
             echo "is_release_please=false" >> $GITHUB_OUTPUT
@@ -200,9 +200,12 @@ jobs:
     steps:
       - name: Check overall status
         run: |
-          if [[ "${{ needs.uv-lock-check.result }}" == "failure" || "${{ needs.python-checks.result }}" == "failure" ]]; then
+          if [[ "${NEEDS_UV_LOCK_CHECK_RESULT}" == "failure" || "${NEEDS_PYTHON_CHECKS_RESULT}" == "failure" ]]; then
             echo "Python checks failed"
             exit 1
           fi
           echo "Python checks passed or were skipped"
           exit 0
+        env:
+          NEEDS_UV_LOCK_CHECK_RESULT: ${{ needs.uv-lock-check.result }}
+          NEEDS_PYTHON_CHECKS_RESULT: ${{ needs.python-checks.result }}

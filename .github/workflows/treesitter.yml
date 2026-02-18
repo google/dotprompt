@@ -98,9 +98,11 @@ jobs:
     steps:
       - name: Check overall status
         run: |
-          if [[ "${{ needs.test.result }}" == "failure" ]]; then
+          if [[ "${NEEDS_TEST_RESULT}" == "failure" ]]; then
             echo "Tree-sitter checks failed"
             exit 1
           fi
           echo "Tree-sitter checks passed or were skipped"
           exit 0
+        env:
+          NEEDS_TEST_RESULT: ${{ needs.test.result }}
