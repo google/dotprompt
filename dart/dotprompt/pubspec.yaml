@@ -25,7 +25,6 @@ license: Apache-2.0
 homepage: https://github.com/google/dotprompt
 repository: https://github.com/google/dotprompt
 documentation: https://google.github.io/dotprompt/
-resolution: workspace
 
 environment:
   sdk: ^3.5.0
@@ -56,3 +55,7 @@ dev_dependencies:
   mockito: ^5.4.4
   # Testing framework
   test: ^1.25.8
+
+dependency_overrides:
+  handlebars_dart:
+    path: ../handlebars_dart

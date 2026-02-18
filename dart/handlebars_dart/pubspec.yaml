@@ -20,7 +20,6 @@ version: 0.0.1
 license: Apache-2.0
 repository: https://github.com/google/dotprompt
 homepage: https://github.com/google/dotprompt/tree/main/dart/handlebars_dart
-resolution: workspace
 
 environment:
   sdk: ^3.7.0
