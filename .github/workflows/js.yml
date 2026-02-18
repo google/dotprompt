@@ -67,7 +67,7 @@ jobs:
       - name: Check if this is a release-please PR
         id: check-release-please
         run: |
-          if [[ "${{ github.head_ref }}" == release-please--* ]]; then
+          if [[ "${GITHUB_HEAD_REF}" == release-please--* ]]; then
             echo "is_release_please=true" >> $GITHUB_OUTPUT
           else
             echo "is_release_please=false" >> $GITHUB_OUTPUT
@@ -162,9 +162,16 @@ jobs:
     steps:
       - name: Check overall status
         run: |
-          if [[ "${{ needs.pnpm-lock-check.result }}" == "failure" || "${{ needs.format-check.result }}" == "failure" || "${{ needs.test.result }}" == "failure" ]]; then
+          if [[ "${NEEDS_PNPM_LOCK_CHECK_RESULT}" == "failure" || "${NEEDS_FORMAT_CHECK_RESULT}" == "failure" || "${NEEDS_TEST_RESULT}" == "failure" ]]; then
             echo "JS checks failed"
             exit 1
           fi
           echo "JS checks passed or were skipped"
           exit 0
+
+        env:
+          NEEDS_PNPM_LOCK_CHECK_RESULT: ${{ needs.pnpm-lock-check.result }}
+
+          NEEDS_FORMAT_CHECK_RESULT: ${{ needs.format-check.result }}
+
+          NEEDS_TEST_RESULT: ${{ needs.test.result }}

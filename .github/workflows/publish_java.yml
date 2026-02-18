@@ -69,9 +69,10 @@ jobs:
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          STEPS_IMPORT_GPG_OUTPUTS_KEYRING: ${{ steps.import_gpg.outputs.keyring }}
         run: |
           ./scripts/publish-java.sh \
-            "${{ steps.import_gpg.outputs.keyring }}" \
+            "${STEPS_IMPORT_GPG_OUTPUTS_KEYRING}" \
             "${{ secrets.MAVEN_GPG_PASSPHRASE }}" \
             "$MAVEN_USERNAME" \
             "$MAVEN_PASSWORD"
