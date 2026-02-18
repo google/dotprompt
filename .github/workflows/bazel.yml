@@ -66,7 +66,7 @@ jobs:
       - name: Check if this is a release-please PR
         id: check-release-please
         run: |
-          if [[ "${{ github.head_ref }}" == release-please--* ]]; then
+          if [[ "${GITHUB_HEAD_REF}" == release-please--* ]]; then
             echo "is_release_please=true" >> $GITHUB_OUTPUT
           else
             echo "is_release_please=false" >> $GITHUB_OUTPUT

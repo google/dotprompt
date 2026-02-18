@@ -114,9 +114,13 @@ jobs:
     steps:
       - name: Check overall status
         run: |
-          if [[ "${{ needs.jetbrains.result }}" == "failure" || "${{ needs.vim.result }}" == "failure" || "${{ needs.emacs.result }}" == "failure" ]]; then
+          if [[ "${NEEDS_JETBRAINS_RESULT}" == "failure" || "${NEEDS_VIM_RESULT}" == "failure" || "${NEEDS_EMACS_RESULT}" == "failure" ]]; then
             echo "IDE plugins checks failed"
             exit 1
           fi
           echo "IDE plugins checks passed or were skipped"
           exit 0
+        env:
+          NEEDS_JETBRAINS_RESULT: ${{ needs.jetbrains.result }}
+          NEEDS_VIM_RESULT: ${{ needs.vim.result }}
+          NEEDS_EMACS_RESULT: ${{ needs.emacs.result }}
