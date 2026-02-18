@@ -427,7 +427,9 @@ jobs:
 
       - name: Build wheel
         working-directory: ./python/handlebarrz
-        run: maturin build --release --strip -o dist -i ${{ steps.setup_py.outputs.python-path }}
+        run: maturin build --release --strip -o dist -i $env:STEPS_SETUP_PY_OUTPUTS_PYTHON_PATH
+        env:
+          STEPS_SETUP_PY_OUTPUTS_PYTHON_PATH: ${{ steps.setup_py.outputs.python-path }}
 
       - name: Upload build packages
         uses: actions/upload-artifact@v6

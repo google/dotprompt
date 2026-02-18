@@ -77,9 +77,11 @@ jobs:
     steps:
       - name: Check overall status
         run: |
-          if [[ "${{ needs.build.result }}" == "failure" ]]; then
+          if [[ "${NEEDS_BUILD_RESULT}" == "failure" ]]; then
             echo "VS Code extension checks failed"
             exit 1
           fi
           echo "VS Code extension checks passed or were skipped"
           exit 0
+        env:
+          NEEDS_BUILD_RESULT: ${{ needs.build.result }}

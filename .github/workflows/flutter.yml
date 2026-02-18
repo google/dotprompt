@@ -263,13 +263,19 @@ jobs:
     steps:
       - name: Check overall status
         run: |
-          if [[ "${{ needs.bazel-build.result }}" == "failure" || \
-                "${{ needs.starlark-lint.result }}" == "failure" || \
-                "${{ needs.grpc-example.result }}" == "failure" || \
-                "${{ needs.container-proxy.result }}" == "failure" || \
-                "${{ needs.windows-build.result }}" == "failure" ]]; then
+          if [[ "${NEEDS_BAZEL_BUILD_RESULT}" == "failure" || \
+                "${NEEDS_STARLARK_LINT_RESULT}" == "failure" || \
+                "${NEEDS_GRPC_EXAMPLE_RESULT}" == "failure" || \
+                "${NEEDS_CONTAINER_PROXY_RESULT}" == "failure" || \
+                "${NEEDS_WINDOWS_BUILD_RESULT}" == "failure" ]]; then
             echo "Flutter rules checks failed"
             exit 1
           fi
           echo "Flutter rules checks passed or were skipped"
           exit 0
+        env:
+          NEEDS_BAZEL_BUILD_RESULT: ${{ needs.bazel-build.result }}
+          NEEDS_STARLARK_LINT_RESULT: ${{ needs.starlark-lint.result }}
+          NEEDS_GRPC_EXAMPLE_RESULT: ${{ needs.grpc-example.result }}
+          NEEDS_CONTAINER_PROXY_RESULT: ${{ needs.container-proxy.result }}
+          NEEDS_WINDOWS_BUILD_RESULT: ${{ needs.windows-build.result }}
