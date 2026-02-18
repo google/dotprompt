@@ -87,10 +87,10 @@ dotprompt-dart:
       - any-glob-to-any-file:
           - "dart/dotprompt/**"
 
-handlebarrz-dart:
+handlebars_dart:
   - changed-files:
       - any-glob-to-any-file:
-          - "dart/handlebarrz/**"
+          - "dart/handlebars_dart/**"
 
 js:
   - changed-files:
