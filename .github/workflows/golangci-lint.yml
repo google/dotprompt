@@ -66,9 +66,11 @@ jobs:
     steps:
       - name: Check overall status
         run: |
-          if [[ "${{ needs.golangci.result }}" == "failure" ]]; then
+          if [[ "${NEEDS_GOLANGCI_RESULT}" == "failure" ]]; then
             echo "GolangCI Lint failed"
             exit 1
           fi
           echo "GolangCI Lint passed or was skipped"
           exit 0
+        env:
+          NEEDS_GOLANGCI_RESULT: ${{ needs.golangci.result }}
