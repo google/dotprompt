@@ -84,6 +84,118 @@ public record PromptMetadata(
   }
 
   /**
+   * Validates the types of all fields in the configuration map.
+   *
+   * <p>This method ensures that all fields have the correct expected types before they are
+   * accessed. If any field has an incorrect type, an IllegalArgumentException is thrown with a
+   * detailed error message including the field name, expected type, actual type, and the
+   * problematic value.
+   *
+   * @param config The configuration map to validate.
+   * @throws IllegalArgumentException if any field has an incorrect type.
+   */
+  private static void validateConfigTypes(Map<String, Object> config) {
+    if (config == null || config.isEmpty()) {
+      return;
+    }
+
+    // Validate String fields
+    validateFieldIfPresent(config, "name", String.class);
+    validateFieldIfPresent(config, "variant", String.class);
+    validateFieldIfPresent(config, "version", String.class);
+    validateFieldIfPresent(config, "description", String.class);
+    validateFieldIfPresent(config, "model", String.class);
+
+    // Validate List<String> fields
+    validateFieldIfPresent(config, "tools", List.class);
+
+    // Validate List<ToolDefinition> fields (stored as List, checked for List type)
+    Object toolDefsRaw = config.get("toolDefs");
+    if (toolDefsRaw != null && !(toolDefsRaw instanceof List)) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Field 'toolDefs' has incorrect type. Expected: List, Actual: %s, Value: %s",
+              toolDefsRaw.getClass().getSimpleName(), toolDefsRaw));
+    }
+
+    // Validate Map<String, Object> fields
+    validateFieldIfPresent(config, "config", Map.class);
+    validateFieldIfPresent(config, "raw", Map.class);
+    validateFieldIfPresent(config, "metadata", Map.class);
+    validateFieldIfPresent(config, "ext", Map.class);
+
+    // Validate nested InputConfig structure
+    Object inputRaw = config.get("input");
+    if (inputRaw != null) {
+      if (!(inputRaw instanceof Map)) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Field 'input' has incorrect type. Expected: Map, Actual: %s, Value: %s",
+                inputRaw.getClass().getSimpleName(), inputRaw));
+      }
+      @SuppressWarnings("unchecked")
+      Map<String, Object> inputMap = (Map<String, Object>) inputRaw;
+
+      // Validate input.default field
+      Object inputDefault = inputMap.get("default");
+      if (inputDefault != null && !(inputDefault instanceof Map)) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Field 'input.default' has incorrect type. Expected: Map, Actual: %s, Value: %s",
+                inputDefault.getClass().getSimpleName(), inputDefault));
+      }
+
+      // Schema field is flexible (can be Map, String, or other), so we don't validate its type
+    }
+
+    // Validate nested OutputConfig structure
+    Object outputRaw = config.get("output");
+    if (outputRaw != null) {
+      if (!(outputRaw instanceof Map)) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Field 'output' has incorrect type. Expected: Map, Actual: %s, Value: %s",
+                outputRaw.getClass().getSimpleName(), outputRaw));
+      }
+      @SuppressWarnings("unchecked")
+      Map<String, Object> outputMap = (Map<String, Object>) outputRaw;
+
+      // Validate output.format field
+      Object outputFormat = outputMap.get("format");
+      if (outputFormat != null && !(outputFormat instanceof String)) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Field 'output.format' has incorrect type. Expected: String, Actual: %s, Value: %s",
+                outputFormat.getClass().getSimpleName(), outputFormat));
+      }
+
+      // Schema field is flexible (can be Map, String, or other), so we don't validate its type
+    }
+  }
+
+  /**
+   * Validates a single field if it exists in the config map.
+   *
+   * @param config The configuration map.
+   * @param fieldName The name of the field to validate.
+   * @param expectedType The expected type of the field.
+   * @throws IllegalArgumentException if the field exists but has an incorrect type.
+   */
+  private static void validateFieldIfPresent(
+      Map<String, Object> config, String fieldName, Class<?> expectedType) {
+    Object value = config.get(fieldName);
+    if (value != null && !expectedType.isInstance(value)) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Field '%s' has incorrect type. Expected: %s, Actual: %s, Value: %s",
+              fieldName,
+              expectedType.getSimpleName(),
+              value.getClass().getSimpleName(),
+              value));
+    }
+  }
+
+  /**
    * Creates metadata from a config map (typically from parsed frontmatter).
    *
    * @param config The configuration map.
@@ -95,37 +207,37 @@ public record PromptMetadata(
       return new PromptMetadata();
     }
 
+    // Validate all types before any casting - provides detailed error messages
+    validateConfigTypes(config);
+
+    // Now we can safely cast since types are validated
     String name = (String) config.get("name");
     String variant = (String) config.get("variant");
     String version = (String) config.get("version");
     String description = (String) config.get("description");
     String model = (String) config.get("model");
     List<String> tools = (List<String>) config.get("tools");
-    List<ToolDefinition> toolDefs = null;
-    Object toolDefsRaw = config.get("toolDefs");
-    if (toolDefsRaw instanceof List) {
-      toolDefs = (List<ToolDefinition>) toolDefsRaw;
-    }
+    List<ToolDefinition> toolDefs = (List<ToolDefinition>) config.get("toolDefs");
     Map<String, Object> modelConfig = (Map<String, Object>) config.get("config");
 
     InputConfig input = null;
     Object inputRaw = config.get("input");
-    if (inputRaw instanceof Map) {
-      @SuppressWarnings("unchecked")
+    if (inputRaw != null) {
       Map<String, Object> inputMap = (Map<String, Object>) inputRaw;
       // Schema can be a Map (JSON Schema) or other type (picoschema String)
       Object inputSchema = inputMap.get("schema");
-      input = new InputConfig((Map<String, Object>) inputMap.get("default"), inputSchema);
+      Map<String, Object> defaultValues = (Map<String, Object>) inputMap.get("default");
+      input = new InputConfig(defaultValues, inputSchema);
     }
 
     OutputConfig output = null;
     Object outputRaw = config.get("output");
-    if (outputRaw instanceof Map) {
-      @SuppressWarnings("unchecked")
+    if (outputRaw != null) {
       Map<String, Object> outputMap = (Map<String, Object>) outputRaw;
       // Schema can be a Map (JSON Schema) or other type (picoschema String)
       Object outputSchema = outputMap.get("schema");
-      output = new OutputConfig((String) outputMap.get("format"), outputSchema);
+      String format = (String) outputMap.get("format");
+      output = new OutputConfig(format, outputSchema);
     }
 
     Map<String, Object> raw = (Map<String, Object>) config.get("raw");
