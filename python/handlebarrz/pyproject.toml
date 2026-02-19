@@ -37,7 +37,7 @@ license = "Apache-2.0"
 name = "dotpromptz-handlebars"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "0.1.8"
+version = "0.1.9"
 
 [build-system]
 build-backend = "maturin"
