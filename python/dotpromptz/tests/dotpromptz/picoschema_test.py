@@ -322,6 +322,130 @@ class TestPicoschemaParser(IsolatedAsyncioTestCase):
             await self.parser.parse_pico(123)
 
 
+class TestPicoschemaParserSync(unittest.TestCase):
+    """Synchronous picoschema parser tests."""
+
+    def setUp(self) -> None:
+        """Set up the test case."""
+        self.parser = picoschema.PicoschemaParser()
+
+    def test_parse_sync_none(self) -> None:
+        """Test parsing None returns None."""
+        self.assertIsNone(self.parser.parse_sync(None))
+
+    def test_parse_sync_scalar_type(self) -> None:
+        """Test parsing a scalar type string."""
+        result = self.parser.parse_sync('string')
+        self.assertEqual(result, {'type': 'string'})
+
+    def test_parse_sync_scalar_with_description(self) -> None:
+        """Test parsing a scalar type string with description."""
+        result = self.parser.parse_sync('string, a string')
+        self.assertEqual(result, {'type': 'string', 'description': 'a string'})
+
+    def test_parse_sync_object_schema(self) -> None:
+        """Test parsing a standard JSON object schema."""
+        schema = {'type': 'object', 'properties': {'name': {'type': 'string'}}}
+        result = self.parser.parse_sync(schema)
+        self.assertEqual(result, schema)
+
+    def test_parse_sync_picoschema_object(self) -> None:
+        """Test parsing a picoschema object."""
+        schema = {'name': 'string', 'age?': 'integer'}
+        expected = {
+            'type': 'object',
+            'properties': {
+                'name': {'type': 'string'},
+                'age': {'type': ['integer', 'null']},
+            },
+            'required': ['name'],
+            'additionalProperties': False,
+        }
+        result = self.parser.parse_sync(schema)
+        self.assertEqual(result, expected)
+
+    def test_parse_sync_named_type_raises(self) -> None:
+        """Test that parsing a named type raises ValueError."""
+        with self.assertRaises(ValueError) as context:
+            self.parser.parse_sync('CustomType')
+        self.assertIn('unsupported scalar type', str(context.exception))
+        self.assertIn('Use async version', str(context.exception))
+
+    def test_parse_pico_sync_array(self) -> None:
+        """Test parsing array type synchronously."""
+        schema = {'items(array)': 'string'}
+        expected = {
+            'type': 'object',
+            'properties': {'items': {'type': 'array', 'items': {'type': 'string'}}},
+            'required': ['items'],
+            'additionalProperties': False,
+        }
+        result = self.parser.parse_pico_sync(schema)
+        self.assertEqual(result, expected)
+
+    def test_parse_pico_sync_nested_object(self) -> None:
+        """Test parsing nested object synchronously."""
+        schema = {'user(object)': {'name': 'string', 'email?': 'string'}}
+        expected = {
+            'type': 'object',
+            'properties': {
+                'user': {
+                    'type': 'object',
+                    'properties': {
+                        'name': {'type': 'string'},
+                        'email': {'type': ['string', 'null']},
+                    },
+                    'required': ['name'],
+                    'additionalProperties': False,
+                }
+            },
+            'required': ['user'],
+            'additionalProperties': False,
+        }
+        result = self.parser.parse_pico_sync(schema)
+        self.assertEqual(result, expected)
+
+    def test_parse_pico_sync_enum(self) -> None:
+        """Test parsing enum type synchronously."""
+        schema = {'status(enum)': ['active', 'inactive']}
+        expected = {
+            'type': 'object',
+            'properties': {'status': {'enum': ['active', 'inactive']}},
+            'required': ['status'],
+            'additionalProperties': False,
+        }
+        result = self.parser.parse_pico_sync(schema)
+        self.assertEqual(result, expected)
+
+
+class TestPicoschemaToJsonSchemaSync(unittest.TestCase):
+    """Tests for the top-level sync function."""
+
+    def test_basic_schema(self) -> None:
+        """Test converting a basic picoschema."""
+        schema = {'diff': 'string', 'context?': 'string'}
+        result = picoschema.picoschema_to_json_schema_sync(schema)
+        expected = {
+            'type': 'object',
+            'properties': {
+                'diff': {'type': 'string'},
+                'context': {'type': ['string', 'null']},
+            },
+            'required': ['diff'],
+            'additionalProperties': False,
+        }
+        self.assertEqual(result, expected)
+
+    def test_none_returns_none(self) -> None:
+        """Test that None input returns None."""
+        self.assertIsNone(picoschema.picoschema_to_json_schema_sync(None))
+
+    def test_named_type_raises(self) -> None:
+        """Test that named types raise ValueError."""
+        with self.assertRaises(ValueError):
+            picoschema.picoschema_to_json_schema_sync({'field': 'CustomType'})
+
+
 class TestExtractDescription(unittest.TestCase):
     """Extract description tests."""
 
