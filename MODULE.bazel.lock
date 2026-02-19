@@ -437,7 +437,7 @@
         "bzlTransitiveDigest": "gyALvLdd/1AuLPFXhzNeabk2DMLHf32oxn8qKfEK8UA=",
         "usagesDigest": "DERK4k9FbVzQIB4bXDGJ1nM+IQ2xMRKyoKFkkDE1cIk=",
         "recordedFileInputs": {
-          "@@//package.json": "306f2484ca1c40120233bf514d60fb586f457facb4e84cc7bbb1d3a1acdf6e81"
+          "@@//package.json": "971fae6b124b14d4ba24c870647f42421a0e7eec38696f0651ebc19f6b9b99b9"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -574,7 +574,7 @@
     },
     "@@rules_apple+//apple:apple.bzl%provisioning_profile_repository_extension": {
       "general": {
-        "bzlTransitiveDigest": "EGiMNop0zkFmJjeyGsg8hfIezYBxM9h1yHmaKdnqoNY=",
+        "bzlTransitiveDigest": "pdRt+Wm+XQmS427nAIg9z7qfm56CnZChO+HJ4zu3Xa8=",
         "usagesDigest": "vsJl8Rw5NL+5Ag2wdUDoTeRF/5klkXO8545Iy7U1Q08=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -5193,7 +5193,7 @@
     },
     "@@rules_rust+//crate_universe/private:internal_extensions.bzl%cu_nr": {
       "general": {
-        "bzlTransitiveDigest": "Ewd2+Mu5RbxQEgj1R2lVdn4kVKofz9Utgs8kUADcn2I=",
+        "bzlTransitiveDigest": "4RPjd7znLY5NDSAlX1AC3RiQyGSkIMjLvUYBdOmDrMc=",
         "usagesDigest": "v4We18mWSPeKV4GPp9Gne78W+jZOgP2pC1i4UN9br1g=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
