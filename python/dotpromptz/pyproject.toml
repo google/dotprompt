@@ -40,6 +40,7 @@ dependencies = [
   "dotpromptz-handlebars>=0.1.8",
   "pydantic[email]>=2.10.6",
   "pyyaml>=6.0.2",
+  "jsonschema>=4.23.0",
   "structlog>=25.2.0",
   "types-aiofiles>=24.1.0.20250326",
   "types-pyyaml>=6.0.12.20241230",
