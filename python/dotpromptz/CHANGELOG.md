@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.6](https://github.com/google/dotprompt/compare/dotpromptz-0.1.5...dotpromptz-0.1.6) (2026-02-19)
+
+
+### Features
+
+* **python:** add output schema validation and JSON Schema to Picoschema reverse conversion ([#540](https://github.com/google/dotprompt/issues/540)) ([5c0ea0a](https://github.com/google/dotprompt/commit/5c0ea0a3545d89165b2bbf4c422059ef35df07bb))
+
+
+### Bug Fixes
+
+* add Apache-2.0 license metadata to all packages ([#528](https://github.com/google/dotprompt/issues/528)) ([c76c663](https://github.com/google/dotprompt/commit/c76c6639fb77b39ef5b45a1a8dbebacc4c9bd422))
+
 ## [0.1.5](https://github.com/google/dotprompt/compare/dotpromptz-0.1.4...dotpromptz-0.1.5) (2026-01-30)
 
 
