@@ -6,7 +6,11 @@
       "github": "google"
     }
   ],
-  "repository": ["github:google/dotprompt"],
-  "versions": ["0.1.0"],
+  "repository": [
+    "github:google/dotprompt"
+  ],
+  "versions": [
+    "0.1.0"
+  ],
   "yanked_versions": {}
 }
