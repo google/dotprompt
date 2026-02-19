@@ -19,4 +19,6 @@ target/
 .dart_tool/
 .packages
 .pub-cache/
+go.work.sum
 packages/jetbrains/.gradle
+packages/jetbrains/bin/

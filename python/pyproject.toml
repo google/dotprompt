@@ -71,6 +71,10 @@ fail_under = 85
 
 # uv based package management.
 [tool.uv]
+constraint-dependencies = [
+  # Fix GHSA-xm59-rqc7-hhvf (CWE-427: uncontrolled search path in nbconvert).
+  "nbconvert>=7.17.0",
+]
 default-groups = ["dev", "lint"]
 
 [tool.uv.sources]
