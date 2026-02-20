@@ -109,7 +109,7 @@ type PromptMetadata struct {
 	Version string `json:"version,omitempty"`
 	// A description of the prompt.
 	Description string `json:"description,omitempty"`
-	// The name of the model to use for this prompt, e.g. `vertexai/gemini-1.0-pro`
+	// The name of the model to use for this prompt, e.g. `vertexai/gemini-3.0-pro`
 	Model string `json:"model,omitempty"`
 	// Number of tool max turns
 	MaxTurns int `json:"maxTurns,omitempty"`

@@ -1703,13 +1703,13 @@ Template content`
 	})
 
 	t.Run("should handle shebang and license header before frontmatter", func(t *testing.T) {
-		source := "#!/usr/bin/env promptly\n# Copyright 2025 Google\n# SPDX: Apache-2.0\n---\nmodel: gemini-2.0\n---\nHello combined!"
+		source := "#!/usr/bin/env promptly\n# Copyright 2025 Google\n# SPDX: Apache-2.0\n---\nmodel: gemini-2.5-flash\n---\nHello combined!"
 		result, err := ParseDocument(source)
 		if err != nil {
 			t.Errorf("ParseDocument() returned error: %v", err)
 		}
-		if result.Model != "gemini-2.0" {
-			t.Errorf("Model = %q, want \"gemini-2.0\"", result.Model)
+		if result.Model != "gemini-2.5-flash" {
+			t.Errorf("Model = %q, want \"gemini-2.5-flash\"", result.Model)
 		}
 		if result.Template != "Hello combined!" {
 			t.Errorf("Template = %q, want \"Hello combined!\"", result.Template)

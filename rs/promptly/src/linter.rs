@@ -668,7 +668,7 @@ mod tests {
     #[test]
     fn test_lint_valid_prompt() {
         let source = r"---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 config:
   temperature: 0.7
 ---
@@ -689,7 +689,7 @@ Hello {{name}}!
     #[test]
     fn test_lint_invalid_yaml() {
         let source = r#"---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 config:
   temperature: "not a number
 ---
@@ -712,7 +712,7 @@ Hello world!
     #[test]
     fn test_lint_unclosed_block() {
         let source = r#"---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 ---
 {{#role "user"}}
 Hello world!

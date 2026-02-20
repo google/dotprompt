@@ -30,7 +30,7 @@ When you run the program, the metadata from the `.prompt` file and the messages 
 
 ```text
 --- Metadata ---
-Model: gemini-1.5-flash
+Model: gemini-2.5-flash
 Description: Summarize the input text.
 
 --- Messages ---
