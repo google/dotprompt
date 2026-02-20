@@ -932,11 +932,11 @@ Hello shebang!`;
 # Copyright 2025 Google
 # SPDX: Apache-2.0
 ---
-model: gemini-2.0
+model: gemini-2.5-flash
 ---
 Hello combined!`;
     const result = parseDocument(source);
-    expect(result.model).toBe('gemini-2.0');
+    expect(result.model).toBe('gemini-2.5-flash');
     expect(result.template).toBe('Hello combined!');
   });
 });

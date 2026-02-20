@@ -66,7 +66,7 @@
  * // Define a prompt template
  * String template = """
  *     ---
- *     model: gemini-1.5-pro
+ *     model: gemini-2.5-pro
  *     ---
  *     Hello, {{name}}! How can I help you today?
  *     """;

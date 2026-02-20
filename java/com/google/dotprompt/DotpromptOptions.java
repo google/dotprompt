@@ -37,7 +37,7 @@ import java.util.Map;
  *
  * <pre>{@code
  * DotpromptOptions options = DotpromptOptions.builder()
- *     .setDefaultModel("gemini-1.5-pro")
+ *     .setDefaultModel("gemini-2.5-pro")
  *     .setToolResolver(name -> toolMap.get(name))
  *     .setSchemaResolver(name -> schemaMap.get(name))
  *     .addTool(myToolDefinition)

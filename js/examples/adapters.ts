@@ -25,7 +25,7 @@ const prompts = new Dotprompt();
 async function main() {
   const rendered = await prompts.render(
     `---
-model: gemini-1.5-flash
+model: gemini-2.5-flash
 input:
   schema:
     subject: string

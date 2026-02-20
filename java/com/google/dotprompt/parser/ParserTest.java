@@ -618,11 +618,11 @@ public class ParserTest {
 
   @Test
   public void testParseDocument_withModelConfig() throws IOException {
-    String source = "---\nmodel: gemini-1.5-pro\n---\nTemplate content";
+    String source = "---\nmodel: gemini-2.5-pro\n---\nTemplate content";
 
     var result = Parser.parseDocument(source);
 
-    assertThat(result.model()).isEqualTo("gemini-1.5-pro");
+    assertThat(result.model()).isEqualTo("gemini-2.5-pro");
     assertThat(result.template()).isEqualTo("Template content");
   }
 
@@ -660,12 +660,12 @@ public class ParserTest {
             + "# Copyright 2025 Google\n"
             + "# SPDX: Apache-2.0\n"
             + "---\n"
-            + "model: gemini-2.0\n"
+            + "model: gemini-2.5-flash\n"
             + "---\n"
             + "Hello combined!";
     Prompt prompt = Parser.parse(content);
     assertThat(prompt.template()).isEqualTo("Hello combined!");
-    assertThat(prompt.config()).containsEntry("model", "gemini-2.0");
+    assertThat(prompt.config()).containsEntry("model", "gemini-2.5-flash");
   }
 
   @Test

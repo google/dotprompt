@@ -388,7 +388,7 @@ class TestRenderPicoSchema(IsolatedAsyncioTestCase):
             'output': {
                 'schema': {'type': 'number'},
             },
-            'model': 'gemini-1.5-pro',
+            'model': 'gemini-2.5-pro',
         })
         result: PromptMetadata[dict[str, Any]] = await dotprompt._render_picoschema(metadata)
         assert result == metadata
@@ -443,7 +443,7 @@ class TestResolveMetaData(IsolatedAsyncioTestCase):
         dotprompt = Dotprompt()
 
         base: PromptMetadata[dict[str, Any]] = PromptMetadata.model_validate({
-            'model': 'gemini-1.5-pro',
+            'model': 'gemini-2.5-pro',
             'config': {
                 'temperature': 0.7,
             },
@@ -457,7 +457,7 @@ class TestResolveMetaData(IsolatedAsyncioTestCase):
         })
 
         merge2: PromptMetadata[dict[str, Any]] = PromptMetadata.model_validate({
-            'model': 'gemini-2.0-flash',
+            'model': 'gemini-2.5-flash',
             'config': {
                 'max_tokens': 2000,
             },
@@ -469,7 +469,7 @@ class TestResolveMetaData(IsolatedAsyncioTestCase):
             patch.object(dotprompt, '_render_picoschema', render_pico_mock),
         ):
             result = await dotprompt._resolve_metadata(base, merge1, merge2)
-            self.assertEqual(result.model, 'gemini-2.0-flash')
+            self.assertEqual(result.model, 'gemini-2.5-flash')
             self.assertEqual(
                 result.config,
                 {
@@ -488,7 +488,7 @@ class TestResolveMetaData(IsolatedAsyncioTestCase):
         dotprompt = Dotprompt()
 
         base: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate({
-            'model': 'gemini-1.5-pro',
+            'model': 'gemini-2.5-pro',
             'config': {
                 'temperature': 0.7,
             },
@@ -503,7 +503,7 @@ class TestResolveMetaData(IsolatedAsyncioTestCase):
         ):
             result = await dotprompt._resolve_metadata(base)
 
-            self.assertEqual(result.model, 'gemini-1.5-pro')
+            self.assertEqual(result.model, 'gemini-2.5-pro')
             self.assertEqual(
                 result.config,
                 {
@@ -517,11 +517,11 @@ def test_render_metadata() -> None:
     dotprompt = Dotprompt()
 
     parsed_source: ParsedPrompt[dict[str, Any]] = ParsedPrompt[dict[str, Any]](
-        template='Template content', model='gemini-1.5-pro'
+        template='Template content', model='gemini-2.5-pro'
     )
     resolve_metadata_mock = AsyncMock(
         return_value=PromptMetadata(
-            model='gemini-1.5-pro',
+            model='gemini-2.5-pro',
         )
     )
 
@@ -531,12 +531,12 @@ def test_render_metadata() -> None:
         resolve_metadata_mock.assert_called_with(
             PromptMetadata(),
             ParsedPrompt(
-                model='gemini-1.5-pro',
+                model='gemini-2.5-pro',
                 template='Template content',
             ),
             None,
         )
-        assert result == PromptMetadata(model='gemini-1.5-pro')
+        assert result == PromptMetadata(model='gemini-2.5-pro')
 
 
 def test_default_model_when_null() -> None:
@@ -564,13 +564,13 @@ def test_default_model_when_null() -> None:
 def test_use_available_model_config() -> None:
     """Should use model configs when available."""
     model_configs = {
-        'gemini-1.5-pro': {'temperature': 0.7},
+        'gemini-2.5-pro': {'temperature': 0.7},
     }
     dotprompt = Dotprompt(model_configs=model_configs)
 
     parsed_source: ParsedPrompt[dict[str, Any]] = ParsedPrompt[dict[str, Any]](
         template='Template content',
-        model='gemini-1.5-pro',
+        model='gemini-2.5-pro',
     )
 
     def wrapper(

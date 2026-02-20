@@ -155,7 +155,7 @@
 
     <!-- Full template -->
     <template name="prompt" value="---&#10;model: $MODEL$&#10;config:&#10;  temperature: $TEMPERATURE$&#10;input:&#10;  schema:&#10;    $VARIABLE$: string&#10;---&#10;&#10;{{#role &quot;system&quot;}}&#10;$SYSTEM_PROMPT$&#10;{{/role}}&#10;&#10;{{#role &quot;user&quot;}}&#10;$USER_PROMPT$&#10;{{/role}}" description="Complete prompt template" toReformat="false" toShortenFQNames="true">
-        <variable name="MODEL" expression="" defaultValue="&quot;gemini-2.0-flash&quot;" alwaysStopAt="true"/>
+        <variable name="MODEL" expression="" defaultValue="&quot;gemini-2.5-flash&quot;" alwaysStopAt="true"/>
         <variable name="TEMPERATURE" expression="" defaultValue="&quot;0.7&quot;" alwaysStopAt="true"/>
         <variable name="VARIABLE" expression="" defaultValue="&quot;name&quot;" alwaysStopAt="true"/>
         <variable name="SYSTEM_PROMPT" expression="" defaultValue="&quot;You are a helpful assistant.&quot;" alwaysStopAt="true"/>
@@ -167,7 +167,7 @@
 
     <!-- Frontmatter -->
     <template name="frontmatter" value="---&#10;model: $MODEL$&#10;config:&#10;  temperature: $TEMPERATURE$&#10;---" description="YAML frontmatter" toReformat="false" toShortenFQNames="true">
-        <variable name="MODEL" expression="" defaultValue="&quot;gemini-2.0-flash&quot;" alwaysStopAt="true"/>
+        <variable name="MODEL" expression="" defaultValue="&quot;gemini-2.5-flash&quot;" alwaysStopAt="true"/>
         <variable name="TEMPERATURE" expression="" defaultValue="&quot;0.7&quot;" alwaysStopAt="true"/>
         <context>
             <option name="OTHER" value="true"/>

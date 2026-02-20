@@ -31,15 +31,15 @@ describe('Dotprompt', () => {
 
     it('should initialize with custom model configs', () => {
       const modelConfigs = {
-        'gemini-1.5-pro': { temperature: 0.7 },
-        'gemini-2.0-flash': { top_p: 0.9 },
+        'gemini-2.5-pro': { temperature: 0.7 },
+        'gemini-2.5-flash': { top_p: 0.9 },
       };
       const dp = new Dotprompt({ modelConfigs });
       expect(dp).toBeInstanceOf(Dotprompt);
     });
 
     it('should initialize with default model', () => {
-      const defaultModel = 'gemini-1.5-pro';
+      const defaultModel = 'gemini-2.5-pro';
       const dp = new Dotprompt({ defaultModel });
       expect(dp).toBeInstanceOf(Dotprompt);
     });
@@ -170,7 +170,7 @@ describe('Dotprompt', () => {
       const parseDocumentMock = vi.spyOn(parse, 'parseDocument');
       parseDocumentMock.mockReturnValue({
         template: 'Template content',
-        model: 'gemini-1.5-pro',
+        model: 'gemini-2.5-pro',
       });
 
       const dp = new Dotprompt();
@@ -179,7 +179,7 @@ describe('Dotprompt', () => {
       expect(parseDocumentMock).toHaveBeenCalledWith('Source template');
       expect(result).toEqual({
         template: 'Template content',
-        model: 'gemini-1.5-pro',
+        model: 'gemini-2.5-pro',
       });
     });
   });
@@ -459,7 +459,7 @@ describe('Dotprompt', () => {
       const dp = new Dotprompt();
 
       const metadata: PromptMetadata = {
-        model: 'gemini-1.5-pro',
+        model: 'gemini-2.5-pro',
       };
 
       // @ts-ignore Accessing private method for testing.
@@ -525,7 +525,7 @@ describe('Dotprompt', () => {
       const dp = new Dotprompt();
 
       const base: PromptMetadata = {
-        model: 'gemini-1.5-pro',
+        model: 'gemini-2.5-pro',
         config: {
           temperature: 0.7,
         },
@@ -539,7 +539,7 @@ describe('Dotprompt', () => {
       };
 
       const merge2: PromptMetadata = {
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         config: {
           max_tokens: 2000,
         },
@@ -558,7 +558,7 @@ describe('Dotprompt', () => {
       // @ts-ignore Accessing private method for testing.
       const result = await dp.resolveMetadata(base, merge1, merge2);
 
-      expect(result.model).toBe('gemini-2.0-flash');
+      expect(result.model).toBe('gemini-2.5-flash');
       expect(result.config).toEqual({
         temperature: 0.7,
         top_p: 0.9,
@@ -576,7 +576,7 @@ describe('Dotprompt', () => {
       const dp = new Dotprompt();
 
       const base: PromptMetadata = {
-        model: 'gemini-1.5-pro',
+        model: 'gemini-2.5-pro',
         config: {
           temperature: 0.7,
         },
@@ -595,7 +595,7 @@ describe('Dotprompt', () => {
       // @ts-ignore Accessing private method for testing.
       const result = await dp.resolveMetadata(base, undefined);
 
-      expect(result.model).toBe('gemini-1.5-pro');
+      expect(result.model).toBe('gemini-2.5-pro');
       expect(result.config).toEqual({
         temperature: 0.7,
       });
@@ -721,11 +721,11 @@ describe('Dotprompt', () => {
 
       const parsedSource = {
         template: 'Template content',
-        model: 'gemini-1.5-pro',
+        model: 'gemini-2.5-pro',
       };
 
       const resolveMetadataMock = vi.fn().mockResolvedValue({
-        model: 'gemini-1.5-pro',
+        model: 'gemini-2.5-pro',
         processed: true,
       });
 
@@ -741,7 +741,7 @@ describe('Dotprompt', () => {
       );
 
       expect(result).toEqual({
-        model: 'gemini-1.5-pro',
+        model: 'gemini-2.5-pro',
         processed: true,
       });
     });
@@ -773,14 +773,14 @@ describe('Dotprompt', () => {
 
     it('should use model configs when available', async () => {
       const modelConfigs = {
-        'gemini-1.5-pro': { temperature: 0.7 },
+        'gemini-2.5-pro': { temperature: 0.7 },
       };
 
       const dp = new Dotprompt({ modelConfigs });
 
       const parsedSource = {
         template: 'Template content',
-        model: 'gemini-1.5-pro',
+        model: 'gemini-2.5-pro',
       };
 
       const resolveMetadataMock = vi

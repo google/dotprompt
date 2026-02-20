@@ -37,7 +37,7 @@ const parser = new Parser();
 parser.setLanguage(Dotprompt);
 
 const source = `---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 ---
 Hello {{ name }}!`;
 

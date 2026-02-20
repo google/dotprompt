@@ -32,7 +32,7 @@
  *
  * // Create an editor with Dotprompt support
  * const editor = monaco.editor.create(container, {
- *   value: '---\nmodel: gemini-2.0-flash\n---\nHello {{ name }}!',
+ *   value: '---\nmodel: gemini-2.5-flash\n---\nHello {{ name }}!',
  *   language: 'dotprompt',
  * });
  * ```

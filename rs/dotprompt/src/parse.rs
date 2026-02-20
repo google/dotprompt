@@ -486,9 +486,9 @@ mod tests {
 
     #[test]
     fn test_extract_with_shebang_and_license() {
-        let source = "#!/usr/bin/env promptly\n# Copyright 2025 Google\n# SPDX: Apache-2.0\n---\nmodel: gemini-2.0\n---\nHello combined!";
+        let source = "#!/usr/bin/env promptly\n# Copyright 2025 Google\n# SPDX: Apache-2.0\n---\nmodel: gemini-2.5-flash\n---\nHello combined!";
         let (yaml, template) = extract_frontmatter_and_body(source).expect("parse should succeed");
-        assert!(yaml.contains("model: gemini-2.0"));
+        assert!(yaml.contains("model: gemini-2.5-flash"));
         assert_eq!(template, "Hello combined!");
     }
 

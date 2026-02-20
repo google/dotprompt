@@ -33,7 +33,7 @@ registerDotpromptLanguage(monaco);
 // Create an editor
 const editor = monaco.editor.create(document.getElementById('container')!, {
   value: `---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 config:
   temperature: 0.7
 ---

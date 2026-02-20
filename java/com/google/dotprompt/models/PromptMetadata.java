@@ -32,7 +32,7 @@ import java.util.Map;
  * @param variant The variant name for the prompt.
  * @param version The version of the prompt.
  * @param description A description of the prompt.
- * @param model The name of the model to use (e.g., "vertexai/gemini-1.0-pro").
+ * @param model The name of the model to use (e.g., "vertexai/gemini-3.0-pro").
  * @param tools Names of tools (registered separately) to allow use of in this prompt.
  * @param toolDefs Definitions of tools to allow use of in this prompt.
  * @param config Model configuration. Not all models support all options.

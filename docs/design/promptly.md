@@ -150,7 +150,7 @@ The parser is responsible for converting `.prompt` file content into an Abstract
 
 ```yaml
 ---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 config:
   temperature: 0.7
 input:
@@ -327,7 +327,7 @@ The formatter ensures consistent styling across all `.prompt` files.
 **Before:**
 ```handlebars
 ---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 config:
     temperature: 0.7
 input:
@@ -349,7 +349,7 @@ Hello,{{name}}!
 **After:**
 ```handlebars
 ---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 config:
   temperature: 0.7
 input:
@@ -572,18 +572,18 @@ When typing `model:`, the LSP provides intelligent completions with model metada
 
 ```yaml
 model: g|   # Cursor after 'g'
-       ├── gemini-2.0-flash          ✨ Recommended
-       │   Context: 1M tokens | Output: 8K | Cost: $0.075/1M
-       ├── gemini-2.0-flash-lite
-       │   Context: 1M tokens | Output: 8K | Cost: $0.02/1M
-       ├── gemini-1.5-pro
-       │   Context: 2M tokens | Output: 8K | Cost: $1.25/1M
-       ├── gpt-4o
-       │   Context: 128K tokens | Output: 16K | Cost: $2.50/1M
-       ├── gpt-4o-mini
-       │   Context: 128K tokens | Output: 16K | Cost: $0.15/1M
-       └── gpt-4-turbo
-           Context: 128K tokens | Output: 4K | Cost: $10/1M
+       ├── gemini-3-flash          ✨ Recommended
+       │   Context: 1M tokens | Output: 64K | Cost: $0.50/1M
+       ├── gemini-2.5-flash-lite
+       │   Context: 1M tokens | Output: 64K | Cost: $0.10/1M
+       ├── gemini-3.0-pro
+       │   Context: 2M tokens | Output: 64K | Cost: $2.00/1M
+       ├── gpt-5.2
+       │   Context: 400K tokens | Output: 128K | Cost: $1.75/1M
+       ├── gpt-5.2-pro
+       │   Context: 400K tokens | Output: 128K | Cost: $21.00/1M
+       └── gpt-5-mini
+           Context: 128K tokens | Output: 16K | Cost: $.25/1M
 ```
 
 **Model Metadata Shown:**
@@ -638,7 +638,7 @@ offline-mode = false                    # Use bundled models only
 {
   "models": [
     {
-      "id": "gemini-2.0-flash",
+      "id": "gemini-2.5-flash",
       "provider": "google",
       "displayName": "Gemini 2.0 Flash",
       "contextWindow": 1048576,
@@ -740,7 +740,7 @@ tools:
 
 | Field | Hover Shows |
 |-------|-------------|
-| `model: gemini-2.0-flash` | Model info, context size, pricing |
+| `model: gemini-2.5-flash` | Model info, context size, pricing |
 | `config.temperature: 0.7` | Valid range, effect on output |
 | `input.schema.name: string` | Type info, validation rules |
 | `output.format: json` | Format options, when to use each |
@@ -774,9 +774,9 @@ error[unknown-model]: Unknown model 'gemini-3.0-flash'
   --> greeting.prompt:1:8
    |
  1 |   model: gemini-3.0-flash
-   |          ^^^^^^^^^^^^^^^^ did you mean 'gemini-2.0-flash'?
+   |          ^^^^^^^^^^^^^^^^ did you mean 'gemini-2.5-flash'?
    |
-help: available models: gemini-2.0-flash, gemini-1.5-pro, gpt-4o
+help: available models: gemini-2.5-flash, gemini-2.5-pro, gpt-4o
 
 ---
 
@@ -999,7 +999,7 @@ Options:
 ```bash
 # Lint files
 promptly check                      # Check current directory
-promptly check prompts/             # Check specific directory  
+promptly check prompts/             # Check specific directory
 promptly check *.prompt             # Check specific files
 promptly check --fix                # Auto-fix issues
 promptly check --format=json        # JSON output for CI
@@ -1023,7 +1023,7 @@ promptly run greeting.prompt -i '{"name": "Alice"}'    # Run with inline input
 promptly run greeting.prompt -f input.json             # Run with input file
 promptly run greeting.prompt --dry-run                 # Render template only
 promptly run greeting.prompt --stream                  # Stream output tokens
-promptly run greeting.prompt -m gemini-2.0-flash       # Override model
+promptly run greeting.prompt -m gemini-2.5-flash       # Override model
 cat context.json | promptly run summarizer.prompt      # Pipe input
 
 # Evaluate prompts (comparative A/B testing)
@@ -1337,15 +1337,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Promptly
         uses: google/promptly-action@v1
         with:
           version: 'latest'
-      
+
       - name: Lint prompts
         run: promptly check --format=github
-      
+
       - name: Check formatting
         run: promptly fmt --check
 
@@ -1354,13 +1354,13 @@ jobs:
     needs: lint
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Promptly
         uses: google/promptly-action@v1
-      
+
       - name: Install dependencies
         run: promptly store install --frozen
-      
+
       - name: Run evaluations
         run: promptly evaluate tests/evaluation.yaml
         env:
@@ -1383,27 +1383,27 @@ jobs:
     permissions:
       contents: read
       id-token: write  # For OIDC authentication
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Promptly
         uses: google/promptly-action@v1
-      
+
       - name: Validate package
         run: |
           promptly check --strict
           promptly pack --dry-run
-      
+
       - name: Publish to Prompt Store
         uses: google/promptly-publish-action@v1
         with:
           # Option 1: API token
           token: ${{ secrets.PROMPTLY_TOKEN }}
-          
+
           # Option 2: OIDC (recommended for GitHub)
           # oidc: true
-          
+
           # Optional settings
           tag: ${{ github.event.release.prerelease && 'beta' || 'latest' }}
           access: public
@@ -1431,17 +1431,17 @@ jobs:
         with:
           release-type: simple
           package-name: "@google/code-assistant"
-          
+
   publish:
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Promptly
         uses: google/promptly-action@v1
-      
+
       - name: Publish
         run: promptly publish
         env:
@@ -1471,15 +1471,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: google/promptly-action@v1
         with:
           version: ${{ inputs.promptly-version }}
-      
+
       - run: promptly check --format=github
       - run: promptly fmt --check
       - run: promptly store install --frozen
-      
+
       - if: ${{ secrets.GOOGLE_API_KEY != '' }}
         run: promptly evaluate tests/evaluation.yaml
         env:
@@ -2148,7 +2148,7 @@ For automated evaluation, an LLM judges the outputs:
 ```yaml
 # evaluation-judge.prompt
 ---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 config:
   temperature: 0
 input:
@@ -2164,7 +2164,7 @@ output:
     explanation: string
 ---
 
-You are an expert prompt evaluator. Given the original input and multiple 
+You are an expert prompt evaluator. Given the original input and multiple
 prompt variation outputs, score each on the provided criteria.
 
 ## Original Input
@@ -2182,7 +2182,7 @@ prompt variation outputs, score each on the provided criteria.
 - {{ this }}
 {{/each}}
 
-Provide scores (1-5) for each variation on each criterion, explain your 
+Provide scores (1-5) for each variation on each criterion, explain your
 reasoning, and declare a winner.
 ```
 
@@ -2196,7 +2196,7 @@ promptly evaluate experiment.yaml
 promptly evaluate experiment.yaml --output results.json
 
 # Use specific judge model
-promptly evaluate experiment.yaml --judge gemini-2.0-flash
+promptly evaluate experiment.yaml --judge gemini-2.5-flash
 ```
 
 ### Evaluation Manifest (`experiment.yaml`)
@@ -2210,10 +2210,10 @@ base_prompt: prompts/customer-support.prompt
 variations:
   - name: baseline
     file: prompts/customer-support.prompt
-  
+
   - name: friendly
     file: prompts/customer-support-friendly.prompt
-  
+
   - name: concise
     # Inline variation
     template: |
@@ -2227,7 +2227,7 @@ test_cases:
       customer_message: "WHERE IS MY REFUND?!"
       order_id: "12345"
     expected_intent: "acknowledge frustration, provide timeline"
-  
+
   - input:
       customer_message: "How do I return this item?"
       order_id: "67890"
@@ -2239,7 +2239,7 @@ metrics:
   - conciseness
 
 judge:
-  model: gemini-2.0-flash
+  model: gemini-2.5-flash
   temperature: 0
 
 settings:
@@ -2896,42 +2896,42 @@ graph TD
     subgraph "Layer 0: Foundation"
         CORE[promptly-core<br/>AST, Config, Types]
     end
-    
+
     subgraph "Layer 1: Parsing"
         PARSER[promptly-parser<br/>YAML + Handlebars]
     end
-    
+
     subgraph "Layer 2: Analysis"
         LINTER[promptly-linter<br/>Errors, Warnings]
         FORMATTER[promptly-formatter<br/>Indentation, Spacing]
     end
-    
+
     subgraph "Layer 3: IDE Support"
         LSP[promptly-lsp<br/>Language Server]
     end
-    
+
     subgraph "Layer 4: Execution"
         RUNNER[promptly-runner<br/>Model APIs]
         TEST[promptly-test<br/>Assertions, Snapshots]
     end
-    
+
     subgraph "Layer 5: Evaluation"
         EVAL[promptly-evaluate<br/>LLM-as-Judge]
     end
-    
+
     subgraph "Layer 6: Packaging"
         STORE[promptly-store<br/>Registry Client]
         SECURITY[promptly-security<br/>Scanner]
     end
-    
+
     subgraph "Layer 7: Server"
         SERVER[promptly-server<br/>Axum API]
     end
-    
+
     subgraph "Layer 8: CLI"
         CLI[promptly-cli<br/>All Commands]
     end
-    
+
     CORE --> PARSER
     PARSER --> LINTER
     PARSER --> FORMATTER
@@ -2945,7 +2945,7 @@ graph TD
     PARSER --> STORE
     CORE --> STORE
     STORE --> SERVER
-    
+
     LSP --> CLI
     RUNNER --> CLI
     TEST --> CLI
@@ -2990,7 +2990,7 @@ Layer 2: [LINTER]    [FORMATTER]    [RUNNER]    ← Can build in parallel
 Layer 3: [LSP]                       [TEST]     ← Can build in parallel
          │                              │
          │                              ▼
-Layer 4: │                           [EVAL]     
+Layer 4: │                           [EVAL]
          │                              │
          ├──────────────────────────────┤
          │                              │
@@ -3944,18 +3944,18 @@ jobs:
           script: |
             const previewUrl = '${{ steps.firebase-deploy.outputs.details_url }}';
             const expireTime = '${{ steps.firebase-deploy.outputs.expire_time }}';
-            
+
             github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
               body: `## 🚀 Preview Deployment Ready!
-              
+
               | Environment | URL |
               |-------------|-----|
               | **Frontend** | ${previewUrl} |
               | **Expires** | ${expireTime} |
-              
+
               This preview will be automatically deleted 7 days after the last update.
               `
             });
@@ -4009,13 +4009,13 @@ jobs:
         with:
           script: |
             const apiUrl = '${{ steps.deploy.outputs.url }}';
-            
+
             github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
               body: `## 🔌 API Preview Ready!
-              
+
               | Environment | URL |
               |-------------|-----|
               | **API** | ${apiUrl} |
@@ -4271,7 +4271,7 @@ crates/promptly-cli/prompts/
 
 ```handlebars
 ---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 config:
   temperature: 0.0
 input:
@@ -4322,7 +4322,7 @@ Evaluate both responses against the criteria and return JSON:
 
 ```handlebars
 ---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 config:
   temperature: 0.7
 input:
@@ -4368,7 +4368,7 @@ Return:
 
 ```handlebars
 ---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 config:
   temperature: 0.0
 input:
@@ -4478,7 +4478,7 @@ cat context.json | promptly run summarizer.prompt
 promptly run story-writer.prompt -i '{"topic": "dragons"}' --stream
 
 # A/B test different models
-promptly run analyzer.prompt -f data.json -m gemini-2.0-flash
+promptly run analyzer.prompt -f data.json -m gemini-2.5-flash
 promptly run analyzer.prompt -f data.json -m gpt-4o
 promptly run analyzer.prompt -f data.json -m claude-3-5-sonnet
 
@@ -4499,7 +4499,7 @@ Prompt files can include a shebang header to make them directly executable on Un
 ```bash
 #!/usr/bin/env promptly run
 ---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 config:
   temperature: 0.7
 ---
@@ -4542,7 +4542,7 @@ When a prompt file is executed directly, bare `--key=value` arguments are automa
 ```bash
 #!/usr/bin/env promptly run                    # Standard
 #!/usr/bin/env promptly run --stream           # Always stream
-#!/usr/bin/env promptly run -m gemini-2.0-flash # Force model
+#!/usr/bin/env promptly run -m gemini-2.5-flash # Force model
 #!/usr/bin/env promptly run --dry-run          # Preview only
 ```
 
@@ -4635,13 +4635,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install promptly
         run: cargo install promptly
-      
+
       - name: Check prompts
         run: promptly check --format=github
-      
+
       - name: Check formatting
         run: promptly fmt --check
 
@@ -4650,13 +4650,13 @@ jobs:
     needs: lint
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install promptly
         run: cargo install promptly
-      
+
       - name: Install dependencies
         run: promptly store install --frozen
-      
+
       - name: Dry run all prompts
         run: |
           for f in prompts/*.prompt; do
@@ -4679,15 +4679,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install promptly
         run: cargo install promptly
-      
+
       - name: Validate package
         run: |
           promptly check --strict
           promptly store publish --dry-run
-      
+
       - name: Publish to Prompt Store
         run: promptly store publish
         env:
@@ -5041,7 +5041,7 @@ CREATE INDEX idx_audit_logs_user ON audit_logs(user_id, created_at DESC);
 CREATE INDEX idx_package_keywords_keyword ON package_keywords(keyword);
 
 -- Full-text search
-CREATE INDEX idx_packages_search ON packages 
+CREATE INDEX idx_packages_search ON packages
     USING GIN (to_tsvector('english', name || ' ' || COALESCE(description, '')));
 ```
 
@@ -5088,7 +5088,7 @@ rs/promptly/tests/
 fn test_lint_missing_partial() {
     let source = r#"
 ---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 ---
 {{> nonexistent}}
 "#;
@@ -5117,12 +5117,12 @@ fn test_formatter_idempotent() {
 async fn test_publish_package() {
     let postgres = testcontainers::PostgresContainer::new();
     let pool = setup_test_db(&postgres).await;
-    
+
     let app = create_app(pool);
     let response = app
         .oneshot(Request::put("/api/v1/packages/@test/my-package").body(tarball))
         .await;
-    
+
     assert_eq!(response.status(), StatusCode::CREATED);
 }
 ```
@@ -5328,7 +5328,7 @@ A comprehensive testing framework for validating prompt behavior.
 ```yaml
 # tests/greeting.test.yaml
 prompt: greeting.prompt
-model: gemini-2.0-flash  # Optional: override for testing
+model: gemini-2.5-flash  # Optional: override for testing
 
 cases:
   - name: "basic greeting"
@@ -5337,13 +5337,13 @@ cases:
       contains: ["Hello", "Alice"]
       not_contains: ["error", "undefined"]
       regex: "Hello,? Alice"
-      
+
   - name: "handles empty name gracefully"
     input: { name: "" }
     expect:
       not_contains: ["undefined", "null"]
       min_length: 10
-      
+
   - name: "JSON output validation"
     input: { items: ["a", "b", "c"] }
     expect:
@@ -5352,12 +5352,12 @@ cases:
       json_path:
         "$.items.length": 3
         "$.status": "success"
-      
+
   - name: "golden output comparison"
     input: { name: "Bob" }
     expect:
       snapshot: true  # Compare against saved snapshot
-      
+
   - name: "semantic similarity"
     input: { topic: "weather" }
     expect:
@@ -5412,7 +5412,7 @@ steps:
       code: "{{ inputs.code }}"
       language: "{{ inputs.language }}"
     output: analysis
-    
+
   - id: security-check
     prompt: prompts/security-scan.prompt
     input:
@@ -5420,7 +5420,7 @@ steps:
       analysis: "{{ steps.analyze.output }}"
     output: security_issues
     parallel: true  # Run in parallel with next step
-    
+
   - id: style-check
     prompt: prompts/style-review.prompt
     input:
@@ -5428,7 +5428,7 @@ steps:
       language: "{{ inputs.language }}"
     output: style_issues
     parallel: true
-    
+
   - id: generate-review
     prompt: prompts/generate-review.prompt
     depends_on: [analyze, security-check, style-check]
@@ -5438,7 +5438,7 @@ steps:
       security: "{{ steps.security-check.output }}"
       style: "{{ steps.style-check.output }}"
     output: review
-    
+
   - id: summarize
     prompt: prompts/summarize.prompt
     input:
@@ -5606,8 +5606,8 @@ $ promptly compat-check prompts/
 Checking compatibility...
 
 prompts/greeting.prompt:
-  ✅ gemini-2.0-flash    Compatible
-  ✅ gemini-1.5-pro      Compatible
+  ✅ gemini-2.5-flash    Compatible
+  ✅ gemini-2.5-pro      Compatible
   ✅ gpt-4o              Compatible
   ✅ gpt-4o-mini         Compatible
   ✅ claude-3-5-sonnet   Compatible
@@ -5615,7 +5615,7 @@ prompts/greeting.prompt:
   ❌ llama-3-8b          Missing: Tool calling not supported
 
 prompts/code-review.prompt:
-  ✅ gemini-2.0-flash    Compatible
+  ✅ gemini-2.5-flash    Compatible
   ⚠️  gpt-4o             Warning: Uses {{#media}}, requires vision
   ❌ claude-3-haiku      Missing: JSON mode not supported
 
@@ -5911,7 +5911,7 @@ A dedicated panel in Chrome DevTools for debugging LLM calls:
 │  ┌─ LLM Requests ──────────────────────────────────────────────┐   │
 │  │ # │ Prompt              │ Model        │ Latency │ Tokens   │   │
 │  ├───┼─────────────────────┼──────────────┼─────────┼──────────┤   │
-│  │ 1 │ code-review.prompt  │ gemini-2.0   │ 1.2s    │ 847      │   │
+│  │ 1 │ code-review.prompt  │ gemini-2.5-flash   │ 1.2s    │ 847      │   │
 │  │ 2 │ summarize.prompt    │ gpt-4o       │ 0.8s    │ 423      │   │
 │  │ 3 │ translate.prompt    │ claude-3-5   │ 0.5s    │ 156      │   │
 │  └───┴─────────────────────┴──────────────┴─────────┴──────────┘   │
@@ -5984,15 +5984,15 @@ interface ExtensionSettings {
   // Syntax highlighting
   enableGitHubHighlighting: boolean;
   enableGitLabHighlighting: boolean;
-  
+
   // DevTools
   captureRequests: boolean;
   maxStoredRequests: number;  // Default: 100
-  
+
   // Quick actions
   enableContextMenu: boolean;
-  defaultModel: string;  // e.g., "gemini-2.0-flash"
-  
+  defaultModel: string;  // e.g., "gemini-2.5-flash"
+
   // Authentication
   promptlyToken?: string;
   aiStudioApiKey?: string;
@@ -6088,7 +6088,7 @@ Syntax highlighting and IntelliSense for Monaco-based editors (GitHub.dev, Stack
 import * as monaco from 'monaco-editor';
 
 // Register the language
-monaco.languages.register({ 
+monaco.languages.register({
   id: 'dotprompt',
   extensions: ['.prompt'],
   aliases: ['Dotprompt', 'prompt'],
@@ -6099,39 +6099,39 @@ monaco.languages.register({
 monaco.languages.setMonarchTokensProvider('dotprompt', {
   defaultToken: '',
   tokenPostfix: '.prompt',
-  
+
   brackets: [
     { open: '{{', close: '}}', token: 'delimiter.handlebars' },
     { open: '{{#', close: '}}', token: 'delimiter.block' },
     { open: '{{/', close: '}}', token: 'delimiter.block' },
   ],
-  
+
   tokenizer: {
     root: [
       // YAML frontmatter
       [/^---$/, 'delimiter.yaml', '@yaml'],
-      
+
       // Block helpers
       [/\{\{#(role|if|each|unless|with|section|history)\b/, 'keyword.block'],
       [/\{\{\/(role|if|each|unless|with|section|history)\b/, 'keyword.block'],
-      
+
       // Partials
       [/\{\{>/, 'keyword.partial'],
-      
+
       // Built-in helpers
       [/\{\{(json|media|eq|ne|lt|gt|and|or|not)\b/, 'support.function'],
-      
+
       // Variables
       [/\{\{[^}#/>!]+\}\}/, 'variable'],
-      
+
       // Comments
       [/\{\{!--/, 'comment', '@comment'],
       [/\{\{![^}]+\}\}/, 'comment'],
-      
+
       // Text
       [/./, 'text'],
     ],
-    
+
     yaml: [
       [/^---$/, 'delimiter.yaml', '@pop'],
       [/^\s*[a-zA-Z_][\w-]*:/, 'attribute.name'],
@@ -6141,7 +6141,7 @@ monaco.languages.setMonarchTokensProvider('dotprompt', {
       [/\b\d+(\.\d+)?\b/, 'number'],
       [/#.*$/, 'comment'],
     ],
-    
+
     comment: [
       [/--\}\}/, 'comment', '@pop'],
       [/./, 'comment'],
@@ -6180,7 +6180,7 @@ Embeddable components for any website:
 
 ```html
 <!-- Prompt Viewer - Display a prompt with syntax highlighting -->
-<promptly-viewer 
+<promptly-viewer
   src="@google/code-assistant/review.prompt"
   theme="dark"
   show-frontmatter="true"
@@ -6201,7 +6201,7 @@ Embeddable components for any website:
   prompt="@google/code-assistant/review"
   show-input="true"
   show-output="true"
-  model="gemini-2.0-flash"
+  model="gemini-2.5-flash"
   allow-model-selection="true"
 ></promptly-playground>
 
@@ -6241,7 +6241,7 @@ editor.addEventListener('validate', (e) => {
 const playground = document.querySelector('promptly-playground');
 const result = await playground.run({
   input: { name: 'Alice' },
-  model: 'gemini-2.0-flash'
+  model: 'gemini-2.5-flash'
 });
 ```
 
@@ -6337,19 +6337,19 @@ graph TD
     PKG --> SCHEMAS["📁 schemas/"]
     PKG --> TESTS["📁 tests/"]
     PKG --> RES["📁 resources/"]
-    
+
     PROMPTS --> P1["greeting.prompt"]
     PROMPTS --> P2["customer-support.prompt"]
     PROMPTS --> PARTIALS["📁 _partials/"]
     PARTIALS --> H["_header.prompt"]
     PARTIALS --> F["_footer.prompt"]
-    
+
     SCHEMAS --> S1["user.schema.json"]
     SCHEMAS --> S2["product.schema.json"]
-    
+
     TESTS --> T1["greeting.test.yaml"]
     TESTS --> SNAP["📁 snapshots/"]
-    
+
     RES --> IMG["📁 images/"]
     RES --> DATA["📁 data/"]
 ```
@@ -6388,10 +6388,10 @@ multilingual = ["translations"]
 
 [models]
 # Default model configurations
-default = "gemini-2.0-flash"
+default = "gemini-2.5-flash"
 fallback = ["gpt-4o", "claude-3-5-sonnet"]
 
-[models.gemini-2.0-flash]
+[models.gemini-2.5-flash]
 temperature = 0.7
 max_tokens = 1024
 

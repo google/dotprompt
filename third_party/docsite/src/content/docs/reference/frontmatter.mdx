@@ -25,11 +25,11 @@ Here's an example of a Dotprompt frontmatter:
 ---
 name: greetingPrompt
 variant: formal
-model: googleai/gemini-1.5-flash
+model: googleai/gemini-2.5-flash
 tools:
   - timeOfDay
 config:
-  version: gemini-1.5-flash-latest
+  version: gemini-2.5-flash
   temperature: 0.7
   topK: 20
   topP 0.8
@@ -67,7 +67,7 @@ metadata:
 ### `model`
 
 - **Type:** `string` or `ModelArgument<Options>`
-- **Description:** The name of the model to use for this prompt, e.g., `googleai/gemini-1.5-flash-latest`. The Dotprompt implementation is responsible for resolving a string model name to an executable model.
+- **Description:** The name of the model to use for this prompt, e.g., `googleai/gemini-2.5-flash`. The Dotprompt implementation is responsible for resolving a string model name to an executable model.
 
 ### `tools`
 
@@ -81,8 +81,8 @@ metadata:
 - **Common Config:** Model implementations should respect the following config properties where applicable:
   - `version`:
     - **Type:** `string`
-    - **Description:** While `model` specifies a model "family" (e.g. Gemini 1.5 Flash, Claude 3.5 Sonnet), `version` specifies a particular version/checkpoint of the model to use. This allows for version pinning and reproducibility of results.
-    - **Example:**  `"gemini-1.5-pro-0801"` or `"v2"`
+    - **Description:** While `model` specifies a model "family" (e.g. Gemini 2.5 Flash, Claude 3.5 Sonnet), `version` specifies a particular version/checkpoint of the model to use. This allows for version pinning and reproducibility of results.
+    - **Example:**  `"gemini-2.5-pro"` or `"v2"`
 
   - `temperature`:
     - **Type:** `number`

@@ -3,7 +3,7 @@ DOCUMENT
 ================================================================================
 
 ---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 ---
 Hello world!
 
@@ -133,7 +133,7 @@ FRONTMATTER WITH CONFIG
 ================================================================================
 
 ---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 config:
   temperature: 0.7
 input:
@@ -177,7 +177,7 @@ LICENSE HEADER
 # Copyright 2026 Google LLC
 # Some license text
 ---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 ---
 Hello
 

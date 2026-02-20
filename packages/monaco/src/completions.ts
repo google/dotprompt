@@ -166,7 +166,7 @@ const FRONTMATTER_FIELDS = [
   {
     label: 'model',
     kind: 5, // Field
-    insertText: 'model: ${1:gemini-2.0-flash}',
+    insertText: 'model: ${1:gemini-2.5-flash}',
     insertTextRules: 4,
     documentation: 'The AI model to use for this prompt.',
   },
@@ -218,21 +218,59 @@ const FRONTMATTER_FIELDS = [
  * Model name completions.
  */
 const MODEL_NAMES = [
+  // Gemini 3 Series (Preview)
   {
-    label: 'gemini-2.0-flash',
-    documentation: 'Fast Gemini 2.0 model (1M context)',
+    label: 'gemini-3-pro-preview',
+    documentation: 'Most capable model for complex tasks (Preview)',
   },
   {
-    label: 'gemini-2.0-flash-lite',
-    documentation: 'Lightweight Gemini 2.0 model',
+    label: 'gemini-3-flash-preview',
+    documentation: 'Fast and intelligent model for high-volume tasks (Preview)',
   },
-  { label: 'gemini-1.5-pro', documentation: 'Gemini 1.5 Pro (2M context)' },
-  { label: 'gemini-1.5-flash', documentation: 'Fast Gemini 1.5 model' },
+  {
+    label: 'gemini-3-pro-image-preview',
+    documentation: 'Supports image generation outputs (Preview)',
+  },
+  // Gemini 2.5 Series (Stable)
+  {
+    label: 'gemini-2.5-pro',
+    documentation: 'Most capable stable model for complex tasks',
+  },
+  {
+    label: 'gemini-2.5-flash',
+    documentation: 'Fast and efficient for most use cases',
+  },
+  {
+    label: 'gemini-2.5-flash-lite',
+    documentation: 'Lightweight version for simple tasks',
+  },
+  {
+    label: 'gemini-2.5-flash-image',
+    documentation: 'Supports image generation outputs',
+  },
+  // Gemma 3 Series
+  { label: 'gemma-3-27b-it', documentation: 'Large instruction-tuned Gemma 3' },
+  { label: 'gemma-3-12b-it', documentation: 'Medium instruction-tuned Gemma 3' },
+  { label: 'gemma-3-4b-it', documentation: 'Small instruction-tuned Gemma 3' },
+  { label: 'gemma-3-1b-it', documentation: 'Tiny instruction-tuned Gemma 3' },
+  // OpenAI
   { label: 'gpt-4o', documentation: 'OpenAI GPT-4o (128K context)' },
   { label: 'gpt-4o-mini', documentation: 'OpenAI GPT-4o Mini' },
-  { label: 'gpt-4-turbo', documentation: 'OpenAI GPT-4 Turbo' },
+  // Anthropic
   { label: 'claude-3-5-sonnet', documentation: 'Anthropic Claude 3.5 Sonnet' },
-  { label: 'claude-3-opus', documentation: 'Anthropic Claude 3 Opus' },
+  // Deprecated / Older Models
+  {
+    label: 'gemini-2.0-flash',
+    documentation: '(Deprecated) Fast Gemini 2.0 model',
+  },
+  {
+    label: 'gemini-1.5-pro',
+    documentation: '(Deprecated) Gemini 1.5 Pro',
+  },
+  {
+    label: 'gemini-1.5-flash',
+    documentation: '(Deprecated) Fast Gemini 1.5 model',
+  },
 ].map((m) => ({
   ...m,
   kind: 12, // Value

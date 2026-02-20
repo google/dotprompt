@@ -56,7 +56,7 @@ provided text:
 
 ```handlebars
 ---
-model: googleai/gemini-1.5-pro
+model: googleai/gemini-2.5-pro
 input:
   schema:
     text: string
@@ -76,7 +76,7 @@ Text: {{text}}
 
 This Dotprompt file:
 
-1. Specifies the use of the `googleai/gemini-1.5-pro` model.
+1. Specifies the use of the `googleai/gemini-2.5-pro` model.
 2. Defines an input schema expecting a `text` string.
 3. Specifies that the output should be in JSON format.
 4. Provides a schema for the expected output, including fields for name, age,

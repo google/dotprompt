@@ -52,9 +52,9 @@ public class DotpromptOptionsTest {
 
   @Test
   public void testBuilder_setDefaultModel() {
-    DotpromptOptions options = DotpromptOptions.builder().setDefaultModel("gemini-1.5-pro").build();
+    DotpromptOptions options = DotpromptOptions.builder().setDefaultModel("gemini-2.5-pro").build();
 
-    assertThat(options.getDefaultModel()).isEqualTo("gemini-1.5-pro");
+    assertThat(options.getDefaultModel()).isEqualTo("gemini-2.5-pro");
   }
 
   @Test
@@ -204,13 +204,13 @@ public class DotpromptOptionsTest {
   public void testBuilder_methodChaining() {
     DotpromptOptions options =
         DotpromptOptions.builder()
-            .setDefaultModel("gemini-1.5-pro")
+            .setDefaultModel("gemini-2.5-pro")
             .addModelConfig("gpt-4", Map.of("temp", 0.5))
             .addPartial("intro", "Hello")
             .addSchema("User", Map.of("type", "object"))
             .build();
 
-    assertThat(options.getDefaultModel()).isEqualTo("gemini-1.5-pro");
+    assertThat(options.getDefaultModel()).isEqualTo("gemini-2.5-pro");
     assertThat(options.getModelConfigs()).hasSize(1);
     assertThat(options.getPartials()).hasSize(1);
     assertThat(options.getSchemas()).hasSize(1);
