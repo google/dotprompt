@@ -143,7 +143,7 @@ fn get_frontmatter_field_docs(field: &str) -> Option<&'static str> {
             Specifies the AI model to use.\n\n\
             **Example:**\n\
             ```yaml\n\
-            model: googleai/gemini-2.0-flash\n\
+            model: googleai/gemini-2.5-flash\n\
             ```",
         ),
         "input" => Some(

@@ -100,7 +100,7 @@ for message in rendered.messages:
 
 ```handlebars
 ---
-model: googleai/gemini-1.5-pro
+model: googleai/gemini-2.5-pro
 input:
   schema:
     topic: string, The topic to explain

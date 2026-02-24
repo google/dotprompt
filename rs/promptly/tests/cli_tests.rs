@@ -36,7 +36,7 @@ fn setup_test_dir() -> TempDir {
     fs::write(
         dir.path().join("valid.prompt"),
         r"---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 config:
   temperature: 0.7
 ---
@@ -49,7 +49,7 @@ Hello {{name}}!
     fs::write(
         dir.path().join("invalid_yaml.prompt"),
         r#"---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 config:
   temperature: "unclosed string
 ---
@@ -62,7 +62,7 @@ Hello world!
     fs::write(
         dir.path().join("unclosed_block.prompt"),
         r#"---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 ---
 {{#role "user"}}
 Hello world!
@@ -253,7 +253,7 @@ fn setup_unformatted_dir() -> TempDir {
     fs::write(
         dir.path().join("unformatted.prompt"),
         r"---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 ---
 Hello {{name}}!   
 Goodbye {{friend}}",
@@ -264,7 +264,7 @@ Goodbye {{friend}}",
     fs::write(
         dir.path().join("formatted.prompt"),
         r"---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 ---
 
 Hello {{ name }}!

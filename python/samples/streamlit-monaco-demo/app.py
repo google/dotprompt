@@ -29,7 +29,7 @@ This example demonstrates syntax highlighting for **Dotprompt** files using the 
 
 # Sample Dotprompt content
 DEFAULT_CONTENT = """---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 config:
   temperature: 0.7
   topP: 0.95

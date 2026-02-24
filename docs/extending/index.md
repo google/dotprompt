@@ -16,7 +16,7 @@ variable-interpolated UTF-8 encoded text templates, which can optionally use
 
     ```handlebars
     ---
-    model: googleai/gemini-1.5-pro
+    model: googleai/gemini-2.5-pro
     input:
       schema:
         text: string
@@ -39,7 +39,7 @@ variable-interpolated UTF-8 encoded text templates, which can optionally use
 
     This Dotprompt file:
 
-    1. Specifies the use of the `googleai/gemini-1.5-pro` model.
+    1. Specifies the use of the `googleai/gemini-2.5-pro` model.
     2. Defines an input schema expecting a `text` string.
     3. Specifies that the output should be in JSON format.
     4. Provides a schema for the expected output, including fields for name, age,
@@ -56,7 +56,7 @@ variable-interpolated UTF-8 encoded text templates, which can optionally use
 
     ```handlebars
     ---
-    model: googleai/gemini-1.5-flash
+    model: googleai/gemini-2.5-flash
     config:
       temperature: 0.9
     input:
@@ -75,7 +75,7 @@ variable-interpolated UTF-8 encoded text templates, which can optionally use
 
     This Dotprompt file:
 
-    1. Specifies the use of the `googleai/gemini-1.5-flash` model.
+    1. Specifies the use of the `googleai/gemini-2.5-flash` model.
     2. Defines a config block with a `temperature` of 0.9.
     3. Specifies an input schema with a `location` string and optional `style` and
       `name` strings.
@@ -90,7 +90,7 @@ configuration values for your prompt.
 
 ```handlebars
 ---
-model: googleai/gemini-1.5-flash
+model: googleai/gemini-2.5-flash
 config:
   temperature: 1.4
   topK: 50
@@ -109,7 +109,7 @@ front matter section:
 
 ```handlebars
 ---
-model: googleai/gemini-1.5-flash
+model: googleai/gemini-2.5-flash
 input:
   schema:
     theme?: string
@@ -315,7 +315,7 @@ You may refer to it in the `.dotprompt` file as follows:
 
 ```handlebars
 ---
-model: googleai/gemini-1.5-flash-latest
+model: googleai/gemini-2.5-flash
 output:
   schema: MenuItemSchema
 ---
@@ -339,7 +339,7 @@ The `{{role}}` helper provides a simple way to construct multi-message prompts:
 
 ```handlebars
 ---
-model: vertexai/gemini-1.5-flash
+model: vertexai/gemini-2.5-flash
 input:
   schema:
     userQuestion: string
@@ -358,7 +358,7 @@ can use the `{{media}}` helper:
 
 ```handlebars
 ---
-model: vertexai/gemini-1.5-flash
+model: vertexai/gemini-2.5-flash
 input:
   schema:
     photoUrl: string
@@ -397,7 +397,7 @@ Once the helper has been defined you can use it in any prompt:
 
 ```handlebars
 ---
-model: googleai/gemini-1.5-flash
+model: googleai/gemini-2.5-flash
 input:
   schema:
     name: string
@@ -426,7 +426,7 @@ This can then be included in other prompts:
 
 ```handlebars
 ---
-model: googleai/gemini-1.5-flash
+model: googleai/gemini-2.5-flash
 input:
   schema:
     name: string
@@ -459,7 +459,7 @@ members of a list.
 
     ```handlebars
     ---
-    model: googleai/gemini-1.5-flash-latest
+    model: googleai/gemini-2.5-flash
     input:
       schema:
         destinations(array):
@@ -542,18 +542,18 @@ side-by-side with existing versions. Dotprompt supports this through its
 variants feature.
 
 To create a variant, create a `[name].[variant].prompt` file. For instance, if
-you were using Gemini 1.5 Flash in your prompt but wanted to see if Gemini 1.5
+you were using Gemini 2.5 Flash in your prompt but wanted to see if Gemini 2.5
 Pro would perform better, you might create two files:
 
 - `my_prompt.prompt`: the "baseline" prompt
-- `my_prompt.gemini15pro.prompt`: a variant named `gemini15pro`
+- `my_prompt.gemini25pro.prompt`: a variant named `gemini25pro`
 
 To use a prompt variant, specify the variant option when loading:
 
 === "TypeScript"
 
     ```typescript
-    const myPrompt = ai.prompt('my_prompt', { variant: 'gemini15pro' });
+    const myPrompt = ai.prompt('my_prompt', { variant: 'gemini25pro' });
     ```
 
 === "Go"

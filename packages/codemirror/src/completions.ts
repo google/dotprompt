@@ -198,34 +198,69 @@ const FRONTMATTER_FIELDS: Completion[] = [
  * Model name completions.
  */
 const MODEL_NAMES: Completion[] = [
+  // Gemini 3 Series (Preview)
   {
-    label: 'gemini-2.0-flash',
+    label: 'gemini-3-pro-preview',
     type: 'constant',
-    info: 'Fast Gemini 2.0 model',
+    info: 'Most capable model for complex tasks (Preview)',
   },
   {
-    label: 'gemini-2.0-flash-lite',
+    label: 'gemini-3-flash-preview',
     type: 'constant',
-    info: 'Lightweight Gemini 2.0',
+    info: 'Fast and intelligent model for high-volume tasks (Preview)',
+  },
+  // Gemini 2.5 Series (Stable)
+  {
+    label: 'gemini-2.5-pro',
+    type: 'constant',
+    info: 'Most capable stable model for complex tasks',
   },
   {
-    label: 'gemini-1.5-pro',
+    label: 'gemini-2.5-flash',
     type: 'constant',
-    info: 'Gemini 1.5 Pro (2M context)',
+    info: 'Fast and efficient for most use cases',
   },
   {
-    label: 'gemini-1.5-flash',
+    label: 'gemini-2.5-flash-lite',
     type: 'constant',
-    info: 'Fast Gemini 1.5 model',
+    info: 'Lightweight version for simple tasks',
   },
+  // Gemma 3 Series
+  {
+    label: 'gemma-3-27b-it',
+    type: 'constant',
+    info: 'Large instruction-tuned Gemma 3',
+  },
+  {
+    label: 'gemma-3-12b-it',
+    type: 'constant',
+    info: 'Medium instruction-tuned Gemma 3',
+  },
+  // OpenAI
   { label: 'gpt-4o', type: 'constant', info: 'OpenAI GPT-4o' },
   { label: 'gpt-4o-mini', type: 'constant', info: 'OpenAI GPT-4o Mini' },
+  // Anthropic
   {
     label: 'claude-3-5-sonnet',
     type: 'constant',
     info: 'Anthropic Claude 3.5 Sonnet',
   },
-  { label: 'claude-3-opus', type: 'constant', info: 'Anthropic Claude 3 Opus' },
+  // Deprecated / Older Models
+  {
+    label: 'gemini-2.0-flash',
+    type: 'constant',
+    info: '(Deprecated) Fast Gemini 2.0 model',
+  },
+  {
+    label: 'gemini-1.5-pro',
+    type: 'constant',
+    info: '(Deprecated) Gemini 1.5 Pro',
+  },
+  {
+    label: 'gemini-1.5-flash',
+    type: 'constant',
+    info: '(Deprecated) Fast Gemini 1.5 model',
+  },
 ];
 
 /**
