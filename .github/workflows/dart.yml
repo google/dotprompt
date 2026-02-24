@@ -142,7 +142,7 @@ jobs:
 
       - name: Run Dart tests via Bazel
         run: bazel test //dart/... --test_output=errors
-        continue-on-error: true  # Tests may need network access
+        continue-on-error: true # Tests may need network access
 
   antlr-grammar:
     needs: check-paths
@@ -156,8 +156,8 @@ jobs:
       - name: Setup Java (required for ANTLR)
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: "temurin"
+          java-version: "17"
 
       - name: Install ANTLR4
         run: |
@@ -180,10 +180,10 @@ jobs:
 
           # Compare with committed files (excluding headers)
           for file in HandlebarsLexer.dart HandlebarsParser.dart HandlebarsParserVisitor.dart HandlebarsParserBaseVisitor.dart; do
-            if [ -f "../../dart/handlebarrz/lib/src/antlr/$file" ]; then
+            if [ -f "../../dart/handlebars_dart/lib/src/antlr/$file" ]; then
               # Strip header comments and compare
               tail -n +22 "$file" > "/tmp/generated_$file"
-              tail -n +22 "../../dart/handlebarrz/lib/src/antlr/$file" > "/tmp/committed_$file"
+              tail -n +22 "../../dart/handlebars_dart/lib/src/antlr/$file" > "/tmp/committed_$file"
               if ! diff -q "/tmp/generated_$file" "/tmp/committed_$file" > /dev/null; then
                 echo "Warning: Generated $file differs from committed version"
                 echo "Run './scripts/generate_handlebars_parser' to update"

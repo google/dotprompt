@@ -3,7 +3,7 @@
 ## Overview
 
 This document outlines the plan to implement an ANTLR4-based Handlebars parser
-for the Dart `handlebarrz` library, providing a robust, spec-compliant parser
+for the Dart `handlebars_dart` library, providing a robust, spec-compliant parser
 generated from the official Handlebars.js grammar.
 
 ## Goals
@@ -20,7 +20,7 @@ spec/handlebars/antlr/
 ├── Handlebars.g4           # ANTLR4 grammar (converted from Jison)
 └── README.md               # Grammar documentation
 
-dart/handlebarrz/
+dart/handlebars_dart/
 ├── lib/src/
 │   ├── parser.dart         # Hand-written parser (fallback)
 │   ├── antlr/              # Generated ANTLR parser
@@ -55,6 +55,7 @@ dart/handlebarrz/
 ### Phase 2: Dart Integration (Day 3-4)
 
 1. **Add ANTLR4 Dependency**
+
    ```yaml
    # pubspec.yaml
    dependencies:
@@ -62,6 +63,7 @@ dart/handlebarrz/
    ```
 
 2. **Generate Dart Parser**
+
    ```bash
    antlr4 -Dlanguage=Dart -visitor -no-listener Handlebars.g4
    ```
@@ -96,6 +98,7 @@ dart/handlebarrz/
 ### Phase 4: CI/CD Integration (Day 7)
 
 1. **Bazel Rules**
+
    ```starlark
    # Generate parser at build time
    genrule(
@@ -107,6 +110,7 @@ dart/handlebarrz/
    ```
 
 2. **GitHub Actions**
+
    ```yaml
    # Validate grammar on PR
    - name: Validate ANTLR Grammar
@@ -119,14 +123,14 @@ dart/handlebarrz/
 
 ## Files to Create/Modify
 
-| File | Action | Description |
-|------|--------|-------------|
-| `spec/handlebars/antlr/Handlebars.g4` | Create | ANTLR4 grammar |
-| `dart/handlebarrz/pubspec.yaml` | Modify | Add antlr4 dependency |
-| `dart/handlebarrz/lib/src/antlr/` | Create | Generated parser files |
-| `dart/handlebarrz/lib/src/parser_facade.dart` | Create | Unified parser interface |
-| `.github/workflows/dart.yml` | Modify | Add ANTLR validation |
-| `scripts/generate_antlr_parser` | Create | Parser generation script |
+| File                                              | Action | Description              |
+| ------------------------------------------------- | ------ | ------------------------ |
+| `spec/handlebars/antlr/Handlebars.g4`             | Create | ANTLR4 grammar           |
+| `dart/handlebars_dart/pubspec.yaml`               | Modify | Add antlr4 dependency    |
+| `dart/handlebars_dart/lib/src/antlr/`             | Create | Generated parser files   |
+| `dart/handlebars_dart/lib/src/parser_facade.dart` | Create | Unified parser interface |
+| `.github/workflows/dart.yml`                      | Modify | Add ANTLR validation     |
+| `scripts/generate_antlr_parser`                   | Create | Parser generation script |
 
 ## Dependencies
 
@@ -143,16 +147,15 @@ dart/handlebarrz/
 
 ## Timeline
 
-| Day | Milestone |
-|-----|-----------|
-| 1-2 | Complete ANTLR grammar |
+| Day | Milestone                  |
+| --- | -------------------------- |
+| 1-2 | Complete ANTLR grammar     |
 | 3-4 | Dart integration + visitor |
-| 5-6 | Testing + validation |
-| 7 | CI/CD + documentation |
+| 5-6 | Testing + validation       |
+| 7   | CI/CD + documentation      |
 
 ## References
 
 - [ANTLR4 Dart Target](https://pub.dev/packages/antlr4)
 - [Official Handlebars.js Grammar](https://github.com/handlebars-lang/handlebars.js/tree/4.x/src)
 - [ANTLR4 Grammar Reference](https://github.com/antlr/antlr4/blob/master/doc/grammars.md)
-

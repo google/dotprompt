@@ -10,6 +10,7 @@ This directory contains ANTLR4 grammar files for generating Handlebars parsers.
 ## Grammar Source
 
 These grammars are converted from the official Handlebars.js 4.x Jison grammars:
+
 - [handlebars.yy](https://github.com/handlebars-lang/handlebars.js/blob/4.x/src/handlebars.yy)
 - [handlebars.l](https://github.com/handlebars-lang/handlebars.js/blob/4.x/src/handlebars.l)
 
@@ -21,7 +22,7 @@ Run the generation script:
 ./scripts/generate_handlebars_parser
 ```
 
-This generates Dart files in `dart/handlebarrz/lib/src/antlr/`.
+This generates Dart files in `dart/handlebars_dart/lib/src/antlr/`.
 
 ## Manual Generation
 
@@ -40,29 +41,29 @@ antlr4 -Dlanguage=Dart -visitor -no-listener HandlebarsParser.g4
 
 ## Grammar Features
 
-| Feature | Status |
-|---------|--------|
-| Mustache expressions `{{name}}` | ✅ |
-| Unescaped output `{{{name}}}` | ✅ |
-| Ampersand unescaped `{{&name}}` | ✅ |
-| Block helpers `{{#if}}...{{/if}}` | ✅ |
-| Inverse blocks `{{^if}}...{{/if}}` | ✅ |
-| Else chains `{{else if}}` | ✅ |
-| Each with block params `{{#each items as \|item index\|}}` | ✅ |
-| Partials `{{> partialName}}` | ✅ |
-| Partial blocks `{{#> partial}}...{{/partial}}` | ✅ |
-| Raw blocks `{{{{raw}}}}...{{{{/raw}}}}` | ✅ |
-| Subexpressions `(helper arg)` | ✅ |
-| Hash parameters `key=value` | ✅ |
-| Data variables `@index`, `@root` | ✅ |
-| Path expressions `foo.bar`, `../parent` | ✅ |
-| Comments `{{! comment }}` | ✅ |
-| Long comments `{{!-- comment --}}` | ✅ |
-| Whitespace control `{{~name~}}` | ✅ |
-| Escape sequences `\{{literal}}` | ✅ |
-| String literals `"string"` | ✅ |
-| Number literals `42`, `-3.14` | ✅ |
-| Boolean literals `true`, `false` | ✅ |
+| Feature                                                    | Status |
+| ---------------------------------------------------------- | ------ |
+| Mustache expressions `{{name}}`                            | ✅     |
+| Unescaped output `{{{name}}}`                              | ✅     |
+| Ampersand unescaped `{{&name}}`                            | ✅     |
+| Block helpers `{{#if}}...{{/if}}`                          | ✅     |
+| Inverse blocks `{{^if}}...{{/if}}`                         | ✅     |
+| Else chains `{{else if}}`                                  | ✅     |
+| Each with block params `{{#each items as \|item index\|}}` | ✅     |
+| Partials `{{> partialName}}`                               | ✅     |
+| Partial blocks `{{#> partial}}...{{/partial}}`             | ✅     |
+| Raw blocks `{{{{raw}}}}...{{{{/raw}}}}`                    | ✅     |
+| Subexpressions `(helper arg)`                              | ✅     |
+| Hash parameters `key=value`                                | ✅     |
+| Data variables `@index`, `@root`                           | ✅     |
+| Path expressions `foo.bar`, `../parent`                    | ✅     |
+| Comments `{{! comment }}`                                  | ✅     |
+| Long comments `{{!-- comment --}}`                         | ✅     |
+| Whitespace control `{{~name~}}`                            | ✅     |
+| Escape sequences `\{{literal}}`                            | ✅     |
+| String literals `"string"`                                 | ✅     |
+| Number literals `42`, `-3.14`                              | ✅     |
+| Boolean literals `true`, `false`                           | ✅     |
 
 ## Other Language Targets
 
