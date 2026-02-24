@@ -32,7 +32,7 @@ import java.util.Map;
  * <pre>{@code
  * String source = """
  *     ---
- *     model: gemini-1.5-pro
+ *     model: gemini-2.5-pro
  *     config:
  *       temperature: 0.7
  *     ---
@@ -40,7 +40,7 @@ import java.util.Map;
  *     """;
  * ParsedPrompt parsed = Parser.parseDocument(source);
  * // parsed.template() -> "Hello {{name}}!"
- * // parsed.model() -> "gemini-1.5-pro"
+ * // parsed.model() -> "gemini-2.5-pro"
  * }</pre>
  *
  * @param template The source of the template with metadata/frontmatter already removed.

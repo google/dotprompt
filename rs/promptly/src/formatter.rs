@@ -265,7 +265,7 @@ mod tests {
         let formatter = Formatter::default();
 
         let input = r"---
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 config:
   temperature: 0.7
 ---

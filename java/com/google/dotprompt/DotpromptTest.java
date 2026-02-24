@@ -49,7 +49,7 @@ public class DotpromptTest {
   public void constructor_initializesWithCustomModelConfigs() {
     Map<String, Object> modelConfigs =
         Map.of(
-            "gemini-1.5-pro", Map.of("temperature", 0.7), "gemini-2.0-flash", Map.of("top_p", 0.9));
+            "gemini-2.5-pro", Map.of("temperature", 0.7), "gemini-2.5-flash", Map.of("top_p", 0.9));
     DotpromptOptions options = DotpromptOptions.builder().setModelConfigs(modelConfigs).build();
     Dotprompt dp = new Dotprompt(options);
     assertThat(dp).isNotNull();
@@ -57,7 +57,7 @@ public class DotpromptTest {
 
   @Test
   public void constructor_initializesWithDefaultModel() {
-    DotpromptOptions options = DotpromptOptions.builder().setDefaultModel("gemini-1.5-pro").build();
+    DotpromptOptions options = DotpromptOptions.builder().setDefaultModel("gemini-2.5-pro").build();
     Dotprompt dp = new Dotprompt(options);
     assertThat(dp).isNotNull();
   }
@@ -300,17 +300,17 @@ public class DotpromptTest {
     Dotprompt dp = new Dotprompt(DotpromptOptions.builder().build());
 
     Map<String, Object> promptConfig = new HashMap<>();
-    promptConfig.put("model", "gemini-1.5-pro");
+    promptConfig.put("model", "gemini-2.5-pro");
     promptConfig.put("config", Map.of("temperature", 0.7));
     ParsedPrompt source = ParsedPrompt.fromMetadata("", PromptMetadata.fromConfig(promptConfig));
 
     Map<String, Object> additionalConfig = new HashMap<>();
-    additionalConfig.put("model", "gemini-2.0-flash");
+    additionalConfig.put("model", "gemini-2.5-flash");
     additionalConfig.put("config", Map.of("max_tokens", 2000));
 
     PromptMetadata result = dp.renderMetadata(source, additionalConfig).get();
 
-    assertThat(result.model()).isEqualTo("gemini-2.0-flash");
+    assertThat(result.model()).isEqualTo("gemini-2.5-flash");
     assertThat(result.config()).containsEntry("temperature", 0.7);
     assertThat(result.config()).containsEntry("max_tokens", 2000);
   }
@@ -348,12 +348,12 @@ public class DotpromptTest {
   public void renderMetadata_usesModelConfigs() throws Exception {
     DotpromptOptions options =
         DotpromptOptions.builder()
-            .addModelConfig("gemini-1.5-pro", Map.of("temperature", 0.7))
+            .addModelConfig("gemini-2.5-pro", Map.of("temperature", 0.7))
             .build();
     Dotprompt dp = new Dotprompt(options);
 
     Map<String, Object> config = new HashMap<>();
-    config.put("model", "gemini-1.5-pro");
+    config.put("model", "gemini-2.5-pro");
     ParsedPrompt source = ParsedPrompt.fromMetadata("content", PromptMetadata.fromConfig(config));
 
     PromptMetadata metadata = dp.renderMetadata(source).get();

@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-model: googleai/gemini-2.0-flash
+model: googleai/gemini-2.5-flash
 input:
   schema:
     userName: string
