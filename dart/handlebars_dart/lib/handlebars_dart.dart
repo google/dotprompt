@@ -33,7 +33,7 @@
 ///
 /// ```
 /// ┌─────────────────────────────────────────────────────────────────────────┐
-/// │                    HANDLEBARRZ COMPILATION PIPELINE                     │
+/// │                   HANDLEBARS_DART COMPILATION PIPELINE                  │
 /// └─────────────────────────────────────────────────────────────────────────┘
 ///
 ///   Template Source                   Context Data
@@ -123,7 +123,7 @@
 /// ## Example
 ///
 /// ```dart
-/// import 'package:handlebarrz/handlebarrz.dart';
+/// import 'package:handlebars_dart/handlebars_dart.dart';
 ///
 /// void main() {
 ///   final hb = Handlebars();

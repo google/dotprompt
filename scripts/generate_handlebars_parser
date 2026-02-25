@@ -23,7 +23,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 GRAMMAR_DIR="${REPO_ROOT}/spec/handlebars/antlr"
-OUTPUT_DIR="${REPO_ROOT}/dart/handlebarrz/lib/src/antlr"
+OUTPUT_DIR="${REPO_ROOT}/dart/handlebars_dart/lib/src/antlr"
 
 # Colors for output
 RED='\033[0;31m'
@@ -37,16 +37,16 @@ echo "=========================================="
 
 # Check for antlr4 command
 ANTLR_CMD=""
-if command -v antlr4 &> /dev/null; then
-    ANTLR_CMD="antlr4"
-elif command -v antlr &> /dev/null; then
-    ANTLR_CMD="antlr"
+if command -v antlr4 &>/dev/null; then
+  ANTLR_CMD="antlr4"
+elif command -v antlr &>/dev/null; then
+  ANTLR_CMD="antlr"
 elif [ -f "/opt/homebrew/Cellar/antlr/4.13.2/bin/antlr" ]; then
-    ANTLR_CMD="/opt/homebrew/Cellar/antlr/4.13.2/bin/antlr"
+  ANTLR_CMD="/opt/homebrew/Cellar/antlr/4.13.2/bin/antlr"
 else
-    echo -e "${RED}Error: ANTLR4 not found${NC}"
-    echo "Install with: brew install antlr"
-    exit 1
+  echo -e "${RED}Error: ANTLR4 not found${NC}"
+  echo "Install with: brew install antlr"
+  exit 1
 fi
 
 echo -e "${GREEN}Using ANTLR: ${ANTLR_CMD}${NC}"
@@ -63,7 +63,7 @@ ${ANTLR_CMD} -Dlanguage=Dart HandlebarsLexer.g4
 echo "Generating parser with visitor..."
 ${ANTLR_CMD} -Dlanguage=Dart -visitor -no-listener HandlebarsParser.g4
 
-# Move generated files to handlebarrz
+# Move generated files to handlebars_dart
 echo "Moving generated files to ${OUTPUT_DIR}..."
 mv -f HandlebarsLexer.dart "${OUTPUT_DIR}/"
 mv -f HandlebarsParser.dart "${OUTPUT_DIR}/"
@@ -76,12 +76,12 @@ rm -f HandlebarsParserListener.dart HandlebarsParserBaseListener.dart
 # Add header comment to generated files
 echo "Adding license headers..."
 for file in "${OUTPUT_DIR}"/*.dart; do
-    if [ -f "$file" ]; then
-        # Check if already has license
-        if ! grep -q "Copyright 2026 Google LLC" "$file"; then
-            # Prepend license header
-            TEMP_FILE=$(mktemp)
-            cat > "$TEMP_FILE" << 'EOF'
+  if [ -f "$file" ]; then
+    # Check if already has license
+    if ! grep -q "Copyright 2026 Google LLC" "$file"; then
+      # Prepend license header
+      TEMP_FILE=$(mktemp)
+      cat >"$TEMP_FILE" <<'EOF'
 // Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -103,10 +103,10 @@ for file in "${OUTPUT_DIR}"/*.dart; do
 // Source: spec/handlebars/antlr/Handlebars*.g4
 
 EOF
-            cat "$file" >> "$TEMP_FILE"
-            mv "$TEMP_FILE" "$file"
-        fi
+      cat "$file" >>"$TEMP_FILE"
+      mv "$TEMP_FILE" "$file"
     fi
+  fi
 done
 
 echo ""
@@ -116,6 +116,6 @@ echo "Generated files:"
 ls -la "${OUTPUT_DIR}"/*.dart
 echo ""
 echo "Next steps:"
-echo "1. Add 'antlr4: ^4.13.2' to dart/handlebarrz/pubspec.yaml"
+echo "1. Add 'antlr4: ^4.13.2' to dart/handlebars_dart/pubspec.yaml"
 echo "2. Create visitor to build AST nodes"
 echo "3. Run tests to verify parity with hand-written parser"

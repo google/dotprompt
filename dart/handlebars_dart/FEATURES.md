@@ -1,11 +1,12 @@
-# Handlebarrz Feature Implementation Status
+# handlebars_dart Feature Implementation Status
 
 This document tracks the implementation status of Handlebars features in the
-Dart `handlebarrz` library.
+Dart `handlebars_dart` library.
 
 ## Implemented Features ✅
 
 ### Core Features
+
 - **Variable Substitution**: `{{name}}`, `{{user.name}}`, `{{user/name}}`
 - **HTML Escaping**: Default HTML escaping with override via `{{{triple}}}` or `{{&ampersand}}`
 - **Comments**: Short `{{! comment }}` and long `{{!-- comment --}}`
@@ -16,6 +17,7 @@ Dart `handlebarrz` library.
   - Multi-level: `{{../../root}}` - access grandparent context
 
 ### Block Helpers
+
 - **if/unless**: Conditional rendering with `{{else}}` support
 - **each**: Iteration over arrays and objects with:
   - `@index` - current index
@@ -30,16 +32,19 @@ Dart `handlebarrz` library.
   - Object iteration: `{{#each obj as |value key|}}`
 
 ### Custom Helpers
+
 - Positional parameters
 - Hash (named) parameters
 - Block helpers with `fn()` and `inverse()` callbacks
 - `SafeString` for unescaped output
 
 ### Built-in Helpers
+
 - **lookup**: `{{lookup obj key}}` - Dynamic property access for maps and lists
 - **log**: `{{log value}}` - Logs value to console (for debugging)
 
 ### Partials
+
 - Named partials: `{{> partialName}}`
 - Partials with context: `{{> partialName contextExpr}}`
 - **Partial Blocks**: `{{#> partialName}}default content{{/partialName}}`
@@ -49,11 +54,13 @@ Dart `handlebarrz` library.
   - Use with `{{> name}}` after definition
 
 ### Subexpressions
+
 - Helper calls as parameters: `{{outer (inner arg)}}`
 - Nested subexpressions: `{{mult (add 2 3) 4}}`
 - Subexpressions with hash args
 
 ### Data Variables
+
 - `@root` - Access root context from nested blocks
 - `@root.path` - Navigate from root
 - `@index` - Loop index
@@ -61,6 +68,7 @@ Dart `handlebarrz` library.
 - `@key` - Object key in each
 
 ### Whitespace Control
+
 - **Lexer support**: `{{~` and `~}}` tokens recognized
 - **Parser support**: Strip markers tracked in AST nodes
 - **Runtime**: Whitespace stripping implemented for adjacent text nodes
@@ -68,12 +76,15 @@ Dart `handlebarrz` library.
 ## Partially Implemented 🚧
 
 ### Escape Sequences
+
 - `\{{` to output literal `{{` - code implemented but Bazel caching prevents testing
 
 ### Block-level Whitespace Control
+
 - Stripping at start/end of block content not yet implemented
 
 ### Raw Blocks
+
 - `{{{{raw}}}}...{{{{/raw}}}}` - Lexer/parser infrastructure added but parser
   tokenization loop needs refactoring to handle raw content properly
 
@@ -85,45 +96,49 @@ Dart `handlebarrz` library.
 ## Not Yet Implemented ❌
 
 ### Modes
+
 - **String Params Mode**: Pass paths as strings to helpers
 - **Track IDs**: Source mapping for paths
 
 ### Advanced Features
+
 - **Decorators**: `{{*decorator}}` meta-programming feature
 
 ## Test Coverage
 
 **71 tests passing** (2 skipped for investigation)
 
-| Category | Tests |
-|----------|-------|
-| Variable Substitution | 6 |
-| HTML Escaping | 2 |
-| Helpers | 4 |
-| Block Helpers | 11 |
-| Custom Block Helpers | 2 |
-| Partials | 2 |
-| Comments | 2 |
-| Dotprompt Helpers | 5 |
-| Escape Sequences | 3 |
-| Ampersand Unescaped | 1 |
-| Whitespace Control | 5 |
-| Subexpressions | 3 |
-| Data Variables | 2 |
-| Parent Context | 4 |
-| Built-in Helpers | 5 |
-| Block Params | 3 |
-| Partial Blocks | 2 |
-| Literals | 5 |
-| Edge Cases | 6 |
+| Category              | Tests |
+| --------------------- | ----- |
+| Variable Substitution | 6     |
+| HTML Escaping         | 2     |
+| Helpers               | 4     |
+| Block Helpers         | 11    |
+| Custom Block Helpers  | 2     |
+| Partials              | 2     |
+| Comments              | 2     |
+| Dotprompt Helpers     | 5     |
+| Escape Sequences      | 3     |
+| Ampersand Unescaped   | 1     |
+| Whitespace Control    | 5     |
+| Subexpressions        | 3     |
+| Data Variables        | 2     |
+| Parent Context        | 4     |
+| Built-in Helpers      | 5     |
+| Block Params          | 3     |
+| Partial Blocks        | 2     |
+| Literals              | 5     |
+| Edge Cases            | 6     |
 
 ## Parser Implementation
 
 ### Hand-written Parser (Current Default)
+
 The library includes a hand-written recursive descent parser optimized for
 performance and ease of debugging. This is the current default parser.
 
 ### ANTLR4 Parser (Generated)
+
 An ANTLR4-based parser is available, generated from the official Handlebars.js
 grammar. This parser provides:
 
@@ -142,7 +157,7 @@ Generated files are in `lib/src/antlr/`. To regenerate:
 The `ParserFacade` class provides a unified interface for both parsers:
 
 ```dart
-import 'package:handlebarrz/handlebarrz.dart';
+import 'package:handlebars_dart/handlebars_dart.dart';
 
 // Parse with default (hand-written) parser
 final ast = ParserFacade.parse('Hello {{name}}!');
@@ -163,15 +178,15 @@ ParserFacade.defaultParser = ParserType.antlr;
 
 ### Parser Feature Comparison
 
-| Feature | Hand-written | ANTLR4 |
-|---------|------------- |--------|
-| Speed | Faster | Slower |
-| Spec compliance | Manual | Automatic from grammar |
-| Error messages | Custom | Generated |
-| Maintenance | Manual | Grammar-based |
-| `{{else}}` blocks | ✅ Full | ✅ Full |
-| `{{else if}}` chains | ✅ Full | ✅ Full |
-| Nested blocks | ✅ Full | ✅ Full |
+| Feature              | Hand-written | ANTLR4                 |
+| -------------------- | ------------ | ---------------------- |
+| Speed                | Faster       | Slower                 |
+| Spec compliance      | Manual       | Automatic from grammar |
+| Error messages       | Custom       | Generated              |
+| Maintenance          | Manual       | Grammar-based          |
+| `{{else}}` blocks    | ✅ Full      | ✅ Full                |
+| `{{else if}}` chains | ✅ Full      | ✅ Full                |
+| Nested blocks        | ✅ Full      | ✅ Full                |
 
 ## Known Limitations
 

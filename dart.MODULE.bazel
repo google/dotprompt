@@ -42,7 +42,7 @@ dart_deps.from_file(
     rules_dart_label = "@rules_dart//:defs.bzl",
 )
 dart_deps.from_file(
-    lock_file = "//dart/handlebarrz:pubspec.lock",
+    lock_file = "//dart/handlebars_dart:pubspec.lock",
     rules_dart_label = "@rules_dart//:defs.bzl",
 )
 use_repo(

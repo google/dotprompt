@@ -1,4 +1,4 @@
-# Handlebarrz
+# handlebars_dart
 
 A pure Dart implementation of the [Handlebars](https://handlebarsjs.com/) template engine.
 
@@ -19,11 +19,11 @@ A pure Dart implementation of the [Handlebars](https://handlebarsjs.com/) templa
 
 ## Installation
 
-Add `handlebarrz` to your `pubspec.yaml`:
+Add `handlebars_dart` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  handlebarrz: ^0.0.1
+  handlebars_dart: ^0.0.1
 ```
 
 ## Usage
@@ -31,7 +31,7 @@ dependencies:
 ### Basic Variable Substitution
 
 ```dart
-import 'package:handlebarrz/handlebarrz.dart';
+import 'package:handlebars_dart/handlebars_dart.dart';
 
 void main() {
   final hb = Handlebars();
@@ -127,7 +127,7 @@ hb.registerHelper('bold', (args, options) {
 });
 ```
 
-## Why Handlebarrz?
+## Why handlebars_dart?
 
 - **Pure Dart**: No JavaScript dependencies or FFI bindings
 - **Handlebars compatible**: Follows the Handlebars.js specification

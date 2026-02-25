@@ -14,12 +14,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name: handlebarrz
+name: handlebars_dart
 description: A pure Dart implementation of Handlebars template engine.
 version: 0.0.1
 license: Apache-2.0
 repository: https://github.com/google/dotprompt
-homepage: https://github.com/google/dotprompt/tree/main/dart/handlebarrz
+homepage: https://github.com/google/dotprompt/tree/main/dart/handlebars_dart
 
 environment:
   sdk: ^3.7.0

@@ -201,10 +201,10 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.2"
-  handlebarrz:
+  handlebars_dart:
     dependency: "direct main"
     description:
-      path: "../handlebarrz"
+      path: "../handlebars_dart"
       relative: true
     source: path
     version: "0.0.1"
