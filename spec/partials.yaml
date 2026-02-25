@@ -34,6 +34,22 @@
             content:
               [{ text: "Hello from a partial! This is the main template.\n" }]
 
+# Tests partial inclusion with a dotted name (e.g., file.variant).
+- name: dotted_partial_name
+  template: |
+    {{> greeting.in_french}} This is the main template.
+  partials:
+    greeting.in_french: "Bonjour d'un partial!"
+  tests:
+    - desc: renders a partial with a dotted name
+      data:
+        input: {}
+      expect:
+        messages:
+          - role: user
+            content:
+              [{ text: "Bonjour d'un partial! This is the main template.\n" }]
+
 # Tests partial rendering with context variables passed from the main template.
 - name: partial_with_context
   template: |
@@ -101,24 +117,6 @@
         messages:
           - role: user
             content: [{ text: "Hello, World!\n" }]
-
-# Tests that regular `#` comments in partials are NOT stripped and appear in
-# the output (this is intentional - use Handlebars comments for license headers).
-# Tests partial inclusion with a dotted name (e.g., topic.subtopic).
-- name: dotted_partial_name
-  template: |
-    {{> greeting.in_french}} This is the main template.
-  partials:
-    greeting.in_french: "Bonjour d'un partial!"
-  tests:
-    - desc: renders a partial with a dotted name
-      data:
-        input: {}
-      expect:
-        messages:
-          - role: user
-            content:
-              [{ text: "Bonjour d'un partial! This is the main template.\n" }]
 
 # Tests that regular `#` comments in partials are NOT stripped and appear in
 # the output (this is intentional - use Handlebars comments for license headers).
