@@ -38,9 +38,9 @@
 # underscores, hyphens, and dots (e.g., topic-2.sub_topic).
 - name: partial_name_with_full_regex
   template: |
-    {{> topic-2.sub_topic}} This is the main template.
+    {{> Topic-2.sub_topic}} This is the main template.
   partials:
-    topic-2.sub_topic: "Hello from a complex-named partial!"
+    Topic-2.sub_topic: "Hello from a complex-named partial!"
   tests:
     - desc: renders a partial whose name contains letters, digits, dots, underscores, and hyphens
       data:
