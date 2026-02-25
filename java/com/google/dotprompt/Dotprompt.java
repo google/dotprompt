@@ -674,7 +674,7 @@ public class Dotprompt {
   private Set<String> identifyPartials(String template) {
     Set<String> partials = new HashSet<>();
     // Match {{> partialName}} or {{> partialName context}}
-    Pattern pattern = Pattern.compile("\\{\\{>\\s*([a-zA-Z0-9_-]+)");
+    Pattern pattern = Pattern.compile("\\{\\{>\\s*([a-zA-Z0-9_.-]+)");
     Matcher matcher = pattern.matcher(template);
     while (matcher.find()) {
       partials.add(matcher.group(1));

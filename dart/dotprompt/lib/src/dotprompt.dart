@@ -200,7 +200,7 @@ class Dotprompt {
 
   /// Resolves partial references in a template.
   Future<void> _resolvePartials(String template) async {
-    final partialPattern = RegExp(r"\{\{>\s*([a-zA-Z0-9_-]+)");
+    final partialPattern = RegExp(r"\{\{>\s*([a-zA-Z0-9_.-]+)");
     final matches = partialPattern.allMatches(template);
 
     for (final match in matches) {
