@@ -41,7 +41,7 @@ license = "Apache-2.0"
 name = "smoke"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "0.1.5"
+version = "0.1.6"
 
 [tool.pytest]
 python_files = ["**/*_test.py"]
