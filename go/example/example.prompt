@@ -13,10 +13,10 @@ input:
 output:
   format: "text"
 ---
-<<<dotprompt:role:user>>>
+{{role "user"}}
 Please summarize the following text.
 
 {{text}}
 
-<<<dotprompt:role:model>>>
+{{role "model"}}
 Yes, I understand. I will summarize it.
