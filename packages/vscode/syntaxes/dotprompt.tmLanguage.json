@@ -10,9 +10,6 @@
       "include": "#frontmatter"
     },
     {
-      "include": "#markers"
-    },
-    {
       "include": "#handlebars"
     },
     {
@@ -49,26 +46,6 @@
       "patterns": [
         {
           "include": "source.yaml"
-        }
-      ]
-    },
-    "markers": {
-      "patterns": [
-        {
-          "match": "(<<<dotprompt:role:[a-z]+>>>)",
-          "name": "keyword.control.directive.role.dotprompt"
-        },
-        {
-          "match": "(<<<dotprompt:history>>>)",
-          "name": "keyword.control.directive.history.dotprompt"
-        },
-        {
-          "match": "(<<<dotprompt:media:.*?>>>)",
-          "name": "keyword.control.directive.media.dotprompt"
-        },
-        {
-          "match": "(<<<dotprompt:section.*?>>>)",
-          "name": "keyword.control.directive.section.dotprompt"
         }
       ]
     },
