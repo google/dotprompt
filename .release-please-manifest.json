@@ -4,7 +4,7 @@
   "python/handlebarrz": "0.1.8",
   "go": "0.2.0",
   "java": "0.1.0",
-  "dart/dotprompt": "0.0.1",
+  "dart/dotprompt": "0.0.2",
   "bazel/rules_dart": "0.1.0",
   "bazel/rules_flutter": "0.1.0",
   "rs": "0.1.0",
