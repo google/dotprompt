@@ -4,7 +4,7 @@ Language support for Dotprompt (`.prompt`) files in JetBrains IDEs (IntelliJ IDE
 
 ## Features
 
-- **Syntax Highlighting**: YAML frontmatter, Handlebars templates, Dotprompt markers
+- **Syntax Highlighting**: YAML frontmatter, Handlebars templates
 - **LSP Integration**: Real-time diagnostics, formatting, and hover documentation (via LSP4IJ)
 - **Live Templates**: Type `role`, `if`, `each`, `json` + Tab for quick insertions
 - **Code Comments**: Block comment support using `{{! ... }}`
@@ -30,6 +30,7 @@ Language support for Dotprompt (`.prompt`) files in JetBrains IDEs (IntelliJ IDE
 1. **Prerequisites**: Ensure you have Gradle and JDK 17+ installed
 
 2. **Build the plugin**:
+
    ```bash
    cd packages/jetbrains
    gradle buildPlugin
@@ -49,8 +50,8 @@ bazel build //packages/jetbrains:dotprompt-intellij
 
 This produces `bazel-bin/packages/jetbrains/dotprompt-intellij.jar`.
 
-> **Note**: For full plugin packaging (with plugin.xml, icons, LSP4IJ integration), 
-> use the Gradle build. The Bazel target is useful for incremental compilation 
+> **Note**: For full plugin packaging (with plugin.xml, icons, LSP4IJ integration),
+> use the Gradle build. The Bazel target is useful for incremental compilation
 > during development and IDE integration.
 
 ### Install promptly for LSP Features
@@ -78,35 +79,35 @@ gradle test
 
 Type these abbreviations and press Tab to expand:
 
-| Abbreviation | Expands To |
-|--------------|------------|
-| `role` | Role block with customizable role name |
-| `system` | System role block |
-| `user` | User role block |
-| `model` | Model role block |
-| `if` | Handlebars if block |
-| `ifelse` | Handlebars if-else block |
-| `unless` | Handlebars unless block |
-| `each` | Handlebars each loop |
-| `with` | Handlebars with block |
-| `json` | JSON serialization helper |
-| `media` | Media embedding helper |
-| `history` | History insertion |
-| `section` | Named section block |
-| `partial` | Partial template inclusion |
-| `comment` | Handlebars comment |
-| `prompt` | Complete prompt template |
-| `frontmatter` | YAML frontmatter |
+| Abbreviation  | Expands To                             |
+| ------------- | -------------------------------------- |
+| `role`        | Role block with customizable role name |
+| `system`      | System role block                      |
+| `user`        | User role block                        |
+| `model`       | Model role block                       |
+| `if`          | Handlebars if block                    |
+| `ifelse`      | Handlebars if-else block               |
+| `unless`      | Handlebars unless block                |
+| `each`        | Handlebars each loop                   |
+| `with`        | Handlebars with block                  |
+| `json`        | JSON serialization helper              |
+| `media`       | Media embedding helper                 |
+| `history`     | History insertion                      |
+| `section`     | Named section block                    |
+| `partial`     | Partial template inclusion             |
+| `comment`     | Handlebars comment                     |
+| `prompt`      | Complete prompt template               |
+| `frontmatter` | YAML frontmatter                       |
 
 ## LSP Features
 
 When `promptly` is installed and in your PATH, you get:
 
-| Feature | Description |
-|---------|-------------|
-| Diagnostics | Real-time YAML and Handlebars error detection |
-| Formatting | Format with `Code` → `Reformat Code` |
-| Hover | Documentation for helpers and frontmatter fields |
+| Feature     | Description                                      |
+| ----------- | ------------------------------------------------ |
+| Diagnostics | Real-time YAML and Handlebars error detection    |
+| Formatting  | Format with `Code` → `Reformat Code`             |
+| Hover       | Documentation for helpers and frontmatter fields |
 
 ## Configuration
 
@@ -121,6 +122,7 @@ Go to **Settings/Preferences** → **Languages & Frameworks** → **Dotprompt**:
 ### Auto-Detection
 
 The plugin automatically finds `promptly` in:
+
 1. User-configured path (Settings)
 2. System PATH
 3. `~/.cargo/bin/promptly`
