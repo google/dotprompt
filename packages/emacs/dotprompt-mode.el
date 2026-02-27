@@ -69,9 +69,6 @@
    ;; YAML numeric values
    '(":\\s-+\\([0-9]+\\.?[0-9]*\\)$" 1 font-lock-constant-face)
    
-   ;; Dotprompt markers <<<dotprompt:role:system>>> etc.
-   '("<<<dotprompt:[^>]+>>>" . font-lock-preprocessor-face)
-   
    ;; Handlebars block comments {{!-- ... --}}
    '("{{!--\\(.\\|\n\\)*?--}}" . font-lock-comment-face)
    
