@@ -63,7 +63,6 @@ module.exports = grammar({
         $.handlebars_block,
         $.handlebars_expression,
         $.handlebars_comment,
-        $.dotprompt_marker,
         $.text
       ),
 
@@ -135,9 +134,6 @@ module.exports = grammar({
 
     boolean: ($) => choice('true', 'false'),
 
-    dotprompt_marker: ($) =>
-      seq('<<<dotprompt:', alias(/[^>]+/, $.marker_content), '>>>'),
-
-    text: ($) => /[^{<#]+|\{|<|#/,
+    text: ($) => /[^{#]+|\{|#/,
   },
 });
