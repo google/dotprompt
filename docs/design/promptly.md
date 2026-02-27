@@ -6587,7 +6587,6 @@ packages/chrome/
 | Handlebars braces | Orange | `{{`, `}}` |
 | Handlebars helper | Purple | `#if`, `#each`, `#role` |
 | Variable | Cyan | `{{ name }}` |
-| Dotprompt marker | Magenta | `<<<dotprompt:role>>>` |
 | Comment | Gray italic | `{{! comment }}` |
 
 | Component | Status | Location |
