@@ -6,10 +6,10 @@ input:
       userName: string
       isActive: boolean
 ---
-<<<dotprompt:role:system>>>
+{{role "system"}}
 You are a helper.
 
-<<<dotprompt:role:user>>>
+{{role "user"}}
 Hello {{userName}}!
 
 {{! 

@@ -16,10 +16,10 @@ input:
   The `{{> partialName }}` syntax should be distinct from standard tags.
 }}
 
-<<<dotprompt:role:system>>>
+{{role "system"}}
 You are a helpful assistant.
 
-<<<dotprompt:role:user>>>
+{{role "user"}}
 Hello {{userName}}.
 
 Here are your items:
