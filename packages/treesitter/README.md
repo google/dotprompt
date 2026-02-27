@@ -6,7 +6,6 @@ A [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammar for Dotpromp
 
 - Parses YAML frontmatter
 - Parses Handlebars template expressions
-- Parses Dotprompt-specific syntax (markers, helpers)
 - Supports license header comments
 
 ## Installation
@@ -147,9 +146,9 @@ document
     │   ├── block_expression
     │   ├── else_expression
     │   └── close_block
-    ├── handlebars_comment ({{! ... }})
-    └── dotprompt_marker (<<<dotprompt:...>>>)
-```
+    └── handlebars_comment ({{! ... }})
+
+    ## Queries
 
 ## Queries
 
@@ -159,7 +158,7 @@ Provides syntax highlighting for:
 - YAML frontmatter
 - Handlebars expressions and blocks
 - Dotprompt-specific helpers
-- Comments and markers
+- Comments
 
 ## License
 
