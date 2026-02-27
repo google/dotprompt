@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.9](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.8...dotpromptz-handlebars-0.1.9) (2026-02-27)
+
+
+### Bug Fixes
+
+* add Apache-2.0 license metadata to all packages ([#528](https://github.com/google/dotprompt/issues/528)) ([c76c663](https://github.com/google/dotprompt/commit/c76c6639fb77b39ef5b45a1a8dbebacc4c9bd422))
+
 ## [0.1.8](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.7...dotpromptz-handlebars-0.1.8) (2026-01-30)
 
 
