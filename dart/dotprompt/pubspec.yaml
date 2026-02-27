@@ -1,61 +1,29 @@
-# Copyright 2026 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# SPDX-License-Identifier: Apache-2.0
-
 name: dotprompt
 description: >-
   Dart implementation of Dotprompt, an executable prompt template file format
-  for Generative AI. This library provides parsing, rendering, and management
-  of .prompt files with YAML frontmatter and Handlebars templating.
-version: 0.0.1
+  for Generative AI. This library provides parsing, rendering, and management of
+  .prompt files with YAML frontmatter and Handlebars templating.
+version: 0.0.2
 license: Apache-2.0
 homepage: https://github.com/google/dotprompt
 repository: https://github.com/google/dotprompt
 documentation: https://google.github.io/dotprompt/
-
 environment:
   sdk: ^3.5.0
-
 dependencies:
-  # YAML parsing for frontmatter
   collection: ^1.18.0
-  # Crypto for hashing
   crypto: ^3.0.6
-  # Handlebars templating (our pure Dart implementation)
   handlebars_dart: ^0.0.1
-  # JSON schema support
   json_schema: ^5.2.2
-  # Meta annotations
   meta: ^1.15.0
-  # Path utilities
   path: ^1.9.0
-  # YAML parsing for frontmatter
   yaml: ^3.1.2
-
-# Local development overrides (not included in published package).
 dependency_overrides:
   handlebars_dart:
     path: ../handlebars_dart
-
 dev_dependencies:
   build_runner: ^2.4.13
-  # Code coverage
   coverage: ^1.11.0
-  # Linting rules
   lints: ^5.1.1
-  # Mocking
   mockito: ^5.4.4
-  # Testing framework
   test: ^1.25.8
