@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.6](https://github.com/google/dotprompt/compare/dotpromptz-0.1.5...dotpromptz-0.1.6) (2026-02-27)
+
+
+### Features
+
+* **python:** add output schema validation and JSON Schema to Picoschema reverse conversion ([#540](https://github.com/google/dotprompt/issues/540)) ([5c0ea0a](https://github.com/google/dotprompt/commit/5c0ea0a3545d89165b2bbf4c422059ef35df07bb))
+
+
+### Bug Fixes
+
+* add Apache-2.0 license metadata to all packages ([#528](https://github.com/google/dotprompt/issues/528)) ([c76c663](https://github.com/google/dotprompt/commit/c76c6639fb77b39ef5b45a1a8dbebacc4c9bd422))
+* **docs:** update deprecated model references to Gemini 2.5/3 ([#541](https://github.com/google/dotprompt/issues/541)) ([fce691c](https://github.com/google/dotprompt/commit/fce691c831abddfcfc8bcdeee79d564c141298d0))
+
 ## [0.1.5](https://github.com/google/dotprompt/compare/dotpromptz-0.1.4...dotpromptz-0.1.5) (2026-01-30)
 
 
