@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/google/dotprompt/compare/rules_flutter-0.1.0...rules_flutter-0.1.1) (2026-02-27)
+
+
+### Features
+
+* **dart:** add pub.dev publishing support ([#527](https://github.com/google/dotprompt/issues/527)) ([d70752b](https://github.com/google/dotprompt/commit/d70752b9dfbb86063f0b5cf0e4158d8cdd14bba7))
+* **rules_dart,rules_flutter:** enhance Bazel rules with workers and linting fixes ([#513](https://github.com/google/dotprompt/issues/513)) ([5369b40](https://github.com/google/dotprompt/commit/5369b4046eea9805f7dbcf026434035d55e2b095))
+
 ## [0.1.0](https://github.com/google/dotprompt/releases/tag/rules_flutter-0.1.0) (2026-02-01)
 
 ### Features
