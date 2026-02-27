@@ -5,6 +5,22 @@ All notable changes to the Dotprompt VS Code extension will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.2](https://github.com/google/dotprompt/compare/dotprompt-vscode-0.0.1...dotprompt-vscode-0.0.2) (2026-02-27)
+
+
+### Features
+
+* **ide:** complete Phase 2 IDE integrations for all major editors ([#439](https://github.com/google/dotprompt/issues/439)) ([95eeb73](https://github.com/google/dotprompt/commit/95eeb73974ffa95f22c7bc4cc31785f4a95ef168))
+* **packages/emacs:** add support for emacs major mode and vim syntax for dotprompt ([#409](https://github.com/google/dotprompt/issues/409)) ([371d3b4](https://github.com/google/dotprompt/commit/371d3b4b9b583afb7234aecd05cc459918ff2792))
+* **packages/vscode:** add initial implementation of vscode extension ([#407](https://github.com/google/dotprompt/issues/407)) ([13917de](https://github.com/google/dotprompt/commit/13917de802145e17f865c61be04e0407f3cc60a0))
+* **promptly:** add lsp, fmt, and check implementations ([#438](https://github.com/google/dotprompt/issues/438)) ([27fd3d4](https://github.com/google/dotprompt/commit/27fd3d4c7aa96e09c46cb54546da1783be2f6a6e))
+
+
+### Bug Fixes
+
+* **docs:** update deprecated model references to Gemini 2.5/3 ([#541](https://github.com/google/dotprompt/issues/541)) ([fce691c](https://github.com/google/dotprompt/commit/fce691c831abddfcfc8bcdeee79d564c141298d0))
+* **vscode:** bundle vscode-languageclient and improve extension installation ([#445](https://github.com/google/dotprompt/issues/445)) ([6186674](https://github.com/google/dotprompt/commit/6186674fdb43691ba9f9abe45dc266ca85c6a424))
+
 ## [0.2.0] - 2026-01-24
 
 ### Added
