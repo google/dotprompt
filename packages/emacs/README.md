@@ -4,7 +4,7 @@ Provides a major mode for editing Dotprompt (`.prompt`) files with syntax highli
 
 ## Features
 
-- **Syntax Highlighting**: Handlebars helpers, partials, Dotprompt markers
+- **Syntax Highlighting**: Handlebars helpers, partials
 - **LSP Integration**: Diagnostics, formatting, hover via eglot or lsp-mode
 - **Format Buffer**: `C-c C-f` or `M-x dotprompt-format-buffer`
 - **Format on Save**: Optional automatic formatting
@@ -109,10 +109,10 @@ lsp-mode integration is also automatic:
 
 ## Configuration
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `dotprompt-promptly-path` | `"promptly"` | Path to the promptly executable |
-| `dotprompt-format-on-save` | `nil` | Format buffer before saving |
+| Variable                   | Default      | Description                     |
+| -------------------------- | ------------ | ------------------------------- |
+| `dotprompt-promptly-path`  | `"promptly"` | Path to the promptly executable |
+| `dotprompt-format-on-save` | `nil`        | Format buffer before saving     |
 
 ### Custom promptly path
 
@@ -128,20 +128,20 @@ lsp-mode integration is also automatic:
 
 ## Keybindings
 
-| Key | Command | Description |
-|-----|---------|-------------|
+| Key       | Command                   | Description               |
+| --------- | ------------------------- | ------------------------- |
 | `C-c C-f` | `dotprompt-format-buffer` | Format the current buffer |
 
 ## LSP Features
 
 With LSP enabled (eglot or lsp-mode), you get:
 
-| Feature | Description |
-|---------|-------------|
-| **Diagnostics** | Real-time error detection for YAML and Handlebars syntax |
-| **Formatting** | Format with `M-x eglot-format-buffer` or `M-x lsp-format-buffer` |
-| **Hover** | Documentation with `M-x eldoc` or mouse hover |
-| **Go to Definition** | Jump to partial files with `M-.` |
+| Feature              | Description                                                      |
+| -------------------- | ---------------------------------------------------------------- |
+| **Diagnostics**      | Real-time error detection for YAML and Handlebars syntax         |
+| **Formatting**       | Format with `M-x eglot-format-buffer` or `M-x lsp-format-buffer` |
+| **Hover**            | Documentation with `M-x eldoc` or mouse hover                    |
+| **Go to Definition** | Jump to partial files with `M-.`                                 |
 
 ## Commands
 
