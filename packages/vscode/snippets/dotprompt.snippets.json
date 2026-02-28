@@ -133,13 +133,6 @@
     ],
     "description": "Insert unlessEquals helper"
   },
-  "Dotprompt Marker": {
-    "prefix": ["marker", "<<<"],
-    "body": [
-      "<<<dotprompt:${1|role:system,role:user,role:model,section:preamble|}>>>"
-    ],
-    "description": "Insert a Dotprompt marker"
-  },
   "Complete Prompt Template": {
     "prefix": ["prompt", "newprompt"],
     "body": [
