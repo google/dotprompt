@@ -552,7 +552,7 @@ impl Dotprompt {
     pub fn identify_partials(&self, template: &str) -> std::collections::HashSet<String> {
         let mut partials = std::collections::HashSet::new();
         // Simple regex-based partial detection: {{> partialName}}
-        let re = regex::Regex::new(r"\{\{>\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}")
+        let re = regex::Regex::new(r"\{\{>\s*([a-zA-Z_][a-zA-Z0-9_.]*)\s*\}\}")
             .expect("internal regex pattern should compile");
         for cap in re.captures_iter(template) {
             if let Some(name) = cap.get(1) {
