@@ -79,9 +79,6 @@ export const monarchLanguage: monaco.languages.IMonarchLanguage = {
       // Frontmatter delimiter
       [/^---\s*$/, { token: 'delimiter.frontmatter', next: '@frontmatter' }],
 
-      // Dotprompt markers <<<dotprompt:...>>>
-      [/<<<dotprompt:[^>]+>>>/, 'keyword.marker'],
-
       // Include template tokens
       { include: '@template' },
     ],

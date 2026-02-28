@@ -4,7 +4,7 @@ Monaco Editor language support for Dotprompt (`.prompt`) files.
 
 ## Features
 
-- **Syntax Highlighting**: YAML frontmatter, Handlebars templates, Dotprompt markers
+- **Syntax Highlighting**: YAML frontmatter, Handlebars templates
 - **Autocompletion**: Helpers, frontmatter fields, model names, role snippets
 - **Hover Documentation**: Helper and frontmatter field documentation
 - **Bracket Matching**: Auto-closing for `{{ }}`, `{{# }}`, etc.
@@ -182,11 +182,11 @@ Token types available for theming:
 | `delimiter.frontmatter` | `---` delimiters |
 | `delimiter.handlebars` | `{{` and `}}` |
 | `delimiter.handlebars.block` | `{{#` and `{{/` |
-| `keyword.handlebars` | if, each, with, etc. |
-| `keyword.dotprompt` | role, json, history, etc. |
-| `keyword.yaml` | YAML frontmatter keys |
-| `keyword.marker` | `<<<dotprompt:...>>>` |
-| `variable` | Template variables |
+| keyword.handlebars | if, each, with, etc. |
+| keyword.dotprompt | role, json, history, etc. |
+| keyword.yaml | YAML frontmatter keys |
+| variable | Template variables |
+
 | `variable.partial` | Partial names |
 | `variable.special` | @index, @first, etc. |
 | `comment.block` | `{{! comment }}` |
