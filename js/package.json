@@ -30,7 +30,7 @@
     "@types/node": "25.0.10",
     "@typescript/native-preview": "7.0.0-dev.20260122.3",
     "@vitest/coverage-v8": "^4.0.18",
-    "tsup": "^8.5.1",
+    "tsup": "^8.3.5",
     "tsx": "^4.21.0",
     "typedoc": "^0.28.16",
     "typedoc-plugin-markdown": "^4.9.0",
