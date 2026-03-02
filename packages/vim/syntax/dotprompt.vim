@@ -24,7 +24,6 @@ if exists("b:current_syntax")
 endif
 
 " Define Dotprompt specifics
-syntax match dotpromptMarker "<<<dotprompt:[^>]\+>>>"
 syntax match dotpromptPartial "{{>.\\+}}"
 
 " License header comments (lines starting with #)
@@ -45,7 +44,6 @@ syntax match dotpromptNumber "\d\+" contained
 syntax keyword dotpromptBoolean contained true false null undefined
 
 " Highlight links
-highlight default link dotpromptMarker PreProc
 highlight default link dotpromptPartial Structure
 highlight default link dotpromptTag Delimiter
 highlight default link dotpromptKeyword Keyword

@@ -65,8 +65,7 @@ const DOTPROMPT_DOCS: Record<
   role: {
     description:
       'Defines a message with a specific role. Valid roles are `system`, `user`, and `model`.',
-    example:
-      '{{#role "system"}}\nYou are a helpful assistant.\n{{/role}}\n\n{{#role "user"}}\nHello!\n{{/role}}',
+    example: '{{role "system"}}\nYou are a helpful assistant.\n\n{{role "user"}}\nHello!',
   },
   json: {
     description: 'Serializes a value to JSON format for structured output.',
@@ -80,7 +79,7 @@ const DOTPROMPT_DOCS: Record<
   section: {
     description:
       'Defines a named section that can be extracted or referenced elsewhere.',
-    example: '{{#section "instructions"}}\nFollow these rules...\n{{/section}}',
+    example: '{{section "instructions"}}\nFollow these rules...',
   },
   media: {
     description:
