@@ -60,3 +60,4 @@ perf        = "deny"
 style       = "deny"
 suspicious  = "deny"
 unwrap_used = "deny"
+
