@@ -228,8 +228,10 @@ class Handlebars {
       }
     } while (compiledCount > 0);
 
-    // If there are nested partials, recompile all partials with the complete set
-    // to ensure they all have access to each other
+    // Recompile all partials with the complete set so each one's snapshot
+    // of the partials map includes all others. This is necessary because
+    // Template's constructor copies the partials map (Map.from), so partials
+    // compiled before others won't see later additions without recompilation.
     if (_partialSources.length > 1) {
       for (final entry in _partialSources.entries) {
         final template = Template.compile(

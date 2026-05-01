@@ -695,7 +695,7 @@ class Lexer {
 
   bool _lookingAt(String pattern) {
     if (_pos + pattern.length > source.length) return false;
-    return source.substring(_pos, _pos + pattern.length) == pattern;
+    return source.startsWith(pattern, _pos);
   }
 
   void _advance([int count = 1]) {

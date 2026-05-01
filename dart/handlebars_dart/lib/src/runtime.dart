@@ -311,7 +311,7 @@ class Runtime {
         PartialBlockNode() => _renderPartialBlock(node, context, data, contextStack),
         InlinePartialNode() => _registerInlinePartial(node, context, data, contextStack),
         ProgramNode() => _renderProgram(node, context, data, contextStack),
-        _ => "",
+        _ => throw StateError("Unexpected AST node type: ${node.runtimeType}"),
       };
 
   /// Registers an inline partial for later use.
