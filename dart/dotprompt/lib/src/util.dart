@@ -177,7 +177,9 @@ void validatePromptName(String name) {
 String? _tryDecodeUri(String input) {
   try {
     return Uri.decodeComponent(input);
+    // ignore: avoid_catching_errors
   } on ArgumentError {
+    // Uri.decodeComponent throws ArgumentError for invalid input
     return null;
   } on FormatException {
     return null;

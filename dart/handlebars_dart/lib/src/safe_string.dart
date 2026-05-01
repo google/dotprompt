@@ -19,6 +19,8 @@
 /// When a helper returns a [SafeString], its content will be included
 /// in the output without HTML entity escaping.
 ///
+/// This class is immutable by design (const constructor, final field).
+///
 /// ## Example
 ///
 /// ```dart
@@ -38,9 +40,10 @@ class SafeString {
   String toString() => value;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) || (other is SafeString && other.value == value);
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) => identical(this, other) || (other is SafeString && other.value == value);
 
   @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
   int get hashCode => value.hashCode;
 }

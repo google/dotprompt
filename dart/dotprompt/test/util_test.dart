@@ -163,7 +163,7 @@ void main() {
         );
       });
 
-      test(r"rejects UNC path with backslashes", () {
+      test("rejects UNC path with backslashes", () {
         expect(
           () => validatePromptName(r"\\server\share"),
           throwsA(isA<ArgumentError>()),
