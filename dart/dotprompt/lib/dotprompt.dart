@@ -65,3 +65,4 @@ export "src/parse.dart";
 export "src/picoschema.dart";
 export "src/store.dart";
 export "src/types.dart";
+export "src/util.dart";
