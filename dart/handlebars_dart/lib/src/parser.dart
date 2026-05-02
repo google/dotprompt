@@ -358,7 +358,6 @@ class Parser {
 
   ProgramNode _parseProgram({String? endBlock}) {
     _tokens = [];
-    // final lexer = Lexer(source);
 
     // First pass: get all tokens including text
     var pos = 0;

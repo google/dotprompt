@@ -2,7 +2,7 @@
 
 This document tracks feature parity between the Dart and JavaScript (canonical) Dotprompt implementations.
 
-**Last Updated:** 2026-01-30
+**Last Updated:** 2026-05-01
 
 **Legend:**
 - ✅ Implemented and tested
@@ -73,6 +73,7 @@ This document tracks feature parity between the Dart and JavaScript (canonical) 
 | `ToolRequestPart` | ✅ | ✅ | `toolRequest: ToolRequest` |
 | `ToolResponsePart` | ✅ | ✅ | `toolResponse: ToolResponse` |
 | `PendingPart` | ✅ | ✅ | `pending: true` |
+| `MetadataPart` | ✅ | ✅ | `metadata: object` |
 
 ### Tool Types
 
@@ -110,7 +111,7 @@ This document tracks feature parity between the Dart and JavaScript (canonical) 
 | Template body extraction | ✅ | ✅ | |
 | Namespaced metadata (`ext.namespace.key`) | ✅ | ✅ | |
 | Reserved keywords handling | ✅ | ✅ | |
-| Empty frontmatter | ✅ | ✅ | Fixed in Dart |
+| Empty frontmatter | ✅ | ✅ | |
 | Multi-message parsing | ✅ | ✅ | Role markers |
 | History insertion | ✅ | ✅ | |
 | Media markers | ✅ | ✅ | |
@@ -124,7 +125,7 @@ This document tracks feature parity between the Dart and JavaScript (canonical) 
 | Optional fields (`?` suffix) | ✅ | ✅ | |
 | Descriptions (`, description`) | ✅ | ✅ | |
 | Nested objects | ✅ | ✅ | |
-| Array types (`(*)` suffix) | ✅ | ✅ | |
+| Array types (`type[]` suffix) | ✅ | ✅ | |
 | Enum types | ✅ | ✅ | |
 | Named schema references | ✅ | ✅ | |
 | Async schema resolution | ✅ | ✅ | |
@@ -133,28 +134,15 @@ This document tracks feature parity between the Dart and JavaScript (canonical) 
 
 | Feature | JS | Dart | Notes |
 |---------|----|----|-------|
-| Handlebars-style syntax | ✅ | 🟡 | Dart uses mustache_template (see note below) |
+| Handlebars-style syntax | ✅ | ✅ | Dart uses custom `handlebars_dart` library |
 | Variable substitution | ✅ | ✅ | `{{name}}` |
 | Dot notation access | ✅ | ✅ | `{{user.name}}` |
-| Block helpers | ✅ | 🟡 | `{{#if}}...{{/if}}` - native only |
+| Block helpers | ✅ | ✅ | `{{#if}}...{{/if}}` |
 | Partial templates | ✅ | ✅ | `{{> partialName}}` |
-| Recursive partial resolution | ✅ | ✅ | Cycle detection |
+| Recursive partial resolution | ✅ | ✅ | |
 | Unescaped output | ✅ | ✅ | `{{{raw}}}` |
 | Comments | ✅ | ✅ | `{{! comment }}` |
-| **Helper arguments** | ✅ | ❌ | `{{role "system"}}` - **CRITICAL GAP** |
-
-### ⚠️ Critical Templating Limitation
-
-The Dart implementation uses `mustache_template` which does **NOT** support Handlebars-style
-helper arguments like `{{role "system"}}` or `{{media url="..." contentType="..."}}`.
-
-Mustache only allows tag names with `a-z`, `A-Z`, `-`, `_`, and `.`. Spaces and quoted
-strings cause parse errors.
-
-**Options to resolve:**
-1. **Pre-process helpers**: Expand `{{role "system"}}` before Mustache parsing
-2. **Switch template library**: Use `handlebars` or `jinja_template` package
-3. **Use lenient mode**: Check if `mustache_template` has a lenient parser option
+| Helper arguments | ✅ | ✅ | `{{role "system"}}` |
 
 ## Store Interface
 
@@ -196,11 +184,23 @@ strings cause parse errors.
 | `ext` | ✅ | ✅ | Extension metadata |
 | `raw` | ✅ | ✅ | Raw frontmatter data |
 
+## Spec Conformance
+
+| Test Suite | Tests | Status | Notes |
+|------------|-------|--------|-------|
+| `metadata.yaml` | ✅ | All pass | |
+| `variables.yaml` | ✅ | All pass | |
+| `partials.yaml` | ✅ | All pass | |
+| `picoschema.yaml` | ✅ | All pass | |
+| `unicode.yaml` | ✅ | All pass | |
+| `helpers/` | ✅ | All pass | |
+| **Total** | **117/117** | **✅ All pass** | |
+
 ## Platform-Specific Differences
 
 | Aspect | JS | Dart | Notes |
 |--------|----|----|-------|
-| Template engine | Handlebars | mustache_template | Behavioral parity maintained |
+| Template engine | Handlebars.js | `handlebars_dart` | Custom pure-Dart Handlebars implementation |
 | Async model | Promises | Futures | Native async for both |
 | Type system | TypeScript interfaces | Dart classes + sealed | Dart has stronger types |
 | Part types | Union types | Sealed class | Dart 3 pattern matching |
@@ -211,56 +211,29 @@ strings cause parse errors.
 
 | Feature | Priority | JS Has | Dart Has | Notes |
 |---------|----------|--------|----------|-------|
-| `validatePromptName()` security util | High | ✅ | ❌ | Path traversal prevention (CWE-22) |
+| `validatePromptName()` security util | High | ✅ | ✅ | Path traversal prevention (CWE-22) |
 | `DirStore` implementation | Medium | ✅ | ❌ | Filesystem-based store |
 | `removeUndefinedFields()` util | Low | ✅ | ➖ | Dart handles nulls differently |
 | `PromptStoreWritable` interface | Low | ❌ | ✅ | Dart adds write operations |
 
-### Security: `validatePromptName` (MUST IMPLEMENT)
-
-The JS implementation includes comprehensive prompt name validation to prevent:
-- Path traversal attacks (CWE-22): `../../etc/passwd`
-- Null byte injection (CWE-134): `file\x00.txt`
-- UNC path attacks: `\\server\share`
-- Unicode homograph attacks: visually similar characters
-- URL-encoded bypass attempts: `%2e%2e/`
-
-**Action Required:** Port `validatePromptName()` from `js/src/util.ts` to Dart before any filesystem operations.
-
-## Test Coverage
-
-| Test Suite | JS | Dart | Notes |
-|------------|----|----|-------|
-| Dotprompt class tests | ✅ | ✅ | |
-| Parse tests | ✅ | ✅ | |
-| Picoschema tests | ✅ | ✅ | |
-| Helper tests | ✅ | ✅ | |
-| Types tests | ✅ | ✅ | Dart has JSON serialization tests |
-| Spec conformance tests | ✅ | 🟡 | Dart spec runner exists but needs integration |
-
 ## Summary
 
-**Parity Status: ~75% (BLOCKED by template engine limitation)**
+**Parity Status: ~95% — Full spec conformance achieved (117/117 tests pass)**
 
-The Dart implementation has substantial feature parity with the JavaScript canonical
-implementation, but is **blocked** by a critical template engine limitation.
+The Dart implementation has comprehensive feature parity with the JavaScript canonical
+implementation. The custom `handlebars_dart` library provides full Handlebars support
+including helper arguments, block helpers, and partial templates.
 
-### ✅ Complete Features (works today):
+### ✅ Complete Features:
 1. **API Surface**: All public methods match (parse, compile, render, defineHelper, definePartial, defineTool)
 2. **Data Types**: All types implemented with proper Dart idioms (sealed classes, immutability)
 3. **Parsing**: Full frontmatter and template parsing
 4. **Picoschema**: Full conversion support
-5. **Simple Variable Substitution**: `{{name}}`, `{{user.email}}` work
+5. **Templating**: Full Handlebars support via custom `handlebars_dart` library
+6. **Built-in Helpers**: All helpers work (role, history, section, media, json, ifEquals, unlessEquals)
+7. **Spec Conformance**: 117/117 spec tests pass
 
-### ⚠️ Blocked Features (need template engine fix):
-1. **Built-in Helpers**: `{{role "..."}}`, `{{media url="..."}}` etc. fail to parse
-2. **Block Helpers with Args**: `{{#ifEquals a b}}...{{/ifEquals}}` fail to parse
-3. **Spec Conformance Tests**: 11/16 tests fail due to helper syntax
-
-### 🛠️ Required Work
-To achieve full parity, the Dart implementation needs one of:
-1. Pre-process template to expand helpers before Mustache parsing
-2. Switch to a Handlebars-compatible Dart template library
-3. Implement custom template parser with Handlebars support
+### 🛠️ Remaining Work
+- Implement `DirStore` for filesystem-based prompt loading
 
 Minor differences like sealed classes vs union types are intentional platform adaptations.

@@ -29,18 +29,10 @@ environment:
   sdk: ^3.5.0
 
 dependencies:
-  # YAML parsing for frontmatter
-  collection: ^1.18.0
-  # Crypto for hashing
-  crypto: ^3.0.6
   # Handlebars templating (our pure Dart implementation)
   handlebars_dart: ^0.0.1
-  # JSON schema support
-  json_schema: ^5.2.2
   # Meta annotations
   meta: ^1.15.0
-  # Path utilities
-  path: ^1.9.0
   # YAML parsing for frontmatter
   yaml: ^3.1.2
 

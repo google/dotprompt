@@ -36,6 +36,8 @@ library;
 
 import "package:meta/meta.dart";
 
+import "equality.dart";
+
 /// Represents the role of a message sender in a conversation.
 ///
 /// Roles are used to distinguish between different participants in a
@@ -183,10 +185,10 @@ class DataArgument {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is DataArgument &&
-          _mapEquals(input, other.input) &&
+          mapEquals(input, other.input) &&
           context == other.context &&
-          _listEquals(messages, other.messages) &&
-          _listEquals(docs, other.docs);
+          listEquals(messages, other.messages) &&
+          listEquals(docs, other.docs);
 
   @override
   int get hashCode => Object.hash(input.hashCode, context, messages.hashCode, docs.hashCode);
@@ -248,8 +250,7 @@ class ContextData {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ContextData && _mapEquals(state, other.state) && _mapEquals(_data, other._data);
+      identical(this, other) || other is ContextData && mapEquals(state, other.state) && mapEquals(_data, other._data);
 
   @override
   int get hashCode => Object.hash(state.hashCode, _data.hashCode);
@@ -286,7 +287,7 @@ class Document {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) || other is Document && content == other.content && _mapEquals(metadata, other.metadata);
+      identical(this, other) || other is Document && content == other.content && mapEquals(metadata, other.metadata);
 
   @override
   int get hashCode => Object.hash(content, metadata.hashCode);
@@ -343,8 +344,8 @@ class Message {
       identical(this, other) ||
       other is Message &&
           role == other.role &&
-          _listEquals(content, other.content) &&
-          _mapEquals(metadata, other.metadata);
+          listEquals(content, other.content) &&
+          mapEquals(metadata, other.metadata);
 
   @override
   int get hashCode => Object.hash(role, content.hashCode, metadata.hashCode);
@@ -515,7 +516,7 @@ class ToolRequest {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ToolRequest && name == other.name && ref == other.ref && _mapEquals(input, other.input);
+      other is ToolRequest && name == other.name && ref == other.ref && mapEquals(input, other.input);
 
   @override
   int get hashCode => Object.hash(name, ref, input.hashCode);
@@ -641,7 +642,7 @@ class DataPart extends Part {
   Map<String, dynamic> toJson() => {"data": data};
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is DataPart && _mapEquals(data, other.data);
+  bool operator ==(Object other) => identical(this, other) || other is DataPart && mapEquals(data, other.data);
 
   @override
   int get hashCode => data.hashCode;
@@ -695,32 +696,11 @@ class MetadataPart extends Part {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) || other is MetadataPart && _mapEquals(metadata, other.metadata);
+      identical(this, other) || other is MetadataPart && mapEquals(metadata, other.metadata);
 
   @override
   int get hashCode => metadata.hashCode;
 
   @override
   String toString() => "MetadataPart(metadata: $metadata)";
-}
-
-// Helper functions for equality comparisons
-bool _mapEquals<K, V>(Map<K, V>? a, Map<K, V>? b) {
-  if (a == null && b == null) return true;
-  if (a == null || b == null) return false;
-  if (a.length != b.length) return false;
-  for (final key in a.keys) {
-    if (!b.containsKey(key) || a[key] != b[key]) return false;
-  }
-  return true;
-}
-
-bool _listEquals<T>(List<T>? a, List<T>? b) {
-  if (a == null && b == null) return true;
-  if (a == null || b == null) return false;
-  if (a.length != b.length) return false;
-  for (var i = 0; i < a.length; i++) {
-    if (a[i] != b[i]) return false;
-  }
-  return true;
 }

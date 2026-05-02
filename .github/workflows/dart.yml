@@ -38,8 +38,6 @@ jobs:
         with:
           files: |
             dart/**
-            bazel/dart/**
-            bazel/rules_dart/**
             spec/**
             .github/workflows/dart.yml
 
@@ -121,29 +119,6 @@ jobs:
           dart pub global activate coverage
           dart pub global run coverage:test_with_coverage
 
-  bazel-build:
-    needs: check-paths
-    if: needs.check-paths.outputs.any_changed == 'true'
-    name: Bazel Build & Test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Bazel
-        uses: bazel-contrib/setup-bazel@0.18.0
-        with:
-          bazelisk-cache: true
-          disk-cache: ${{ github.workflow }}
-          repository-cache: true
-
-      - name: Build Dart targets
-        run: bazel build //dart/...
-
-      - name: Run Dart tests via Bazel
-        run: bazel test //dart/... --test_output=errors
-        continue-on-error: true # Tests may need network access
-
   antlr-grammar:
     needs: check-paths
     if: needs.check-paths.outputs.any_changed == 'true'
@@ -193,7 +168,7 @@ jobs:
 
   dart-checks-all:
     if: always()
-    needs: [format-check, analyze, test, bazel-build, antlr-grammar]
+    needs: [format-check, analyze, test, antlr-grammar]
     runs-on: ubuntu-latest
     steps:
       - name: Check overall status

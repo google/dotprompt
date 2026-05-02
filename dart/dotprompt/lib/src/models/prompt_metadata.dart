@@ -22,6 +22,7 @@ library;
 
 import "package:meta/meta.dart";
 
+import "../equality.dart";
 import "parsed_prompt.dart";
 
 /// Metadata parsed from prompt frontmatter.
@@ -223,10 +224,15 @@ class InputConfig {
       };
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is InputConfig;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is InputConfig && deepEquals(schema, other.schema) && deepEquals(defaultValues, other.defaultValues);
 
   @override
-  int get hashCode => Object.hash(schema, defaultValues);
+  int get hashCode => Object.hash(
+        schema == null ? null : Object.hashAll(schema!.entries.map((e) => Object.hash(e.key, e.value))),
+        defaultValues == null ? null : Object.hashAll(defaultValues!.entries.map((e) => Object.hash(e.key, e.value))),
+      );
 
   @override
   String toString() => "InputConfig(schema: $schema, defaultValues: $defaultValues)";
@@ -277,10 +283,14 @@ class OutputConfig {
       };
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is OutputConfig;
+  bool operator ==(Object other) =>
+      identical(this, other) || other is OutputConfig && format == other.format && deepEquals(schema, other.schema);
 
   @override
-  int get hashCode => Object.hash(format, schema);
+  int get hashCode => Object.hash(
+        format,
+        schema == null ? null : Object.hashAll(schema!.entries.map((e) => Object.hash(e.key, e.value))),
+      );
 
   @override
   String toString() => "OutputConfig(format: $format, schema: $schema)";
