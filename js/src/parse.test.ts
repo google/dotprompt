@@ -170,8 +170,7 @@ describe('splitByRoleAndHistoryMarkers', () => {
   });
 
   it('splits a role marker with metadata correctly', () => {
-    const input =
-      '<<<dotprompt:role:user purpose=preamble>>>Hello';
+    const input = '<<<dotprompt:role:user purpose=preamble>>>Hello';
     const output = splitByRoleAndHistoryMarkers(input);
     expect(output).toEqual([
       '<<<dotprompt:role:user purpose=preamble',
