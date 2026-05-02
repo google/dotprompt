@@ -71,7 +71,7 @@ var (
 	// - <<<dotprompt:role:system>>>
 	// - <<<dotprompt:history>>>
 	RoleAndHistoryMarkerRegex = regexp.MustCompile(
-		`(<<<dotprompt:(?:role:[a-z]+|history))>>>`)
+		`(<<<dotprompt:(?:role:[a-z]+(?: [^>]+)?|history))>>>`)
 
 	// MediaAndSectionMarkerRegex is a regular expression to match
 	// <<<dotprompt:media:url>>> and <<<dotprompt:section>>> markers in the
@@ -181,6 +181,27 @@ func splitByRegex(source string, regex *regexp.Regexp) []string {
 	}
 
 	return result
+}
+
+// parseRoleMarker parses a role marker string into a role and optional metadata.
+// The marker content (after the RoleMarkerPrefix) can be just a role name like "user"
+// or a role name followed by space-separated key=value pairs like "user purpose=preamble foo=bar".
+func parseRoleMarker(piece string) (Role, map[string]any) {
+	content := piece[len(RoleMarkerPrefix):]
+	spaceIndex := strings.Index(content, " ")
+	if spaceIndex == -1 {
+		return Role(content), nil
+	}
+	role := Role(content[:spaceIndex])
+	metadataStr := content[spaceIndex+1:]
+	metadata := make(map[string]any)
+	for _, entry := range strings.Split(metadataStr, " ") {
+		eqIndex := strings.Index(entry, "=")
+		if eqIndex != -1 {
+			metadata[entry[:eqIndex]] = entry[eqIndex+1:]
+		}
+	}
+	return role, metadata
 }
 
 // splitByRoleAndHistoryMarkers splits a string by role and history markers.
@@ -390,20 +411,23 @@ func ToMessages(renderedString string, data *DataArgument) ([]Message, error) {
 
 	for _, piece := range splitByRoleAndHistoryMarkers(renderedString) {
 		if strings.HasPrefix(piece, RoleMarkerPrefix) {
-			roleStr := piece[len(RoleMarkerPrefix):]
-			role := Role(roleStr)
+			role, metadata := parseRoleMarker(piece)
 
 			if messageSources[len(messageSources)-1].Source != "" &&
 				trimUnicodeSpacesExceptNewlines(messageSources[len(messageSources)-1].Source) != "" {
 				// If the current message has content, create a new message.
 				newMs := &MessageSource{
-					Role:   role,
-					Source: "",
+					Role:     role,
+					Source:   "",
+					Metadata: metadata,
 				}
 				messageSources = append(messageSources, newMs)
 			} else {
 				// Otherwise, update the role of the current message.
 				messageSources[len(messageSources)-1].Role = role
+				if metadata != nil {
+					messageSources[len(messageSources)-1].Metadata = metadata
+				}
 			}
 		} else if strings.HasPrefix(piece, HistoryMarkerPrefix) {
 			// Add the history messages to the message sources.

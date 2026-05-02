@@ -19,6 +19,7 @@ package dotprompt
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/mbleigh/raymond"
@@ -57,9 +58,24 @@ func JSON(serializable any, options *raymond.Options) raymond.SafeString {
 	return raymond.SafeString(string(jsonData))
 }
 
-// Role returns a formatted role string.
-func RoleFn(role string) raymond.SafeString {
-	return raymond.SafeString(fmt.Sprintf("<<<dotprompt:role:%s>>>", role))
+// RoleFn returns a formatted role string with optional metadata from hash params.
+func RoleFn(role string, options *raymond.Options) raymond.SafeString {
+	hash := options.Hash()
+	if len(hash) == 0 {
+		return raymond.SafeString(fmt.Sprintf("<<<dotprompt:role:%s>>>", role))
+	}
+	// Sort keys for deterministic output.
+	keys := make([]string, 0, len(hash))
+	for k := range hash {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	var parts []string
+	for _, k := range keys {
+		parts = append(parts, fmt.Sprintf("%s=%v", k, hash[k]))
+	}
+	metadata := strings.Join(parts, " ")
+	return raymond.SafeString(fmt.Sprintf("<<<dotprompt:role:%s %s>>>", role, metadata))
 }
 
 // History returns a formatted history string.
