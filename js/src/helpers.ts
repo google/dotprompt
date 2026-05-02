@@ -29,8 +29,14 @@ export function json(
   );
 }
 
-export function role(role: string) {
-  return new SafeString(`<<<dotprompt:role:${role}>>>`);
+export function role(role: string, options: { hash: Record<string, string> }) {
+  const hash = options?.hash || {};
+  const entries = Object.entries(hash);
+  if (entries.length === 0) {
+    return new SafeString(`<<<dotprompt:role:${role}>>>`);
+  }
+  const metadata = entries.map(([k, v]) => `${k}=${v}`).join(' ');
+  return new SafeString(`<<<dotprompt:role:${role} ${metadata}>>>`);
 }
 
 export function history() {
