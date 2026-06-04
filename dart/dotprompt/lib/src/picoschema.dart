@@ -380,6 +380,7 @@ class Picoschema {
       }
     }
 
-    return true;
+    // Default: assume it's JSON Schema to avoid corrupting valid schemas
+    return false;
   }
 }

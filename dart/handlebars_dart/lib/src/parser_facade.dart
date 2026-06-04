@@ -166,7 +166,7 @@ class ParserFacade {
         final br = b as hand_written.RawBlockNode;
         return a.name == br.name && a.content == br.content;
       default:
-        return true; // Assume equivalent for unknown types
+        return false; // Unknown types should not be assumed equivalent
     }
   }
 }

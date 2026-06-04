@@ -106,7 +106,7 @@ Dart `handlebars_dart` library.
 
 ## Test Coverage
 
-**71 tests passing** (2 skipped for investigation)
+**127 tests passing**
 
 | Category              | Tests |
 | --------------------- | ----- |

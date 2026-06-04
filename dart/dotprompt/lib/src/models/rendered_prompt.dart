@@ -21,6 +21,7 @@ library;
 
 import "package:meta/meta.dart";
 
+import "../equality.dart";
 import "../types.dart";
 
 /// The result of rendering a prompt template.
@@ -90,32 +91,11 @@ class RenderedPrompt {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is RenderedPrompt && _mapEquals(config, other.config) && _listEquals(messages, other.messages);
+      other is RenderedPrompt && mapEquals(config, other.config) && listEquals(messages, other.messages);
 
   @override
   int get hashCode => Object.hash(config.hashCode, messages.hashCode);
 
   @override
   String toString() => "RenderedPrompt(config: $config, messages: $messages)";
-}
-
-// Helper functions for equality
-bool _mapEquals<K, V>(Map<K, V>? a, Map<K, V>? b) {
-  if (a == null && b == null) return true;
-  if (a == null || b == null) return false;
-  if (a.length != b.length) return false;
-  for (final key in a.keys) {
-    if (!b.containsKey(key) || a[key] != b[key]) return false;
-  }
-  return true;
-}
-
-bool _listEquals<T>(List<T>? a, List<T>? b) {
-  if (a == null && b == null) return true;
-  if (a == null || b == null) return false;
-  if (a.length != b.length) return false;
-  for (var i = 0; i < a.length; i++) {
-    if (a[i] != b[i]) return false;
-  }
-  return true;
 }
