@@ -2,7 +2,7 @@
   "js": "0.2.9",
   "python/dotpromptz": "0.1.5",
   "python/handlebarrz": "0.1.8",
-  "go": "0.2.0",
+  "go": "0.2.1",
   "java": "0.1.0",
   "dart/dotprompt": "0.0.1",
   "bazel/rules_dart": "0.1.0",
