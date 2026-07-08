@@ -35,7 +35,7 @@ go_library(
         "@com_github_goccy_go_yaml//:go-yaml",
         "@com_github_invopop_jsonschema//:jsonschema",
         "@com_github_mbleigh_raymond//:raymond",
-        "@com_github_wk8_go_ordered_map_v2//:go-ordered-map",
+        "@com_github_pb33f_ordered_map_v2//:ordered-map",
         "@org_golang_x_text//unicode/norm",
     ],
 )
@@ -59,6 +59,6 @@ go_test(
         "@com_github_google_go_cmp//cmp/cmpopts",
         "@com_github_invopop_jsonschema//:jsonschema",
         "@com_github_mbleigh_raymond//:raymond",
-        "@com_github_wk8_go_ordered_map_v2//:go-ordered-map",
+        "@com_github_pb33f_ordered_map_v2//:ordered-map",
     ],
 )
