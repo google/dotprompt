@@ -49,7 +49,7 @@ color = "auto"
 
 [ignore]
 ids = []
-while_no_fix = ["GHSA-xm59-rqc7-hhvf"]
+while_no_fix = []
 patterns = []
 packages = []
 

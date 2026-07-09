@@ -81,18 +81,34 @@ describe('helpers', () => {
 
   describe('role', () => {
     it('should return a role marker for system', () => {
-      const result = role('system');
+      const result = role('system', { hash: {} });
       expect(result.toString()).toBe('<<<dotprompt:role:system>>>');
     });
 
     it('should return a role marker for user', () => {
-      const result = role('user');
+      const result = role('user', { hash: {} });
       expect(result.toString()).toBe('<<<dotprompt:role:user>>>');
     });
 
     it('should return a role marker for model', () => {
-      const result = role('model');
+      const result = role('model', { hash: {} });
       expect(result.toString()).toBe('<<<dotprompt:role:model>>>');
+    });
+
+    it('should return a role marker with metadata', () => {
+      const result = role('user', {
+        hash: { purpose: 'preamble', foo: 'bar' },
+      });
+      expect(result.toString()).toBe(
+        '<<<dotprompt:role:user purpose=preamble foo=bar>>>'
+      );
+    });
+
+    it('should return a role marker with single metadata entry', () => {
+      const result = role('system', { hash: { purpose: 'instructions' } });
+      expect(result.toString()).toBe(
+        '<<<dotprompt:role:system purpose=instructions>>>'
+      );
     });
   });
 

@@ -29,6 +29,7 @@ import {
   parseDocument,
   parseMediaPart,
   parsePart,
+  parseRoleMarker,
   parseSectionPart,
   parseTextPart,
   RESERVED_METADATA_KEYWORDS,
@@ -52,6 +53,8 @@ describe('ROLE_AND_HISTORY_MARKER_REGEX', () => {
       '<<<dotprompt:role:bot>>>',
       '<<<dotprompt:role:human>>>',
       '<<<dotprompt:role:customer>>>',
+      '<<<dotprompt:role:user purpose=preamble>>>',
+      '<<<dotprompt:role:system purpose=instructions foo=bar>>>',
     ];
 
     for (const pattern of validPatterns) {
@@ -164,6 +167,61 @@ describe('splitByRoleAndHistoryMarkers', () => {
       '<<<dotprompt:history',
       ' end',
     ]);
+  });
+
+  it('splits a role marker with metadata correctly', () => {
+    const input = '<<<dotprompt:role:user purpose=preamble>>>Hello';
+    const output = splitByRoleAndHistoryMarkers(input);
+    expect(output).toEqual([
+      '<<<dotprompt:role:user purpose=preamble',
+      'Hello',
+    ]);
+  });
+
+  it('splits a role marker with multiple metadata pairs', () => {
+    const input =
+      '<<<dotprompt:role:system purpose=instructions foo=bar>>>Content';
+    const output = splitByRoleAndHistoryMarkers(input);
+    expect(output).toEqual([
+      '<<<dotprompt:role:system purpose=instructions foo=bar',
+      'Content',
+    ]);
+  });
+});
+
+describe('parseRoleMarker', () => {
+  it('should parse a simple role marker without metadata', () => {
+    const result = parseRoleMarker('<<<dotprompt:role:user');
+    expect(result).toEqual({ role: 'user' });
+    expect(result.metadata).toBeUndefined();
+  });
+
+  it('should parse a role marker with single metadata entry', () => {
+    const result = parseRoleMarker('<<<dotprompt:role:user purpose=preamble');
+    expect(result).toEqual({
+      role: 'user',
+      metadata: { purpose: 'preamble' },
+    });
+  });
+
+  it('should parse a role marker with multiple metadata entries', () => {
+    const result = parseRoleMarker(
+      '<<<dotprompt:role:system purpose=instructions foo=bar'
+    );
+    expect(result).toEqual({
+      role: 'system',
+      metadata: { purpose: 'instructions', foo: 'bar' },
+    });
+  });
+
+  it('should handle system role without metadata', () => {
+    const result = parseRoleMarker('<<<dotprompt:role:system');
+    expect(result).toEqual({ role: 'system' });
+  });
+
+  it('should handle model role without metadata', () => {
+    const result = parseRoleMarker('<<<dotprompt:role:model');
+    expect(result).toEqual({ role: 'model' });
   });
 });
 
@@ -655,6 +713,62 @@ describe('toMessages', () => {
   it('should handle an empty input string', () => {
     const result = toMessages('');
     expect(result).toHaveLength(0);
+  });
+
+  it('should handle role markers with metadata', () => {
+    const renderedString =
+      '<<<dotprompt:role:user purpose=preamble>>>Hello world';
+    const result = toMessages(renderedString);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].role).toBe('user');
+    expect(result[0].content).toEqual([{ text: 'Hello world' }]);
+    expect(result[0].metadata).toEqual({ purpose: 'preamble' });
+  });
+
+  it('should handle role markers with multiple metadata entries', () => {
+    const renderedString =
+      '<<<dotprompt:role:system purpose=instructions>>>System prompt\n' +
+      '<<<dotprompt:role:user purpose=preamble foo=bar>>>User message';
+    const result = toMessages(renderedString);
+
+    expect(result).toHaveLength(2);
+
+    expect(result[0].role).toBe('system');
+    expect(result[0].content).toEqual([{ text: 'System prompt\n' }]);
+    expect(result[0].metadata).toEqual({ purpose: 'instructions' });
+
+    expect(result[1].role).toBe('user');
+    expect(result[1].content).toEqual([{ text: 'User message' }]);
+    expect(result[1].metadata).toEqual({ purpose: 'preamble', foo: 'bar' });
+  });
+
+  it('should handle mixed role markers with and without metadata', () => {
+    const renderedString =
+      '<<<dotprompt:role:system>>>System prompt\n' +
+      '<<<dotprompt:role:user purpose=preamble>>>User message';
+    const result = toMessages(renderedString);
+
+    expect(result).toHaveLength(2);
+
+    expect(result[0].role).toBe('system');
+    expect(result[0].content).toEqual([{ text: 'System prompt\n' }]);
+    expect(result[0].metadata).toBeUndefined();
+
+    expect(result[1].role).toBe('user');
+    expect(result[1].content).toEqual([{ text: 'User message' }]);
+    expect(result[1].metadata).toEqual({ purpose: 'preamble' });
+  });
+
+  it('should merge metadata when updating role of an empty message', () => {
+    const renderedString =
+      '<<<dotprompt:role:user purpose=preamble>>><<<dotprompt:role:model purpose=response>>>Content';
+    const result = toMessages(renderedString);
+
+    // First role marker creates empty message, second updates it
+    expect(result).toHaveLength(1);
+    expect(result[0].role).toBe('model');
+    expect(result[0].metadata).toEqual({ purpose: 'response' });
   });
 
   it('should properly call insertHistory with data.messages', () => {

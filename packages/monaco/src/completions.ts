@@ -250,7 +250,10 @@ const MODEL_NAMES = [
   },
   // Gemma 3 Series
   { label: 'gemma-3-27b-it', documentation: 'Large instruction-tuned Gemma 3' },
-  { label: 'gemma-3-12b-it', documentation: 'Medium instruction-tuned Gemma 3' },
+  {
+    label: 'gemma-3-12b-it',
+    documentation: 'Medium instruction-tuned Gemma 3',
+  },
   { label: 'gemma-3-4b-it', documentation: 'Small instruction-tuned Gemma 3' },
   { label: 'gemma-3-1b-it', documentation: 'Tiny instruction-tuned Gemma 3' },
   // OpenAI

@@ -72,8 +72,18 @@ fail_under = 85
 # uv based package management.
 [tool.uv]
 constraint-dependencies = [
-  # Fix GHSA-xm59-rqc7-hhvf (CWE-427: uncontrolled search path in nbconvert).
-  "nbconvert>=7.17.0",
+  # Fix GHSA-xm59-rqc7-hhvf, GHSA-7jqv-fw35-gmx9, GHSA-4c99-qj7h-p3vg (nbconvert vulnerabilities).
+  "nbconvert>=7.17.1",
+  # Fix GHSA-6w46-j5rx-g56g (pytest denial of service via predictable temp dirs).
+  "pytest>=9.0.3",
+  # Fix GHSA-gc5v-m9x4-r6x2 (requests predictable temp file).
+  "requests>=2.33.0",
+  # Fix GHSA-78cv-mqj4-43f7, GHSA-qjxf-f2mg-c6mc, GHSA-fqwm-6jpj-5wxc (tornado vulnerabilities).
+  "tornado>=6.5.5",
+  # Fix GHSA-5239-wwwm-4pmq (pygments inefficient regex).
+  "pygments>=2.20.0",
+  # Fix GHSA-pjjw-68hj-v9mw (uv RECORD path traversal on uninstall).
+  "uv>=0.11.6",
 ]
 default-groups = ["dev", "lint"]
 

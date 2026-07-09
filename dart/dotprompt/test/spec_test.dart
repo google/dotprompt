@@ -193,6 +193,23 @@ void main() {
                     }
                   }
                 }
+
+                // Check metadata
+                if (expectedMsg.containsKey("metadata")) {
+                  final expectedMetadata = expectedMsg["metadata"] as Map<String, dynamic>;
+                  expect(
+                    actualMsg.metadata,
+                    isNotNull,
+                    reason: "Expected metadata on message $i but got null",
+                  );
+                  for (final entry in expectedMetadata.entries) {
+                    expect(
+                      actualMsg.metadata![entry.key],
+                      equals(entry.value),
+                      reason: "Metadata key '${entry.key}' mismatch on message $i",
+                    );
+                  }
+                }
               }
             }
 

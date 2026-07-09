@@ -330,7 +330,13 @@ class Dotprompt {
       // Register built-in Dotprompt helpers
       ..registerHelper("role", (args, options) {
         final role = args.isNotEmpty ? args[0].toString() : "user";
-        return SafeString("<<<dotprompt:role:$role>>>");
+        final hash = options.hash;
+        if (hash.isEmpty) {
+          return SafeString("<<<dotprompt:role:$role>>>");
+        }
+        final keys = hash.keys.toList()..sort();
+        final metadata = keys.map((k) => "$k=${hash[k]}").join(" ");
+        return SafeString("<<<dotprompt:role:$role $metadata>>>");
       })
       ..registerHelper(
         "history",
@@ -458,6 +464,7 @@ class Dotprompt {
     const historyMarker = "<<<dotprompt:history>>>";
     final messages = <Message>[];
     var currentRole = Role.user; // Default role
+    Map<String, dynamic>? currentMetadata; // Metadata from role hash params
     final currentParts = <Part>[];
     final currentText = StringBuffer();
     var historyInserted = false;
@@ -480,9 +487,14 @@ class Dotprompt {
       flushText();
       if (currentParts.isNotEmpty) {
         messages.add(
-          Message(role: currentRole, content: List.from(currentParts)),
+          Message(
+            role: currentRole,
+            content: List.from(currentParts),
+            metadata: currentMetadata,
+          ),
         );
         currentParts.clear();
+        currentMetadata = null;
       }
     }
 
@@ -538,7 +550,26 @@ class Dotprompt {
             currentText.write("\n");
           }
           flushMessage();
-          currentRole = Role.fromString(roleMatch.group(1)!);
+          // Parse role name and optional metadata from the captured content.
+          // Content can be "user" or "user purpose=preamble foo=bar".
+          final markerContent = roleMatch.group(1)!;
+          final spaceIndex = markerContent.indexOf(" ");
+          if (spaceIndex == -1) {
+            currentRole = Role.fromString(markerContent);
+          } else {
+            currentRole = Role.fromString(markerContent.substring(0, spaceIndex));
+            final metadataStr = markerContent.substring(spaceIndex + 1);
+            final metadata = <String, dynamic>{};
+            for (final entry in metadataStr.split(" ")) {
+              final eqIndex = entry.indexOf("=");
+              if (eqIndex != -1) {
+                metadata[entry.substring(0, eqIndex)] = entry.substring(eqIndex + 1);
+              }
+            }
+            if (metadata.isNotEmpty) {
+              currentMetadata = metadata;
+            }
+          }
           final remaining = line.replaceAll(roleMatch.group(0)!, "");
           // Don't trim - preserve leading/trailing whitespace in content
           if (remaining.isNotEmpty) {

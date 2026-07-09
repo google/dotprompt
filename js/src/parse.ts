@@ -74,12 +74,14 @@ export const FRONTMATTER_AND_BODY_REGEX =
  * Examples of matching patterns:
  * - <<<dotprompt:role:user>>>
  * - <<<dotprompt:role:system>>>
+ * - <<<dotprompt:role:user purpose=preamble foo=bar>>>
  * - <<<dotprompt:history>>>
  *
  * Note: Only lowercase letters are allowed after 'role:'.
+ * Optional space-separated key=value metadata pairs may follow the role name.
  */
 export const ROLE_AND_HISTORY_MARKER_REGEX =
-  /(<<<dotprompt:(?:role:[a-z]+|history))>>>/g;
+  /(<<<dotprompt:(?:role:[a-z]+(?: [^>]+)?|history))>>>/g;
 
 /**
  * Regular expression to match <<<dotprompt:media:url>>> and
@@ -276,6 +278,40 @@ export function transformMessagesToHistory(
 }
 
 /**
+ * Parses a role marker string into a role name and optional metadata.
+ *
+ * Given a role marker piece like `<<<dotprompt:role:user purpose=preamble foo=bar`,
+ * extracts the role and any key=value metadata pairs.
+ *
+ * @param piece The role marker piece (after regex split, without trailing >>>)
+ * @return An object with the role and optional metadata
+ */
+export function parseRoleMarker(piece: string): {
+  role: Role;
+  metadata?: Record<string, string>;
+} {
+  const content = piece.substring(ROLE_MARKER_PREFIX.length);
+  const spaceIndex = content.indexOf(' ');
+
+  if (spaceIndex === -1) {
+    return { role: content as Role };
+  }
+
+  const role = content.substring(0, spaceIndex) as Role;
+  const metadataStr = content.substring(spaceIndex + 1);
+  const metadata: Record<string, string> = {};
+
+  for (const entry of metadataStr.split(' ')) {
+    const eqIndex = entry.indexOf('=');
+    if (eqIndex !== -1) {
+      metadata[entry.substring(0, eqIndex)] = entry.substring(eqIndex + 1);
+    }
+  }
+
+  return { role, metadata };
+}
+
+/**
  * Converts a rendered template string into an array of messages.  Processes
  * role markers and history placeholders to structure the conversation.
  *
@@ -293,15 +329,21 @@ export function toMessages<ModelConfig = Record<string, unknown>>(
 
   for (const piece of splitByRoleAndHistoryMarkers(renderedString)) {
     if (piece.startsWith(ROLE_MARKER_PREFIX)) {
-      const role = piece.substring(ROLE_MARKER_PREFIX.length) as Role;
+      const { role, metadata } = parseRoleMarker(piece);
 
       if (currentMessage.source?.trim()) {
         // If the current message has a source, reset it.
         currentMessage = { role, source: '' };
+        if (metadata) {
+          currentMessage.metadata = metadata;
+        }
         messageSources.push(currentMessage);
       } else {
         // Otherwise, update the role of the current message.
         currentMessage.role = role;
+        if (metadata) {
+          currentMessage.metadata = { ...currentMessage.metadata, ...metadata };
+        }
       }
     } else if (piece.startsWith(HISTORY_MARKER_PREFIX)) {
       // Add the history messages to the message sources.
