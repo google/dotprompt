@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Document formatting
   - Hover documentation for helpers and frontmatter fields
 - **Code Snippets**: 25+ snippets for common patterns
-  - Role blocks (`role`, `system`, `user`, `model`)
+  - Role markers (`role`, `system`, `user`, `model`)
   - Conditionals (`if`, `unless`, `ifEquals`)
   - Loops (`each`, `with`)
   - Helpers (`json`, `media`, `history`, `section`)

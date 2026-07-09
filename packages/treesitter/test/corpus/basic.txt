@@ -38,25 +38,21 @@ Hello {{ name }}!
     (text)))
 
 ================================================================================
-ROLE BLOCK
+ROLE MARKER
 ================================================================================
 
-{{#role "system"}}
+{{role "system"}}
 You are helpful.
-{{/role}}
 
 --------------------------------------------------------------------------------
 
 (document
   (template_body
-    (handlebars_block
-      (block_expression
-        name: (block_name)
+    (handlebars_expression
+      (expression_content
+        (helper_name)
         (argument
-          (string_literal)))
-      (text)
-      (close_block
-        name: (block_name)))
+          (string_literal))))
     (text)))
 
 ================================================================================
@@ -112,20 +108,6 @@ COMMENT
 (document
   (template_body
     (handlebars_comment)
-    (text)))
-
-================================================================================
-DOTPROMPT MARKER
-================================================================================
-
-<<<dotprompt:role:system>>>
-
---------------------------------------------------------------------------------
-
-(document
-  (template_body
-    (dotprompt_marker
-      (marker_content))
     (text)))
 
 ================================================================================
@@ -195,4 +177,19 @@ Hello
         value: (yaml_value)))
     (frontmatter_delimiter))
   (template_body
+    (text)))
+
+================================================================================
+HISTORY MARKER
+================================================================================
+
+{{history}}
+
+--------------------------------------------------------------------------------
+
+(document
+  (template_body
+    (handlebars_expression
+      (expression_content
+        (helper_name)))
     (text)))
