@@ -9,8 +9,8 @@
     "test": "pnpm -C js run test"
   },
   "dependencies": {
-    "handlebars": "^4.7.8",
-    "yaml": "^2.8.2"
+    "handlebars": "^4.7.9",
+    "yaml": "^2.8.3"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.11",
@@ -18,7 +18,7 @@
     "@typescript/native-preview": "7.0.0-dev.20260122.3",
     "@vitest/coverage-v8": "^4.0.18",
     "typescript": "5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
