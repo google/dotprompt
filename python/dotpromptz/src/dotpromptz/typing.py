@@ -145,6 +145,7 @@ PromptStoreSync (sync read)
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Awaitable, Callable
 from enum import Enum
 from typing import (
@@ -156,6 +157,14 @@ from typing import (
 )
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+
+# Silence non-actionable import-time UserWarning from Pydantic when "schema" field shadows BaseModel.schema
+warnings.filterwarnings(
+    'ignore',
+    message='Field name "schema" .* shadows an attribute in parent',
+    category=UserWarning,
+    module=r'dotpromptz(\.|$)',
+)
 
 Schema = Any
 """Type alias for a generic schema."""
