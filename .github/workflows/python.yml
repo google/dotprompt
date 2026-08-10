@@ -46,12 +46,16 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v6
+      - if: startsWith(github.head_ref, 'release-please--')
+        uses: actions/checkout@v6
         with:
           # Use the PR head ref to allow pushing back to the branch
           ref: ${{ github.head_ref }}
           # Use a token that can push to the branch (for release-please PRs)
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+
+      - if: "!startsWith(github.head_ref, 'release-please--')"
+        uses: actions/checkout@v6
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
