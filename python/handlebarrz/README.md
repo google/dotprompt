@@ -41,8 +41,8 @@ from handlebarrz import Template
 template = Template()
 
 # Register and render a template
-template.register_template("greeting", "Hello, {{name}}!")
-result = template.render("greeting", {"name": "World"})
+template.register_template('greeting', 'Hello, {{name}}!')
+result = template.render('greeting', {'name': 'World'})
 print(result)  # Output: Hello, World!
 ```
 
@@ -56,13 +56,13 @@ from handlebarrz import Template
 template = Template()
 
 # Simple variable substitution
-template.register_template("simple", "Welcome, {{user}}!")
-print(template.render("simple", {"user": "Alice"}))
+template.register_template('simple', 'Welcome, {{user}}!')
+print(template.render('simple', {'user': 'Alice'}))
 # Output: Welcome, Alice!
 
 # Nested properties
-template.register_template("nested", "{{person.name}} is {{person.age}} years old")
-print(template.render("nested", {"person": {"name": "Bob", "age": 30}}))
+template.register_template('nested', '{{person.name}} is {{person.age}} years old')
+print(template.render('nested', {'person': {'name': 'Bob', 'age': 30}}))
 # Output: Bob is 30 years old
 ```
 
@@ -70,27 +70,36 @@ print(template.render("nested", {"person": {"name": "Bob", "age": 30}}))
 
 ```python
 # Conditionals
-template.register_template("conditional", """
+template.register_template(
+    'conditional',
+    """
 {{#if active}}
   User is active
 {{else}}
   User is inactive
 {{/if}}
-""")
+""",
+)
 
 # Iteration
-template.register_template("list", """
+template.register_template(
+    'list',
+    """
 {{#each items}}
   - {{this}}
 {{/each}}
-""")
+""",
+)
 
 # With helper for context switching
-template.register_template("with", """
+template.register_template(
+    'with',
+    """
 {{#with user}}
   Name: {{name}}, Email: {{email}}
 {{/with}}
-""")
+""",
+)
 ```
 
 ### Custom Helpers
@@ -100,13 +109,15 @@ from handlebarrz import Template
 
 template = Template()
 
+
 # Register a custom helper
 def uppercase(value):
     return str(value).upper()
 
-template.register_helper("uppercase", uppercase)
-template.register_template("custom", "{{uppercase name}}")
-print(template.render("custom", {"name": "alice"}))
+
+template.register_helper('uppercase', uppercase)
+template.register_template('custom', '{{uppercase name}}')
+print(template.render('custom', {'name': 'alice'}))
 # Output: ALICE
 ```
 
@@ -116,9 +127,9 @@ print(template.render("custom", {"name": "alice"}))
 template = Template()
 
 # Register a partial
-template.register_partial("header", "<h1>{{title}}</h1>")
-template.register_template("page", "{{> header}}<p>{{content}}</p>")
-print(template.render("page", {"title": "Welcome", "content": "Hello!"}))
+template.register_partial('header', '<h1>{{title}}</h1>')
+template.register_template('page', '{{> header}}<p>{{content}}</p>')
+print(template.render('page', {'title': 'Welcome', 'content': 'Hello!'}))
 # Output: <h1>Welcome</h1><p>Hello!</p>
 ```
 
@@ -128,13 +139,13 @@ print(template.render("page", {"title": "Welcome", "content": "Hello!"}))
 template = Template()
 
 # HTML is escaped by default
-template.register_template("escaped", "{{content}}")
-print(template.render("escaped", {"content": "<script>alert('xss')</script>"}))
+template.register_template('escaped', '{{content}}')
+print(template.render('escaped', {'content': "<script>alert('xss')</script>"}))
 # Output: &lt;script&gt;alert(&#x27;xss&#x27;)&lt;/script&gt;
 
 # Use triple braces for raw output
-template.register_template("raw", "{{{content}}}")
-print(template.render("raw", {"content": "<b>bold</b>"}))
+template.register_template('raw', '{{{content}}}')
+print(template.render('raw', {'content': '<b>bold</b>'}))
 # Output: <b>bold</b>
 ```
 
