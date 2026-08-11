@@ -454,7 +454,7 @@ def generate_test_suites(files: list[Path]) -> None:
 
             # Skip the suite if it has no tests.
             if not suite.tests:
-                klass.test_empty_suite = make_async_skip_test_method(yaml_file, suite.name)  # type: ignore[attr-defined]
+                setattr(klass, 'test_empty_suite', make_async_skip_test_method(yaml_file, suite.name))
 
             # Iterate over the tests in the suite and add them to the class.
             for tc in suite.tests:
