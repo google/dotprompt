@@ -31,7 +31,6 @@ dart_library(
     deps = [
         "@dart_deps_collection//:collection",
         "@dart_deps_crypto//:crypto",
-        "@dart_deps_json_schema//:json_schema",
         "@dart_deps_meta//:meta",
         "@dart_deps_path//:path",
         "@dart_deps_yaml//:yaml",
