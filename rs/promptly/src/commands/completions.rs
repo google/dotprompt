@@ -130,9 +130,7 @@ fn is_shell_installed(name: &str) -> bool {
 
 /// Check if a path is writable.
 fn is_writable(path: &std::path::Path) -> bool {
-    path.metadata()
-        .map(|m| !m.permissions().readonly())
-        .unwrap_or(false)
+    path.metadata().is_ok_and(|m| !m.permissions().readonly())
 }
 
 /// Find the first writable completion directory.
