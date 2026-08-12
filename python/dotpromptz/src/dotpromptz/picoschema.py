@@ -89,6 +89,25 @@ async def picoschema_to_json_schema(schema: Any, schema_resolver: SchemaResolver
     return await PicoschemaParser(schema_resolver).parse(schema)
 
 
+def picoschema_to_json_schema_sync(schema: Any) -> JsonSchema | None:
+    """Parses a Picoschema definition into a JSON Schema (synchronous).
+
+    This sync version works for schemas using only built-in scalar types
+    (string, number, integer, boolean, null, any). Use the async version
+    if you need to resolve named schema references.
+
+    Args:
+        schema: The Picoschema definition (can be a dict or string).
+
+    Returns:
+        The equivalent JSON Schema, or None if the input schema is None.
+
+    Raises:
+        ValueError: If the schema references a named type that requires resolution.
+    """
+    return PicoschemaParser(schema_resolver=None).parse_sync(schema)
+
+
 class PicoschemaParser:
     """Parses Picoschema definitions into JSON Schema.
 
@@ -160,6 +179,38 @@ class PicoschemaParser:
         # If the schema is not a JSON Schema, parse it as Picoschema.
         return await self.parse_pico(schema)
 
+    def parse_sync(self, schema: Any) -> JsonSchema | None:
+        """Parses a schema synchronously (no schema resolution support).
+
+        Args:
+            schema: The schema definition to parse.
+
+        Returns:
+            The resulting JSON Schema, or None if the input is None.
+
+        Raises:
+            ValueError: If the schema references a named type that requires resolution.
+        """
+        if not schema:
+            return None
+
+        if isinstance(schema, str):
+            type_name, description = extract_description(schema)
+            if type_name in JSON_SCHEMA_SCALAR_TYPES:
+                out: JsonSchema = {'type': type_name}
+                if description:
+                    out['description'] = description
+                return out
+            raise ValueError(f"Picoschema: unsupported scalar type '{type_name}'. Use async version for schema resolution.")
+
+        if isinstance(schema, dict) and _is_json_schema(schema):
+            return cast(JsonSchema, schema)
+
+        if isinstance(schema, dict) and isinstance(schema.get('properties'), dict):
+            return {**cast(JsonSchema, schema), 'type': 'object'}
+
+        return self.parse_pico_sync(schema)
+
     async def parse_pico(self, obj: Any, path: list[str] | None = None) -> JsonSchema:
         """Recursively parses a Picoschema object or string fragment.
 
@@ -226,6 +277,89 @@ class PicoschemaParser:
                 }
             elif type_name == 'object':
                 prop = await self.parse_pico(value, [*path, key])
+                if is_optional:
+                    prop['type'] = [prop['type'], 'null']
+                schema['properties'][property_name] = prop
+            elif type_name == 'enum':
+                prop = {'enum': value}
+                if is_optional and None not in prop['enum']:
+                    prop['enum'].append(None)
+                schema['properties'][property_name] = prop
+            else:
+                raise ValueError(f"Picoschema: parenthetical types must be 'object' or 'array', got: {type_name}")
+
+            if description:
+                schema['properties'][property_name]['description'] = description
+
+        if not schema['required']:
+            del schema['required']
+        return schema
+
+    def parse_pico_sync(self, obj: Any, path: list[str] | None = None) -> JsonSchema:
+        """Recursively parses a Picoschema object synchronously.
+
+        Args:
+            obj: The Picoschema fragment (dict or string).
+            path: The current path within the schema structure (for error reporting).
+
+        Returns:
+            The JSON Schema representation of the fragment.
+
+        Raises:
+            ValueError: If the schema references a named type or is invalid.
+        """
+        if path is None:
+            path = []
+
+        if isinstance(obj, str):
+            type_name, description = extract_description(obj)
+            if type_name not in JSON_SCHEMA_SCALAR_TYPES:
+                raise ValueError(f"Picoschema: unsupported scalar type '{type_name}'. Use async version for schema resolution.")
+
+            if type_name == 'any':
+                return {'description': description} if description else {}
+
+            return {'type': type_name, 'description': description} if description else {'type': type_name}
+        elif not isinstance(obj, dict):
+            raise ValueError(f'Picoschema: only consists of objects and strings. Got: {obj}')
+
+        schema: dict[str, Any] = {
+            'type': 'object',
+            'properties': {},
+            'required': [],
+            'additionalProperties': False,
+        }
+
+        for key, value in obj.items():
+            if key == WILDCARD_PROPERTY_NAME:
+                schema['additionalProperties'] = self.parse_pico_sync(value, [*path, key])
+                continue
+
+            parts = key.split('(')
+            name = parts[0]
+            type_info = parts[1][:-1] if len(parts) > 1 else None
+            is_optional = name.endswith('?')
+            property_name = name[:-1] if is_optional else name
+
+            if not is_optional:
+                schema['required'].append(property_name)
+
+            if not type_info:
+                prop = self.parse_pico_sync(value, [*path, key])
+                if is_optional and isinstance(prop.get('type'), str):
+                    prop['type'] = [prop['type'], 'null']
+                schema['properties'][property_name] = prop
+                continue
+
+            type_name, description = extract_description(type_info)
+            if type_name == 'array':
+                prop = self.parse_pico_sync(value, [*path, key])
+                schema['properties'][property_name] = {
+                    'type': ['array', 'null'] if is_optional else 'array',
+                    'items': prop,
+                }
+            elif type_name == 'object':
+                prop = self.parse_pico_sync(value, [*path, key])
                 if is_optional:
                     prop['type'] = [prop['type'], 'null']
                 schema['properties'][property_name] = prop
