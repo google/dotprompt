@@ -71,22 +71,18 @@ Dart `handlebars_dart` library.
 
 - **Lexer support**: `{{~` and `~}}` tokens recognized
 - **Parser support**: Strip markers tracked in AST nodes
-- **Runtime**: Whitespace stripping implemented for adjacent text nodes
-
-## Partially Implemented 🚧
+- **Runtime**: Whitespace stripping implemented for adjacent text nodes and at
+  the start/end of block content
 
 ### Escape Sequences
 
-- `\{{` to output literal `{{` - code implemented but Bazel caching prevents testing
-
-### Block-level Whitespace Control
-
-- Stripping at start/end of block content not yet implemented
+- `\{{` outputs a literal `{{`
+- `\\{{` outputs a `\` followed by the rendered variable
 
 ### Raw Blocks
 
-- `{{{{raw}}}}...{{{{/raw}}}}` - Lexer/parser infrastructure added but parser
-  tokenization loop needs refactoring to handle raw content properly
+- `{{{{raw}}}}...{{{{/raw}}}}` outputs its content literally, without processing
+  the inner `{{ }}` expressions
 
 ## Runtime Modes
 
@@ -137,43 +133,19 @@ Dart `handlebars_dart` library.
 The library includes a hand-written recursive descent parser optimized for
 performance and ease of debugging. This is the current default parser.
 
-### ANTLR4 Parser (Generated)
+### ANTLR4 Parser (Test-only)
 
-An ANTLR4-based parser is available, generated from the official Handlebars.js
-grammar. This parser provides:
+An ANTLR4-based parser, generated from the official Handlebars.js grammar, is
+kept purely as a testing aid. It is **not** part of the published library and
+the package does not depend on the `antlr4` runtime. It exists so the CI parity
+suite can confirm the hand-written parser stays structurally equivalent to the
+grammar-derived one.
 
-- **Spec Compliance**: Direct conversion from official Handlebars.js grammar
-- **Maintainability**: Automatic parser generation from `.g4` grammar files
-- **Cross-Language Potential**: Same grammar can generate parsers for other languages
-
-Generated files are in `lib/src/antlr/`. To regenerate:
+The parser, its `ParserFacade`, and the generated grammar live under
+`test/antlr/`. The generated files can be regenerated with:
 
 ```bash
 ./scripts/generate_handlebars_parser
-```
-
-### Using the ANTLR Parser
-
-The `ParserFacade` class provides a unified interface for both parsers:
-
-```dart
-import 'package:handlebars_dart/handlebars_dart.dart';
-
-// Parse with default (hand-written) parser
-final ast = ParserFacade.parse('Hello {{name}}!');
-
-// Force ANTLR parser
-final antlrAst = ParserFacade.parse('Hello {{name}}!', useAntlr: true);
-
-// Compare parsers for testing
-final result = ParserFacade.parseAndCompare('{{name}}');
-print('Equivalent: ${result.equivalent}');
-```
-
-You can also set the default globally:
-
-```dart
-ParserFacade.defaultParser = ParserType.antlr;
 ```
 
 ### Parser Feature Comparison
@@ -187,12 +159,6 @@ ParserFacade.defaultParser = ParserType.antlr;
 | `{{else}}` blocks    | ✅ Full      | ✅ Full                |
 | `{{else if}}` chains | ✅ Full      | ✅ Full                |
 | Nested blocks        | ✅ Full      | ✅ Full                |
-
-## Known Limitations
-
-1. Escape sequences require parser integration for edge cases
-2. Block-level whitespace control (inside blocks) not yet implemented
-3. Raw blocks require further parser work
 
 ## Compatibility Notes
 

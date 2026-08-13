@@ -159,29 +159,6 @@ class Runtime {
         output = _stripTrailingWhitespace(output);
       }
 
-      // Handle standalone statements for blocks, comments, and partials
-      // A standalone is a block/comment/partial that is alone on its line
-      if (_isStandaloneEligible(node)) {
-        // Check if previous text ends with only whitespace after newline
-        final prevEndsWithLineStart =
-            i == 0 || (body[i - 1] is TextNode && _endsWithLineStart((body[i - 1] as TextNode).text));
-
-        // Check if next text starts with only whitespace before newline
-        final nextStartsWithLineEnd =
-            i == body.length - 1 || (body[i + 1] is TextNode && _startsWithLineEnd((body[i + 1] as TextNode).text));
-
-        // If standalone, strip the surrounding line content
-        if (prevEndsWithLineStart && nextStartsWithLineEnd) {
-          // Strip trailing whitespace + newline from previous text
-          if (i > 0 && body[i - 1] is TextNode) {
-            // Already written to buffer, need to handle differently
-            // We'll use strip markers instead
-          }
-          // The output itself should not add anything for standalone blocks
-          // (blocks already return their content, the issue is the surrounding text)
-        }
-      }
-
       // Apply whitespace stripping based on adjacent nodes' strip markers
       if (output.isNotEmpty) {
         // Check if previous node wants to strip trailing whitespace

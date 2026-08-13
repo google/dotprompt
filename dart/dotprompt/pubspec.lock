@@ -17,14 +17,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "10.0.2"
-  antlr4:
-    dependency: transitive
-    description:
-      name: antlr4
-      sha256: "752b4a6e4ad97953652a2b2bbf5377f46c94b579d3372b50080c7e5858234a05"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.13.2"
   args:
     dependency: transitive
     description:
@@ -207,7 +199,7 @@ packages:
       path: "../handlebars_dart"
       relative: true
     source: path
-    version: "0.0.1"
+    version: "1.0.0"
   http_multi_server:
     dependency: transitive
     description:

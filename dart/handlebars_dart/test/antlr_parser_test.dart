@@ -20,10 +20,11 @@
 /// to the hand-written parser.
 library;
 
-import "package:handlebars_dart/src/antlr_parser.dart";
 import "package:handlebars_dart/src/parser.dart";
-import "package:handlebars_dart/src/parser_facade.dart";
 import "package:test/test.dart";
+
+import "antlr/antlr_parser.dart";
+import "antlr/parser_facade.dart";
 
 /// Helper to convert a node to a debugging string.
 String _nodeToString(AstNode node) {
