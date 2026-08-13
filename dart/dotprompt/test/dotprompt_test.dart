@@ -152,6 +152,62 @@ Hello {{name}}!
       });
     });
 
+    group("renderMetadata additionalMetadata", () {
+      test("overrides model from the prompt", () async {
+        final metadata = await dotprompt.renderMetadata(
+          """
+---
+model: gemini-pro
+---
+Hello!
+""",
+          const PromptMetadata(model: "gemini-flash-latest"),
+        );
+        expect(metadata.model, equals("gemini-flash-latest"));
+      });
+
+      test("deep-merges config, additional wins on conflict", () async {
+        final metadata = await dotprompt.renderMetadata(
+          """
+---
+model: gemini-pro
+config:
+  temperature: 0.7
+  topK: 40
+---
+Hello!
+""",
+          const PromptMetadata(config: {"temperature": 0.2, "topP": 0.9}),
+        );
+        // Additional overrides temperature, keeps base topK, adds topP.
+        expect(metadata.config?["temperature"], equals(0.2));
+        expect(metadata.config?["topK"], equals(40));
+        expect(metadata.config?["topP"], equals(0.9));
+      });
+
+      test("supplements tools not declared in the prompt", () async {
+        dotprompt.defineTool(
+          const ToolDefinition(name: "extraTool", description: "Extra"),
+        );
+        final metadata = await dotprompt.renderMetadata(
+          "Hello!",
+          const PromptMetadata(tools: ["extraTool"]),
+        );
+        expect(metadata.toolDefs?.length, equals(1));
+        expect(metadata.toolDefs?.first.name, equals("extraTool"));
+      });
+
+      test("leaves metadata untouched when omitted", () async {
+        final metadata = await dotprompt.renderMetadata("""
+---
+model: gemini-pro
+---
+Hello!
+""");
+        expect(metadata.model, equals("gemini-pro"));
+      });
+    });
+
     group("tools", () {
       test("resolves defined tools", () async {
         dotprompt.defineTool(

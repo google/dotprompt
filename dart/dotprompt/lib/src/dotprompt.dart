@@ -193,9 +193,19 @@ class Dotprompt {
   ///
   /// Useful when you need resolved metadata (tools, schemas) without the
   /// message content.
-  Future<PromptMetadata> renderMetadata(String source) async {
+  ///
+  /// The optional [additionalMetadata] is merged on top of the metadata parsed
+  /// from [source], overriding conflicting scalar fields (model, input, output,
+  /// tools, ext) while deep-merging the `config` map. This mirrors the
+  /// `additionalMetadata` argument of the JavaScript reference implementation
+  /// and lets callers override or supplement a prompt's declared metadata at
+  /// resolution time without editing the prompt source.
+  Future<PromptMetadata> renderMetadata(
+    String source, [
+    PromptMetadata? additionalMetadata,
+  ]) async {
     final parsed = parse(source);
-    return _resolveMetadata(parsed.metadata);
+    return _resolveMetadata(parsed.metadata, additionalMetadata);
   }
 
   /// Resolves partial references in a template.
@@ -229,11 +239,20 @@ class Dotprompt {
   }
 
   /// Resolves metadata, including tools and schemas.
-  Future<PromptMetadata> _resolveMetadata(PromptMetadata metadata) async {
-    // Resolve model
-    final model = metadata.model ?? _options.defaultModel;
+  ///
+  /// When [additionalMetadata] is provided, its fields override those parsed
+  /// from the prompt (scalar fields win outright) while the `config` map is
+  /// deep-merged (additional config keys override base keys). This mirrors the
+  /// merge behaviour of the JavaScript reference implementation's
+  /// `resolveMetadata`/`renderMetadata`.
+  Future<PromptMetadata> _resolveMetadata(
+    PromptMetadata metadata, [
+    PromptMetadata? additionalMetadata,
+  ]) async {
+    // Resolve model (additional metadata overrides parsed frontmatter).
+    final model = additionalMetadata?.model ?? metadata.model ?? _options.defaultModel;
 
-    // Build config from model defaults and template config
+    // Build config from model defaults, template config, then additional config.
     final config = <String, dynamic>{};
     if (model != null && (_options.modelConfigs?.containsKey(model) ?? false)) {
       config.addAll(_options.modelConfigs![model]!);
@@ -241,13 +260,23 @@ class Dotprompt {
     if (metadata.config != null) {
       config.addAll(metadata.config!);
     }
+    if (additionalMetadata?.config != null) {
+      config.addAll(additionalMetadata!.config!);
+    }
+
+    // Additional metadata overrides parsed values for structured fields.
+    final effectiveTools = additionalMetadata?.tools ?? metadata.tools;
+    final effectiveInput = additionalMetadata?.input ?? metadata.input;
+    final effectiveOutput = additionalMetadata?.output ?? metadata.output;
+    final effectiveExt = additionalMetadata?.ext ?? metadata.ext;
+    final effectiveRaw = additionalMetadata?.raw ?? metadata.raw;
 
     // Resolve tools
     final toolDefs = <ToolDefinition>[];
     final unresolvedTools = <String>[];
 
-    if (metadata.tools != null) {
-      for (final toolName in metadata.tools!) {
+    if (effectiveTools != null) {
+      for (final toolName in effectiveTools) {
         if (_tools.containsKey(toolName)) {
           toolDefs.add(_tools[toolName]!);
         } else if (_options.toolResolver != null) {
@@ -264,8 +293,8 @@ class Dotprompt {
     }
 
     // Process schemas (convert Picoschema to JSON Schema)
-    var input = metadata.input;
-    var output = metadata.output;
+    var input = effectiveInput;
+    var output = effectiveOutput;
 
     if (input?.schema != null && Picoschema.isPicoschema(input!.schema!)) {
       final jsonSchema = Picoschema.toJsonSchema(
@@ -293,8 +322,8 @@ class Dotprompt {
       output: output,
       tools: unresolvedTools.isNotEmpty ? unresolvedTools : null,
       toolDefs: toolDefs.isNotEmpty ? toolDefs : null,
-      ext: metadata.ext,
-      raw: metadata.raw,
+      ext: effectiveExt,
+      raw: effectiveRaw,
     );
   }
 
