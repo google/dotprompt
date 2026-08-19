@@ -171,10 +171,19 @@ class Dotprompt {
   ///
   /// Returns a function that can be called multiple times with different
   /// data to render the same template.
-  Future<PromptFunction> compile(String source) async {
+  ///
+  /// The optional [additionalMetadata] is merged on top of the metadata parsed
+  /// from [source] using the same rules as [renderMetadata], and applies to
+  /// every render produced by the returned function. This mirrors the
+  /// `additionalMetadata` argument of the JavaScript reference implementation's
+  /// `compile`.
+  Future<PromptFunction> compile(
+    String source, [
+    PromptMetadata? additionalMetadata,
+  ]) async {
     final parsed = parse(source);
     await _resolvePartials(parsed.template);
-    return _CompiledPromptFunction(this, parsed);
+    return _CompiledPromptFunction(this, parsed, additionalMetadata);
   }
 
   /// Renders a prompt template with the provided data.
@@ -193,9 +202,20 @@ class Dotprompt {
   ///
   /// Useful when you need resolved metadata (tools, schemas) without the
   /// message content.
-  Future<PromptMetadata> renderMetadata(String source) async {
+  ///
+  /// The optional [additionalMetadata] is merged on top of the metadata parsed
+  /// from [source], overriding conflicting scalar fields (model, input, output,
+  /// tools, ext) while shallow-merging the `config` map (additional config keys
+  /// override base keys; nested objects are replaced wholesale). This mirrors
+  /// the `additionalMetadata` argument of the JavaScript reference
+  /// implementation and lets callers override or supplement a prompt's declared
+  /// metadata at resolution time without editing the prompt source.
+  Future<PromptMetadata> renderMetadata(
+    String source, [
+    PromptMetadata? additionalMetadata,
+  ]) async {
     final parsed = parse(source);
-    return _resolveMetadata(parsed.metadata);
+    return _resolveMetadata(parsed.metadata, additionalMetadata);
   }
 
   /// Resolves partial references in a template.
@@ -229,11 +249,20 @@ class Dotprompt {
   }
 
   /// Resolves metadata, including tools and schemas.
-  Future<PromptMetadata> _resolveMetadata(PromptMetadata metadata) async {
-    // Resolve model
-    final model = metadata.model ?? _options.defaultModel;
+  ///
+  /// When [additionalMetadata] is provided, its fields override those parsed
+  /// from the prompt (scalar fields win outright) while the `config` map is
+  /// shallow-merged (additional config keys override base keys; nested objects
+  /// are replaced wholesale). This mirrors the merge behaviour of the
+  /// JavaScript reference implementation's `resolveMetadata`/`renderMetadata`.
+  Future<PromptMetadata> _resolveMetadata(
+    PromptMetadata metadata, [
+    PromptMetadata? additionalMetadata,
+  ]) async {
+    // Resolve model (additional metadata overrides parsed frontmatter).
+    final model = additionalMetadata?.model ?? metadata.model ?? _options.defaultModel;
 
-    // Build config from model defaults and template config
+    // Build config from model defaults, template config, then additional config.
     final config = <String, dynamic>{};
     if (model != null && (_options.modelConfigs?.containsKey(model) ?? false)) {
       config.addAll(_options.modelConfigs![model]!);
@@ -241,13 +270,23 @@ class Dotprompt {
     if (metadata.config != null) {
       config.addAll(metadata.config!);
     }
+    if (additionalMetadata?.config != null) {
+      config.addAll(additionalMetadata!.config!);
+    }
+
+    // Additional metadata overrides parsed values for structured fields.
+    final effectiveTools = additionalMetadata?.tools ?? metadata.tools;
+    final effectiveInput = additionalMetadata?.input ?? metadata.input;
+    final effectiveOutput = additionalMetadata?.output ?? metadata.output;
+    final effectiveExt = additionalMetadata?.ext ?? metadata.ext;
+    final effectiveRaw = additionalMetadata?.raw ?? metadata.raw;
 
     // Resolve tools
     final toolDefs = <ToolDefinition>[];
     final unresolvedTools = <String>[];
 
-    if (metadata.tools != null) {
-      for (final toolName in metadata.tools!) {
+    if (effectiveTools != null) {
+      for (final toolName in effectiveTools) {
         if (_tools.containsKey(toolName)) {
           toolDefs.add(_tools[toolName]!);
         } else if (_options.toolResolver != null) {
@@ -264,8 +303,8 @@ class Dotprompt {
     }
 
     // Process schemas (convert Picoschema to JSON Schema)
-    var input = metadata.input;
-    var output = metadata.output;
+    var input = effectiveInput;
+    var output = effectiveOutput;
 
     if (input?.schema != null && Picoschema.isPicoschema(input!.schema!)) {
       final jsonSchema = Picoschema.toJsonSchema(
@@ -293,8 +332,8 @@ class Dotprompt {
       output: output,
       tools: unresolvedTools.isNotEmpty ? unresolvedTools : null,
       toolDefs: toolDefs.isNotEmpty ? toolDefs : null,
-      ext: metadata.ext,
-      raw: metadata.raw,
+      ext: effectiveExt,
+      raw: effectiveRaw,
     );
   }
 
@@ -302,8 +341,9 @@ class Dotprompt {
   Future<RenderedPrompt> _renderInternal(
     ParsedPrompt parsed,
     DataArgument data,
-    Map<String, dynamic>? options,
-  ) async {
+    Map<String, dynamic>? options, [
+    PromptMetadata? additionalMetadata,
+  ]) async {
     // Build merged data context
     final mergedData = <String, dynamic>{};
 
@@ -426,7 +466,7 @@ class Dotprompt {
     }
 
     // Build result config
-    final resolvedMetadata = await _resolveMetadata(parsed.metadata);
+    final resolvedMetadata = await _resolveMetadata(parsed.metadata, additionalMetadata);
     final resultConfig = resolvedMetadata.toConfig();
 
     // Add input config showing defaults that were used
@@ -631,17 +671,18 @@ abstract interface class PromptFunction {
 
 /// Internal implementation of [PromptFunction].
 class _CompiledPromptFunction implements PromptFunction {
-  _CompiledPromptFunction(this._dotprompt, this._parsed);
+  _CompiledPromptFunction(this._dotprompt, this._parsed, [this._additionalMetadata]);
 
   final Dotprompt _dotprompt;
   final ParsedPrompt _parsed;
+  final PromptMetadata? _additionalMetadata;
 
   @override
   Future<RenderedPrompt> render(
     DataArgument data, [
     Map<String, dynamic>? options,
   ]) =>
-      _dotprompt._renderInternal(_parsed, data, options);
+      _dotprompt._renderInternal(_parsed, data, options, _additionalMetadata);
 
   @override
   ParsedPrompt get prompt => _parsed;
