@@ -10,7 +10,7 @@
   "rs": "0.1.0",
   "packages/vscode": "0.0.1",
   "packages/vim": "0.1.0",
-  "packages/emacs": "0.1.0",
+  "packages/emacs": "0.1.1",
   "packages/monaco": "0.1.0",
   "packages/codemirror": "0.1.0",
   "packages/jetbrains": "0.2.0",
