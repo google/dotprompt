@@ -166,7 +166,7 @@ Hello!
         expect(metadata.model, equals("gemini-flash-latest"));
       });
 
-      test("deep-merges config, additional wins on conflict", () async {
+      test("shallow-merges config, additional wins on conflict", () async {
         final metadata = await dotprompt.renderMetadata(
           """
 ---
@@ -205,6 +205,30 @@ model: gemini-pro
 Hello!
 """);
         expect(metadata.model, equals("gemini-pro"));
+      });
+    });
+
+    group("compile additionalMetadata", () {
+      test("applies additional metadata to rendered config", () async {
+        final promptFn = await dotprompt.compile(
+          """
+---
+model: gemini-pro
+config:
+  temperature: 0.7
+---
+Hello!
+""",
+          const PromptMetadata(
+            model: "gemini-flash-latest",
+            config: {"temperature": 0.2, "topP": 0.9},
+          ),
+        );
+        final result = await promptFn.render(const DataArgument());
+        // toConfig spreads config values (temperature, topP) at the top level.
+        expect(result.config["model"], equals("gemini-flash-latest"));
+        expect(result.config["temperature"], equals(0.2));
+        expect(result.config["topP"], equals(0.9));
       });
     });
 

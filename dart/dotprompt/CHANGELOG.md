@@ -6,9 +6,10 @@ All notable changes to dotprompt-dart will be documented in this file.
 
 ### Added
 
-- `renderMetadata` now accepts an optional `additionalMetadata` argument that is
-  merged on top of the prompt's parsed frontmatter (scalar fields override,
-  `config` map is deep-merged), matching the JavaScript reference implementation.
+- `renderMetadata` and `compile` now accept an optional `additionalMetadata`
+  argument that is merged on top of the prompt's parsed frontmatter (scalar
+  fields override, `config` map is shallow-merged with additional winning on
+  conflict), matching the JavaScript reference implementation.
 
 ## [0.0.1] - 2026-01-30
 

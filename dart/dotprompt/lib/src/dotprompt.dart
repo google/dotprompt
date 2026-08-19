@@ -171,10 +171,19 @@ class Dotprompt {
   ///
   /// Returns a function that can be called multiple times with different
   /// data to render the same template.
-  Future<PromptFunction> compile(String source) async {
+  ///
+  /// The optional [additionalMetadata] is merged on top of the metadata parsed
+  /// from [source] using the same rules as [renderMetadata], and applies to
+  /// every render produced by the returned function. This mirrors the
+  /// `additionalMetadata` argument of the JavaScript reference implementation's
+  /// `compile`.
+  Future<PromptFunction> compile(
+    String source, [
+    PromptMetadata? additionalMetadata,
+  ]) async {
     final parsed = parse(source);
     await _resolvePartials(parsed.template);
-    return _CompiledPromptFunction(this, parsed);
+    return _CompiledPromptFunction(this, parsed, additionalMetadata);
   }
 
   /// Renders a prompt template with the provided data.
@@ -196,10 +205,11 @@ class Dotprompt {
   ///
   /// The optional [additionalMetadata] is merged on top of the metadata parsed
   /// from [source], overriding conflicting scalar fields (model, input, output,
-  /// tools, ext) while deep-merging the `config` map. This mirrors the
-  /// `additionalMetadata` argument of the JavaScript reference implementation
-  /// and lets callers override or supplement a prompt's declared metadata at
-  /// resolution time without editing the prompt source.
+  /// tools, ext) while shallow-merging the `config` map (additional config keys
+  /// override base keys; nested objects are replaced wholesale). This mirrors
+  /// the `additionalMetadata` argument of the JavaScript reference
+  /// implementation and lets callers override or supplement a prompt's declared
+  /// metadata at resolution time without editing the prompt source.
   Future<PromptMetadata> renderMetadata(
     String source, [
     PromptMetadata? additionalMetadata,
@@ -242,9 +252,9 @@ class Dotprompt {
   ///
   /// When [additionalMetadata] is provided, its fields override those parsed
   /// from the prompt (scalar fields win outright) while the `config` map is
-  /// deep-merged (additional config keys override base keys). This mirrors the
-  /// merge behaviour of the JavaScript reference implementation's
-  /// `resolveMetadata`/`renderMetadata`.
+  /// shallow-merged (additional config keys override base keys; nested objects
+  /// are replaced wholesale). This mirrors the merge behaviour of the
+  /// JavaScript reference implementation's `resolveMetadata`/`renderMetadata`.
   Future<PromptMetadata> _resolveMetadata(
     PromptMetadata metadata, [
     PromptMetadata? additionalMetadata,
@@ -331,8 +341,9 @@ class Dotprompt {
   Future<RenderedPrompt> _renderInternal(
     ParsedPrompt parsed,
     DataArgument data,
-    Map<String, dynamic>? options,
-  ) async {
+    Map<String, dynamic>? options, [
+    PromptMetadata? additionalMetadata,
+  ]) async {
     // Build merged data context
     final mergedData = <String, dynamic>{};
 
@@ -455,7 +466,7 @@ class Dotprompt {
     }
 
     // Build result config
-    final resolvedMetadata = await _resolveMetadata(parsed.metadata);
+    final resolvedMetadata = await _resolveMetadata(parsed.metadata, additionalMetadata);
     final resultConfig = resolvedMetadata.toConfig();
 
     // Add input config showing defaults that were used
@@ -660,17 +671,18 @@ abstract interface class PromptFunction {
 
 /// Internal implementation of [PromptFunction].
 class _CompiledPromptFunction implements PromptFunction {
-  _CompiledPromptFunction(this._dotprompt, this._parsed);
+  _CompiledPromptFunction(this._dotprompt, this._parsed, [this._additionalMetadata]);
 
   final Dotprompt _dotprompt;
   final ParsedPrompt _parsed;
+  final PromptMetadata? _additionalMetadata;
 
   @override
   Future<RenderedPrompt> render(
     DataArgument data, [
     Map<String, dynamic>? options,
   ]) =>
-      _dotprompt._renderInternal(_parsed, data, options);
+      _dotprompt._renderInternal(_parsed, data, options, _additionalMetadata);
 
   @override
   ParsedPrompt get prompt => _parsed;
