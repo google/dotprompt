@@ -43,8 +43,7 @@
 /// | Maintenance | Manual | Grammar-based |
 library;
 
-import "antlr_parser.dart";
-import "parser.dart"
+import "package:handlebars_dart/src/parser.dart"
     as hand_written
     show
         AstNode,
@@ -57,6 +56,8 @@ import "parser.dart"
         ProgramNode,
         RawBlockNode,
         TextNode;
+
+import "antlr_parser.dart";
 
 /// Parser implementation type.
 enum ParserType {

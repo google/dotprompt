@@ -23,10 +23,11 @@ library;
 
 import "package:antlr4/antlr4.dart";
 
-import "antlr/HandlebarsLexer.dart";
-import "antlr/HandlebarsParser.dart";
-import "antlr/HandlebarsParserBaseVisitor.dart";
-import "parser.dart";
+import "package:handlebars_dart/src/parser.dart";
+
+import "generated/HandlebarsLexer.dart";
+import "generated/HandlebarsParser.dart";
+import "generated/HandlebarsParserBaseVisitor.dart";
 
 /// Visitor that builds AST nodes from the ANTLR parse tree.
 ///

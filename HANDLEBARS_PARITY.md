@@ -16,7 +16,7 @@ language runtimes in the Dotprompt project.
 
 | Runtime | Package Name | Parser Type | Test Coverage |
 |---------|--------------|-------------|---------------|
-| Dart | `handlebarrz` | Hand-written + ANTLR4 | 84 tests |
+| Dart | `handlebars_dart` | Hand-written (ANTLR4 test-only) | 127 tests |
 | JavaScript | Native Handlebars | ANTLR4 | Reference impl |
 | Python | `dotpromptz-handlebars` | Rust bindings | TBD |
 | Go | `dotprompt-go` | Hand-written | TBD |
@@ -146,7 +146,7 @@ language runtimes in the Dotprompt project.
 
 | Aspect | Dart | JS | Python | Go | Rust | Java |
 |--------|------|----|---------|----|------|------|
-| Parser type | Hand-written + ANTLR4 | ANTLR4 | Rust bindings | Hand-written | Hand-written | Hand-written |
+| Parser type | Hand-written (ANTLR4 test-only) | ANTLR4 | Rust bindings | Hand-written | Hand-written | Hand-written |
 | ANTLR4 parity tests | 38/38 ✅ | N/A | N/A | TBD | TBD | TBD |
 | Grammar source | `spec/handlebars/antlr/` | Official | N/A | N/A | N/A | N/A |
 
@@ -154,7 +154,7 @@ language runtimes in the Dotprompt project.
 
 | Runtime | Unit Tests | Integration Tests | Spec Tests |
 |---------|------------|-------------------|------------|
-| Dart | 84 passing | ✅ | 38 parity tests |
+| Dart | 127 passing | ✅ | 38 parity tests |
 | JavaScript | Reference | ✅ | Reference |
 | Python | TBD | TBD | TBD |
 | Go | TBD | TBD | TBD |
@@ -167,11 +167,14 @@ language runtimes in the Dotprompt project.
 
 ### Dart Implementation
 
-The Dart `handlebarrz` library provides a complete Handlebars implementation with:
+The Dart `handlebars_dart` library provides a complete Handlebars implementation
+with:
 
-- **Dual parser architecture**: Hand-written parser for speed, ANTLR4 parser for
-  spec compliance verification
-- **100% parity**: 38/38 ANTLR parity tests confirm structural equivalence
+- **Hand-written parser**: The published library ships a single hand-written
+  recursive-descent parser. The ANTLR4 parser and its generated grammar are
+  kept as test-only tooling and are not a runtime dependency.
+- **Parser parity verification**: 38/38 ANTLR parity tests confirm the
+  hand-written parser is structurally equivalent to the grammar-derived one.
 - **Full feature set**: All core Handlebars features including raw blocks, inline
   partials, and strict mode
 
@@ -186,4 +189,4 @@ leveraging the `handlebars-rust` crate.
 
 ---
 
-*Last updated: 2026-01-31*
+*Last updated: 2026-08-13*

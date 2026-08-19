@@ -23,7 +23,7 @@ Add `handlebars_dart` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  handlebars_dart: ^0.0.1
+  handlebars_dart: ^1.0.0
 ```
 
 ## Usage

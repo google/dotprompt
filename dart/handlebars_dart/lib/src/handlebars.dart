@@ -15,7 +15,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import "options.dart";
-import "parser.dart";
 import "safe_string.dart";
 import "template.dart";
 
@@ -123,11 +122,6 @@ class Handlebars {
 
     return template.call;
   }
-
-  /// Parses a template into an AST.
-  ///
-  /// Useful for template analysis or custom processing.
-  ProgramNode parse(String source) => Parser.parse(source);
 
   /// Registers a helper function.
   ///

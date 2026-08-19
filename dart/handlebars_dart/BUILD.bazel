@@ -25,7 +25,6 @@ dart_library(
     name = "handlebars_dart",
     srcs = glob(["lib/**/*.dart"]) + ["pubspec.yaml"],
     pubspec = "pubspec.yaml",
-    deps = ["@dart_deps_antlr4//:antlr4"],
 )
 
 # Export pubspec for pub commands
@@ -35,10 +34,16 @@ exports_files([
 
 exports_files(["pubspec.lock"])
 
+# Parser-parity tests: exercise the ANTLR4 parser (test-only, not shipped in
+# the published library) against the hand-written parser.
 dart_test(
     name = "antlr_parser_test",
+    srcs = glob(["test/antlr/**/*.dart"]),
     main = "test/antlr_parser_test.dart",
-    deps = [":handlebars_dart"],
+    deps = [
+        ":handlebars_dart",
+        "@dart_deps_antlr4//:antlr4",
+    ],
 )
 
 dart_test(

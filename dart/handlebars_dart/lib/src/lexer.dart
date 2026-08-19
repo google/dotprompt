@@ -248,9 +248,7 @@ class Lexer {
 
     while (_pos < source.length) {
       // Check for escape sequence: \{{ outputs literal {{
-      // Check if current char is backslash followed by {{
-      // TODO(user): Escape sequence detection has caching issues with Bazel - needs investigation.
-      // See https://github.com/google/dotprompt/issues/999
+      // (backslash = code unit 92, '{' = code unit 123).
       if (_pos <= source.length - 3 &&
           source.codeUnitAt(_pos) == 92 &&
           source.codeUnitAt(_pos + 1) == 123 &&
