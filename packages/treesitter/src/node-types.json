@@ -101,21 +101,6 @@
     }
   },
   {
-    "type": "dotprompt_marker",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "marker_content",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "expression_content",
     "named": true,
     "fields": {},
@@ -175,10 +160,6 @@
         },
         {
           "type": "close_block",
-          "named": true
-        },
-        {
-          "type": "dotprompt_marker",
           "named": true
         },
         {
@@ -287,10 +268,6 @@
       "required": true,
       "types": [
         {
-          "type": "dotprompt_marker",
-          "named": true
-        },
-        {
           "type": "handlebars_block",
           "named": true
         },
@@ -386,19 +363,11 @@
     "named": false
   },
   {
-    "type": "<<<dotprompt:",
-    "named": false
-  },
-  {
     "type": "=",
     "named": false
   },
   {
     "type": ">",
-    "named": false
-  },
-  {
-    "type": ">>>",
     "named": false
   },
   {
@@ -427,10 +396,6 @@
   },
   {
     "type": "key",
-    "named": true
-  },
-  {
-    "type": "marker_content",
     "named": true
   },
   {

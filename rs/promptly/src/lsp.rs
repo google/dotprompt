@@ -100,16 +100,14 @@ fn get_helper_docs(name: &str) -> Option<&'static str> {
             ```",
         ),
         "role" => Some(
-            "## `{{#role name}}`\n\n\
-            Defines a message with a specific role (system, user, model).\n\n\
+            "## `{{role name}}`\n\n\
+            Defines a message with a specific role (system, user, or model). All content following this marker until the next role marker will be associated with this role.\n\n\
             **Example:**\n\
             ```handlebars\n\
-            {{#role \"system\"}}\n\
-            You are a helpful assistant.\n\
-            {{/role}}\n\n\
-            {{#role \"user\"}}\n\
+            {{role \"system\"}}\n\
+            You are a helpful assistant.\n\n\
+            {{role \"user\"}}\n\
             {{query}}\n\
-            {{/role}}\n\
             ```",
         ),
         "media" => Some(
@@ -122,13 +120,12 @@ fn get_helper_docs(name: &str) -> Option<&'static str> {
             ```",
         ),
         "section" => Some(
-            "## `{{#section name}}`\n\n\
-            Defines a named section for structured output.\n\n\
+            "## `{{section name}}`\n\n\
+            Defines a named section marker for structured output.\n\n\
             **Example:**\n\
             ```handlebars\n\
-            {{#section \"reasoning\"}}\n\
+            {{section \"reasoning\"}}\n\
             Think step by step...\n\
-            {{/section}}\n\
             ```",
         ),
         _ => None,

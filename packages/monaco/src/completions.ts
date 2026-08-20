@@ -82,7 +82,7 @@ const DOTPROMPT_HELPERS = [
   {
     label: 'role',
     kind: 1,
-    insertText: '{{#role "${1|system,user,model|}"}}}\n\t$0\n{{/role}}',
+    insertText: '{{role "${1|system,user,model|}"}}\n$0',
     insertTextRules: 4,
     documentation:
       'Defines a message with a specific role (system, user, or model).',
@@ -90,20 +90,21 @@ const DOTPROMPT_HELPERS = [
   {
     label: 'json',
     kind: 1,
-    insertText: '{{ json ${1:value} }}',
+    insertText: '{{json ${1:data}}}',
     insertTextRules: 4,
-    documentation: 'Serializes a value to JSON format.',
+    documentation: 'Serializes a value to JSON format for structured output.',
   },
   {
     label: 'history',
     kind: 1,
     insertText: '{{history}}',
+    insertTextRules: 4,
     documentation: 'Inserts the conversation history at this point.',
   },
   {
     label: 'section',
     kind: 1,
-    insertText: '{{#section "${1:name}"}}\n\t$0\n{{/section}}',
+    insertText: '{{section "${1:name}"}}\n$0',
     insertTextRules: 4,
     documentation: 'Defines a named section that can be referenced elsewhere.',
   },
@@ -138,24 +139,24 @@ const ROLE_SNIPPETS = [
   {
     label: 'system',
     kind: 15, // Snippet
-    insertText: '{{#role "system"}}\n\t$0\n{{/role}}',
+    insertText: '{{role "system"}}\n$0',
     insertTextRules: 4,
-    documentation: "System role block - sets the AI's behavior and context.",
+    documentation: "System role marker - sets the AI's behavior and context.",
   },
   {
     label: 'user',
     kind: 15,
-    insertText: '{{#role "user"}}\n\t$0\n{{/role}}',
+    insertText: '{{role "user"}}\n$0',
     insertTextRules: 4,
-    documentation: 'User role block - represents user input.',
+    documentation: 'User role marker - represents user input.',
   },
   {
     label: 'model',
     kind: 15,
-    insertText: '{{#role "model"}}\n\t$0\n{{/role}}',
+    insertText: '{{role "model"}}\n$0',
     insertTextRules: 4,
     documentation:
-      'Model role block - represents AI responses (for few-shot examples).',
+      'Model role marker - represents AI responses (for few-shot examples).',
   },
 ];
 
@@ -250,7 +251,10 @@ const MODEL_NAMES = [
   },
   // Gemma 3 Series
   { label: 'gemma-3-27b-it', documentation: 'Large instruction-tuned Gemma 3' },
-  { label: 'gemma-3-12b-it', documentation: 'Medium instruction-tuned Gemma 3' },
+  {
+    label: 'gemma-3-12b-it',
+    documentation: 'Medium instruction-tuned Gemma 3',
+  },
   { label: 'gemma-3-4b-it', documentation: 'Small instruction-tuned Gemma 3' },
   { label: 'gemma-3-1b-it', documentation: 'Tiny instruction-tuned Gemma 3' },
   // OpenAI
@@ -347,7 +351,7 @@ export function createCompletionProvider(
               ['if', 'unless', 'each', 'with'].includes(h.label)
             ),
             ...DOTPROMPT_HELPERS.filter((h) =>
-              ['role', 'section', 'ifEquals', 'unlessEquals'].includes(h.label)
+              ['ifEquals', 'unlessEquals'].includes(h.label)
             ),
           ].map((item) => ({
             ...item,
