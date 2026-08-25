@@ -19,7 +19,7 @@ description: >-
   Dart implementation of Dotprompt, an executable prompt template file format
   for Generative AI. This library provides parsing, rendering, and management
   of .prompt files with YAML frontmatter and Handlebars templating.
-version: 1.0.0
+version: 1.0.1
 license: Apache-2.0
 homepage: https://github.com/google/dotprompt
 repository: https://github.com/google/dotprompt
