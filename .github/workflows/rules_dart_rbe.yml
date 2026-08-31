@@ -51,7 +51,7 @@ jobs:
             runner: macos-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Bazel
         uses: bazel-contrib/setup-bazel@0.18.0
@@ -117,7 +117,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Bazel
         uses: bazel-contrib/setup-bazel@0.18.0
@@ -170,7 +170,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Bazel
         uses: bazel-contrib/setup-bazel@0.18.0
@@ -215,7 +215,7 @@ jobs:
           ls -la /tmp/bep.*
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: build-metrics
           path: |

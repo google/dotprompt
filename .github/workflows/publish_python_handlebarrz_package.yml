@@ -180,7 +180,7 @@ jobs:
           - "3.13"
           - "3.14"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -193,7 +193,7 @@ jobs:
           RUSTUP_MAX_RETRIES: 3
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@d651010b8da762cde178750d8eda7b5febfe147a # v0.0.9
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -213,7 +213,7 @@ jobs:
           maturin build --release -i python${{ matrix.python_version }} -o dist
 
       - name: Upload build packages
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: wheels-ubuntu-arm64-${{ matrix.python_version }}
           path: python/handlebarrz/dist
@@ -235,7 +235,7 @@ jobs:
           - "3.13"
           - "3.14"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -250,7 +250,7 @@ jobs:
           RUSTUP_MAX_RETRIES: 3
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@d651010b8da762cde178750d8eda7b5febfe147a # v0.0.9
 
       - name: Install musl tools
         run: sudo apt-get update && sudo apt-get install -y musl-tools
@@ -269,7 +269,7 @@ jobs:
           maturin build --release --target aarch64-unknown-linux-musl -i python${{ matrix.python_version }} -o dist
 
       - name: Upload build packages
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: wheels-alpine-arm64-${{ matrix.python_version }}
           path: python/handlebarrz/dist
@@ -291,7 +291,7 @@ jobs:
           - "3.13"
           - "3.14"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -306,7 +306,7 @@ jobs:
           RUSTUP_MAX_RETRIES: 3
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@d651010b8da762cde178750d8eda7b5febfe147a # v0.0.9
 
       - name: Install musl tools
         run: sudo apt-get update && sudo apt-get install -y musl-tools
@@ -325,7 +325,7 @@ jobs:
           maturin build --release --target x86_64-unknown-linux-musl -i python${{ matrix.python_version }} -o dist
 
       - name: Upload build packages
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: wheels-alpine-x86_64-${{ matrix.python_version }}
           path: python/handlebarrz/dist
@@ -348,7 +348,7 @@ jobs:
           - "3.14"
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -361,7 +361,7 @@ jobs:
           RUSTUP_MAX_RETRIES: 3
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@d651010b8da762cde178750d8eda7b5febfe147a # v0.0.9
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -381,7 +381,7 @@ jobs:
           maturin build --release -i python${{ matrix.python_version }} -o dist
 
       - name: Upload build packages
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: wheels-ubuntu-x86-64-${{ matrix.python_version }}
           path: python/handlebarrz/dist
@@ -404,7 +404,7 @@ jobs:
           - "3.13"
           - "3.14"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Set up Python
         id: setup_py
@@ -420,7 +420,7 @@ jobs:
           RUSTUP_MAX_RETRIES: 3
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@d651010b8da762cde178750d8eda7b5febfe147a # v0.0.9
 
       - name: Install maturin
         run: pip install maturin
@@ -432,7 +432,7 @@ jobs:
           STEPS_SETUP_PY_OUTPUTS_PYTHON_PATH: ${{ steps.setup_py.outputs.python-path }}
 
       - name: Upload build packages
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: wheels-windows-x86_64-${{ matrix.python_version }}
           path: python/handlebarrz/dist
@@ -454,10 +454,10 @@ jobs:
           - "3.13"
           - "3.14"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Set up Node.js for Actions
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: '20'
 
@@ -474,7 +474,7 @@ jobs:
           RUSTUP_MAX_RETRIES: 3
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@d651010b8da762cde178750d8eda7b5febfe147a # v0.0.9
 
       - name: Install maturin
         run: pip install maturin
@@ -488,7 +488,7 @@ jobs:
         run: maturin build --release --strip -o dist
 
       - name: Upload build packages
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: wheels-macos-arm64-${{ matrix.python_version }}-${{ github.job }}
           path: python/handlebarrz/dist
@@ -510,7 +510,7 @@ jobs:
           - "3.13"
           - "3.14"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -526,7 +526,7 @@ jobs:
           RUSTUP_MAX_RETRIES: 3
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@d651010b8da762cde178750d8eda7b5febfe147a # v0.0.9
 
       - name: Install maturin
         run: pip install maturin
@@ -536,7 +536,7 @@ jobs:
         run: maturin build --release --strip -o dist --target x86_64-apple-darwin
 
       - name: Upload build packages
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: wheels-macos-x86_64-${{ matrix.python_version }}-${{ github.job }}
           path: python/handlebarrz/dist
@@ -555,7 +555,7 @@ jobs:
 #          - "3.13"
 #          - "3.14"
 #    steps:
-#      - uses: actions/checkout@v6
+#      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 #
 #      - name: Set up Python
 #        id: setup_py
@@ -582,7 +582,7 @@ jobs:
 #        run: maturin build --release --strip -o dist --target aarch64-pc-windows-msvc
 #
 #      - name: Upload build packages
-#        uses: actions/upload-artifact@v6
+#        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
 #        with:
 #          name: wheels-windows-arm64-${{ matrix.python_version }}
 #          path: python/handlebarrz/dist
@@ -657,7 +657,7 @@ jobs:
           - "debian"
           - "fedora"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Build container
         run: |
@@ -685,7 +685,7 @@ jobs:
           - "3.13"
           - "3.14"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Build container
         run: |
@@ -713,7 +713,7 @@ jobs:
           - "3.13"
           - "3.14"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Build container
         run: |
@@ -744,7 +744,7 @@ jobs:
           - "debian"
           - "fedora"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Build container
         run: |
@@ -773,7 +773,7 @@ jobs:
           - "3.13"
           - "3.14"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -801,7 +801,7 @@ jobs:
           - "3.13"
           - "3.14"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -832,7 +832,7 @@ jobs:
           - "3.13"
           - "3.14"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -860,7 +860,7 @@ jobs:
 #          - "3.13"
 #          - "3.14"
 #    steps:
-#      - uses: actions/checkout@v6
+#      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 #
 #      - name: Set up Python
 #        uses: actions/setup-python@v6

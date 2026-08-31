@@ -39,7 +39,7 @@ jobs:
           - { name: "Alpine ARM64", runner: "ubuntu-24.04-arm", rust_target: "aarch64-unknown-linux-musl" }
           - { name: "Alpine x86_64", runner: "ubuntu-latest", rust_target: "x86_64-unknown-linux-musl" }
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -54,7 +54,7 @@ jobs:
           RUSTUP_MAX_RETRIES: 3
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@d651010b8da762cde178750d8eda7b5febfe147a # v0.0.9
 
       - name: Install musl tools (Alpine builds)
         if: contains(matrix.target.name, 'Alpine')
@@ -102,7 +102,7 @@ jobs:
           - { os: "windows-latest", target: "x86_64-pc-windows-msvc", name: "Windows x86_64", python_arch: "x64" }
 #          - { os: "windows-latest", target: "aarch64-pc-windows-msvc", name: "Windows ARM64", python_arch: "arm64" }
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python_version }}
@@ -115,7 +115,7 @@ jobs:
           RUSTUP_MAX_RETRIES: 3
       - name: Setup sccache
         if: matrix.config.os != 'macos-15-intel'
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@d651010b8da762cde178750d8eda7b5febfe147a # v0.0.9
       - run: pip install maturin
       - name: Build wheel
         working-directory: ./python/handlebarrz
