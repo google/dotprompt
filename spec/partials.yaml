@@ -34,6 +34,23 @@
             content:
               [{ text: "Hello from a partial! This is the main template.\n" }]
 
+# Tests that partial names support the full filename regex: letters, digits,
+# underscores, hyphens, and dots (e.g., topic-2.sub_topic).
+- name: partial_name_with_full_regex
+  template: |
+    {{> Topic-2.sub_topic}} This is the main template.
+  partials:
+    Topic-2.sub_topic: "Hello from a complex-named partial!"
+  tests:
+    - desc: renders a partial whose name contains letters, digits, dots, underscores, and hyphens
+      data:
+        input: {}
+      expect:
+        messages:
+          - role: user
+            content:
+              [{ text: "Hello from a complex-named partial! This is the main template.\n" }]
+
 # Tests partial rendering with context variables passed from the main template.
 - name: partial_with_context
   template: |
