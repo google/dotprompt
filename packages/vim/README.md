@@ -4,7 +4,7 @@ Provides syntax highlighting, LSP integration, and filetype detection for Dotpro
 
 ## Features
 
-- **Syntax Highlighting**: YAML frontmatter, Handlebars templates, Dotprompt markers
+- **Syntax Highlighting**: YAML frontmatter, Handlebars templates
 - **LSP Integration**: Diagnostics, formatting, hover documentation via `promptly`
 - **Format on Save**: Automatic formatting when saving (configurable)
 - **Keymaps**: Quick access to LSP features

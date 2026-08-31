@@ -4,8 +4,7 @@ CodeMirror 6 language support for Dotprompt (`.prompt`) files.
 
 ## Features
 
-- **Syntax Highlighting**: YAML frontmatter, Handlebars templates, Dotprompt
-  markers
+- **Syntax Highlighting**: YAML frontmatter, Handlebars templates
 - **Autocompletion**: Helpers, frontmatter fields, model names
 - **Theming**: Dark and light theme support
 

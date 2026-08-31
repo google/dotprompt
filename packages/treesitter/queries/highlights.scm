@@ -49,6 +49,3 @@
 (number) @number
 (boolean) @constant.builtin
 (key) @attribute
-
-; Dotprompt markers
-(dotprompt_marker) @keyword
