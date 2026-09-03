@@ -146,7 +146,7 @@ PromptStoreSync (sync read)
 from __future__ import annotations
 
 import warnings
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from enum import Enum
 from typing import (
     Any,
@@ -575,13 +575,13 @@ class PromptFunction(Protocol[ModelConfigT]):
 
     async def __call__(
         self,
-        data: DataArgument[Any],
+        data: DataArgument[Any] | Mapping[str, Any],
         options: PromptMetadata[ModelConfigT] | None = None,
     ) -> RenderedPrompt[ModelConfigT]:
         """Asynchronously renders the prompt.
 
         Args:
-            data: The runtime `DataArgument`.
+            data: Runtime data as a `DataArgument` or mapping.
             options: Optional `PromptMetadata` to merge/override.
 
         Returns:
@@ -602,13 +602,13 @@ class PromptRefFunction(Protocol[ModelConfigT]):
 
     async def __call__(
         self,
-        data: DataArgument[Any],
+        data: DataArgument[Any] | Mapping[str, Any],
         options: PromptMetadata[ModelConfigT] | None = None,
     ) -> RenderedPrompt[ModelConfigT]:
         """Asynchronously loads and renders the referenced prompt.
 
         Args:
-            data: The runtime `DataArgument`.
+            data: Runtime data as a `DataArgument` or mapping.
             options: Optional `PromptMetadata` to merge/override.
 
         Returns:

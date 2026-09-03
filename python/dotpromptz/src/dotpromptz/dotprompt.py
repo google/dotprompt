@@ -40,6 +40,7 @@ Key features include:
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from typing import Any
 
 import anyio
@@ -72,6 +73,15 @@ from handlebarrz import Context, EscapeFunction, Handlebars, HelperFn, RuntimeOp
 # to walk the AST to find partial nodes, we're using a crude regular expression
 # to find partials.
 _PARTIAL_PATTERN = re.compile(r'{{\s*>\s*([a-zA-Z0-9_.-]+)\s*}}')
+
+
+def _coerce_data_argument(
+    data: DataArgument[VariablesT] | Mapping[str, Any],
+) -> DataArgument[VariablesT]:
+    """Validate mapping inputs against the public runtime data shape."""
+    if isinstance(data, DataArgument):
+        return data
+    return DataArgument[VariablesT].model_validate(data)
 
 
 def _merge_metadata(
@@ -140,7 +150,9 @@ class RenderFunc(PromptFunction[ModelConfigT]):
         self.prompt = prompt
 
     async def __call__(
-        self, data: DataArgument[VariablesT], options: PromptMetadata[ModelConfigT] | None = None
+        self,
+        data: DataArgument[VariablesT] | Mapping[str, Any],
+        options: PromptMetadata[ModelConfigT] | None = None,
     ) -> RenderedPrompt[ModelConfigT]:
         """Render the prompt.
 
@@ -151,11 +163,17 @@ class RenderFunc(PromptFunction[ModelConfigT]):
         Returns:
             The rendered prompt.
         """
+        data = _coerce_data_argument(data)
         merged_metadata: PromptMetadata[ModelConfigT] = await self._dotprompt.render_metadata(self.prompt, options)
 
-        # Prepare input data, merging defaults from options if available.
+        # Prompt defaults apply regardless of whether they came from the
+        # template or a per-call override.
         context: Context = {
-            **((options.input.default or {}) if options and options.input else {}),
+            **(
+                (merged_metadata.input.default or {})
+                if merged_metadata.input and merged_metadata.input.default is not None
+                else {}
+            ),
             **(data.input if data.input is not None else {}),
         }
 
@@ -283,7 +301,10 @@ class Dotprompt:
         return parse_document(source)
 
     async def render(
-        self, source: str, data: DataArgument[VariablesT], options: PromptMetadata[ModelConfigT] | None = None
+        self,
+        source: str,
+        data: DataArgument[VariablesT] | Mapping[str, Any],
+        options: PromptMetadata[ModelConfigT] | None = None,
     ) -> RenderedPrompt[ModelConfigT]:
         """Render a prompt.
 
@@ -338,7 +359,11 @@ class Dotprompt:
         prompt = self.parse(source) if isinstance(source, str) else source
 
         default_model = prompt.model or self._default_model
-        model = additional_metadata.model if additional_metadata else default_model
+        model = (
+            additional_metadata.model
+            if additional_metadata and additional_metadata.model is not None
+            else default_model
+        )
 
         config: ModelConfigT | None = None
         if model is not None and self._model_configs.get(model) is not None:
@@ -374,9 +399,9 @@ class Dotprompt:
             if merge:
                 out = _merge_metadata(out, merge)
 
-        # Remove the template attribute if it exists (TS does this).
+        # Template source is an authoring detail, not model request metadata.
         if hasattr(out, 'template'):
-            delattr(out, 'template')
+            del out.template
 
         out = remove_undefined_fields(out)
         # TODO(#493): can this be done concurrently?
