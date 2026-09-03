@@ -16,10 +16,56 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-echo "Executing for python version $1"
+set -eu
+
+python_version=$1
+candidate_index=$2
+package_version=$3
+target=$4
+
+# Resolver configuration from the runner must not influence provenance.
+unset PIP_INDEX_URL PIP_EXTRA_INDEX_URL PIP_FIND_LINKS PIP_NO_INDEX
+unset UV_INDEX UV_INDEX_URL UV_DEFAULT_INDEX UV_EXTRA_INDEX_URL UV_FIND_LINKS UV_NO_INDEX
+export PIP_CONFIG_FILE=/dev/null
+export UV_NO_CONFIG=1
+
+echo "Executing for Python $python_version from $candidate_index"
 ldd --version
 
-# linux
-uv python install $1
-uv run --python $1 handlebarrz_test.py
+uv python install "$python_version"
+rm -rf .smoke-venv
+uv venv .smoke-venv --python "$python_version"
+uv pip install \
+  --python .smoke-venv \
+  --no-cache \
+  --index-url "https://pypi.org/simple" \
+  --only-binary=:all: \
+  "packaging>=24.2" \
+  "pip>=24" \
+  "structlog>=25.2.0"
+rm -rf candidate-download
+mkdir candidate-download
+.smoke-venv/bin/python -m pip download \
+  --isolated \
+  --no-cache-dir \
+  --index-url "$candidate_index" \
+  --only-binary=:all: \
+  --no-deps \
+  --dest candidate-download \
+  "dotpromptz-handlebars==$package_version"
+set -- candidate-download/*.whl
+[ "$#" -eq 1 ]
+wheel=$1
+.smoke-venv/bin/python release_verifier.py verify-smoke-wheel \
+  --candidate candidate \
+  --wheel "$wheel" \
+  --target "$target" \
+  --version "$package_version"
+uv pip install \
+  --python .smoke-venv \
+  --no-cache \
+  --no-build \
+  --no-deps \
+  "$wheel"
+.smoke-venv/bin/python handlebarrz_test.py
 

@@ -21,9 +21,7 @@ RUN apk add --no-cache python3 py3-pip \
 WORKDIR /project
 COPY . /project/
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && source $HOME/.local/bin/env \
-    && uv sync --index-strategy unsafe-best-match
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
     
 ENV PATH="/root/.local/bin/:$PATH"
 

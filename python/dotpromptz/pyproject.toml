@@ -22,7 +22,9 @@ classifiers = [
   "Environment :: Web Environment",
   "Intended Audience :: Developers",
   "License :: OSI Approved :: Apache Software License",
-  "Operating System :: OS Independent",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
 
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.10",
