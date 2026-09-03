@@ -21,10 +21,10 @@ import unittest
 
 import pytest
 
+from dotpromptz.errors import DotpromptError, FrontmatterError
 from dotpromptz.parse import (
     FRONTMATTER_AND_BODY_REGEX,
     MEDIA_AND_SECTION_MARKER_REGEX,
-    RESERVED_METADATA_KEYWORDS,
     ROLE_AND_HISTORY_MARKER_REGEX,
     MessageSource,
     convert_namespaced_entry_to_nested_object,
@@ -700,21 +700,17 @@ Template content"""
         self.assertEqual(result.template, 'Just template content')
 
     def test_handle_invalid_yaml_frontmatter(self) -> None:
-        """Test handling invalid YAML frontmatter."""
+        """Declared invalid YAML is rejected instead of becoming template text."""
         source = """---
 invalid: : yaml
 ---
 Template content"""
 
-        result: ParsedPrompt[dict[str, str]] = parse_document(source)
-
-        self.assertIsInstance(result, ParsedPrompt)
-
-        self.assertEqual(result.ext, {})
-        self.assertEqual(result.template, source.strip())
+        with pytest.raises(FrontmatterError):
+            parse_document(source)
 
     def test_handle_empty_frontmatter(self) -> None:
-        """Test handling empty frontmatter."""
+        """Empty declared frontmatter leaves only the body as the template."""
         source = """---
 ---
 Template content"""
@@ -725,8 +721,7 @@ Template content"""
 
         self.assertEqual(result.ext, {})
 
-        # TODO(#495): Check whether this is the correct behavior.
-        self.assertEqual(result.template, source.strip())
+        self.assertEqual(result.template, 'Template content')
 
     def test_handle_multiple_namespaced_entries(self) -> None:
         """Test handling multiple namespaced entries."""
@@ -747,14 +742,21 @@ Template content"""
             self.assertEqual(result.ext['qux']['quux'], 'value3')
 
     def test_handle_reserved_keywords(self) -> None:
-        """Test handling reserved keywords."""
-        frontmatter_parts = []
-        for keyword in RESERVED_METADATA_KEYWORDS:
-            if keyword == 'ext':
-                continue
-            frontmatter_parts.append(f'{keyword}: value-{keyword}')
-
-        source = '---\n' + '\n'.join(frontmatter_parts) + '\n---\nTemplate content'
+        """Test handling reserved keywords with their declared types."""
+        source = """---
+config: {}
+description: description
+input: {}
+model: model
+name: name
+output: {}
+raw: {}
+toolDefs: []
+tools: []
+variant: variant
+version: version
+---
+Template content"""
 
         result: ParsedPrompt[dict[str, str]] = parse_document(source)
 
@@ -817,3 +819,324 @@ Hello combined!"""
         assert result.raw is not None  # Type narrowing for pyrefly
         self.assertEqual(result.raw.get('model'), 'gemini-2.5-flash')
         self.assertEqual(result.template, 'Hello combined!')
+
+
+@pytest.mark.parametrize(
+    'source',
+    [
+        'Plain template',
+        '',
+        '# ordinary template comment\nHello',
+        'Hello\n---\nmodel: ignored',
+        '  ---\nmodel: ignored\n---\nBody',
+    ],
+)
+def test_parse_plain_templates_without_declared_frontmatter(source: str) -> None:
+    """Sources without an eligible opening delimiter remain plain templates."""
+    parsed = parse_document(source)
+
+    assert parsed.template == source
+    assert parsed.raw is None
+
+
+@pytest.mark.parametrize('newline', ['\n', '\r\n', '\r'])
+@pytest.mark.parametrize(
+    'preamble',
+    [
+        '',
+        '# Copyright 2025 Google LLC{nl}',
+        '#!/usr/bin/env promptly{nl}',
+        '#!/usr/bin/env promptly{nl}# Copyright 2025 Google LLC{nl}{nl}',
+    ],
+)
+def test_parse_declared_frontmatter_after_supported_preamble(
+    newline: str,
+    preamble: str,
+) -> None:
+    """Supported preambles and newline styles produce the same parsed prompt."""
+    source = preamble.format(nl=newline) + newline.join(
+        ['---', 'model: gemini-test', 'custom.field: kept', '---', 'Hello']
+    )
+
+    parsed = parse_document(source)
+
+    assert parsed.model == 'gemini-test'
+    assert parsed.ext == {'custom': {'field': 'kept'}}
+    assert parsed.template == 'Hello'
+
+
+@pytest.mark.parametrize(
+    'frontmatter',
+    [
+        '',
+        'null',
+        '~',
+        '# only a comment',
+    ],
+)
+def test_parse_empty_yaml_frontmatter(frontmatter: str) -> None:
+    """Empty YAML documents are valid empty metadata mappings."""
+    parsed = parse_document(f'---\n{frontmatter}\n---\nBody')
+
+    assert parsed.raw == {}
+    assert parsed.ext == {}
+    assert parsed.template == 'Body'
+
+
+def test_parse_preserves_unknown_and_dotted_extension_fields() -> None:
+    """Unknown metadata remains in raw and dotted fields also populate ext."""
+    parsed = parse_document(
+        """---
+name: example
+futureFeature:
+  nested: [one, two]
+vendor.option: enabled
+vendor.deep.option: 42
+---
+Body
+---
+Still body"""
+    )
+
+    assert parsed.raw == {
+        'name': 'example',
+        'futureFeature': {'nested': ['one', 'two']},
+        'vendor.option': 'enabled',
+        'vendor.deep.option': 42,
+    }
+    assert parsed.ext == {
+        'vendor': {'option': 'enabled'},
+        'vendor.deep': {'option': 42},
+    }
+    assert parsed.template == 'Body\n---\nStill body'
+
+
+@pytest.mark.parametrize(
+    'frontmatter,line,column',
+    [
+        ('name: [unterminated', 2, 20),
+        ('name:\n  nested: ]', 3, 11),
+        ('tools:\n  - one\n  - [', 4, 6),
+    ],
+)
+def test_parse_reports_sanitized_yaml_syntax_locations(
+    frontmatter: str,
+    line: int,
+    column: int,
+) -> None:
+    """YAML syntax failures expose stable source locations without parser text."""
+    source = f'---\n{frontmatter}\n---\nSECRET_BODY'
+
+    with pytest.raises(FrontmatterError) as exc_info:
+        parse_document(source)
+
+    error = exc_info.value
+    assert str(error) == f'Malformed frontmatter at line {line}, column {column}: invalid YAML.'
+    assert error.reason == 'invalid YAML'
+    assert error.line == line
+    assert error.column == column
+    assert error.source_name is None
+    assert isinstance(error, DotpromptError)
+    assert isinstance(error, ValueError)
+    assert 'SECRET_BODY' not in str(error)
+
+
+@pytest.mark.parametrize('root', ['value', '[one, two]', 'true', 'false', '42'])
+def test_parse_rejects_non_mapping_non_empty_yaml_roots(root: str) -> None:
+    """Declared non-empty frontmatter must be a metadata mapping."""
+    with pytest.raises(
+        FrontmatterError,
+        match=r'^Malformed frontmatter at line 2, column 1: frontmatter must be a mapping\.$',
+    ):
+        parse_document(f'---\n{root}\n---\nBody')
+
+
+@pytest.mark.parametrize(
+    'frontmatter,line,column',
+    [
+        ('name: one\nname: two', 3, 1),
+        ('input:\n  schema:\n    field: one\n    field: two', 5, 5),
+        ('toolDefs:\n  - name: one\n    inputSchema:\n      type: object\n      type: string', 6, 7),
+    ],
+)
+def test_parse_rejects_duplicate_keys_at_every_depth(
+    frontmatter: str,
+    line: int,
+    column: int,
+) -> None:
+    """Duplicate mapping keys are rejected at their second declaration."""
+    with pytest.raises(FrontmatterError) as exc_info:
+        parse_document(f'---\n{frontmatter}\n---\nBody')
+
+    assert str(exc_info.value) == (
+        f'Malformed frontmatter at line {line}, column {column}: duplicate mapping keys are not allowed.'
+    )
+
+
+@pytest.mark.parametrize(
+    'frontmatter,line,column',
+    [
+        ('1: value', 2, 1),
+        ('true: value', 2, 1),
+        ('input:\n  schema:\n    1: value', 4, 5),
+        ('? [one, two]\n: value', 2, 3),
+    ],
+)
+def test_parse_rejects_non_string_mapping_keys(
+    frontmatter: str,
+    line: int,
+    column: int,
+) -> None:
+    """Metadata keys must be strings, including keys in nested schemas."""
+    with pytest.raises(FrontmatterError) as exc_info:
+        parse_document(f'---\n{frontmatter}\n---\nBody')
+
+    assert str(exc_info.value) == (
+        f'Malformed frontmatter at line {line}, column {column}: mapping keys must be strings.'
+    )
+
+
+@pytest.mark.parametrize(
+    'frontmatter,reason,line,column',
+    [
+        ('config: &shared\n  temperature: 1', 'anchors are not allowed', 2, 9),
+        ('config: &shared {temperature: 1}', 'anchors are not allowed', 2, 9),
+        ('config: *shared', 'aliases are not allowed', 2, 9),
+        ('model: !!str gemini', 'explicit tags are not allowed', 2, 8),
+        ('config: !custom value', 'explicit tags are not allowed', 2, 9),
+    ],
+)
+def test_parse_rejects_yaml_graph_and_tag_features(
+    frontmatter: str,
+    reason: str,
+    line: int,
+    column: int,
+) -> None:
+    """Aliases, anchors, and explicit tags cannot alter metadata semantics."""
+    with pytest.raises(FrontmatterError) as exc_info:
+        parse_document(f'---\n{frontmatter}\n---\nBody')
+
+    assert str(exc_info.value) == f'Malformed frontmatter at line {line}, column {column}: {reason}.'
+
+
+@pytest.mark.parametrize(
+    'frontmatter,line,column',
+    [
+        ('name: [not, text]', 2, 7),
+        ('description: {not: text}', 2, 14),
+        ('variant: 7', 2, 10),
+        ('version: false', 2, 10),
+        ('model: false', 2, 8),
+        ('config: []', 2, 9),
+        ('raw: []', 2, 6),
+        ('ext: []', 2, 6),
+        ('tools: tool', 2, 8),
+        ('tools: [valid, 7]', 2, 16),
+        ('toolDefs: {}', 2, 11),
+        ('toolDefs:\n  - name: 7\n    inputSchema: {}', 3, 11),
+        ('toolDefs:\n  - name: valid\n    description: []\n    inputSchema: {}', 4, 18),
+        ('toolDefs:\n  - name: missing-schema', 3, 5),
+        ('input: []', 2, 8),
+        ('input:\n  default: []', 3, 12),
+        ('output: text', 2, 9),
+        ('output:\n  format: []', 3, 11),
+        ('metadata: []', 2, 11),
+    ],
+)
+def test_parse_rejects_invalid_recognized_field_types(
+    frontmatter: str,
+    line: int,
+    column: int,
+) -> None:
+    """Recognized metadata fields are validated before a prompt is returned."""
+    with pytest.raises(FrontmatterError) as exc_info:
+        parse_document(f'---\n{frontmatter}\n---\nBody')
+
+    assert str(exc_info.value) == (
+        f'Malformed frontmatter at line {line}, column {column}: invalid recognized field type.'
+    )
+
+
+def test_parse_accepts_every_recognized_field_family() -> None:
+    """All recognized metadata families accept their documented shapes."""
+    parsed = parse_document(
+        """---
+name: example
+description: Example prompt
+variant: test
+version: v1
+model: model/name
+config:
+  temperature: 0.5
+input:
+  default:
+    topic: safety
+  schema:
+    topic: string
+output:
+  format: json
+  schema:
+    answer: string
+tools: [lookup]
+toolDefs:
+  - name: inline
+    description: Inline tool
+    inputSchema:
+      type: object
+    outputSchema:
+      type: string
+metadata:
+  owner: team
+raw:
+  authorDeclared: preserved
+ext:
+  author:
+    option: preserved
+---
+Body"""
+    )
+
+    assert parsed.name == 'example'
+    assert parsed.config == {'temperature': 0.5}
+    assert parsed.input is not None and parsed.input.default == {'topic': 'safety'}
+    assert parsed.output is not None and parsed.output.format == 'json'
+    assert parsed.tools == ['lookup']
+    assert parsed.tool_defs is not None and parsed.tool_defs[0].name == 'inline'
+    assert parsed.metadata == {'owner': 'team'}
+    assert parsed.raw is not None
+    assert parsed.raw['raw'] == {'authorDeclared': 'preserved'}
+    assert parsed.raw['ext'] == {'author': {'option': 'preserved'}}
+
+
+def test_parse_missing_closing_delimiter_fails_closed_without_output(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """An eligible opening delimiter cannot fall back to template text."""
+    secret = 'api_key: SECRET_VALUE'
+
+    with pytest.raises(FrontmatterError) as exc_info:
+        parse_document(f'# license\n---\n{secret}\nBody')
+
+    error = exc_info.value
+    assert str(error) == 'Malformed frontmatter at line 2, column 1: missing closing delimiter.'
+    assert secret not in str(error)
+    assert capsys.readouterr() == ('', '')
+
+
+def test_parse_error_carries_source_name_without_echoing_source(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Callers can identify a bad source without exposing its contents."""
+    with pytest.raises(FrontmatterError) as exc_info:
+        parse_document(
+            '---\npassword: SECRET_VALUE\npassword: OTHER_SECRET\n---\nBody',
+            source_name='prompts/support.prompt',
+        )
+
+    error = exc_info.value
+    assert error.source_name == 'prompts/support.prompt'
+    assert error.line == 3
+    assert error.column == 1
+    assert 'SECRET' not in str(error)
+    assert 'password' not in str(error)
+    assert capsys.readouterr() == ('', '')

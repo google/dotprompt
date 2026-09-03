@@ -19,25 +19,12 @@
 This module defines domain-specific exceptions that provide meaningful error
 messages and structured error information for debugging and error handling.
 
-## Exception Hierarchy
-
-```
-BaseException
-    │
-    └── Exception
-            │
-            └── RuntimeError
-                    │
-                    └── ResolverFailedError
-                            (Tool, schema, or partial resolution failed)
-```
-
 ## Exception Types
 
-| Exception              | Raised When                                        |
-|------------------------|----------------------------------------------------|
-| `ResolverFailedError`  | A resolver function raises an exception while      |
-|                        | attempting to resolve a tool, schema, or partial   |
+| Exception              | Raised When                                      |
+|------------------------|--------------------------------------------------|
+| `FrontmatterError`     | Declared prompt frontmatter is malformed         |
+| `ResolverFailedError`  | A tool, schema, or partial resolver fails         |
 
 ## Usage Example
 
@@ -69,6 +56,36 @@ except ResolverFailedError as e:
     raise
 ```
 """
+
+
+class DotpromptError(ValueError):
+    """Base class for invalid Dotprompt source or configuration."""
+
+
+class FrontmatterError(DotpromptError):
+    """Raised when declared YAML frontmatter cannot be safely parsed."""
+
+    def __init__(
+        self,
+        reason: str,
+        *,
+        line: int,
+        column: int,
+        source_name: str | None = None,
+    ) -> None:
+        """Initialize a sanitized frontmatter error.
+
+        Args:
+            reason: Stable description that does not contain source content.
+            line: One-based line in the complete source.
+            column: One-based column in the complete source.
+            source_name: Optional caller-provided source identifier.
+        """
+        self.reason = reason
+        self.line = line
+        self.column = column
+        self.source_name = source_name
+        super().__init__(f'Malformed frontmatter at line {line}, column {column}: {reason}.')
 
 
 class PartialCycleError(ValueError):
