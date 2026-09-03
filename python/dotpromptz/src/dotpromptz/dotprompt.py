@@ -40,7 +40,6 @@ Key features include:
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
 from typing import Any
 
 import anyio
@@ -73,15 +72,6 @@ from handlebarrz import Context, EscapeFunction, Handlebars, HelperFn, RuntimeOp
 # to walk the AST to find partial nodes, we're using a crude regular expression
 # to find partials.
 _PARTIAL_PATTERN = re.compile(r'{{\s*>\s*([a-zA-Z0-9_.-]+)\s*}}')
-
-
-def _coerce_data_argument(
-    data: DataArgument[VariablesT] | Mapping[str, Any],
-) -> DataArgument[VariablesT]:
-    """Validate mapping inputs against the public runtime data shape."""
-    if isinstance(data, DataArgument):
-        return data
-    return DataArgument[VariablesT].model_validate(data)
 
 
 def _merge_metadata(
@@ -150,9 +140,7 @@ class RenderFunc(PromptFunction[ModelConfigT]):
         self.prompt = prompt
 
     async def __call__(
-        self,
-        data: DataArgument[VariablesT] | Mapping[str, Any],
-        options: PromptMetadata[ModelConfigT] | None = None,
+        self, data: DataArgument[VariablesT], options: PromptMetadata[ModelConfigT] | None = None
     ) -> RenderedPrompt[ModelConfigT]:
         """Render the prompt.
 
@@ -163,7 +151,6 @@ class RenderFunc(PromptFunction[ModelConfigT]):
         Returns:
             The rendered prompt.
         """
-        data = _coerce_data_argument(data)
         merged_metadata: PromptMetadata[ModelConfigT] = await self._dotprompt.render_metadata(self.prompt, options)
 
         # Prompt defaults apply regardless of whether they came from the
@@ -301,10 +288,7 @@ class Dotprompt:
         return parse_document(source)
 
     async def render(
-        self,
-        source: str,
-        data: DataArgument[VariablesT] | Mapping[str, Any],
-        options: PromptMetadata[ModelConfigT] | None = None,
+        self, source: str, data: DataArgument[VariablesT], options: PromptMetadata[ModelConfigT] | None = None
     ) -> RenderedPrompt[ModelConfigT]:
         """Render a prompt.
 

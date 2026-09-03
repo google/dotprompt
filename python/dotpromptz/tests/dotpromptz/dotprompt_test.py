@@ -37,7 +37,6 @@ from unittest import IsolatedAsyncioTestCase
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from pydantic import ValidationError
 
 from dotpromptz.dotprompt import Dotprompt, _identify_partials
 from dotpromptz.typing import (
@@ -153,96 +152,6 @@ def test_define_tool(mock_handlebars: Mock) -> None:
 
 
 class TestCompileRender(IsolatedAsyncioTestCase):
-    async def test_render_accepts_mapping_data_without_mutating_it(self) -> None:
-        """Plain mappings are validated and rendered as runtime data."""
-        data = {
-            'input': {'name': 'Ada'},
-            'context': {'state': 'ready'},
-        }
-
-        result = await Dotprompt().render(
-            'Hello, {{name}} ({{@state}})!',
-            data,
-        )
-
-        assert result.messages[0].content == [TextPart(text='Hello, Ada (ready)!')]
-        assert data == {
-            'input': {'name': 'Ada'},
-            'context': {'state': 'ready'},
-        }
-
-    async def test_compiled_renderer_accepts_mapping_data(self) -> None:
-        """Compiled prompt functions expose the same mapping-friendly API."""
-        renderer = await Dotprompt().compile('Hello, {{name}}!')
-
-        result = await renderer({'input': {'name': 'Ada'}})
-
-        assert result.messages[0].content == [TextPart(text='Hello, Ada!')]
-
-    async def test_mapping_data_is_validated_before_rendering(self) -> None:
-        """Invalid nested runtime data fails with a validation error."""
-        with pytest.raises(ValidationError):
-            await Dotprompt().render(
-                'Hello',
-                {
-                    'messages': [
-                        {
-                            'role': 'not-a-role',
-                            'content': [],
-                        }
-                    ]
-                },
-            )
-
-    async def test_mapping_and_data_argument_render_identically(self) -> None:
-        """Both public input shapes have the same rendering semantics."""
-        source = """---
-model: gemini-2.5-flash
-input:
-  default:
-    greeting: Hello
----
-{{history}}{{greeting}}, {{name}} ({{@state}})"""
-        options = PromptMetadata(config={'temperature': 0.25})
-        cases = (
-            {
-                'input': {'name': 'Ada'},
-                'context': {'state': 'ready'},
-            },
-            {
-                'input': {'greeting': 'Welcome', 'name': 'Grace'},
-                'context': {'state': 'testing'},
-                'messages': [
-                    {
-                        'role': 'user',
-                        'content': [{'text': 'Earlier question'}],
-                    }
-                ],
-                'docs': [
-                    {
-                        'content': [{'text': 'Reference material'}],
-                    }
-                ],
-            },
-            {
-                'input': None,
-                'context': None,
-                'messages': None,
-                'docs': None,
-            },
-        )
-
-        for mapping_data in cases:
-            with self.subTest(mapping_data=mapping_data):
-                mapping_result = await Dotprompt().render(source, mapping_data, options)
-                model_result = await Dotprompt().render(
-                    source,
-                    DataArgument.model_validate(mapping_data),
-                    options,
-                )
-
-                assert mapping_result == model_result
-
     async def test_render_preserves_model_and_applies_prompt_input_defaults(self) -> None:
         """Render metadata and input defaults declared by the prompt."""
         source = """---
