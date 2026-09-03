@@ -44,6 +44,7 @@ from typing import Any
 
 import anyio
 
+from dotpromptz._marker_trust import STRUCTURAL_HELPER_NAMES, StructuralMarkerTrust
 from dotpromptz.errors import PartialCycleError
 from dotpromptz.helpers import BUILTIN_HELPERS
 from dotpromptz.parse import parse_document, to_messages
@@ -65,7 +66,7 @@ from dotpromptz.typing import (
     VariablesT,
 )
 from dotpromptz.util import remove_undefined_fields
-from handlebarrz import Context, EscapeFunction, Handlebars, HelperFn, RuntimeOptions
+from handlebarrz import Context, EscapeFunction, Handlebars, HelperFn, HelperOptions, RuntimeOptions
 
 # Pre-compiled regex for finding partial references in handlebars templates
 
@@ -195,11 +196,24 @@ class RenderFunc(PromptFunction[ModelConfigT]):
         }
 
         # Render the string.
-        render_string = self._handlebars.compile(self.prompt.template)
-        rendered_string = render_string(context, runtime_options)
+        marker_trust = StructuralMarkerTrust(
+            sources=(self.prompt.template, *self._dotprompt._partials.values()),
+            runtime_values=(context, runtime_options),
+        )
+        handlebars = self._dotprompt._handlebars_for_render(marker_trust)
+        render_string = handlebars.compile(marker_trust.trust_template(self.prompt.template))
+        rendered_string = render_string(
+            marker_trust.protect_runtime(context),
+            marker_trust.protect_runtime(runtime_options),
+        )
+        rendered_string, inert_prefix = marker_trust.prepare_rendered(rendered_string)
 
         # Parse the rendered string into messages.
-        messages = to_messages(rendered_string, data)
+        messages = to_messages(
+            rendered_string,
+            data,
+            text_transform=lambda value: marker_trust.restore_text(value, inert_prefix),
+        )
 
         # Construct and return the final RenderedPrompt.
         return RenderedPrompt[ModelConfigT](
@@ -240,11 +254,14 @@ class Dotprompt:
             escape_fn: escape function to use for the template.
         """
         self._handlebars: Handlebars = Handlebars(escape_fn=escape_fn)
+        self._escape_fn = escape_fn
 
         self._known_helpers: dict[str, bool] = {}
+        self._structural_helpers: set[str] = set()
+        self._custom_helpers: set[str] = set()
         self._default_model: str | None = default_model
         self._model_configs: dict[str, Any] = model_configs or {}
-        self._helpers: dict[str, HelperFn] = helpers or {}
+        self._helpers: dict[str, HelperFn] = {}
         self._partials: dict[str, str] = partials or {}
         self._tools: dict[str, ToolDefinition] = tools or {}
         self._tool_resolver: ToolResolver | None = tool_resolver
@@ -271,6 +288,9 @@ class Dotprompt:
             The Dotprompt instance.
         """
         self._handlebars.register_helper(name, fn)
+        self._helpers[name] = fn
+        self._structural_helpers.discard(name)
+        self._custom_helpers.add(name)
         self._known_helpers[name] = True
         return self
 
@@ -605,11 +625,38 @@ class Dotprompt:
         """
         if builtin_helpers is not None:
             for name, fn in builtin_helpers.items():
-                self.define_helper(name, fn)
+                self._handlebars.register_helper(name, fn)
+                self._helpers[name] = fn
+                self._known_helpers[name] = True
+                if name in STRUCTURAL_HELPER_NAMES:
+                    self._structural_helpers.add(name)
 
         if custom_helpers is not None:
             for name, fn in custom_helpers.items():
                 self.define_helper(name, fn)
+
+    def _handlebars_for_render(self, marker_trust: StructuralMarkerTrust) -> Handlebars:
+        """Build isolated template state for one render."""
+        handlebars = Handlebars(escape_fn=self._escape_fn)
+        for name, helper in self._helpers.items():
+            if name in self._structural_helpers:
+                helper = marker_trust.structural_helper(name, helper)
+            elif name in self._custom_helpers:
+                custom_helper = helper
+
+                def inert_helper(
+                    params: list[Any],
+                    options: HelperOptions,
+                    fn: HelperFn = custom_helper,
+                ) -> str:
+                    block_options = marker_trust.custom_helper_options(options)
+                    return marker_trust.protect_custom_output(fn(params, block_options))
+
+                helper = inert_helper
+            handlebars.register_helper(name, helper)
+        for name, source in self._partials.items():
+            handlebars.register_partial(name, marker_trust.trust_template(source))
+        return handlebars
 
     def _register_initial_partials(self, partials: dict[str, str] | None = None) -> None:
         """Register the initial partials.

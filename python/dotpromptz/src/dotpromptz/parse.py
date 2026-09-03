@@ -34,7 +34,7 @@ Key functionalities include:
 """
 
 import re
-from collections.abc import Hashable
+from collections.abc import Callable, Hashable
 from dataclasses import dataclass, field
 from typing import Any, TypeVar
 
@@ -44,6 +44,10 @@ from yaml.composer import ComposerError
 from yaml.events import AliasEvent, NodeEvent
 from yaml.nodes import MappingNode, Node, ScalarNode, SequenceNode
 
+from dotpromptz._marker_trust import (
+    MEDIA_AND_SECTION_MARKER_REGEX,
+    ROLE_AND_HISTORY_MARKER_REGEX,
+)
 from dotpromptz.errors import FrontmatterError
 from dotpromptz.typing import (
     DataArgument,
@@ -90,25 +94,6 @@ FRONTMATTER_AND_BODY_REGEX = re.compile(
 )
 DELIMITER_REGEX = re.compile(r'^---[ \t]*$')
 LINE_BREAK_REGEX = re.compile(r'\r\n|\r|\n')
-
-# Regular expression to match <<<dotprompt:role:xxx>>> and
-# <<<dotprompt:history>>> markers in the template.
-#
-# Examples of matching patterns:
-# - <<<dotprompt:role:user>>>
-# - <<<dotprompt:role:system>>>
-# - <<<dotprompt:history>>>
-#
-# Note: Only lowercase letters are allowed after 'role:'.
-ROLE_AND_HISTORY_MARKER_REGEX = re.compile(r'(<<<dotprompt:(?:role:[a-z]+|history))>>>')
-
-# Regular expression to match <<<dotprompt:media:url>>> and
-# <<<dotprompt:section>>> markers in the template.
-#
-# Examples of matching patterns:
-# - <<<dotprompt:media:url>>>
-# - <<<dotprompt:section>>>
-MEDIA_AND_SECTION_MARKER_REGEX = re.compile(r'(<<<dotprompt:(?:media:url|section).*?)>>>')
 
 # List of reserved keywords that are handled specially in the metadata of a
 # .prompt file. These keys are processed differently from extension metadata.
@@ -471,6 +456,8 @@ def parse_document(source: str, *, source_name: str | None = None) -> ParsedProm
 def to_messages(
     rendered_string: str,
     data: DataArgument[Any] | None = None,
+    *,
+    text_transform: Callable[[str], str] | None = None,
 ) -> list[Message]:
     """Converts a rendered template string into an array of messages.
 
@@ -480,6 +467,7 @@ def to_messages(
     Args:
         rendered_string: The rendered template string to convert
         data: Optional data containing message history
+        text_transform: Transformation applied to parsed rendered text.
 
     Returns:
         List of structured messages
@@ -525,17 +513,20 @@ def to_messages(
             # Otherwise, add the piece to the current message source
             current_message.source = (current_message.source or '') + piece
 
-    messages = message_sources_to_messages(message_sources)
+    messages = message_sources_to_messages(message_sources, text_transform=text_transform)
     return insert_history(messages, data.messages if data else None)
 
 
 def message_sources_to_messages(
     message_sources: list[MessageSource],
+    *,
+    text_transform: Callable[[str], str] | None = None,
 ) -> list[Message]:
     """Processes an array of message sources into an array of messages.
 
     Args:
         message_sources: List of message sources
+        text_transform: Transformation applied to parsed rendered text.
 
     Returns:
         List of structured messages
@@ -545,7 +536,9 @@ def message_sources_to_messages(
         if m.content or m.source:
             message = Message(
                 role=m.role,
-                content=(m.content if m.content is not None else to_parts(m.source or '')),
+                content=(
+                    m.content if m.content is not None else to_parts(m.source or '', text_transform=text_transform)
+                ),
             )
 
             if m.metadata:
@@ -630,35 +623,58 @@ def insert_history(
     return messages
 
 
-def to_parts(source: str) -> list[Part]:
+def to_parts(
+    source: str,
+    *,
+    text_transform: Callable[[str], str] | None = None,
+) -> list[Part]:
     """Converts a source string into an array of parts.
 
     Also processes media and section markers.
 
     Args:
         source: The source string to convert into parts
+        text_transform: Transformation applied after marker parsing.
 
     Returns:
         Array of structured parts (text, media, or metadata)
     """
-    return [parse_part(piece) for piece in split_by_media_and_section_markers(source)]
+    return [parse_part(piece, text_transform=text_transform) for piece in split_by_media_and_section_markers(source)]
 
 
-def parse_part(piece: str) -> Part:
+def parse_part(
+    piece: str,
+    *,
+    text_transform: Callable[[str], str] | None = None,
+) -> Part:
     """Parses a part from a piece of rendered template.
 
     Args:
         piece: The piece to parse
+        text_transform: Transformation applied after marker parsing.
 
     Returns:
         Part, PendingPart, TextPart, or MediaPart
     """
     if piece.startswith(MEDIA_MARKER_PREFIX):
-        return parse_media_part(piece)
+        part = parse_media_part(piece)
+        if text_transform is not None:
+            part.media.url = text_transform(part.media.url)
+            if part.media.content_type is not None:
+                part.media.content_type = text_transform(part.media.content_type)
+        return part
     elif piece.startswith(SECTION_MARKER_PREFIX):
-        return parse_section_part(piece)
+        part = parse_section_part(piece)
+        if text_transform is not None and part.metadata is not None:
+            purpose = part.metadata.get('purpose')
+            if isinstance(purpose, str):
+                part.metadata['purpose'] = text_transform(purpose)
+        return part
     else:
-        return parse_text_part(piece)
+        part = parse_text_part(piece)
+        if text_transform is not None:
+            part.text = text_transform(part.text)
+        return part
 
 
 def parse_media_part(piece: str) -> MediaPart:
