@@ -74,6 +74,7 @@ templates to create self-contained, executable prompt definitions:
 
 ```python
 from dotpromptz import Dotprompt
+from dotpromptz.typing import DataArgument
 
 # Create a Dotprompt instance
 dp = Dotprompt()
@@ -89,7 +90,7 @@ input:
 Hello, {{name}}! How can I help you today?
 '''
 
-rendered = await dp.render(source, data={'input': {'name': 'Alice'}})
+rendered = await dp.render(source, data=DataArgument(input={'name': 'Alice'}))
 
 # Access rendered messages
 for message in rendered.messages:

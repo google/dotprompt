@@ -13,6 +13,7 @@ pip install dotpromptz
 
 ```python
 from dotpromptz import Dotprompt
+from dotpromptz.typing import DataArgument
 
 # Create a Dotprompt instance
 dp = Dotprompt()
@@ -28,7 +29,7 @@ input:
 Hello, {{name}}!
 '''
 
-rendered = await dp.render(source, data={'input': {'name': 'World'}})
+rendered = await dp.render(source, data=DataArgument(input={'name': 'World'}))
 ```
 
 ## Core Classes

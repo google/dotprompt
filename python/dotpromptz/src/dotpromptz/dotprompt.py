@@ -153,9 +153,14 @@ class RenderFunc(PromptFunction[ModelConfigT]):
         """
         merged_metadata: PromptMetadata[ModelConfigT] = await self._dotprompt.render_metadata(self.prompt, options)
 
-        # Prepare input data, merging defaults from options if available.
+        # Prompt defaults apply regardless of whether they came from the
+        # template or a per-call override.
         context: Context = {
-            **((options.input.default or {}) if options and options.input else {}),
+            **(
+                (merged_metadata.input.default or {})
+                if merged_metadata.input and merged_metadata.input.default is not None
+                else {}
+            ),
             **(data.input if data.input is not None else {}),
         }
 
@@ -338,7 +343,11 @@ class Dotprompt:
         prompt = self.parse(source) if isinstance(source, str) else source
 
         default_model = prompt.model or self._default_model
-        model = additional_metadata.model if additional_metadata else default_model
+        model = (
+            additional_metadata.model
+            if additional_metadata and additional_metadata.model is not None
+            else default_model
+        )
 
         config: ModelConfigT | None = None
         if model is not None and self._model_configs.get(model) is not None:
@@ -374,9 +383,9 @@ class Dotprompt:
             if merge:
                 out = _merge_metadata(out, merge)
 
-        # Remove the template attribute if it exists (TS does this).
+        # Template source is an authoring detail, not model request metadata.
         if hasattr(out, 'template'):
-            delattr(out, 'template')
+            del out.template
 
         out = remove_undefined_fields(out)
         # TODO(#493): can this be done concurrently?
