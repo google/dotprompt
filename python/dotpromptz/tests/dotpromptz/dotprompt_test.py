@@ -38,8 +38,8 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
+from dotpromptz import FrontmatterError, PartialCycleError
 from dotpromptz.dotprompt import Dotprompt, _identify_partials
-from dotpromptz.errors import PartialCycleError
 from dotpromptz.typing import (
     DataArgument,
     ModelConfigT,
@@ -217,6 +217,90 @@ def test_parse(mock_parse_document: Mock, mock_handlebars: Mock) -> None:
     assert result == ParsedPrompt(template='Hello {{name}}', tool_defs=None)
 
 
+def test_parse_passes_source_name_to_frontmatter_errors(mock_handlebars: Mock) -> None:
+    """Parse attaches a caller-provided source identifier to failures."""
+    with pytest.raises(FrontmatterError) as exc_info:
+        Dotprompt().parse(
+            '---\nname: [invalid\n---\nBody',
+            source_name='prompts/example.prompt',
+        )
+
+    assert exc_info.value.source_name == 'prompts/example.prompt'
+
+
+@pytest.mark.asyncio
+async def test_frontmatter_error_object_propagates_through_every_public_entry_point(
+    mock_handlebars: Mock,
+) -> None:
+    """Public operations propagate the parser's error object unchanged."""
+    error = FrontmatterError(
+        'invalid YAML',
+        line=2,
+        column=7,
+        source_name='prompt.prompt',
+    )
+    dotprompt = Dotprompt()
+
+    with patch('dotpromptz.dotprompt.parse_document', side_effect=error):
+        with pytest.raises(FrontmatterError) as parse_exc:
+            dotprompt.parse('source')
+    assert parse_exc.value is error
+
+    for operation in (
+        dotprompt.compile('source'),
+        dotprompt.render('source', DataArgument()),
+        dotprompt.render_metadata('source'),
+    ):
+        with patch.object(dotprompt, 'parse', side_effect=error):
+            with pytest.raises(FrontmatterError) as operation_exc:
+                await operation
+        assert operation_exc.value is error
+
+
+@pytest.mark.asyncio
+async def test_frontmatter_failure_runs_no_resolvers_or_template_helpers() -> None:
+    """Malformed metadata fails before partial, tool, schema, or helper work."""
+    helper = Mock(return_value='should not run')
+    partial_resolver = AsyncMock(return_value='should not run')
+    tool_resolver = AsyncMock()
+    schema_resolver = AsyncMock()
+    dotprompt = Dotprompt(
+        helpers={'custom': helper},
+        partial_resolver=partial_resolver,
+        tool_resolver=tool_resolver,
+        schema_resolver=schema_resolver,
+    )
+    source = """---
+tools: [lookup]
+input:
+  schema: customSchema(name)
+secret: [unterminated
+---
+{{custom}}{{> partial}}"""
+
+    for operation in (
+        dotprompt.compile(source),
+        dotprompt.render(source, DataArgument()),
+        dotprompt.render_metadata(source),
+    ):
+        with pytest.raises(FrontmatterError):
+            await operation
+
+    helper.assert_not_called()
+    partial_resolver.assert_not_called()
+    tool_resolver.assert_not_called()
+    schema_resolver.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_template_syntax_error_is_not_frontmatter_error() -> None:
+    """Template grammar failures remain distinct from metadata failures."""
+    with pytest.raises(ValueError) as exc_info:
+        await Dotprompt().render('{{#if}}', DataArgument())
+
+    assert not isinstance(exc_info.value, FrontmatterError)
+
+
 def test_chainable_interface(mock_handlebars: Mock) -> None:
     """Test that the methods can be chained."""
     dotprompt = Dotprompt()
@@ -334,21 +418,23 @@ class TestResolveTools(IsolatedAsyncioTestCase):
         """Should resolve registered tools."""
         dotprompt = Dotprompt()
 
-        tool_def = ToolDefinition.model_validate({
-            'name': 'testTool',
-            'description': 'A test tool',
-            'inputSchema': {
-                'type': 'object',
-                'properties': {
-                    'param1': {'type': 'string'},
+        tool_def = ToolDefinition.model_validate(
+            {
+                'name': 'testTool',
+                'description': 'A test tool',
+                'inputSchema': {
+                    'type': 'object',
+                    'properties': {
+                        'param1': {'type': 'string'},
+                    },
                 },
-            },
-        })
+            }
+        )
 
         dotprompt.define_tool(tool_def)
-        metadata: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate({
-            'tools': ['testTool', 'unknownTool']
-        })
+        metadata: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate(
+            {'tools': ['testTool', 'unknownTool']}
+        )
 
         result = await dotprompt._resolve_tools(metadata)
 
@@ -359,16 +445,18 @@ class TestResolveTools(IsolatedAsyncioTestCase):
 
     async def test_resolve_raises_error_for_unregistered_tool(self) -> None:
         """Should raise an error for unregistered tools."""
-        tool_def = ToolDefinition.model_validate({
-            'name': 'resolvedTool',
-            'description': 'A test tool',
-            'inputSchema': {
-                'type': 'object',
-                'properties': {
-                    'param1': {'type': 'string'},
+        tool_def = ToolDefinition.model_validate(
+            {
+                'name': 'resolvedTool',
+                'description': 'A test tool',
+                'inputSchema': {
+                    'type': 'object',
+                    'properties': {
+                        'param1': {'type': 'string'},
+                    },
                 },
-            },
-        })
+            }
+        )
 
         resolve_metadata_mock = AsyncMock(return_value=tool_def)
         dotprompt = Dotprompt(tool_resolver=resolve_metadata_mock)
@@ -392,14 +480,16 @@ class TestRenderPicoSchema(IsolatedAsyncioTestCase):
         """Should process picoschema definitions."""
         dotprompt = Dotprompt()
 
-        metadata: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate({
-            'input': {
-                'schema': {'type': 'string'},
-            },
-            'output': {
-                'schema': {'type': 'number'},
-            },
-        })
+        metadata: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate(
+            {
+                'input': {
+                    'schema': {'type': 'string'},
+                },
+                'output': {
+                    'schema': {'type': 'number'},
+                },
+            }
+        )
         values_assert = {'type': 'object', 'properties': {'expanded': True}}
         # Now call the function that uses picoschema.picoschema internally
         result: PromptMetadata[dict[str, Any]] = await dotprompt._render_picoschema(metadata)
@@ -412,15 +502,17 @@ class TestRenderPicoSchema(IsolatedAsyncioTestCase):
         """Test that the original metadata is returned unchanged when no schemas are present."""
         dotprompt = Dotprompt()
 
-        metadata: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate({
-            'input': {
-                'schema': {'type': 'string'},
-            },
-            'output': {
-                'schema': {'type': 'number'},
-            },
-            'model': 'gemini-2.5-pro',
-        })
+        metadata: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate(
+            {
+                'input': {
+                    'schema': {'type': 'string'},
+                },
+                'output': {
+                    'schema': {'type': 'number'},
+                },
+                'model': 'gemini-2.5-pro',
+            }
+        )
         result: PromptMetadata[dict[str, Any]] = await dotprompt._render_picoschema(metadata)
         assert result == metadata
 
@@ -473,26 +565,32 @@ class TestResolveMetaData(IsolatedAsyncioTestCase):
         """Should merge multiple metadata objects."""
         dotprompt = Dotprompt()
 
-        base: PromptMetadata[dict[str, Any]] = PromptMetadata.model_validate({
-            'model': 'gemini-2.5-pro',
-            'config': {
-                'temperature': 0.7,
-            },
-        })
+        base: PromptMetadata[dict[str, Any]] = PromptMetadata.model_validate(
+            {
+                'model': 'gemini-2.5-pro',
+                'config': {
+                    'temperature': 0.7,
+                },
+            }
+        )
 
-        merge1: PromptMetadata[dict[str, Any]] = PromptMetadata.model_validate({
-            'config': {
-                'top_p': 0.9,
-            },
-            'tools': ['tool1'],
-        })
+        merge1: PromptMetadata[dict[str, Any]] = PromptMetadata.model_validate(
+            {
+                'config': {
+                    'top_p': 0.9,
+                },
+                'tools': ['tool1'],
+            }
+        )
 
-        merge2: PromptMetadata[dict[str, Any]] = PromptMetadata.model_validate({
-            'model': 'gemini-2.5-flash',
-            'config': {
-                'max_tokens': 2000,
-            },
-        })
+        merge2: PromptMetadata[dict[str, Any]] = PromptMetadata.model_validate(
+            {
+                'model': 'gemini-2.5-flash',
+                'config': {
+                    'max_tokens': 2000,
+                },
+            }
+        )
         render_pico_mock = AsyncMock(side_effect=lambda arg: arg)
         resolve_tools_mock = AsyncMock(side_effect=lambda arg: arg)
         with (
@@ -518,12 +616,14 @@ class TestResolveMetaData(IsolatedAsyncioTestCase):
         """Should handle undefined merges."""
         dotprompt = Dotprompt()
 
-        base: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate({
-            'model': 'gemini-2.5-pro',
-            'config': {
-                'temperature': 0.7,
-            },
-        })
+        base: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate(
+            {
+                'model': 'gemini-2.5-pro',
+                'config': {
+                    'temperature': 0.7,
+                },
+            }
+        )
 
         render_pico_mock = AsyncMock(side_effect=lambda arg: arg)
         resolve_tools_mock = AsyncMock(side_effect=lambda arg: arg)
