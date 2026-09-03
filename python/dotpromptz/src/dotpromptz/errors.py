@@ -71,6 +71,20 @@ except ResolverFailedError as e:
 """
 
 
+class PartialCycleError(ValueError):
+    """Raised when partial templates contain a reference cycle."""
+
+    def __init__(self, cycle: tuple[str, ...]) -> None:
+        """Initialize the error with the cycle in reference order.
+
+        Args:
+            cycle: Partial names from the first repeated reference through
+                the reference that closes the cycle.
+        """
+        self.cycle = cycle
+        super().__init__(f'Circular partial reference: {" -> ".join(cycle)}')
+
+
 class ResolverFailedError(RuntimeError):
     """Raised when a resolver function fails to resolve an object.
 
