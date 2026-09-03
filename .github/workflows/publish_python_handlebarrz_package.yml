@@ -25,139 +25,107 @@ on:
         description: "The exact release tag of handlebarrz to publish"
         required: true
         type: string
-      repository_url:
-        description: 'The PyPI repository URL to publish to'
+      publish_mode:
+        description: 'TestPyPI-only is for prerelease/dev versions; production continues to PyPI after smoke tests'
         type: choice
         options:
-          - 'https://upload.pypi.org/legacy/'
-          - 'https://test.pypi.org/legacy/'
-        default: 'https://test.pypi.org/legacy/'
-      # -------------------------------------------------------------------------
-      # Platform override inputs for workflow_dispatch (one-off builds)
-      # These override the env defaults below when manually triggering the workflow
-      # -------------------------------------------------------------------------
-      enable_linux_arm64:
-        description: 'Enable Linux ARM64 (Ubuntu) builds'
-        type: boolean
-        default: true
-      enable_linux_x86_64:
-        description: 'Enable Linux x86_64 (Ubuntu) builds'
-        type: boolean
-        default: true
-      enable_alpine_arm64:
-        description: 'Enable Alpine ARM64 (musl) builds'
-        type: boolean
-        default: true
-      enable_alpine_x86_64:
-        description: 'Enable Alpine x86_64 (musl) builds'
-        type: boolean
-        default: true
-      enable_macos_arm64:
-        description: 'Enable macOS ARM64 (Apple Silicon) builds'
-        type: boolean
-        default: true
-      enable_macos_x86_64:
-        description: 'Enable macOS x86_64 (Intel) builds'
-        type: boolean
-        default: true
-      enable_windows_x86_64:
-        description: 'Enable Windows x86_64 builds (may have wheel corruption issues)'
-        type: boolean
-        default: false
+          - 'testpypi-only'
+          - 'production'
+        default: 'testpypi-only'
 #  pull_request:
 #    branches: [ main ]
 
 # ==============================================================================
-# PLATFORM SUPPORT FLAGS
+# PUBLISH PLATFORM CONTRACT
 # ==============================================================================
-# Toggle platform builds by changing the default values in the setup job below.
-# For one-off builds with different settings, use workflow_dispatch inputs.
-#
-# Current status:
+# Every run builds and verifies this exact set. Diagnostic subsets belong in a
+# separate build-only workflow and must never feed either registry path.
 #   - Linux ARM64:   ENABLED  (native ubuntu-24.04-arm runner)
 #   - Linux x86_64:  ENABLED  (native ubuntu-latest runner)
 #   - Alpine ARM64:  ENABLED  (musl cross-compile on ARM64 runner)
 #   - Alpine x86_64: ENABLED  (musl cross-compile on x86_64 runner)
 #   - macOS ARM64:   ENABLED  (native macos-14 Apple Silicon runner)
 #   - macOS x86_64:  ENABLED  (cross-compile on macos-14)
-#   - Windows x86_64: DISABLED (wheel corruption issue - see TODO below)
-#
-# TODO(handlebarrz): Re-enable Windows support once wheel corruption issue is fixed.
-# Issue: PyPI upload fails with "400 Invalid distribution file. ZIP archive not
-# accepted: Mis-matched data size" for Windows wheels.
+#   - Windows:       UNSUPPORTED
 # ==============================================================================
 
 jobs:
   # ===========================================================================
-  # SETUP JOB - Determines which platforms to build
+  # SETUP JOB - Validates the immutable release contract
   # ===========================================================================
-  # This job outputs platform flags that other jobs reference.
-  # To enable/disable a platform permanently, change the default value below.
-  # For one-off changes, use workflow_dispatch inputs.
-
   setup:
-    name: Setup platform flags
+    name: Validate release contract
     runs-on: ubuntu-latest
     # Only run for handlebarrz releases or workflow_dispatch
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'dotpromptz-handlebars-'))
     outputs:
-      # Platform flags - change these defaults to enable/disable platforms
-      enable_linux_arm64: ${{ steps.flags.outputs.enable_linux_arm64 }}
-      enable_linux_x86_64: ${{ steps.flags.outputs.enable_linux_x86_64 }}
-      enable_alpine_arm64: ${{ steps.flags.outputs.enable_alpine_arm64 }}
-      enable_alpine_x86_64: ${{ steps.flags.outputs.enable_alpine_x86_64 }}
-      enable_macos_arm64: ${{ steps.flags.outputs.enable_macos_arm64 }}
-      enable_macos_x86_64: ${{ steps.flags.outputs.enable_macos_x86_64 }}
-      enable_windows_x86_64: ${{ steps.flags.outputs.enable_windows_x86_64 }}
+      package_version: ${{ steps.release.outputs.package_version }}
+      publish_mode: ${{ steps.mode.outputs.publish_mode }}
+      release_tag: ${{ steps.release.outputs.release_tag }}
+      source_sha: ${{ steps.source.outputs.source_sha }}
     steps:
-      - name: Set platform flags
-        id: flags
+      - name: Install release verifier dependency
+        run: python -m pip install "packaging>=24.2"
+
+      - name: Resolve publish mode
+        id: mode
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_MODE: ${{ inputs.publish_mode }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.event.release.tag_name }}
         run: |
-          # =====================================================================
-          # PLATFORM DEFAULTS - Change these to enable/disable platforms
-          # =====================================================================
-          # For workflow_dispatch, inputs override these defaults.
-          # For release events, these defaults are used.
-
-          # Linux platforms
-          DEFAULT_LINUX_ARM64="true"
-          DEFAULT_LINUX_X86_64="true"
-
-          # Alpine (musl) platforms
-          DEFAULT_ALPINE_ARM64="true"
-          DEFAULT_ALPINE_X86_64="true"
-
-          # macOS platforms
-          DEFAULT_MACOS_ARM64="true"
-          DEFAULT_MACOS_X86_64="true"
-
-          # Windows platforms (disabled due to wheel corruption issue)
-          DEFAULT_WINDOWS_X86_64="false"
-
-          # =====================================================================
-          # Output logic - workflow_dispatch inputs override defaults
-          # =====================================================================
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "enable_linux_arm64=${{ inputs.enable_linux_arm64 }}" >> $GITHUB_OUTPUT
-            echo "enable_linux_x86_64=${{ inputs.enable_linux_x86_64 }}" >> $GITHUB_OUTPUT
-            echo "enable_alpine_arm64=${{ inputs.enable_alpine_arm64 }}" >> $GITHUB_OUTPUT
-            echo "enable_alpine_x86_64=${{ inputs.enable_alpine_x86_64 }}" >> $GITHUB_OUTPUT
-            echo "enable_macos_arm64=${{ inputs.enable_macos_arm64 }}" >> $GITHUB_OUTPUT
-            echo "enable_macos_x86_64=${{ inputs.enable_macos_x86_64 }}" >> $GITHUB_OUTPUT
-            echo "enable_windows_x86_64=${{ inputs.enable_windows_x86_64 }}" >> $GITHUB_OUTPUT
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            PUBLISH_MODE="$INPUT_MODE"
           else
-            echo "enable_linux_arm64=$DEFAULT_LINUX_ARM64" >> $GITHUB_OUTPUT
-            echo "enable_linux_x86_64=$DEFAULT_LINUX_X86_64" >> $GITHUB_OUTPUT
-            echo "enable_alpine_arm64=$DEFAULT_ALPINE_ARM64" >> $GITHUB_OUTPUT
-            echo "enable_alpine_x86_64=$DEFAULT_ALPINE_X86_64" >> $GITHUB_OUTPUT
-            echo "enable_macos_arm64=$DEFAULT_MACOS_ARM64" >> $GITHUB_OUTPUT
-            echo "enable_macos_x86_64=$DEFAULT_MACOS_X86_64" >> $GITHUB_OUTPUT
-            echo "enable_windows_x86_64=$DEFAULT_WINDOWS_X86_64" >> $GITHUB_OUTPUT
+            PUBLISH_MODE="production"
           fi
+          export PUBLISH_MODE
+          python - <<'PY'
+          import os
+          import re
+          from packaging.version import Version
 
-          # Log the flags for debugging
-          echo "Platform flags set:"
-          cat $GITHUB_OUTPUT
+          tag = os.environ['RELEASE_TAG']
+          mode = os.environ['PUBLISH_MODE']
+          if re.fullmatch(r'dotpromptz-handlebars-[0-9][0-9a-z.!+-]*', tag) is None:
+              raise SystemExit('unsafe release tag')
+          version = Version(tag.removeprefix('dotpromptz-handlebars-'))
+          if str(version) != tag.removeprefix('dotpromptz-handlebars-'):
+              raise SystemExit('non-canonical release version')
+          if version.local is not None:
+              raise SystemExit('local versions cannot be published')
+          if mode not in {'production', 'testpypi-only'}:
+              raise SystemExit('unsupported publish mode')
+          if mode == 'testpypi-only' and not (version.is_prerelease or version.is_devrelease):
+              raise SystemExit('TestPyPI-only mode requires a prerelease or dev version')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'publish_mode={mode}\n')
+              output.write(f'release_ref=refs/tags/{tag}\n')
+          PY
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.mode.outputs.release_ref }}
+
+      - name: Verify release versions
+        id: release
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.event.release.tag_name }}
+          PUBLISH_MODE: ${{ steps.mode.outputs.publish_mode }}
+        run: |
+          python python/handlebarrz/release_verifier.py release \
+            --tag-env RELEASE_TAG \
+            --mode "$PUBLISH_MODE" \
+            --cargo python/handlebarrz/Cargo.toml \
+            --pyproject python/handlebarrz/pyproject.toml \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Pin peeled source commit
+        id: source
+        run: |
+          SOURCE_SHA=$(git rev-parse 'HEAD^{commit}')
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
 
   # ===========================================================================
   # BUILD JOBS
@@ -167,7 +135,6 @@ jobs:
     name: Build for Ubuntu ARM64
     needs: [setup]
     runs-on: ubuntu-24.04-arm  # Native ARM64 runner - no QEMU needed
-    if: needs.setup.outputs.enable_linux_arm64 == 'true'
     env:
       SCCACHE_GHA_ENABLED: "true"
       RUSTC_WRAPPER: "sccache"
@@ -175,12 +142,10 @@ jobs:
       matrix:
         python_version:
           - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.setup.outputs.source_sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -199,30 +164,32 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: Install maturin
-        run: uv pip install --system "maturin[patchelf]"
+        run: uv pip install --system "maturin[patchelf,zig]"
 
-      - name: Build wheels
+      - name: Build wheel
         working-directory: ./python/handlebarrz
         env:
           PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
         run: |
-          # Build for multiple manylinux compatibility levels
-          for i in $(seq 40 -1 24); do
-            maturin build --release -i python${{ matrix.python_version }} --compatibility manylinux_2_$i --auditwheel=skip -o dist || true
-          done
-          maturin build --release -i python${{ matrix.python_version }} -o dist
+          maturin build \
+            --release \
+            --zig \
+            --compatibility manylinux_2_24 \
+            --auditwheel repair \
+            -i python${{ matrix.python_version }} \
+            -o dist
 
       - name: Upload build packages
         uses: actions/upload-artifact@v6
         with:
           name: wheels-ubuntu-arm64-${{ matrix.python_version }}
           path: python/handlebarrz/dist
+          if-no-files-found: error
 
   build_alpine_arm64:
     name: Build for Alpine ARM64
     needs: [setup]
     runs-on: ubuntu-24.04-arm  # Native ARM64 runner - cross-compile for musl
-    if: needs.setup.outputs.enable_alpine_arm64 == 'true'
     env:
       SCCACHE_GHA_ENABLED: "true"
       RUSTC_WRAPPER: "sccache"
@@ -230,12 +197,10 @@ jobs:
       matrix:
         python_version:
           - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.setup.outputs.source_sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -266,19 +231,25 @@ jobs:
         env:
           PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
         run: |
-          maturin build --release --target aarch64-unknown-linux-musl -i python${{ matrix.python_version }} -o dist
+          maturin build \
+            --release \
+            --target aarch64-unknown-linux-musl \
+            --compatibility musllinux_1_2 \
+            --auditwheel repair \
+            -i python${{ matrix.python_version }} \
+            -o dist
 
       - name: Upload build packages
         uses: actions/upload-artifact@v6
         with:
           name: wheels-alpine-arm64-${{ matrix.python_version }}
           path: python/handlebarrz/dist
+          if-no-files-found: error
 
   build_alpine_x86_64:
     name: Build for Alpine x86_64
     needs: [setup]
     runs-on: ubuntu-latest  # Native x86_64 runner - cross-compile for musl
-    if: needs.setup.outputs.enable_alpine_x86_64 == 'true'
     env:
       SCCACHE_GHA_ENABLED: "true"
       RUSTC_WRAPPER: "sccache"
@@ -286,12 +257,10 @@ jobs:
       matrix:
         python_version:
           - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.setup.outputs.source_sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -322,19 +291,25 @@ jobs:
         env:
           PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
         run: |
-          maturin build --release --target x86_64-unknown-linux-musl -i python${{ matrix.python_version }} -o dist
+          maturin build \
+            --release \
+            --target x86_64-unknown-linux-musl \
+            --compatibility musllinux_1_2 \
+            --auditwheel repair \
+            -i python${{ matrix.python_version }} \
+            -o dist
 
       - name: Upload build packages
         uses: actions/upload-artifact@v6
         with:
           name: wheels-alpine-x86_64-${{ matrix.python_version }}
           path: python/handlebarrz/dist
+          if-no-files-found: error
 
   build_ubuntu_x86_64:
     name: Build for Ubuntu x86_64
     needs: [setup]
     runs-on: ubuntu-latest  # Native x86_64 runner
-    if: needs.setup.outputs.enable_linux_x86_64 == 'true'
     env:
       SCCACHE_GHA_ENABLED: "true"
       RUSTC_WRAPPER: "sccache"
@@ -342,13 +317,11 @@ jobs:
       matrix:
         python_version:
           - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.setup.outputs.source_sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -367,81 +340,32 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: Install maturin
-        run: uv pip install --system "maturin[patchelf]"
+        run: uv pip install --system "maturin[patchelf,zig]"
 
-      - name: Build wheels
+      - name: Build wheel
         working-directory: ./python/handlebarrz
         env:
           PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
         run: |
-          # Build for multiple manylinux compatibility levels
-          for i in $(seq 40 -1 24); do
-            maturin build --release -i python${{ matrix.python_version }} --compatibility manylinux_2_$i --auditwheel=skip -o dist || true
-          done
-          maturin build --release -i python${{ matrix.python_version }} -o dist
+          maturin build \
+            --release \
+            --zig \
+            --compatibility manylinux_2_24 \
+            --auditwheel repair \
+            -i python${{ matrix.python_version }} \
+            -o dist
 
       - name: Upload build packages
         uses: actions/upload-artifact@v6
         with:
           name: wheels-ubuntu-x86-64-${{ matrix.python_version }}
           path: python/handlebarrz/dist
-
-  build_windows_x86_64:
-    name: Build for Windows x86_64
-    needs: [setup]
-    runs-on: windows-latest
-    # Currently disabled due to wheel corruption issues - see setup job defaults
-    if: needs.setup.outputs.enable_windows_x86_64 == 'true'
-    env:
-      SCCACHE_GHA_ENABLED: "true"
-      RUSTC_WRAPPER: "sccache"
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Set up Python
-        id: setup_py
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-        env:
-          RUSTUP_MAX_RETRIES: 3
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
-
-      - name: Install maturin
-        run: pip install maturin
-
-      - name: Build wheel
-        working-directory: ./python/handlebarrz
-        run: maturin build --release --strip -o dist -i $env:STEPS_SETUP_PY_OUTPUTS_PYTHON_PATH
-        env:
-          STEPS_SETUP_PY_OUTPUTS_PYTHON_PATH: ${{ steps.setup_py.outputs.python-path }}
-
-      - name: Upload build packages
-        uses: actions/upload-artifact@v6
-        with:
-          name: wheels-windows-x86_64-${{ matrix.python_version }}
-          path: python/handlebarrz/dist
+          if-no-files-found: error
 
   build_macos_arm64:
     name: Build for macOS ARM64
     needs: [setup]
     runs-on: macos-14  # Apple Silicon
-    if: needs.setup.outputs.enable_macos_arm64 == 'true'
     env:
       SCCACHE_GHA_ENABLED: "true"
       RUSTC_WRAPPER: "sccache"
@@ -449,12 +373,10 @@ jobs:
       matrix:
         python_version:
           - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.setup.outputs.source_sha }}
 
       - name: Set up Node.js for Actions
         uses: actions/setup-node@v6
@@ -485,6 +407,8 @@ jobs:
 
       - name: Build wheel
         working-directory: ./python/handlebarrz
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "11.0"
         run: maturin build --release --strip -o dist
 
       - name: Upload build packages
@@ -492,12 +416,12 @@ jobs:
         with:
           name: wheels-macos-arm64-${{ matrix.python_version }}-${{ github.job }}
           path: python/handlebarrz/dist
+          if-no-files-found: error
 
   build_macos_x86_64:
     name: Build for macOS x86_64
     needs: [setup]
     runs-on: macos-14
-    if: needs.setup.outputs.enable_macos_x86_64 == 'true'
     env:
       SCCACHE_GHA_ENABLED: "true"
       RUSTC_WRAPPER: "sccache"
@@ -505,12 +429,10 @@ jobs:
       matrix:
         python_version:
           - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.setup.outputs.source_sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -533,6 +455,8 @@ jobs:
 
       - name: Build wheel
         working-directory: ./python/handlebarrz
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "10.12"
         run: maturin build --release --strip -o dist --target x86_64-apple-darwin
 
       - name: Upload build packages
@@ -540,101 +464,146 @@ jobs:
         with:
           name: wheels-macos-x86_64-${{ matrix.python_version }}-${{ github.job }}
           path: python/handlebarrz/dist
-
-#  build_windows_arm64:
-#    name: Build for Windows ARM64
-#    runs-on: windows-latest
-#    env:
-#      PYO3_NO_PYTHON: '1'
-#    strategy:
-#      matrix:
-#        python_version:
-#          - "3.10"
-#          - "3.11"
-#          - "3.12"
-#          - "3.13"
-#          - "3.14"
-#    steps:
-#      - uses: actions/checkout@v6
-#
-#      - name: Set up Python
-#        id: setup_py
-#        uses: actions/setup-python@v6
-#        with:
-#          python-version: ${{ matrix.python_version }}
-#
-#      - name: Set up Rust
-#        uses: dtolnay/rust-toolchain@stable
-#        with:
-#          toolchain: stable
-#          target: aarch64-pc-windows-msvc
-#
-#      - name: Install maturin
-#        run: pip install maturin
-#
-#      - name: Patch Cargo.toml for Windows ARM64 (Bump abi3 to 3.11)
-#        working-directory: ./python/handlebarrz
-#        run: |
-#          (Get-Content Cargo.toml) -replace 'abi3-py310', 'abi3-py311' | Set-Content Cargo.toml
-#
-#      - name: Build wheel
-#        working-directory: ./python/handlebarrz
-#        run: maturin build --release --strip -o dist --target aarch64-pc-windows-msvc
-#
-#      - name: Upload build packages
-#        uses: actions/upload-artifact@v6
-#        with:
-#          name: wheels-windows-arm64-${{ matrix.python_version }}
-#          path: python/handlebarrz/dist
+          if-no-files-found: error
 
   # ===========================================================================
-  # PUBLISH JOB
+  # POISON-DETECTING, RESUMABLE EXACT-SIX PUBLICATION
   # ===========================================================================
+  # Contract: poison-detecting, resumable exact-six publication.
+  # Read-only upload copies catch accidental changes at the publisher seam.
+  # The runner and commit-pinned publisher remain inside the trust boundary.
 
-  pypi_publish:
-    name: Upload to PyPI by python version
-    # NOTE: Build jobs with conditional 'if' may be skipped. We use always() to run
-    # this job regardless, and check that at least one build succeeded or was skipped
-    # (skipped jobs don't produce artifacts but don't block the workflow).
-    needs: [setup, build_ubuntu_arm64, build_ubuntu_x86_64, build_alpine_arm64, build_alpine_x86_64, build_macos_arm64, build_macos_x86_64, build_windows_x86_64]
-    if: |
-      always() && !cancelled() && needs.setup.result == 'success' &&
-      (needs.build_ubuntu_arm64.result == 'success' || needs.build_ubuntu_arm64.result == 'skipped' ||
-       needs.build_ubuntu_x86_64.result == 'success' || needs.build_ubuntu_x86_64.result == 'skipped' ||
-       needs.build_alpine_arm64.result == 'success' || needs.build_alpine_arm64.result == 'skipped' ||
-       needs.build_alpine_x86_64.result == 'success' || needs.build_alpine_x86_64.result == 'skipped' ||
-       needs.build_macos_arm64.result == 'success' || needs.build_macos_arm64.result == 'skipped' ||
-       needs.build_macos_x86_64.result == 'success' || needs.build_macos_x86_64.result == 'skipped' ||
-       needs.build_windows_x86_64.result == 'success' || needs.build_windows_x86_64.result == 'skipped')
+  prepare_candidate:
+    name: Verify and retain exact wheel bytes
+    needs: [setup, build_ubuntu_arm64, build_ubuntu_x86_64, build_alpine_arm64, build_alpine_x86_64, build_macos_arm64, build_macos_x86_64]
+    if: always() && !cancelled() && needs.setup.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.setup.outputs.source_sha }}
+
+      - name: Download wheel artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: wheels-*
+          path: artifacts/
+          merge-multiple: false
+
+      - name: Verify build results and stage complete wheel set
+        env:
+          PACKAGE_VERSION: ${{ needs.setup.outputs.package_version }}
+          RESULT_LINUX_ARM64: ${{ needs.build_ubuntu_arm64.result }}
+          RESULT_LINUX_X86_64: ${{ needs.build_ubuntu_x86_64.result }}
+          RESULT_ALPINE_ARM64: ${{ needs.build_alpine_arm64.result }}
+          RESULT_ALPINE_X86_64: ${{ needs.build_alpine_x86_64.result }}
+          RESULT_MACOS_ARM64: ${{ needs.build_macos_arm64.result }}
+          RESULT_MACOS_X86_64: ${{ needs.build_macos_x86_64.result }}
+        run: |
+          set -euo pipefail
+          python -m pip install "packaging>=24.2"
+          python python/handlebarrz/release_verifier.py gate \
+            --result "linux_arm64=$RESULT_LINUX_ARM64" \
+            --result "linux_x86_64=$RESULT_LINUX_X86_64" \
+            --result "alpine_arm64=$RESULT_ALPINE_ARM64" \
+            --result "alpine_x86_64=$RESULT_ALPINE_X86_64" \
+            --result "macos_arm64=$RESULT_MACOS_ARM64" \
+            --result "macos_x86_64=$RESULT_MACOS_X86_64"
+          python python/handlebarrz/release_verifier.py stage \
+            --artifacts artifacts \
+            --candidate release-candidate \
+            --version "$PACKAGE_VERSION"
+
+      - name: Retain verified current-run candidate
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-candidate
+          path: release-candidate/
+          if-no-files-found: error
+
+  testpypi_publish:
+    name: Reconcile current-run wheels to TestPyPI
+    needs: [setup, prepare_candidate]
     runs-on: ubuntu-latest
     environment:
       name: pypi_github_publishing
     permissions:
+      contents: read
       id-token: write
     steps:
-      - name: Download wheels
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.setup.outputs.source_sha }}
+
+      - name: Download retained current-run candidate
         uses: actions/download-artifact@v7
         with:
-          merge-multiple: true
-          path: dist/
+          name: release-candidate
+          path: candidate/
 
-      - name: Delete unsupported wheels
+      - name: Reconcile TestPyPI and stage only missing wheels
+        id: reconcile
+        env:
+          PACKAGE_VERSION: ${{ needs.setup.outputs.package_version }}
         run: |
-          FILES=$(find dist/ -type f -name "*linux_aarch64*")
-          if [[ -n "$FILES" ]]; then
-            echo "removing local wheel"
-            rm -f $FILES
-          fi
+          python -m pip install "packaging>=24.2"
+          python python/handlebarrz/release_verifier.py reconcile \
+            --repository-url "https://test.pypi.org/legacy/" \
+            --candidate candidate \
+            --upload-dir upload \
+            --version "$PACKAGE_VERSION" \
+            --github-output "$GITHUB_OUTPUT"
 
-      - name: Publish distribution to PyPI
+      - name: Record TestPyPI partial-upload recovery
+        if: steps.reconcile.outputs.missing_count != '0'
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          TestPyPI uploads are per-file and can leave a temporary partial set.
+          If upload or completeness validation fails, use **Re-run failed jobs**
+          from **THIS run** so the retained candidate bytes are reused.
+          Never start a fresh production run to recover a partial upload.
+          EOF
+
+      - name: Reverify read-only bytes immediately before TestPyPI upload
+        if: steps.reconcile.outputs.missing_count != '0'
+        env:
+          PACKAGE_VERSION: ${{ needs.setup.outputs.package_version }}
+        run: |
+          python python/handlebarrz/release_verifier.py verify-upload \
+            --candidate candidate \
+            --upload-dir upload \
+            --version "$PACKAGE_VERSION"
+
+      - name: Publish missing wheels to TestPyPI
+        if: steps.reconcile.outputs.missing_count != '0'
         uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e  # release/v1.13
         with:
           verbose: true
-          packages-dir: dist/
-          repository-url: ${{ github.event_name == 'release' && 'https://upload.pypi.org/legacy/' || inputs.repository_url || 'https://upload.pypi.org/legacy/' }}
+          packages-dir: upload/
+          repository-url: https://test.pypi.org/legacy/
 
-      - name: Sleep for pypi server to load
+      - name: Record successful TestPyPI upload handoff
+        if: steps.reconcile.outputs.missing_count != '0' && success()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          The per-file upload returned success; exact registry digest validation follows.
+          If that validation fails, use **Re-run failed jobs** from **THIS run**.
+          Never start a fresh production run to recover a partial upload.
+          EOF
+
+      - name: Wait for TestPyPI propagation
+        if: steps.reconcile.outputs.missing_count != '0'
         run: sleep 180
+
+      - name: Require exact TestPyPI filename and digest set
+        env:
+          PACKAGE_VERSION: ${{ needs.setup.outputs.package_version }}
+        run: |
+          python python/handlebarrz/release_verifier.py reconcile \
+            --repository-url "https://test.pypi.org/legacy/" \
+            --candidate candidate \
+            --version "$PACKAGE_VERSION" \
+            --require-complete
 
   # ===========================================================================
   # SMOKE TEST JOBS
@@ -642,9 +611,8 @@ jobs:
 
   smoke_test_linux_arm64:
     name: Test for Linux ARM64
-    needs: [setup, pypi_publish]
+    needs: [setup, testpypi_publish]
     runs-on: ubuntu-24.04-arm  # Native ARM64 runner - no QEMU needed
-    if: needs.setup.outputs.enable_linux_arm64 == 'true'
     strategy:
       matrix:
         python_version:
@@ -658,6 +626,17 @@ jobs:
           - "fedora"
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.setup.outputs.source_sha }}
+
+      - name: Download retained candidate manifest
+        uses: actions/download-artifact@v7
+        with:
+          name: release-candidate
+          path: python/handlebarrz/smoke_tests/candidate/
+
+      - name: Add verifier to container context
+        run: cp python/handlebarrz/release_verifier.py python/handlebarrz/smoke_tests/
 
       - name: Build container
         run: |
@@ -668,14 +647,17 @@ jobs:
 
       - name: Run container
         run: |
-          docker run test-${{ matrix.linux_platform }}-arm64:latest sh ./execute-test.sh "${{ matrix.python_version }}"
-    continue-on-error: true
+          docker run test-${{ matrix.linux_platform }}-arm64:latest \
+            sh ./execute-test.sh \
+            "${{ matrix.python_version }}" \
+            "https://test.pypi.org/simple" \
+            "${{ needs.setup.outputs.package_version }}" \
+            "linux_arm64"
 
   smoke_test_alpine_arm64:
     name: Test for Alpine ARM64
-    needs: [setup, pypi_publish]
+    needs: [setup, testpypi_publish]
     runs-on: ubuntu-24.04-arm  # Native ARM64 runner - no QEMU needed
-    if: needs.setup.outputs.enable_alpine_arm64 == 'true'
     strategy:
       matrix:
         python_version:
@@ -686,6 +668,17 @@ jobs:
           - "3.14"
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.setup.outputs.source_sha }}
+
+      - name: Download retained candidate manifest
+        uses: actions/download-artifact@v7
+        with:
+          name: release-candidate
+          path: python/handlebarrz/smoke_tests/candidate/
+
+      - name: Add verifier to container context
+        run: cp python/handlebarrz/release_verifier.py python/handlebarrz/smoke_tests/
 
       - name: Build container
         run: |
@@ -696,14 +689,17 @@ jobs:
 
       - name: Run container
         run: |
-          docker run test-alpine:latest sh ./execute-test.sh "${{ matrix.python_version }}"
-    continue-on-error: true
+          docker run test-alpine:latest \
+            sh ./execute-test.sh \
+            "${{ matrix.python_version }}" \
+            "https://test.pypi.org/simple" \
+            "${{ needs.setup.outputs.package_version }}" \
+            "alpine_arm64"
 
   smoke_test_alpine_x86_64:
     name: Test for Alpine x86_64
-    needs: [setup, pypi_publish]
+    needs: [setup, testpypi_publish]
     runs-on: ubuntu-latest  # Native x86_64 - no QEMU needed
-    if: needs.setup.outputs.enable_alpine_x86_64 == 'true'
     strategy:
       matrix:
         python_version:
@@ -714,6 +710,17 @@ jobs:
           - "3.14"
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.setup.outputs.source_sha }}
+
+      - name: Download retained candidate manifest
+        uses: actions/download-artifact@v7
+        with:
+          name: release-candidate
+          path: python/handlebarrz/smoke_tests/candidate/
+
+      - name: Add verifier to container context
+        run: cp python/handlebarrz/release_verifier.py python/handlebarrz/smoke_tests/
 
       - name: Build container
         run: |
@@ -724,14 +731,17 @@ jobs:
 
       - name: Run container
         run: |
-          docker run test-alpine-x86-64:latest sh ./execute-test.sh "${{ matrix.python_version }}"
-    continue-on-error: true
+          docker run test-alpine-x86-64:latest \
+            sh ./execute-test.sh \
+            "${{ matrix.python_version }}" \
+            "https://test.pypi.org/simple" \
+            "${{ needs.setup.outputs.package_version }}" \
+            "alpine_x86_64"
 
   smoke_test_linux_x86_64:
     name: Test for Linux x86_64
-    needs: [setup, pypi_publish]
+    needs: [setup, testpypi_publish]
     runs-on: ubuntu-latest
-    if: needs.setup.outputs.enable_linux_x86_64 == 'true'
     strategy:
       matrix:
         python_version:
@@ -745,6 +755,17 @@ jobs:
           - "fedora"
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.setup.outputs.source_sha }}
+
+      - name: Download retained candidate manifest
+        uses: actions/download-artifact@v7
+        with:
+          name: release-candidate
+          path: python/handlebarrz/smoke_tests/candidate/
+
+      - name: Add verifier to container context
+        run: cp python/handlebarrz/release_verifier.py python/handlebarrz/smoke_tests/
 
       - name: Build container
         run: |
@@ -755,15 +776,31 @@ jobs:
 
       - name: Run container
         run: |
-          docker run test-${{ matrix.linux_platform }}:latest sh ./execute-test.sh "${{ matrix.python_version }}"
-    continue-on-error: true
+          docker run test-${{ matrix.linux_platform }}:latest \
+            sh ./execute-test.sh \
+            "${{ matrix.python_version }}" \
+            "https://test.pypi.org/simple" \
+            "${{ needs.setup.outputs.package_version }}" \
+            "linux_x86_64"
 
 
   smoke_test_macos_arm64:
     name: Test for macOS ARM64
-    needs: [setup, pypi_publish]
+    needs: [setup, testpypi_publish]
     runs-on: macos-14
-    if: needs.setup.outputs.enable_macos_arm64 == 'true'
+    env:
+      PIP_CONFIG_FILE: /dev/null
+      PIP_INDEX_URL: ""
+      PIP_EXTRA_INDEX_URL: ""
+      PIP_FIND_LINKS: ""
+      PIP_NO_INDEX: ""
+      UV_NO_CONFIG: "1"
+      UV_INDEX: ""
+      UV_INDEX_URL: ""
+      UV_DEFAULT_INDEX: ""
+      UV_EXTRA_INDEX_URL: ""
+      UV_FIND_LINKS: ""
+      UV_NO_INDEX: ""
     strategy:
       matrix:
         python_version:
@@ -774,24 +811,75 @@ jobs:
           - "3.14"
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.setup.outputs.source_sha }}
+
+      - name: Download retained candidate manifest
+        uses: actions/download-artifact@v7
+        with:
+          name: release-candidate
+          path: candidate/
 
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python_version }}
 
-      - name: Install package from PyPI
-        run: pip install dotpromptz-handlebars
+      - name: Install runtime dependencies from production PyPI
+        run: |
+          python -m pip install \
+            --isolated \
+            --no-cache-dir \
+            --index-url "https://pypi.org/simple" \
+            --only-binary=:all: \
+            "packaging>=24.2" \
+            "structlog>=25.2.0"
+
+      - name: Download and verify exact TestPyPI candidate
+        run: |
+          rm -rf smoke-download
+          python -m pip download \
+            --isolated \
+            --no-cache-dir \
+            --index-url "https://test.pypi.org/simple" \
+            --only-binary=:all: \
+            --no-deps \
+            --dest smoke-download \
+            "dotpromptz-handlebars==${{ needs.setup.outputs.package_version }}"
+          wheels=(smoke-download/*.whl)
+          [[ ${#wheels[@]} -eq 1 ]]
+          python python/handlebarrz/release_verifier.py verify-smoke-wheel \
+            --candidate candidate \
+            --wheel "${wheels[0]}" \
+            --target macos_arm64 \
+            --version "${{ needs.setup.outputs.package_version }}"
+          python -m pip install \
+            --isolated \
+            --no-cache-dir \
+            --only-binary=:all: \
+            --no-deps \
+            "${wheels[0]}"
 
       - name: Run smoke test
         working-directory: ./python/handlebarrz/smoke_tests
         run: python -c "import handlebarrz; print('Import successful')"
-
   smoke_test_macos_x86_64:
     name: Test for macOS x86_64
-    needs: [setup, pypi_publish]
+    needs: [setup, testpypi_publish]
     runs-on: macos-14
-    if: needs.setup.outputs.enable_macos_x86_64 == 'true'
+    env:
+      PIP_CONFIG_FILE: /dev/null
+      PIP_INDEX_URL: ""
+      PIP_EXTRA_INDEX_URL: ""
+      PIP_FIND_LINKS: ""
+      PIP_NO_INDEX: ""
+      UV_NO_CONFIG: "1"
+      UV_INDEX: ""
+      UV_INDEX_URL: ""
+      UV_DEFAULT_INDEX: ""
+      UV_EXTRA_INDEX_URL: ""
+      UV_FIND_LINKS: ""
+      UV_NO_INDEX: ""
     strategy:
       matrix:
         python_version:
@@ -802,6 +890,14 @@ jobs:
           - "3.14"
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.setup.outputs.source_sha }}
+
+      - name: Download retained candidate manifest
+        uses: actions/download-artifact@v7
+        with:
+          name: release-candidate
+          path: candidate/
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -809,68 +905,180 @@ jobs:
           python-version: ${{ matrix.python_version }}
           architecture: x64
 
-      - name: Install package from PyPI
-        run: pip install dotpromptz-handlebars
+      - name: Install runtime dependencies from production PyPI
+        run: |
+          python -m pip install \
+            --isolated \
+            --no-cache-dir \
+            --index-url "https://pypi.org/simple" \
+            --only-binary=:all: \
+            "packaging>=24.2" \
+            "structlog>=25.2.0"
+
+      - name: Download and verify exact TestPyPI candidate
+        run: |
+          rm -rf smoke-download
+          python -m pip download \
+            --isolated \
+            --no-cache-dir \
+            --index-url "https://test.pypi.org/simple" \
+            --only-binary=:all: \
+            --no-deps \
+            --dest smoke-download \
+            "dotpromptz-handlebars==${{ needs.setup.outputs.package_version }}"
+          wheels=(smoke-download/*.whl)
+          [[ ${#wheels[@]} -eq 1 ]]
+          python python/handlebarrz/release_verifier.py verify-smoke-wheel \
+            --candidate candidate \
+            --wheel "${wheels[0]}" \
+            --target macos_x86_64 \
+            --version "${{ needs.setup.outputs.package_version }}"
+          python -m pip install \
+            --isolated \
+            --no-cache-dir \
+            --only-binary=:all: \
+            --no-deps \
+            "${wheels[0]}"
 
       - name: Run smoke test
         working-directory: ./python/handlebarrz/smoke_tests
         run: python -c "import handlebarrz; print('Import successful')"
-    continue-on-error: true
-
-  smoke_test_windows_x86_64:
-    name: Test for Windows x86_64
-    needs: [setup, pypi_publish]
-    runs-on: windows-latest
-    # Currently disabled due to wheel corruption issues - see setup job defaults
-    if: needs.setup.outputs.enable_windows_x86_64 == 'true'
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
+  production_publish:
+    name: Reconcile same smoke-qualified bytes to PyPI
+    needs:
+      - setup
+      - prepare_candidate
+      - testpypi_publish
+      - smoke_test_linux_arm64
+      - smoke_test_linux_x86_64
+      - smoke_test_alpine_arm64
+      - smoke_test_alpine_x86_64
+      - smoke_test_macos_arm64
+      - smoke_test_macos_x86_64
+    if: |
+      always() && !cancelled() &&
+      needs.setup.result == 'success' &&
+      needs.prepare_candidate.result == 'success' &&
+      needs.testpypi_publish.result == 'success' &&
+      needs.setup.outputs.publish_mode == 'production'
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi_github_publishing
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v6
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
         with:
-          python-version: ${{ matrix.python_version }}
+          ref: ${{ needs.setup.outputs.source_sha }}
 
-      - name: Install package from PyPI
-        run: pip install dotpromptz-handlebars
+      - name: Require all six smoke tests
+        env:
+          RESULT_LINUX_ARM64: ${{ needs.smoke_test_linux_arm64.result }}
+          RESULT_LINUX_X86_64: ${{ needs.smoke_test_linux_x86_64.result }}
+          RESULT_ALPINE_ARM64: ${{ needs.smoke_test_alpine_arm64.result }}
+          RESULT_ALPINE_X86_64: ${{ needs.smoke_test_alpine_x86_64.result }}
+          RESULT_MACOS_ARM64: ${{ needs.smoke_test_macos_arm64.result }}
+          RESULT_MACOS_X86_64: ${{ needs.smoke_test_macos_x86_64.result }}
+        run: |
+          python -m pip install "packaging>=24.2"
+          python python/handlebarrz/release_verifier.py gate \
+            --result "linux_arm64=$RESULT_LINUX_ARM64" \
+            --result "linux_x86_64=$RESULT_LINUX_X86_64" \
+            --result "alpine_arm64=$RESULT_ALPINE_ARM64" \
+            --result "alpine_x86_64=$RESULT_ALPINE_X86_64" \
+            --result "macos_arm64=$RESULT_MACOS_ARM64" \
+            --result "macos_x86_64=$RESULT_MACOS_X86_64"
 
-      - name: Run smoke test
-        working-directory: ./python/handlebarrz/smoke_tests
-        run: python -c "import handlebarrz; print('Import successful')"
-    continue-on-error: true
+      - name: Download retained current-run candidate
+        uses: actions/download-artifact@v7
+        with:
+          name: release-candidate
+          path: candidate/
 
-#  smoke_test_windows_arm64:
-#    name: Test for Windows ARM64
-#    needs: [ pypi_publish ]
-#    runs-on: windows-latest
-#    strategy:
-#      matrix:
-#        python_version:
-#          - "3.10"
-#          - "3.11"
-#          - "3.12"
-#          - "3.13"
-#          - "3.14"
-#    steps:
-#      - uses: actions/checkout@v6
-#
-#      - name: Set up Python
-#        uses: actions/setup-python@v6
-#        with:
-#          python-version: ${{ matrix.python_version }}
-#
-#      - name: Install package from PyPI
-#        run: pip install dotpromptz-handlebars
-#
-#      - name: Run smoke test
-#        working-directory: ./python/handlebarrz/smoke_tests
-#        run: python -c "import handlebarrz; print('Import successful')"
-#    continue-on-error: true
+      - name: Verify named tag still identifies pinned source
+        env:
+          RELEASE_TAG: ${{ needs.setup.outputs.release_tag }}
+          SOURCE_SHA: ${{ needs.setup.outputs.source_sha }}
+        run: |
+          TAG_LINES=$(git ls-remote origin \
+            "refs/tags/$RELEASE_TAG" \
+            "refs/tags/$RELEASE_TAG^{}")
+          TAG_SHA=$(printf '%s\n' "$TAG_LINES" | awk '/\^\{\}$/ {print $1}')
+          if [[ -z "$TAG_SHA" ]]; then
+            TAG_SHA=$(printf '%s\n' "$TAG_LINES" | awk 'NR == 1 {print $1}')
+          fi
+          [[ "$TAG_SHA" == "$SOURCE_SHA" ]]
+
+      - name: Reconfirm TestPyPI still matches current-run bytes
+        env:
+          PACKAGE_VERSION: ${{ needs.setup.outputs.package_version }}
+        run: |
+          python python/handlebarrz/release_verifier.py reconcile \
+            --repository-url "https://test.pypi.org/legacy/" \
+            --candidate candidate \
+            --version "$PACKAGE_VERSION" \
+            --require-complete
+
+      - name: Reconcile PyPI and stage only missing wheels
+        id: reconcile
+        env:
+          PACKAGE_VERSION: ${{ needs.setup.outputs.package_version }}
+        run: |
+          python python/handlebarrz/release_verifier.py reconcile \
+            --repository-url "https://upload.pypi.org/legacy/" \
+            --candidate candidate \
+            --upload-dir upload \
+            --version "$PACKAGE_VERSION" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Record PyPI partial-upload recovery
+        if: steps.reconcile.outputs.missing_count != '0'
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          PyPI uploads are per-file and can leave a temporary partial set.
+          If upload or completeness validation fails, use **Re-run failed jobs**
+          from **THIS run** so the retained candidate bytes are reused.
+          Never start a fresh production run to recover a partial upload.
+          EOF
+
+      - name: Reverify read-only bytes immediately before PyPI upload
+        if: steps.reconcile.outputs.missing_count != '0'
+        env:
+          PACKAGE_VERSION: ${{ needs.setup.outputs.package_version }}
+        run: |
+          python python/handlebarrz/release_verifier.py verify-upload \
+            --candidate candidate \
+            --upload-dir upload \
+            --version "$PACKAGE_VERSION"
+
+      - name: Publish missing distribution files to PyPI
+        if: steps.reconcile.outputs.missing_count != '0'
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e  # release/v1.13
+        with:
+          verbose: true
+          packages-dir: upload/
+          repository-url: https://upload.pypi.org/legacy/
+
+      - name: Record successful PyPI upload handoff
+        if: steps.reconcile.outputs.missing_count != '0' && success()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          The per-file upload returned success; exact registry digest validation follows.
+          If that validation fails, use **Re-run failed jobs** from **THIS run**.
+          Never start a fresh production run to recover a partial upload.
+          EOF
+
+      - name: Wait for PyPI propagation
+        if: steps.reconcile.outputs.missing_count != '0'
+        run: sleep 180
+
+      - name: Require exact PyPI filename and digest set
+        env:
+          PACKAGE_VERSION: ${{ needs.setup.outputs.package_version }}
+        run: |
+          python python/handlebarrz/release_verifier.py reconcile \
+            --repository-url "https://upload.pypi.org/legacy/" \
+            --candidate candidate \
+            --version "$PACKAGE_VERSION" \
+            --require-complete
