@@ -71,3 +71,22 @@ This Dotprompt file:
 When executed, this prompt would take a text input, analyze it using the
 specified AI model, and return a structured JSON object with the extracted
 information.
+
+## Runtime context
+
+Prompt input and runtime context are separate namespaces. Use `{{name}}` for
+input and `{{@name}}` for context:
+
+```python
+from dotpromptz import Dotprompt
+from dotpromptz.typing import DataArgument
+
+prompt = Dotprompt()
+result = await prompt.render(
+    '{{name}} is signed in as {{@name}}',
+    DataArgument(
+        input={'name': 'Ada'},
+        context={'name': 'admin'},
+    ),
+)
+```
