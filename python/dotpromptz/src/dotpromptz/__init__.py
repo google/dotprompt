@@ -142,6 +142,7 @@ Provide clear examples to illustrate key points.
 """
 
 from .dotprompt import Dotprompt
+from .errors import PartialCycleError
 
 
 def package_name() -> str:
@@ -155,4 +156,5 @@ def package_name() -> str:
 
 __all__ = [
     Dotprompt.__name__,
+    PartialCycleError.__name__,
 ]
