@@ -20,7 +20,7 @@ members  = ["rs/smoke", "rs/dotprompt", "rs/promptly", "python/handlebarrz"]
 resolver = "3"
 
 [workspace.dependencies]
-handlebars = "6.3.2"
+handlebars = "6.4.4"
 pyo3 = { version = "0.24.2", features = [
   "extension-module",
   "generate-import-lib",
