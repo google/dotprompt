@@ -39,6 +39,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from pydantic import ValidationError
 
+from dotpromptz import PartialCycleError
 from dotpromptz.dotprompt import Dotprompt, _identify_partials
 from dotpromptz.typing import (
     DataArgument,
@@ -731,12 +732,70 @@ def test_metadata_override_without_model_keeps_model_config() -> None:
 class TestResolvePartialsCycleDetection(IsolatedAsyncioTestCase):
     """Test cycle detection in _resolve_partials."""
 
-    async def test_handles_cycles_without_infinite_recursion(self) -> None:
-        """Should handle cycles in partial references without infinite recursion.
+    async def test_all_three_node_partial_graphs(self) -> None:
+        """Every small graph agrees with an independent cycle oracle."""
+        nodes = ('a', 'b', 'c')
+        possible_edges = tuple((source, target) for source in nodes for target in nodes)
 
-        Setup partials that reference each other: A -> B -> A
-        The resolver should only be called once per partial.
-        """
+        for mask in range(1 << len(possible_edges)):
+            graph = {edge for index, edge in enumerate(possible_edges) if mask & (1 << index)}
+            reachable = {'a'}
+            pending = ['a']
+            while pending:
+                source = pending.pop()
+                for edge_source, target in graph:
+                    if edge_source == source and target not in reachable:
+                        reachable.add(target)
+                        pending.append(target)
+
+            indegree = dict.fromkeys(reachable, 0)
+            for source, target in graph:
+                if source in reachable and target in reachable:
+                    indegree[target] += 1
+            ready = [node for node, degree in indegree.items() if degree == 0]
+            visited = 0
+            while ready:
+                source = ready.pop()
+                visited += 1
+                for edge_source, target in graph:
+                    if edge_source == source and target in reachable:
+                        indegree[target] -= 1
+                        if indegree[target] == 0:
+                            ready.append(target)
+            has_cycle = visited != len(reachable)
+
+            sources = {
+                node: ''.join(f'{{{{> {target}}}}}' for source, target in sorted(graph) if source == node) or node
+                for node in nodes
+            }
+            calls = dict.fromkeys(nodes, 0)
+
+            async def partial_resolver(
+                name: str,
+                _calls: dict[str, int] = calls,
+                _sources: dict[str, str] = sources,
+            ) -> str | None:
+                _calls[name] += 1
+                return _sources.get(name)
+
+            dotprompt = Dotprompt(partial_resolver=partial_resolver)
+            with self.subTest(mask=mask, graph=sorted(graph)):
+                if has_cycle:
+                    with pytest.raises(PartialCycleError) as exc_info:
+                        await dotprompt._resolve_partials('{{> a}}')
+
+                    cycle = exc_info.value.cycle
+                    assert cycle[0] == cycle[-1]
+                    assert set(cycle[:-1]) <= reachable
+                    assert all(edge in graph for edge in zip(cycle, cycle[1:], strict=False))
+                else:
+                    await dotprompt._resolve_partials('{{> a}}')
+
+                    assert {node for node, count in calls.items() if count} == reachable
+                    assert all(calls[node] == 1 for node in reachable)
+
+    async def test_rejects_resolver_cycle_before_rendering(self) -> None:
+        """Resolver-backed cycles raise before reaching the template engine."""
         call_counts: dict[str, int] = {'partialA': 0, 'partialB': 0}
 
         async def partial_resolver(name: str) -> str | None:
@@ -751,15 +810,74 @@ class TestResolvePartialsCycleDetection(IsolatedAsyncioTestCase):
 
         dotprompt = Dotprompt(partial_resolver=partial_resolver)
 
-        # Start with a template that references partialA
-        template = '{{> partialA}}'
+        with pytest.raises(
+            PartialCycleError,
+            match=r'Circular partial reference: partialA -> partialB -> partialA',
+        ):
+            await dotprompt.render('{{> partialA}}', DataArgument())
 
-        # This should complete without infinite recursion
-        await dotprompt._resolve_partials(template)
-
-        # Each partial should only be resolved once despite the cycle
         self.assertEqual(call_counts['partialA'], 1)
         self.assertEqual(call_counts['partialB'], 1)
+
+    async def test_rejects_pre_registered_cycle_before_rendering(self) -> None:
+        """Pre-registered cycles raise before reaching the template engine."""
+        dotprompt = Dotprompt(
+            partials={
+                'partialA': 'Content A {{> partialB}}',
+                'partialB': 'Content B {{> partialA}}',
+            }
+        )
+
+        with pytest.raises(PartialCycleError) as exc_info:
+            await dotprompt.render('{{> partialA}}', DataArgument())
+
+        assert exc_info.value.cycle == ('partialA', 'partialB', 'partialA')
+
+    async def test_rejects_self_referencing_partial(self) -> None:
+        """A direct self-reference reports the shortest cycle."""
+        dotprompt = Dotprompt(partials={'loop': '{{> loop}}'})
+
+        with pytest.raises(PartialCycleError) as exc_info:
+            await dotprompt.render('{{> loop}}', DataArgument())
+
+        assert exc_info.value.cycle == ('loop', 'loop')
+
+    async def test_rejects_cycle_across_registered_and_resolved_partials(self) -> None:
+        """Cycle detection spans registered and resolver-backed sources."""
+
+        async def partial_resolver(name: str) -> str | None:
+            return '{{> registered}}' if name == 'resolved' else None
+
+        dotprompt = Dotprompt(
+            partials={'registered': '{{> resolved}}'},
+            partial_resolver=partial_resolver,
+        )
+
+        with pytest.raises(PartialCycleError) as exc_info:
+            await dotprompt.render('{{> registered}}', DataArgument())
+
+        assert exc_info.value.cycle == ('registered', 'resolved', 'registered')
+
+    async def test_shared_dependency_is_resolved_once_without_false_cycle(self) -> None:
+        """A diamond dependency remains valid and resolves shared work once."""
+        calls: list[str] = []
+        sources = {
+            'left': '{{> shared}}',
+            'right': '{{> shared}}',
+            'shared': 'Shared',
+        }
+
+        async def partial_resolver(name: str) -> str | None:
+            calls.append(name)
+            return sources.get(name)
+
+        result = await Dotprompt(partial_resolver=partial_resolver).render(
+            '{{> left}}{{> right}}',
+            DataArgument(),
+        )
+
+        assert result.messages[0].content == [TextPart(text='SharedShared')]
+        assert calls.count('shared') == 1
 
     async def test_deep_chain_resolution_without_cycles(self) -> None:
         """Should resolve deep chains of partials correctly.
