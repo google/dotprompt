@@ -559,7 +559,7 @@ def test_render_metadata() -> None:
         result = asyncio.run(dotprompt.render_metadata(parsed_source))
 
         resolve_metadata_mock.assert_called_with(
-            PromptMetadata(),
+            PromptMetadata(model='gemini-2.5-pro'),
             ParsedPrompt(
                 model='gemini-2.5-pro',
                 template='Template content',
@@ -612,7 +612,11 @@ def test_use_available_model_config() -> None:
 
     with patch.object(dotprompt, '_resolve_metadata', resolve_metadata_mock):
         result = asyncio.run(dotprompt.render_metadata(parsed_source))
-        resolve_metadata_mock.assert_called_with(PromptMetadata(config={'temperature': 0.7}), parsed_source, None)
+        resolve_metadata_mock.assert_called_with(
+            PromptMetadata(model='gemini-2.5-pro', config={'temperature': 0.7}),
+            parsed_source,
+            None,
+        )
 
         assert result.config == {'temperature': 0.7}
 

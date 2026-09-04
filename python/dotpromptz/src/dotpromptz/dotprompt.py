@@ -74,6 +74,40 @@ from handlebarrz import Context, EscapeFunction, Handlebars, HelperFn, RuntimeOp
 _PARTIAL_PATTERN = re.compile(r'{{\s*>\s*([a-zA-Z0-9_.-]+)\s*}}')
 
 
+def _merged_metadata_dict(
+    current: PromptMetadata[ModelConfigT],
+    merge: PromptMetadata[ModelConfigT],
+) -> dict[str, Any]:
+    # Convert Pydantic models to raw dicts by alias first. Skip None values.
+    merge_dict = merge.model_dump(exclude_none=True, by_alias=True)
+    current_dict = current.model_dump(exclude_none=True, by_alias=True)
+
+    original_config = current_dict.get('config', {})
+    new_config = merge_dict.get('config', {})
+    original_input = current_dict.get('input')
+    new_input = merge_dict.get('input')
+
+    if merge_dict.get('model') == '':
+        merge_dict.pop('model')
+
+    current_dict.update(merge_dict)
+
+    current_dict['config'] = {**original_config, **new_config}
+    if original_input is not None and new_input is not None:
+        merged_input = {
+            **original_input,
+            **new_input,
+        }
+        if 'default' in original_input or 'default' in new_input:
+            merged_input['default'] = {
+                **(original_input.get('default') or {}),
+                **(new_input.get('default') or {}),
+            }
+        current_dict['input'] = merged_input
+
+    return current_dict
+
+
 def _merge_metadata(
     current: PromptMetadata[ModelConfigT],
     merge: PromptMetadata[ModelConfigT],
@@ -87,22 +121,7 @@ def _merge_metadata(
     Returns:
         The merged metadata object.
     """
-    # Convert Pydantic models to raw dicts by alias first. Skip None values.
-    merge_dict = merge.model_dump(exclude_none=True, by_alias=True)
-    current_dict = current.model_dump(exclude_none=True, by_alias=True)
-
-    # Keep a reference to the original config.
-    original_config = current_dict.get('config', {})
-    new_config = merge_dict.get('config', {})
-
-    # Merge the new metadata.
-    current_dict.update(merge_dict)
-
-    # Merge the configs and set the resulting config.
-    current_dict['config'] = {**original_config, **new_config}
-
-    # Recreate the Pydantic model from the merged dict and validate it.
-    return PromptMetadata[ModelConfigT].model_validate(current_dict)
+    return PromptMetadata[ModelConfigT].model_validate(_merged_metadata_dict(current, merge))
 
 
 def _identify_partials(template: str) -> set[str]:
@@ -151,6 +170,9 @@ class RenderFunc(PromptFunction[ModelConfigT]):
         Returns:
             The rendered prompt.
         """
+        if not isinstance(data, DataArgument):
+            raise TypeError('data must be a DataArgument')
+
         merged_metadata: PromptMetadata[ModelConfigT] = await self._dotprompt.render_metadata(self.prompt, options)
 
         # Prompt defaults apply regardless of whether they came from the
@@ -317,10 +339,7 @@ class Dotprompt:
         """
         prompt: ParsedPrompt[ModelConfigT] = self.parse(source) if isinstance(source, str) else source
         if additional_metadata is not None:
-            prompt = prompt.model_copy(
-                deep=True,
-                update=additional_metadata.model_dump(exclude_none=True, by_alias=True),
-            )
+            prompt = ParsedPrompt[ModelConfigT].model_validate(_merged_metadata_dict(prompt, additional_metadata))
 
         # Resolve partials before compiling.
         await self._resolve_partials(prompt.template)
@@ -342,12 +361,8 @@ class Dotprompt:
         """
         prompt = self.parse(source) if isinstance(source, str) else source
 
-        default_model = prompt.model or self._default_model
-        model = (
-            additional_metadata.model
-            if additional_metadata and additional_metadata.model is not None
-            else default_model
-        )
+        default_model = prompt.model or self._default_model or None
+        model = additional_metadata.model if additional_metadata and additional_metadata.model else default_model
 
         config: ModelConfigT | None = None
         if model is not None and self._model_configs.get(model) is not None:
@@ -355,9 +370,10 @@ class Dotprompt:
 
         return await self._resolve_metadata(
             PromptMetadata[ModelConfigT](
+                model=model,
                 config=config,
             )
-            if config is not None
+            if model is not None or config is not None
             else PromptMetadata[ModelConfigT](),
             prompt,
             additional_metadata,
