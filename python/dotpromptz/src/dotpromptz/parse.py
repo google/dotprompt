@@ -83,6 +83,11 @@ FRONTMATTER_AND_BODY_REGEX = re.compile(
     r'^(?:(?:#[^\n]*|[ \t]*)\n)*---\s*(?:\r\n|\r|\n)([\s\S]*?)(?:\r\n|\r|\n)---\s*(?:\r\n|\r|\n)([\s\S]*)$'
 )
 
+# Regular expression to match an empty YAML frontmatter block and its body.
+EMPTY_FRONTMATTER_AND_BODY_REGEX = re.compile(
+    r'^(?:(?:#[^\r\n]*|[ \t]*)(?:\r\n|\r|\n))*---[ \t]*(?:\r\n|\r|\n)---[ \t]*(?:\r\n|\r|\n)([\s\S]*)$'
+)
+
 # Regular expression to match <<<dotprompt:role:xxx>>> and
 # <<<dotprompt:history>>> markers in the template.
 #
@@ -205,14 +210,20 @@ def extract_frontmatter_and_body(source: str) -> tuple[str, str]:
         source: The source document containing frontmatter and template
 
     Returns:
-        A tuple containing the frontmatter and body If the pattern does not
-        match, both the values returned will be empty.
+        A tuple containing the frontmatter and body. If the source has no
+        frontmatter block, the frontmatter is empty and the full source is the
+        body.
     """
     match = FRONTMATTER_AND_BODY_REGEX.match(source)
     if match:
         frontmatter, body = match.groups()
         return frontmatter, body
-    return '', ''
+
+    empty_match = EMPTY_FRONTMATTER_AND_BODY_REGEX.match(source)
+    if empty_match:
+        return '', empty_match.group(1)
+
+    return '', source
 
 
 def parse_document(source: str) -> ParsedPrompt[T]:
@@ -228,8 +239,12 @@ def parse_document(source: str) -> ParsedPrompt[T]:
     """
     frontmatter, body = extract_frontmatter_and_body(source)
     if not frontmatter:
-        # No frontmatter, return a basic ParsedPrompt with just the template
-        return ParsedPrompt(ext={}, config=None, metadata={}, tool_defs=None, template=source)
+        has_frontmatter_block = (
+            FRONTMATTER_AND_BODY_REGEX.match(source) is not None
+            or EMPTY_FRONTMATTER_AND_BODY_REGEX.match(source) is not None
+        )
+        template = body.strip() if has_frontmatter_block else body
+        return ParsedPrompt(ext={}, config=None, metadata={}, tool_defs=None, template=template)
 
     try:
         parsed_metadata = yaml.safe_load(frontmatter)
