@@ -419,17 +419,14 @@ func TestExtractFrontmatterAndBody(t *testing.T) {
 		}
 	})
 
-	t.Run("should return empty strings when there is no frontmatter marker", func(t *testing.T) {
-		// TODO(#495): May be change this behavior to return a matching body when
-		// there is no frontmatter marker and we have a body. This may need to
-		// be done across all the runtimes.
+	t.Run("should return the source as the body when there is no frontmatter marker", func(t *testing.T) {
 		inputStr := "Hello World"
 		frontmatter, body := extractFrontmatterAndBody(inputStr)
 		if frontmatter != "" {
 			t.Errorf("frontmatter = %q, want \"\"", frontmatter)
 		}
-		if body != "" {
-			t.Errorf("body = %q, want \"\"", body)
+		if body != inputStr {
+			t.Errorf("body = %q, want %q", body, inputStr)
 		}
 	})
 }
@@ -1588,6 +1585,21 @@ Template content`
 		}
 		if result.Template != "Template content" {
 			t.Errorf("Template = %q, want \"Template content\"", result.Template)
+		}
+	})
+
+	t.Run("handle empty frontmatter and empty body", func(t *testing.T) {
+		source := "---\n---\n"
+
+		result, err := ParseDocument(source)
+		if err != nil {
+			t.Errorf("ParseDocument() returned error: %v", err)
+		}
+		if result.Ext == nil {
+			t.Error("Ext is nil")
+		}
+		if result.Template != "" {
+			t.Errorf("Template = %q, want \"\"", result.Template)
 		}
 	})
 

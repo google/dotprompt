@@ -327,13 +327,14 @@ def extract_frontmatter_and_body(source: str) -> tuple[str, str]:
         source: The source document containing frontmatter and template
 
     Returns:
-        A tuple containing the frontmatter and body If the pattern does not
-        match, both the values returned will be empty.
+        A tuple containing the frontmatter and body. If the source has no
+        frontmatter block, the frontmatter is empty and the full source is the
+        body.
     """
     identified = identify_frontmatter(source)
     if identified.declared:
         return identified.frontmatter, identified.body
-    return '', ''
+    return '', source
 
 
 def frontmatter_error(
