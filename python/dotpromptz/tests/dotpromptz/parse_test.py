@@ -348,13 +348,19 @@ class TestExtractFrontmatterAndBody(unittest.TestCase):
     def test_extract_frontmatter_and_body_no_frontmatter(self) -> None:
         """Test extracting body when no frontmatter is present.
 
-        Both the frontmatter and body are empty strings, when there
-        is no frontmatter marker.
+        The full source is the body when there is no frontmatter marker.
         """
         input_str = 'Hello World'
         frontmatter, body = extract_frontmatter_and_body(input_str)
         assert frontmatter == ''
-        assert body == ''
+        assert body == input_str
+
+    def test_extract_frontmatter_and_body_empty_block(self) -> None:
+        """Test extracting the body after an empty frontmatter block."""
+        input_str = '---\n---\nThis is the body.'
+        frontmatter, body = extract_frontmatter_and_body(input_str)
+        assert frontmatter == ''
+        assert body == 'This is the body.'
 
 
 class TestTransformMessagesToHistory(unittest.TestCase):
@@ -725,8 +731,14 @@ Template content"""
 
         self.assertEqual(result.ext, {})
 
-        # TODO(#495): Check whether this is the correct behavior.
-        self.assertEqual(result.template, source.strip())
+        self.assertEqual(result.template, 'Template content')
+
+    def test_handle_empty_frontmatter_and_empty_body(self) -> None:
+        """Test handling empty frontmatter followed by an empty body."""
+        result: ParsedPrompt[dict[str, str]] = parse_document('---\n---\n')
+
+        self.assertEqual(result.ext, {})
+        self.assertEqual(result.template, '')
 
     def test_handle_multiple_namespaced_entries(self) -> None:
         """Test handling multiple namespaced entries."""

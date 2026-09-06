@@ -68,6 +68,12 @@ export const FRONTMATTER_AND_BODY_REGEX =
   /^(?:(?:#[^\n]*|[ \t]*)\n)*---\s*(?:\r\n|\r|\n)([\s\S]*?)(?:\r\n|\r|\n)---\s*(?:\r\n|\r|\n)([\s\S]*)$/;
 
 /**
+ * Regular expression to match an empty YAML frontmatter block and its body.
+ */
+const EMPTY_FRONTMATTER_AND_BODY_REGEX =
+  /^(?:(?:#[^\r\n]*|[ \t]*)(?:\r\n|\r|\n))*---[ \t]*(?:\r\n|\r|\n)---[ \t]*(?:\r\n|\r|\n)([\s\S]*)$/;
+
+/**
  * Regular expression to match <<<dotprompt:role:xxx>>> and
  * <<<dotprompt:history>>> markers in the template.
  *
@@ -187,8 +193,9 @@ export function convertNamespacedEntryToNestedObject(
  * Extracts the YAML frontmatter and body from a document.
  *
  * @param source The source document containing frontmatter and template
- * @returns An object containing the frontmatter and body If the pattern does
- *   not match, both the values returned will be empty.
+ * @returns An object containing the frontmatter and body. If the source has no
+ *   frontmatter block, the frontmatter is empty and the full source is the
+ *   body.
  */
 export function extractFrontmatterAndBody(source: string) {
   const match = source.match(FRONTMATTER_AND_BODY_REGEX);
@@ -196,7 +203,13 @@ export function extractFrontmatterAndBody(source: string) {
     const [, frontmatter, body] = match;
     return { frontmatter, body };
   }
-  return { frontmatter: '', body: '' };
+
+  const emptyMatch = source.match(EMPTY_FRONTMATTER_AND_BODY_REGEX);
+  if (emptyMatch) {
+    return { frontmatter: '', body: emptyMatch[1] };
+  }
+
+  return { frontmatter: '', body: source };
 }
 
 /**
@@ -233,8 +246,15 @@ export function parseDocument<ModelConfig = Record<string, any>>(
     }
   }
 
-  // No frontmatter, return a basic ParsedPrompt with just the template
-  return { ...BASE_METADATA, template: source };
+  const hasFrontmatterBlock =
+    FRONTMATTER_AND_BODY_REGEX.test(source) ||
+    EMPTY_FRONTMATTER_AND_BODY_REGEX.test(source);
+  if (hasFrontmatterBlock) {
+    return { ...BASE_METADATA, template: body.trim() };
+  }
+
+  // No frontmatter block, return the full source as the template.
+  return { ...BASE_METADATA, template: body };
 }
 
 /**

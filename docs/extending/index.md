@@ -7,6 +7,11 @@ variable-interpolated UTF-8 encoded text templates, which can optionally use
 
 ![Dotprompt Format](../img/dotprompt-file-format.svg)
 
+YAML front matter is optional. When a file has no front matter delimiters, its
+entire contents are treated as the prompt template. When the delimiters are
+present but contain no YAML, the empty block is discarded and only the content
+after the closing delimiter is treated as the template.
+
 ## Examples
 
 === "Example 1"

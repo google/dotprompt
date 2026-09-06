@@ -58,7 +58,7 @@ var (
 	// EmptyFrontmatterRegex is a regular expression to match empty YAML
 	// frontmatter (where there's no content between the frontmatter markers).
 	// Also allows blank lines and license headers before the first ---.
-	EmptyFrontmatterRegex = regexp.MustCompile(`^(?:(?:#[^\n]*|[ \t]*)\n)*---\s*\n---\s*\n([\s\S]*)$`)
+	EmptyFrontmatterRegex = regexp.MustCompile(`^(?:(?:#[^\r\n]*|[ \t]*)(?:\r\n|\r|\n))*---[ \t]*(?:\r\n|\r|\n)---[ \t]*(?:\r\n|\r|\n)([\s\S]*)$`)
 
 	// RoleAndHistoryMarkerRegex is a regular expression to match
 	// <<<dotprompt:role:xxx>>> and <<<dotprompt:history>>> markers in the
@@ -223,26 +223,39 @@ func convertNamespacedEntryToNestedObject(
 // extractFrontmatterAndBody extracts the frontmatter and body from a .prompt
 // file.
 func extractFrontmatterAndBody(source string) (string, string) {
+	frontmatter, body, matched := matchFrontmatterAndBody(source)
+	if !matched {
+		return "", source
+	}
+	return frontmatter, body
+}
+
+func matchFrontmatterAndBody(source string) (string, string, bool) {
 	match := FrontmatterAndBodyRegex.FindStringSubmatch(source)
 	if match == nil {
-		// Try the empty frontmatter pattern
 		match = EmptyFrontmatterRegex.FindStringSubmatch(source)
 		if match == nil {
-			return "", ""
+			return "", "", false
 		}
-		return "", match[1]
+		return "", match[1], true
 	}
 	frontmatter, body := match[1], match[2]
-	return frontmatter, body
+	return frontmatter, body, true
 }
 
 // ParseDocument parses a document containing YAML frontmatter and a template
 // content section.  The frontmatter contains metadata and configuration for the
 // prompt.
 func ParseDocument(source string) (ParsedPrompt, error) {
-	frontmatter, body := extractFrontmatterAndBody(source)
+	frontmatter, body, hasFrontmatter := matchFrontmatterAndBody(source)
 	promptMetadata := PromptMetadata{
 		Ext: make(map[string]map[string]any),
+	}
+	if !hasFrontmatter {
+		return ParsedPrompt{
+			PromptMetadata: promptMetadata,
+			Template:       source,
+		}, nil
 	}
 
 	if frontmatter != "" {
@@ -364,18 +377,10 @@ func ParseDocument(source string) (ParsedPrompt, error) {
 		}, nil
 	}
 
-	// If we have a body from frontmatter extraction, use it
-	if body != "" {
-		return ParsedPrompt{
-			PromptMetadata: promptMetadata,
-			Template:       trimUnicodeSpacesExceptNewlines(body),
-		}, nil
-	}
-
-	// No frontmatter or body extracted, return the original source as template
+	// An empty frontmatter block contributes no metadata.
 	return ParsedPrompt{
 		PromptMetadata: promptMetadata,
-		Template:       source,
+		Template:       trimUnicodeSpacesExceptNewlines(body),
 	}, nil
 }
 
