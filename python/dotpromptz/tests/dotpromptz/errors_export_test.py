@@ -22,7 +22,12 @@ import importlib
 
 import pytest
 
-from dotpromptz.errors import PartialCycleError, ResolverFailedError
+from dotpromptz.errors import (
+    DotpromptError,
+    FrontmatterError,
+    PartialCycleError,
+    ResolverFailedError,
+)
 
 
 def test_package_root_exports_dotprompt_only() -> None:
@@ -37,6 +42,8 @@ def test_named_errors_import_from_errors_module() -> None:
 
     assert errors.PartialCycleError is PartialCycleError
     assert errors.ResolverFailedError is ResolverFailedError
+    assert errors.FrontmatterError is FrontmatterError
+    assert errors.DotpromptError is DotpromptError
 
 
 def test_named_errors_are_not_on_the_package_root() -> None:
@@ -46,6 +53,12 @@ def test_named_errors_are_not_on_the_package_root() -> None:
         exec('from dotpromptz import PartialCycleError', {})
     with pytest.raises(ImportError):
         exec('from dotpromptz import ResolverFailedError', {})
+    with pytest.raises(ImportError):
+        exec('from dotpromptz import FrontmatterError', {})
+    with pytest.raises(ImportError):
+        exec('from dotpromptz import DotpromptError', {})
 
     assert not hasattr(package, 'PartialCycleError')
     assert not hasattr(package, 'ResolverFailedError')
+    assert not hasattr(package, 'FrontmatterError')
+    assert not hasattr(package, 'DotpromptError')
