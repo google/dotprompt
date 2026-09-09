@@ -38,8 +38,8 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from dotpromptz import FrontmatterError, PartialCycleError
 from dotpromptz.dotprompt import Dotprompt, _identify_partials
+from dotpromptz.errors import FrontmatterError, PartialCycleError
 from dotpromptz.typing import (
     DataArgument,
     ModelConfigT,
