@@ -144,35 +144,151 @@ class HelperOptionsLifetimeTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, f'^{EXPIRED_ERROR}$'):
             seen[0].context_json()
 
-    def test_all_callback_failures_expire_retained_options(self) -> None:
+    def _retain_and_raise(
+        self,
+        error: BaseException,
+    ) -> tuple[Template, list[HelperOptions]]:
+        template = Template()
+        seen: list[HelperOptions] = []
+
+        def fail(params: list[Any], options: HelperOptions) -> str:
+            seen.append(options)
+            raise error
+
+        template.register_helper('fail', fail)
+        return template, seen
+
+    def test_helper_runtime_error_is_render_value_error(self) -> None:
+        """Ordinary helper exceptions stay a render ValueError."""
+        template, seen = self._retain_and_raise(RuntimeError('ordinary'))
+        with self.assertRaises(ValueError):
+            template.render_template('{{fail}}', {})
+        self.assert_expired(seen[0])
+
+    def test_helper_keyboard_interrupt_reaches_render(self) -> None:
+        """Ctrl-C from a helper is KeyboardInterrupt, not a render ValueError."""
+        template, seen = self._retain_and_raise(KeyboardInterrupt())
+        with self.assertRaises(KeyboardInterrupt):
+            template.render_template('{{fail}}', {})
+        self.assert_expired(seen[0])
+
+    def test_helper_system_exit_reaches_render(self) -> None:
+        """sys.exit from a helper is SystemExit with the same code."""
+        template, seen = self._retain_and_raise(SystemExit(7))
+        with self.assertRaises(SystemExit) as ctx:
+            template.render_template('{{fail}}', {})
+        self.assertEqual(ctx.exception.code, 7)
+        self.assert_expired(seen[0])
+
+    def test_helper_generator_exit_reaches_render(self) -> None:
+        """GeneratorExit from a helper is GeneratorExit, not a render ValueError."""
+        template, seen = self._retain_and_raise(GeneratorExit())
+        with self.assertRaises(GeneratorExit):
+            template.render_template('{{fail}}', {})
+        self.assert_expired(seen[0])
+
+    def test_helper_custom_base_exception_reaches_render(self) -> None:
+        """A custom BaseException from a helper is that exception, not ValueError."""
+
         class CustomBaseException(BaseException):
             pass
 
-        failures: tuple[tuple[str, Callable[[], BaseException]], ...] = (
-            ('exception', lambda: RuntimeError('ordinary')),
-            ('custom base exception', lambda: CustomBaseException('custom')),
-            ('keyboard interrupt', lambda: KeyboardInterrupt()),
-            ('system exit', lambda: SystemExit(7)),
+        template, seen = self._retain_and_raise(CustomBaseException('custom'))
+        with self.assertRaises(CustomBaseException):
+            template.render_template('{{fail}}', {})
+        self.assert_expired(seen[0])
+
+    def test_registered_template_render_raises_keyboard_interrupt(self) -> None:
+        """render() of a registered template also surfaces helper KeyboardInterrupt."""
+        template, seen = self._retain_and_raise(KeyboardInterrupt())
+        template.register_template('compiled', '{{fail}}')
+        with self.assertRaises(KeyboardInterrupt):
+            template.render('compiled', {})
+        self.assert_expired(seen[0])
+
+    def test_native_render_template_raises_keyboard_interrupt(self) -> None:
+        """The native engine raises KeyboardInterrupt from a helper too."""
+        template = HandlebarrzTemplate()
+        seen: list[HandlebarrzHelperOptions] = []
+
+        def fail(params_json: str, options: HandlebarrzHelperOptions) -> str:
+            seen.append(options)
+            raise KeyboardInterrupt()
+
+        template.register_helper('fail', fail)
+        with self.assertRaises(KeyboardInterrupt):
+            template.render_template('{{fail}}', '{}', '{}')
+        with self.assertRaisesRegex(RuntimeError, f'^{EXPIRED_ERROR}$'):
+            seen[0].context_json()
+
+    def test_block_fn_raises_inner_keyboard_interrupt(self) -> None:
+        """options.fn() raises KeyboardInterrupt when the inner helper does."""
+        template = Template()
+        seen: list[HelperOptions] = []
+
+        def outer(params: list[Any], options: HelperOptions) -> str:
+            seen.append(options)
+            with self.assertRaises(KeyboardInterrupt):
+                options.fn()
+            return 'recovered'
+
+        def fail(params: list[Any], options: HelperOptions) -> str:
+            raise KeyboardInterrupt()
+
+        template.register_helper('outer', outer)
+        template.register_helper('fail', fail)
+        self.assertEqual(template.render_template('{{#outer}}{{fail}}{{/outer}}', {}), 'recovered')
+        self.assert_expired(seen[0])
+
+    def test_block_inverse_raises_inner_keyboard_interrupt(self) -> None:
+        """options.inverse() raises KeyboardInterrupt when the else helper does."""
+        template = Template()
+        seen: list[HelperOptions] = []
+
+        def outer(params: list[Any], options: HelperOptions) -> str:
+            seen.append(options)
+            with self.assertRaises(KeyboardInterrupt):
+                options.inverse()
+            return 'recovered'
+
+        def fail(params: list[Any], options: HelperOptions) -> str:
+            raise KeyboardInterrupt()
+
+        template.register_helper('outer', outer)
+        template.register_helper('fail', fail)
+        self.assertEqual(
+            template.render_template('{{#outer}}main{{else}}{{fail}}{{/outer}}', {}),
+            'recovered',
         )
-        for name, make_error in failures:
-            with self.subTest(failure=name):
-                template = Template()
-                seen: list[HelperOptions] = []
+        self.assert_expired(seen[0])
 
-                def make_failure(
-                    retained: list[HelperOptions],
-                    error_factory: Callable[[], BaseException],
-                ) -> Callable[[list[Any], HelperOptions], str]:
-                    def fail(params: list[Any], options: HelperOptions) -> str:
-                        retained.append(options)
-                        raise error_factory()
+    def test_uncaught_inner_keyboard_interrupt_reaches_render(self) -> None:
+        """An uncaught KeyboardInterrupt from options.fn() is what render raises."""
+        template = Template()
+        seen: list[HelperOptions] = []
 
-                    return fail
+        def outer(params: list[Any], options: HelperOptions) -> str:
+            seen.append(options)
+            return options.fn()
 
-                template.register_helper('fail', make_failure(seen, make_error))
-                with self.assertRaises(ValueError):
-                    template.render_template('{{fail}}', {})
-                self.assert_expired(seen[0])
+        def fail(params: list[Any], options: HelperOptions) -> str:
+            raise KeyboardInterrupt()
+
+        template.register_helper('outer', outer)
+        template.register_helper('fail', fail)
+        with self.assertRaises(KeyboardInterrupt):
+            template.render_template('{{#outer}}{{fail}}{{/outer}}', {})
+        self.assert_expired(seen[0])
+
+    def test_render_after_keyboard_interrupt_still_renders(self) -> None:
+        """A later render is not stuck on the previous helper KeyboardInterrupt."""
+        template, seen = self._retain_and_raise(KeyboardInterrupt())
+        with self.assertRaises(KeyboardInterrupt):
+            template.render_template('{{fail}}', {})
+        self.assert_expired(seen[0])
+
+        template.register_helper('ok', lambda params, options: 'ok')
+        self.assertEqual(template.render_template('{{ok}}', {}), 'ok')
 
     def test_invalid_callback_return_expires_retained_options(self) -> None:
         template = Template()

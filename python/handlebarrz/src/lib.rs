@@ -18,16 +18,35 @@ use handlebars::{
     BlockContext, Context, Handlebars, Helper, HelperDef, Output, RenderContext, RenderError,
     RenderErrorReason, Renderable, ScopedJson, StringOutput, Template,
 };
-use pyo3::exceptions::{PyFileNotFoundError, PyRuntimeError, PyValueError};
+use pyo3::exceptions::{PyException, PyFileNotFoundError, PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 use serde_json::Value;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::Arc;
 use std::thread::{self, ThreadId};
+
+thread_local! {
+    static PENDING_HELPER_INTERRUPT: RefCell<Option<PyErr>> = const { RefCell::new(None) };
+}
+
+fn take_pending_helper_interrupt() -> Option<PyErr> {
+    PENDING_HELPER_INTERRUPT.with(|slot| slot.borrow_mut().take())
+}
+
+fn stash_helper_interrupt(error: PyErr) {
+    PENDING_HELPER_INTERRUPT.with(|slot| {
+        *slot.borrow_mut() = Some(error);
+    });
+}
+
+fn python_error_from_render(error: RenderError) -> PyErr {
+    take_pending_helper_interrupt().unwrap_or_else(|| PyValueError::new_err(error.to_string()))
+}
 
 mod helpers;
 
@@ -565,7 +584,11 @@ fn partial_name_from_expression(expression: &str) -> Option<String> {
         .chars()
         .take_while(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '.' | '-'))
         .collect();
-    if name.is_empty() { None } else { Some(name) }
+    if name.is_empty() {
+        None
+    } else {
+        Some(name)
+    }
 }
 
 fn visit_live_expressions(source: &str, mut visit: impl FnMut(&str)) {
@@ -931,7 +954,7 @@ impl HandlebarrzHelperOptions {
         if let Some(template) = template {
             template
                 .renders(reg, ctx, rc)
-                .map_err(|e| PyValueError::new_err(e.to_string()))
+                .map_err(python_error_from_render)
         } else {
             Ok(String::new())
         }
@@ -998,8 +1021,19 @@ impl HelperDef for PyHelperDef {
                     Ok(())
                 }
                 Err(e) => {
-                    let desc = format!("Helper execution failed: {e}");
-                    Err(RenderError::from(RenderErrorReason::Other(desc)))
+                    // Ctrl-C, sys.exit, and other non-Exception BaseExceptions
+                    // are the interpreter asking to stop, not a template
+                    // problem. Ordinary Exception stays a render ValueError so
+                    // callers catching that still see helper failures.
+                    if e.is_instance_of::<PyException>(py) {
+                        let desc = format!("Helper execution failed: {e}");
+                        Err(RenderError::from(RenderErrorReason::Other(desc)))
+                    } else {
+                        stash_helper_interrupt(e);
+                        Err(RenderError::from(RenderErrorReason::Other(
+                            "helper interrupted render".to_owned(),
+                        )))
+                    }
                 }
             }
         })
@@ -1297,7 +1331,9 @@ impl HandlebarrzTemplate {
     ///
     /// # Raises
     ///
-    /// `PyValueError` if the template cannot be rendered.
+    /// `PyValueError` if the template cannot be rendered. KeyboardInterrupt,
+    /// SystemExit, and other non-Exception BaseExceptions raised by a helper
+    /// are not converted to ValueError.
     #[pyo3(text_signature = "($self, name, data, runtime_data)")]
     fn render(&self, name: &str, data: &str, runtime_data: &str) -> PyResult<String> {
         let data: Value = serde_json::from_str(data)
@@ -1330,7 +1366,7 @@ impl HandlebarrzTemplate {
             .unwrap_or("");
         let reads_at_root = reachable_reads_at_root(entry_source, &self.template_sources);
         render_with_runtime(&self.registry, template, data, runtime_data, reads_at_root)
-            .map_err(|e| PyValueError::new_err(e.to_string()))
+            .map_err(python_error_from_render)
     }
 
     /// Renders a template string directly without registering.
@@ -1342,7 +1378,9 @@ impl HandlebarrzTemplate {
     ///
     /// # Raises
     ///
-    /// `PyValueError` if the template cannot be rendered.
+    /// `PyValueError` if the template cannot be rendered. KeyboardInterrupt,
+    /// SystemExit, and other non-Exception BaseExceptions raised by a helper
+    /// are not converted to ValueError.
     ///
     /// # Returns
     ///
@@ -1362,7 +1400,7 @@ impl HandlebarrzTemplate {
             .map_err(|e| PyValueError::new_err(format!("Failed to parse template: {e}")))?;
         let reads_at_root = reachable_reads_at_root(template_string, &self.template_sources);
         render_with_runtime(&self.registry, &template, data, runtime_data, reads_at_root)
-            .map_err(|e| PyValueError::new_err(e.to_string()))
+            .map_err(python_error_from_render)
     }
 
     /// Registers the extra helper functions.
@@ -1391,7 +1429,7 @@ impl HandlebarrzTemplate {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::panic::{AssertUnwindSafe, catch_unwind};
+    use std::panic::{catch_unwind, AssertUnwindSafe};
 
     #[test]
     fn callback_guard_expires_its_lifetime() {
