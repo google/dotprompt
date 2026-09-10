@@ -29,7 +29,7 @@ def rendered_text(result: Any) -> str:
 
 
 @pytest.mark.asyncio
-async def test_render_uses_all_prompt_defaults_when_runtime_input_is_absent() -> None:
+async def test_prompt_file_defaults_do_not_fill_variables_when_runtime_input_is_absent() -> None:
     source = """---
 input:
   default:
@@ -40,11 +40,26 @@ input:
 
     result = await Dotprompt().render(source, DataArgument())
 
-    assert rendered_text(result) == 'Ada Lovelace'
+    assert result.messages == []
 
 
 @pytest.mark.asyncio
-async def test_runtime_input_overrides_one_default_and_keeps_default_siblings() -> None:
+async def test_empty_runtime_input_does_not_fill_prompt_file_defaults() -> None:
+    source = """---
+input:
+  default:
+    first: Ada
+    last: Lovelace
+---
+{{first}} {{last}}"""
+
+    result = await Dotprompt().render(source, DataArgument(input={}))
+
+    assert result.messages == []
+
+
+@pytest.mark.asyncio
+async def test_partial_runtime_input_does_not_keep_prompt_file_default_siblings() -> None:
     source = """---
 input:
   default:
@@ -55,7 +70,26 @@ input:
 
     result = await Dotprompt().render(source, DataArgument(input={'first': 'Grace'}))
 
-    assert rendered_text(result) == 'Grace Lovelace'
+    assert rendered_text(result) == 'Grace '
+
+
+@pytest.mark.asyncio
+async def test_call_defaults_fill_variables_and_prompt_file_defaults_do_not() -> None:
+    source = """---
+input:
+  default:
+    name: Ada
+    city: Paris
+---
+{{name}} lives in {{city}}"""
+
+    result = await Dotprompt().render(
+        source,
+        DataArgument(),
+        PromptMetadata(input=PromptInputConfig(default={'city': 'Paris'})),
+    )
+
+    assert rendered_text(result) == ' lives in Paris'
 
 
 @pytest.mark.asyncio
@@ -99,7 +133,7 @@ input:
         DataArgument(input={'profile': {'name': 'Grace'}}),
     )
 
-    assert rendered_text(result) == 'Grace||analytical-engine'
+    assert rendered_text(result) == 'Grace||'
 
 
 @pytest.mark.asyncio
@@ -123,7 +157,7 @@ input:
         options,
     )
 
-    assert rendered_text(result) == 'runtime/prompt/call'
+    assert rendered_text(result) == 'runtime//call'
     assert result.input == PromptInputConfig(
         default={
             'name': 'call',
@@ -181,7 +215,7 @@ input:
         ),
     )
 
-    assert rendered_text(result) == 'prompt/call'
+    assert rendered_text(result) == '/call'
     assert result.input == PromptInputConfig(
         default={'promptOnly': 'prompt', 'callOnly': 'call'},
         schema={'type': 'string'},
@@ -219,8 +253,8 @@ input:
     )
     compiled_baseline = await renderer(DataArgument())
 
-    assert rendered_text(overridden) == 'prompt/compile/call/runtime/runtime'
-    assert rendered_text(compiled_baseline) == 'prompt/compile///compile'
+    assert rendered_text(overridden) == '//call/runtime/runtime'
+    assert rendered_text(compiled_baseline) == '////'
     assert overridden.input is not None
     assert overridden.input.schema == {'type': 'object'}
     assert compile_defaults == {'compileOnly': 'compile', 'shared': 'compile'}
@@ -245,7 +279,7 @@ input:
     third = await renderer(DataArgument(input={'name': 'third'}))
 
     assert rendered_text(first) == 'first'
-    assert rendered_text(second) == 'default'
+    assert second.messages == []
     assert rendered_text(third) == 'third'
 
 

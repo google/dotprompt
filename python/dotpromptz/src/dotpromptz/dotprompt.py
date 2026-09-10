@@ -175,14 +175,14 @@ class RenderFunc(PromptFunction[ModelConfigT]):
 
         merged_metadata: PromptMetadata[ModelConfigT] = await self._dotprompt.render_metadata(self.prompt, options)
 
-        # Prompt defaults apply regardless of whether they came from the
-        # template or a per-call override.
+        # {{name}} is this call only: options.input.default then DataArgument.input.
+        # A default on the .prompt file (or compile metadata) stays on the
+        # returned prompt config; it does not fill a variable the caller omitted.
+        call_defaults: dict[str, Any] = {}
+        if options is not None and options.input is not None and options.input.default is not None:
+            call_defaults = options.input.default
         context: Context = {
-            **(
-                (merged_metadata.input.default or {})
-                if merged_metadata.input and merged_metadata.input.default is not None
-                else {}
-            ),
+            **call_defaults,
             **(data.input if data.input is not None else {}),
         }
 

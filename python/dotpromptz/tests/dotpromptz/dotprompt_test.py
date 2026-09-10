@@ -152,8 +152,8 @@ def test_define_tool(mock_handlebars: Mock) -> None:
 
 
 class TestCompileRender(IsolatedAsyncioTestCase):
-    async def test_render_preserves_model_and_applies_prompt_input_defaults(self) -> None:
-        """Render metadata and input defaults declared by the prompt."""
+    async def test_render_preserves_model_and_does_not_fill_prompt_input_defaults(self) -> None:
+        """Prompt model is kept; file input defaults do not fill {{name}}."""
         source = """---
 model: gemini-2.5-flash
 input:
@@ -165,10 +165,9 @@ Hello, {{name}}!"""
         result = await Dotprompt().render(source, DataArgument(input={}))
 
         assert result.model == 'gemini-2.5-flash'
-        assert result.messages[0].content == [TextPart(text='Hello, World!')]
+        assert result.messages[0].content == [TextPart(text='Hello, !')]
 
-    async def test_runtime_input_overrides_prompt_input_defaults(self) -> None:
-        """Runtime input takes precedence over prompt defaults."""
+    async def test_runtime_input_fills_template_variables(self) -> None:
         source = """---
 input:
   default:
