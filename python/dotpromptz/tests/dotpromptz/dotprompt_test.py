@@ -770,6 +770,77 @@ class TestResolvePartialsCycleDetection(IsolatedAsyncioTestCase):
 
         assert exc_info.value.cycle == ('registered', 'resolved', 'registered')
 
+    async def test_false_if_around_self_include_still_raises(self) -> None:
+        """A {{> loop}} inside {{#if}} still raises even when the branch is skipped."""
+        dotprompt = Dotprompt(partials={'loop': '{{> loop}}'})
+
+        with pytest.raises(PartialCycleError) as exc_info:
+            await dotprompt.render('{{#if skip}}{{> loop}}{{/if}}', DataArgument())
+
+        assert exc_info.value.cycle == ('loop', 'loop')
+
+    async def test_true_if_around_self_include_still_raises(self) -> None:
+        """A {{> loop}} inside a taken {{#if}} still raises before render."""
+        dotprompt = Dotprompt(partials={'loop': '{{> loop}}'})
+
+        with pytest.raises(PartialCycleError) as exc_info:
+            await dotprompt.render(
+                '{{#if skip}}{{> loop}}{{/if}}',
+                DataArgument(input={'skip': True}),
+            )
+
+        assert exc_info.value.cycle == ('loop', 'loop')
+
+    async def test_false_if_around_ok_include_renders_without_partial(self) -> None:
+        """A skipped {{#if}} around an acyclic include still renders the rest."""
+        result = await Dotprompt(partials={'ok': 'inside'}).render(
+            '{{#if skip}}{{> ok}}{{/if}}Hello',
+            DataArgument(),
+        )
+
+        assert result.messages[0].content == [TextPart(text='Hello')]
+
+    async def test_unused_store_cycle_does_not_raise(self) -> None:
+        """A cycle this template never names does not raise."""
+        result = await Dotprompt(
+            partials={
+                'ok': 'Hello',
+                'a': '{{> b}}',
+                'b': '{{> a}}',
+            }
+        ).render('{{> ok}}', DataArgument())
+
+        assert result.messages[0].content == [TextPart(text='Hello')]
+
+    async def test_person_that_includes_itself_for_each_report_still_raises(self) -> None:
+        """A person snippet that pastes itself for each report still raises."""
+        person = '{{name}}{{#if reports}}{{#each reports}}{{> person}}{{/each}}{{/if}}'
+
+        with pytest.raises(PartialCycleError) as exc_info:
+            await Dotprompt(partials={'person': person}).render(
+                '{{> person}}',
+                DataArgument(
+                    input={
+                        'name': 'Ada',
+                        'reports': [{'name': 'Grace'}],
+                    }
+                ),
+            )
+
+        assert exc_info.value.cycle == ('person', 'person')
+
+    async def test_person_that_includes_itself_still_raises_when_reports_absent(self) -> None:
+        """The same person snippet still raises when this row has no reports."""
+        person = '{{name}}{{#if reports}}{{#each reports}}{{> person}}{{/each}}{{/if}}'
+
+        with pytest.raises(PartialCycleError) as exc_info:
+            await Dotprompt(partials={'person': person}).render(
+                '{{> person}}',
+                DataArgument(input={'name': 'Ada'}),
+            )
+
+        assert exc_info.value.cycle == ('person', 'person')
+
     async def test_shared_dependency_is_resolved_once_without_false_cycle(self) -> None:
         """A diamond dependency remains valid and resolves shared work once."""
         calls: list[str] = []
