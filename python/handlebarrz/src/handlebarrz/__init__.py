@@ -70,7 +70,6 @@ result = handlebars.render('formatted', {'name': 'World'})  # "Hello WORLD!"
 from __future__ import annotations
 
 import json
-import re
 from collections.abc import Callable
 from enum import Enum
 from pathlib import Path
@@ -93,7 +92,7 @@ NativeHelperFn = Callable[[str, HandlebarrzHelperOptions], str]
 Context = dict[str, Any]
 
 
-class RuntimeOptions(TypedDict):
+class RuntimeOptions(TypedDict, total=False):
     """Options for the runtime of a Handlebars template.
 
     These options are used to configure the runtime behavior of a Handlebars
@@ -105,6 +104,17 @@ class RuntimeOptions(TypedDict):
 
 
 CompiledRenderer = Callable[[Context, RuntimeOptions | None], str]
+
+
+def _serialize_json(value: Any, label: str) -> str:
+    try:
+        return json.dumps(value)
+    except (TypeError, ValueError) as e:
+        raise ValueError(f'{label} must contain only JSON-serializable values: {e}') from e
+
+
+def _serialize_runtime_data(value: dict[str, Any]) -> str:
+    return _serialize_json(value, 'runtime data')
 
 
 class EscapeFunction(str, Enum):
@@ -459,10 +469,13 @@ class Template:
             ValueError: If the template does not exist or there is a rendering
                 error.
         """
-        # TODO(#502): options is currently ignored; need to add support for it.
-
         try:
-            result = self._template.render(name, json.dumps(data))
+            runtime_data = (options or {}).get('data') or {}
+            result = self._template.render(
+                name,
+                _serialize_json(data, 'template input'),
+                _serialize_runtime_data(runtime_data),
+            )
             logger.debug({'event': 'template_rendered', 'name': name})
             return result
         except ValueError as e:
@@ -493,30 +506,12 @@ class Template:
                 rendering error.
         """
         try:
-            # Merging runtime data with the data dictionary.
             runtime_data = (options.get('data') if options is not None else {}) or {}
-            for k, v in runtime_data.items():
-                data[k] = v
-
-            # TODO(#502): get rid of this once the Rust library has a local variables
-            # support.
-
-            # Local variables support workaround:
-            # Context: Handlebars Rust implementation currently doesn't support
-            # local variables (e.g. {{@my_variable}}), so instead we are
-            # dynamically replacing those with global variables
-            # (e.g. {{my_variable}}) to make things work.
-            # This is of course not an ideal solution, and it comes with some
-            # overhead, but so far we weren't able to detect a use case where
-            # this could be a blocker (but time will tell).
-            matches = re.findall(r'{{@.*?}}', template_string)
-            for m in set(matches):
-                key = m.strip('{}@').split('.')[0]
-                if key in runtime_data:
-                    template_string = template_string.replace(m, m.replace('@', ''))
-
-            # Render the template.
-            result = self._template.render_template(template_string, json.dumps(data))
+            result = self._template.render_template(
+                template_string,
+                _serialize_json(data, 'template input'),
+                _serialize_runtime_data(runtime_data),
+            )
             logger.debug({'event': 'template_string_rendered'})
             return result
         except ValueError as e:

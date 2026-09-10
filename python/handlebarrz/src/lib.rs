@@ -15,17 +15,679 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use handlebars::{
-    Context, Handlebars, Helper, HelperDef, Output, RenderContext, RenderError, RenderErrorReason,
-    Renderable,
+    BlockContext, Context, Handlebars, Helper, HelperDef, Output, RenderContext, RenderError,
+    RenderErrorReason, Renderable, ScopedJson, StringOutput, Template,
 };
 use pyo3::exceptions::{PyFileNotFoundError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 use serde_json::Value;
 use std::collections::HashMap;
-use std::path::Path;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 mod helpers;
+
+const RUNTIME_PATH_HELPER: &str = "__handlebarrz_runtime_path";
+const RUNTIME_SECTION_HELPER_PREFIX: &str = "__handlebarrz_runtime_section_";
+const RUNTIME_INVERTED_SECTION_HELPER_PREFIX: &str = "__handlebarrz_runtime_inverted_section_";
+const RUNTIME_ROOT_SENTINEL: &str = "__handlebarrz_runtime_root";
+
+struct RuntimePathHelper;
+struct DirectSectionHelper;
+
+impl HelperDef for RuntimePathHelper {
+    fn call_inner<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'rc>,
+        _: &'reg Handlebars<'reg>,
+        ctx: &'rc Context,
+        rc: &mut RenderContext<'reg, 'rc>,
+    ) -> Result<ScopedJson<'rc>, RenderError> {
+        let raw = h
+            .param(0)
+            .and_then(|param| param.value().as_str())
+            .ok_or_else(|| {
+                RenderError::from(RenderErrorReason::Other(
+                    "runtime path helper requires a path".to_owned(),
+                ))
+            })?;
+        resolve_runtime_path(raw, ctx, rc)
+    }
+}
+
+impl HelperDef for DirectSectionHelper {
+    fn call<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'rc>,
+        registry: &'reg Handlebars<'reg>,
+        ctx: &'rc Context,
+        rc: &mut RenderContext<'reg, 'rc>,
+        out: &mut dyn Output,
+    ) -> Result<(), RenderError> {
+        let runtime_section = h
+            .name()
+            .strip_prefix(RUNTIME_SECTION_HELPER_PREFIX)
+            .map(|encoded| (encoded, false))
+            .or_else(|| {
+                h.name()
+                    .strip_prefix(RUNTIME_INVERTED_SECTION_HELPER_PREFIX)
+                    .map(|encoded| (encoded, true))
+            });
+        let (value, inverted) = if let Some((encoded, inverted)) = runtime_section {
+            let raw = decode_runtime_section_path(encoded)?;
+            (resolve_runtime_path(&raw, ctx, rc)?, inverted)
+        } else {
+            (rc.evaluate(ctx, h.name())?, false)
+        };
+
+        render_direct_section(value.as_json(), inverted, h, registry, ctx, rc, out)
+    }
+}
+
+fn encode_runtime_section_path(path: &str) -> String {
+    path.as_bytes()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+fn decode_runtime_section_path(encoded: &str) -> Result<String, RenderError> {
+    let bytes = encoded.as_bytes();
+    if bytes.len() % 2 != 0 {
+        return Err(RenderErrorReason::Other("invalid runtime section path".to_owned()).into());
+    }
+    let decoded = (0..bytes.len())
+        .step_by(2)
+        .map(|index| {
+            std::str::from_utf8(&bytes[index..index + 2])
+                .ok()
+                .and_then(|pair| u8::from_str_radix(pair, 16).ok())
+        })
+        .collect::<Option<Vec<_>>>()
+        .and_then(|value| String::from_utf8(value).ok())
+        .ok_or_else(|| {
+            RenderError::from(RenderErrorReason::Other(
+                "invalid runtime section path".to_owned(),
+            ))
+        })?;
+    Ok(decoded)
+}
+
+fn render_direct_section<'reg: 'rc, 'rc>(
+    value: &Value,
+    inverted: bool,
+    h: &Helper<'rc>,
+    registry: &'reg Handlebars<'reg>,
+    ctx: &'rc Context,
+    rc: &mut RenderContext<'reg, 'rc>,
+    out: &mut dyn Output,
+) -> Result<(), RenderError> {
+    let truthy_template = if inverted { h.inverse() } else { h.template() };
+    let falsey_template = if inverted { h.template() } else { h.inverse() };
+    match value {
+        Value::Null | Value::Bool(false) => {
+            render_section_template(falsey_template, registry, ctx, rc, out)
+        }
+        Value::Bool(true) => render_section_template(truthy_template, registry, ctx, rc, out),
+        Value::Array(values) if values.is_empty() => {
+            render_section_template(falsey_template, registry, ctx, rc, out)
+        }
+        Value::Array(values) => {
+            if inverted {
+                return render_section_template(truthy_template, registry, ctx, rc, out);
+            }
+            for (index, item) in values.iter().enumerate() {
+                let mut block = BlockContext::new();
+                block.set_base_value(item.clone());
+                block.set_local_var("index", Value::from(index));
+                block.set_local_var("first", Value::Bool(index == 0));
+                block.set_local_var("last", Value::Bool(index == values.len() - 1));
+                rc.push_block(block);
+                let result = render_section_template(truthy_template, registry, ctx, rc, out);
+                rc.pop_block();
+                result?;
+            }
+            Ok(())
+        }
+        _ => {
+            let mut block = BlockContext::new();
+            block.set_base_value(value.clone());
+            rc.push_block(block);
+            let result = render_section_template(truthy_template, registry, ctx, rc, out);
+            rc.pop_block();
+            result
+        }
+    }
+}
+
+fn render_section_template<'reg: 'rc, 'rc>(
+    template: Option<&'rc Template>,
+    registry: &'reg Handlebars<'reg>,
+    ctx: &'rc Context,
+    rc: &mut RenderContext<'reg, 'rc>,
+    out: &mut dyn Output,
+) -> Result<(), RenderError> {
+    if let Some(template) = template {
+        template.render(registry, ctx, rc, out)
+    } else {
+        Ok(())
+    }
+}
+
+fn resolve_runtime_path<'reg: 'rc, 'rc>(
+    raw: &str,
+    ctx: &'rc Context,
+    rc: &mut RenderContext<'reg, 'rc>,
+) -> Result<ScopedJson<'rc>, RenderError> {
+    let Some((minimum_level, local_path)) = split_runtime_path(raw) else {
+        return Ok(ScopedJson::Missing);
+    };
+    let name_end = local_path.find(['.', '/', '[']).unwrap_or(local_path.len());
+    let name = &local_path[..name_end];
+    let suffix = &local_path[name_end..];
+
+    for level in minimum_level.. {
+        let prefix = format!("@{}", "../".repeat(level));
+        let sentinel_path = format!("{prefix}{RUNTIME_ROOT_SENTINEL}");
+        let at_runtime_root = !rc.evaluate(ctx, &sentinel_path)?.is_missing();
+        let candidate_path = format!("{prefix}{name}");
+        let candidate = rc.evaluate(ctx, &candidate_path)?;
+        if !candidate.is_missing() {
+            if suffix.is_empty() {
+                return Ok(candidate);
+            }
+            return resolve_runtime_suffix(candidate.as_json(), suffix);
+        }
+        if at_runtime_root {
+            break;
+        }
+    }
+
+    Ok(ScopedJson::Missing)
+}
+
+fn split_runtime_path(mut raw: &str) -> Option<(usize, &str)> {
+    let mut levels = 0;
+    while let Some(rest) = raw.strip_prefix("../") {
+        levels += 1;
+        raw = rest;
+    }
+    raw = raw.strip_prefix('@')?;
+    while let Some(rest) = raw.strip_prefix("../") {
+        levels += 1;
+        raw = rest;
+    }
+    Some((levels, raw))
+}
+
+fn resolve_runtime_suffix(value: &Value, suffix: &str) -> Result<ScopedJson<'static>, RenderError> {
+    let path = suffix.trim_start_matches(['.', '/']);
+    if path.is_empty() {
+        return Ok(ScopedJson::Derived(value.clone()));
+    }
+
+    let context = Context::wraps(value.clone())?;
+    let render_context = RenderContext::new(None);
+    let resolved = render_context.evaluate(&context, path)?;
+    if resolved.is_missing() {
+        Ok(ScopedJson::Missing)
+    } else {
+        Ok(ScopedJson::Derived(resolved.as_json().clone()))
+    }
+}
+
+fn is_runtime_path(token: &str) -> bool {
+    let Some((_, local_path)) = split_runtime_path(token) else {
+        return false;
+    };
+    let name_end = local_path.find(['.', '/', '[']).unwrap_or(local_path.len());
+    !matches!(&local_path[..name_end], "root" | "partial-block")
+}
+
+fn is_at_root_path(token: &str) -> bool {
+    let Some((_, local_path)) = split_runtime_path(token) else {
+        return false;
+    };
+    let name_end = local_path.find(['.', '/', '[']).unwrap_or(local_path.len());
+    &local_path[..name_end] == "root"
+}
+
+fn transform_expression(expression: &str) -> String {
+    let mut output = String::with_capacity(expression.len());
+    let chars: Vec<char> = expression.chars().collect();
+    let mut index = 0;
+
+    while index < chars.len() {
+        let ch = chars[index];
+        if ch == '"' || ch == '\'' {
+            let quote = ch;
+            output.push(ch);
+            index += 1;
+            while index < chars.len() {
+                let current = chars[index];
+                output.push(current);
+                index += 1;
+                if current == '\\' && index < chars.len() {
+                    output.push(chars[index]);
+                    index += 1;
+                } else if current == quote {
+                    break;
+                }
+            }
+            continue;
+        }
+
+        if ch.is_whitespace() || matches!(ch, '(' | ')' | '=') {
+            output.push(ch);
+            index += 1;
+            continue;
+        }
+
+        let start = index;
+        let mut bracket_depth = 0;
+        while index < chars.len() {
+            let current = chars[index];
+            if current == '[' {
+                bracket_depth += 1;
+            } else if current == ']' && bracket_depth > 0 {
+                bracket_depth -= 1;
+            }
+            if bracket_depth == 0 && (current.is_whitespace() || matches!(current, '(' | ')' | '='))
+            {
+                break;
+            }
+            index += 1;
+        }
+
+        let token: String = chars[start..index].iter().collect();
+        let leading_control_len = usize::from(token.starts_with('~'));
+        let trailing_control_len = usize::from(token.ends_with('~'));
+        if leading_control_len + trailing_control_len >= token.len() {
+            output.push_str(&token);
+            continue;
+        }
+        let controlled_path = &token[leading_control_len..token.len() - trailing_control_len];
+        let sigil_len = controlled_path
+            .chars()
+            .take_while(|value| matches!(value, '#' | '^' | '&'))
+            .map(char::len_utf8)
+            .sum();
+        let (sigil, path) = controlled_path.split_at(sigil_len);
+        if is_runtime_path(path) {
+            output.push_str(&token[..leading_control_len]);
+            output.push_str(sigil);
+            output.push('(');
+            output.push_str(RUNTIME_PATH_HELPER);
+            output.push(' ');
+            output.push_str(
+                &serde_json::to_string(path)
+                    .expect("serializing a Rust string to JSON cannot fail"),
+            );
+            output.push(')');
+            output.push_str(&token[token.len() - trailing_control_len..]);
+        } else {
+            output.push_str(&token);
+        }
+    }
+
+    output
+}
+
+fn direct_runtime_section(expression: &str) -> Option<(char, &str, usize, usize)> {
+    let bytes = expression.as_bytes();
+    let mut marker = expression.len() - expression.trim_start().len();
+    if bytes.get(marker) == Some(&b'~') {
+        marker += 1;
+    }
+    let section_kind = *bytes.get(marker)? as char;
+    if !matches!(section_kind, '#' | '^' | '/') {
+        return None;
+    }
+
+    let path_start = marker + 1;
+    let path_end = expression[path_start..]
+        .find(|ch: char| ch.is_whitespace() || ch == '~')
+        .map_or(expression.len(), |offset| path_start + offset);
+    let path = &expression[path_start..path_end];
+    if !is_runtime_path(path)
+        || !expression[path_end..]
+            .trim_matches(['~', ' ', '\t', '\r', '\n'])
+            .is_empty()
+    {
+        return None;
+    }
+    Some((section_kind, path, marker, path_end))
+}
+
+fn lower_runtime_section(
+    expression: &str,
+    runtime_sections: &mut Vec<(String, String)>,
+) -> Option<String> {
+    let (section_kind, path, marker, path_end) = direct_runtime_section(expression)?;
+    match section_kind {
+        '#' | '^' => {
+            let helper_prefix = if section_kind == '^' {
+                RUNTIME_INVERTED_SECTION_HELPER_PREFIX
+            } else {
+                RUNTIME_SECTION_HELPER_PREFIX
+            };
+            let helper_name = format!("{helper_prefix}{}", encode_runtime_section_path(path));
+            runtime_sections.push((path.to_owned(), helper_name.clone()));
+            Some(format!(
+                "{}#{}{}",
+                &expression[..marker],
+                helper_name,
+                &expression[path_end..],
+            ))
+        }
+        '/' if runtime_sections
+            .last()
+            .is_some_and(|(open, _)| open == path) =>
+        {
+            let (_, helper_name) = runtime_sections.pop()?;
+            Some(format!(
+                "{}/{}{}",
+                &expression[..marker],
+                helper_name,
+                &expression[path_end..],
+            ))
+        }
+        _ => None,
+    }
+}
+
+fn find_tag_end(source: &str, mut index: usize, close: &str) -> Option<usize> {
+    let bytes = source.as_bytes();
+    let mut quote = None;
+    while index < source.len() {
+        let ch = bytes[index] as char;
+        if let Some(current_quote) = quote {
+            if ch == '\\' {
+                index += 2;
+                continue;
+            }
+            if ch == current_quote {
+                quote = None;
+            }
+            index += 1;
+            continue;
+        }
+        if ch == '"' || ch == '\'' {
+            quote = Some(ch);
+            index += 1;
+            continue;
+        }
+        if source[index..].starts_with(close) {
+            return Some(index);
+        }
+        index += 1;
+    }
+    None
+}
+
+fn transform_runtime_paths(source: &str) -> String {
+    let mut output = String::with_capacity(source.len());
+    let mut cursor = 0;
+    let mut runtime_sections = Vec::new();
+
+    while let Some(relative_start) = source[cursor..].find("{{") {
+        let start = cursor + relative_start;
+        output.push_str(&source[cursor..start]);
+
+        if source[start..].starts_with("{{{{") {
+            let Some(open_end) = source[start + 4..].find("}}}}") else {
+                output.push_str(&source[start..]);
+                return output;
+            };
+            let open_end = start + 4 + open_end;
+            let raw_name = source[start + 4..open_end].trim().trim_start_matches('#');
+            let close_tag = format!("{{{{/{raw_name}}}}}");
+            let raw_content_start = open_end + 4;
+            if let Some(close_offset) = source[raw_content_start..].find(&close_tag) {
+                let raw_end = raw_content_start + close_offset + close_tag.len();
+                output.push_str(&source[start..raw_end]);
+                cursor = raw_end;
+                continue;
+            }
+            output.push_str(&source[start..]);
+            return output;
+        }
+
+        if source[start..].starts_with("{{!--") {
+            let Some(close_offset) = source[start + 6..].find("--}}") else {
+                output.push_str(&source[start..]);
+                return output;
+            };
+            let end = start + 6 + close_offset + 4;
+            output.push_str(&source[start..end]);
+            cursor = end;
+            continue;
+        }
+
+        let triple = source[start..].starts_with("{{{");
+        let open_len = if triple { 3 } else { 2 };
+        let close = if triple { "}}}" } else { "}}" };
+        let content_start = start + open_len;
+        let Some(content_end) = find_tag_end(source, content_start, close) else {
+            output.push_str(&source[start..]);
+            return output;
+        };
+        let expression = &source[content_start..content_end];
+        if let Some(lowered) = lower_runtime_section(expression, &mut runtime_sections) {
+            output.push_str(&source[start..content_start]);
+            output.push_str(&lowered);
+            output.push_str(close);
+        } else if expression.trim_start().starts_with('!')
+            || expression.trim_start().starts_with('/')
+        {
+            output.push_str(&source[start..content_end + close.len()]);
+        } else {
+            output.push_str(&source[start..content_start]);
+            output.push_str(&transform_expression(expression));
+            output.push_str(close);
+        }
+        cursor = content_end + close.len();
+    }
+
+    output.push_str(&source[cursor..]);
+    output
+}
+
+fn expression_reads_at_root(expression: &str) -> bool {
+    let chars: Vec<char> = expression.chars().collect();
+    let mut index = 0;
+    while index < chars.len() {
+        let ch = chars[index];
+        if ch == '"' || ch == '\'' {
+            let quote = ch;
+            index += 1;
+            while index < chars.len() {
+                let current = chars[index];
+                index += 1;
+                if current == '\\' && index < chars.len() {
+                    index += 1;
+                } else if current == quote {
+                    break;
+                }
+            }
+            continue;
+        }
+        if ch.is_whitespace() || matches!(ch, '(' | ')' | '=') {
+            index += 1;
+            continue;
+        }
+        let start = index;
+        let mut bracket_depth = 0;
+        while index < chars.len() {
+            let current = chars[index];
+            if current == '[' {
+                bracket_depth += 1;
+            } else if current == ']' && bracket_depth > 0 {
+                bracket_depth -= 1;
+            }
+            if bracket_depth == 0 && (current.is_whitespace() || matches!(current, '(' | ')' | '='))
+            {
+                break;
+            }
+            index += 1;
+        }
+        let token: String = chars[start..index].iter().collect();
+        let leading_control_len = usize::from(token.starts_with('~'));
+        let trailing_control_len = usize::from(token.ends_with('~'));
+        if leading_control_len + trailing_control_len >= token.len() {
+            continue;
+        }
+        let controlled_path = &token[leading_control_len..token.len() - trailing_control_len];
+        let sigil_len = controlled_path
+            .chars()
+            .take_while(|value| matches!(value, '#' | '^' | '&'))
+            .map(char::len_utf8)
+            .sum();
+        let path = &controlled_path[sigil_len..];
+        if is_at_root_path(path) {
+            return true;
+        }
+    }
+    false
+}
+
+fn partial_name_from_expression(expression: &str) -> Option<String> {
+    let mut rest = expression.trim().trim_start_matches('~').trim_start();
+    if let Some(stripped) = rest.strip_prefix('#') {
+        rest = stripped.trim_start();
+    }
+    rest = rest.strip_prefix('>')?.trim_start_matches('~').trim_start();
+    let name: String = rest
+        .chars()
+        .take_while(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '.' | '-'))
+        .collect();
+    if name.is_empty() { None } else { Some(name) }
+}
+
+fn visit_live_expressions(source: &str, mut visit: impl FnMut(&str)) {
+    let mut cursor = 0;
+    while let Some(relative_start) = source[cursor..].find("{{") {
+        let start = cursor + relative_start;
+        if source[start..].starts_with("{{{{") {
+            let Some(open_end) = source[start + 4..].find("}}}}") else {
+                return;
+            };
+            let open_end = start + 4 + open_end;
+            let raw_name = source[start + 4..open_end].trim().trim_start_matches('#');
+            let close_tag = format!("{{{{/{raw_name}}}}}");
+            let raw_content_start = open_end + 4;
+            if let Some(close_offset) = source[raw_content_start..].find(&close_tag) {
+                cursor = raw_content_start + close_offset + close_tag.len();
+                continue;
+            }
+            return;
+        }
+        if source[start..].starts_with("{{!--") {
+            let Some(close_offset) = source[start + 6..].find("--}}") else {
+                return;
+            };
+            cursor = start + 6 + close_offset + 4;
+            continue;
+        }
+        let triple = source[start..].starts_with("{{{");
+        let open_len = if triple { 3 } else { 2 };
+        let close = if triple { "}}}" } else { "}}" };
+        let content_start = start + open_len;
+        let Some(content_end) = find_tag_end(source, content_start, close) else {
+            return;
+        };
+        let expression = &source[content_start..content_end];
+        if !(expression.trim_start().starts_with('!') || expression.trim_start().starts_with('/')) {
+            visit(expression);
+        }
+        cursor = content_end + close.len();
+    }
+}
+
+fn source_reads_at_root(source: &str) -> bool {
+    let mut reads = false;
+    visit_live_expressions(source, |expression| {
+        if expression_reads_at_root(expression) {
+            reads = true;
+        }
+    });
+    reads
+}
+
+fn source_partial_names(source: &str) -> Vec<String> {
+    let mut names = Vec::new();
+    visit_live_expressions(source, |expression| {
+        if let Some(name) = partial_name_from_expression(expression) {
+            names.push(name);
+        }
+    });
+    names
+}
+
+fn reachable_reads_at_root(entry_source: &str, sources: &HashMap<String, String>) -> bool {
+    if source_reads_at_root(entry_source) {
+        return true;
+    }
+    let mut pending = source_partial_names(entry_source);
+    let mut seen = std::collections::HashSet::new();
+    while let Some(name) = pending.pop() {
+        if !seen.insert(name.clone()) {
+            continue;
+        }
+        let Some(source) = sources.get(&name) else {
+            continue;
+        };
+        if source_reads_at_root(source) {
+            return true;
+        }
+        pending.extend(source_partial_names(source));
+    }
+    false
+}
+
+fn compile_template(
+    name: Option<&str>,
+    source: &str,
+) -> Result<Template, handlebars::TemplateError> {
+    let transformed = transform_runtime_paths(source);
+    let mut template = Template::compile(&transformed)?;
+    template.name = name.map(str::to_owned);
+    Ok(template)
+}
+
+fn render_with_runtime(
+    registry: &Handlebars<'static>,
+    template: &Template,
+    input: Value,
+    runtime_data: Value,
+    reads_at_root: bool,
+) -> Result<String, RenderError> {
+    let context = Context::wraps(input)?;
+    let mut render_context = RenderContext::new(template.name.as_ref());
+    if let Some(root) = render_context.block_mut() {
+        root.set_local_var(RUNTIME_ROOT_SENTINEL, Value::Bool(true));
+        if let Value::Object(values) = runtime_data {
+            if reads_at_root && values.contains_key("root") {
+                return Err(RenderError::from(RenderErrorReason::Other(
+                    "runtime data key 'root' is reserved".to_owned(),
+                )));
+            }
+            // @root is the input document. A leftover context "root" must not
+            // become that token, and must not fail a prompt that never asked
+            // for @root.
+            for (name, value) in values {
+                if name != "root" {
+                    root.set_local_var(&name, value);
+                }
+            }
+        }
+    }
+    render_context.register_local_helper(RUNTIME_PATH_HELPER, Box::new(RuntimePathHelper));
+    let mut output = StringOutput::new();
+    template.render(registry, &context, &mut render_context, &mut output)?;
+    output.into_string().map_err(RenderError::from)
+}
 
 /// Python bindings for the handlebars-rust library.
 ///
@@ -261,6 +923,8 @@ impl HelperDef for PyHelperDef {
 struct HandlebarrzTemplate {
     registry: Handlebars<'static>,
     py_helpers: HashMap<String, PyObject>,
+    template_files: HashMap<String, PathBuf>,
+    template_sources: HashMap<String, String>,
 }
 
 #[pymethods]
@@ -272,11 +936,14 @@ impl HandlebarrzTemplate {
     /// A new `HandlebarrzTemplate` instance.
     #[new]
     fn new() -> Self {
-        let registry = Handlebars::new();
+        let mut registry = Handlebars::new();
+        registry.register_helper("blockHelperMissing", Box::new(DirectSectionHelper));
 
         Self {
             registry,
             py_helpers: HashMap::new(),
+            template_files: HashMap::new(),
+            template_sources: HashMap::new(),
         }
     }
 
@@ -383,9 +1050,13 @@ impl HandlebarrzTemplate {
     /// `PyValueError` if the template cannot be registered.
     #[pyo3(text_signature = "($self, name, template_string)")]
     fn register_template(&mut self, name: &str, template_string: &str) -> PyResult<()> {
-        self.registry
-            .register_template_string(name, template_string)
-            .map_err(|e| PyValueError::new_err(e.to_string()))
+        let template = compile_template(Some(name), template_string)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        self.registry.register_template(name, template);
+        self.template_files.remove(name);
+        self.template_sources
+            .insert(name.to_owned(), template_string.to_owned());
+        Ok(())
     }
 
     /// Registers a partial with the given name.
@@ -404,9 +1075,12 @@ impl HandlebarrzTemplate {
     /// `PyValueError` if the partial cannot be registered.
     #[pyo3(text_signature = "($self, name, template_string)")]
     fn register_partial(&mut self, name: &str, template_string: &str) -> PyResult<()> {
-        self.registry
-            .register_partial(name, template_string)
-            .map_err(|e| PyValueError::new_err(e.to_string()))
+        let template = compile_template(Some(name), template_string)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        self.registry.register_template(name, template);
+        self.template_sources
+            .insert(name.to_owned(), template_string.to_owned());
+        Ok(())
     }
 
     /// Registers a template file with the given name.
@@ -433,9 +1107,13 @@ impl HandlebarrzTemplate {
             )));
         }
 
-        self.registry
-            .register_template_file(name, file_path)
-            .map_err(|e| PyValueError::new_err(e.to_string()))
+        let source = fs::read_to_string(path).map_err(|e| PyValueError::new_err(e.to_string()))?;
+        let template = compile_template(Some(name), &source)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        self.registry.register_template(name, template);
+        self.template_files.insert(name.to_owned(), path.to_owned());
+        self.template_sources.insert(name.to_owned(), source);
+        Ok(())
     }
 
     /// Registers a helper function with the given name.
@@ -474,6 +1152,8 @@ impl HandlebarrzTemplate {
     #[pyo3(text_signature = "($self, name)")]
     fn unregister_template(&mut self, name: &str) -> PyResult<()> {
         self.registry.unregister_template(name);
+        self.template_files.remove(name);
+        self.template_sources.remove(name);
         Ok(())
     }
 
@@ -505,13 +1185,38 @@ impl HandlebarrzTemplate {
     /// # Raises
     ///
     /// `PyValueError` if the template cannot be rendered.
-    #[pyo3(text_signature = "($self, name, data)")]
-    fn render(&self, name: &str, data: &str) -> PyResult<String> {
+    #[pyo3(text_signature = "($self, name, data, runtime_data)")]
+    fn render(&self, name: &str, data: &str, runtime_data: &str) -> PyResult<String> {
         let data: Value = serde_json::from_str(data)
             .map_err(|e| PyValueError::new_err(format!("invalid JSON: {e}")))?;
-
-        self.registry
-            .render(name, &data)
+        let runtime_data: Value = serde_json::from_str(runtime_data)
+            .map_err(|e| PyValueError::new_err(format!("invalid runtime data JSON: {e}")))?;
+        let reloaded;
+        let mut reloaded_source = None;
+        let template = if self.registry.dev_mode() {
+            if let Some(path) = self.template_files.get(name) {
+                let source =
+                    fs::read_to_string(path).map_err(|e| PyValueError::new_err(e.to_string()))?;
+                reloaded = compile_template(Some(name), &source)
+                    .map_err(|e| PyValueError::new_err(e.to_string()))?;
+                reloaded_source = Some(source);
+                &reloaded
+            } else {
+                self.registry
+                    .get_template(name)
+                    .ok_or_else(|| PyValueError::new_err(format!("Template not found: {name}")))?
+            }
+        } else {
+            self.registry
+                .get_template(name)
+                .ok_or_else(|| PyValueError::new_err(format!("Template not found: {name}")))?
+        };
+        let entry_source = reloaded_source
+            .as_deref()
+            .or_else(|| self.template_sources.get(name).map(String::as_str))
+            .unwrap_or("");
+        let reads_at_root = reachable_reads_at_root(entry_source, &self.template_sources);
+        render_with_runtime(&self.registry, template, data, runtime_data, reads_at_root)
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
@@ -529,12 +1234,21 @@ impl HandlebarrzTemplate {
     /// # Returns
     ///
     /// Rendered template as a string.
-    #[pyo3(text_signature = "($self, template_string, data_json)")]
-    fn render_template(&self, template_string: &str, data_json: &str) -> PyResult<String> {
+    #[pyo3(text_signature = "($self, template_string, data_json, runtime_data_json)")]
+    fn render_template(
+        &self,
+        template_string: &str,
+        data_json: &str,
+        runtime_data_json: &str,
+    ) -> PyResult<String> {
         let data: Value = serde_json::from_str(data_json)
             .map_err(|e| PyValueError::new_err(format!("invalid JSON: {e}")))?;
-        self.registry
-            .render_template(template_string, &data)
+        let runtime_data: Value = serde_json::from_str(runtime_data_json)
+            .map_err(|e| PyValueError::new_err(format!("invalid runtime data JSON: {e}")))?;
+        let template = compile_template(None, template_string)
+            .map_err(|e| PyValueError::new_err(format!("Failed to parse template: {e}")))?;
+        let reads_at_root = reachable_reads_at_root(template_string, &self.template_sources);
+        render_with_runtime(&self.registry, &template, data, runtime_data, reads_at_root)
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
