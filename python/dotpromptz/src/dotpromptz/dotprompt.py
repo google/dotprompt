@@ -299,16 +299,19 @@ class Dotprompt:
         self._tools[definition.name] = definition
         return self
 
-    def parse(self, source: str) -> ParsedPrompt[ModelConfigT]:
+    def parse(self, source: str, *, source_name: str | None = None) -> ParsedPrompt[ModelConfigT]:
         """Parse a prompt from a string.
 
         Args:
             source: The source code for the prompt.
+            source_name: Optional identifier attached to frontmatter errors.
 
         Returns:
             The parsed prompt.
         """
-        return parse_document(source)
+        if source_name is None:
+            return parse_document(source)
+        return parse_document(source, source_name=source_name)
 
     async def render(
         self, source: str, data: DataArgument[VariablesT], options: PromptMetadata[ModelConfigT] | None = None
