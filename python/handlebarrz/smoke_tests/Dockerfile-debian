@@ -22,9 +22,7 @@ RUN apt-get update && \
 WORKDIR /project
 COPY . /project/
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && . $HOME/.local/bin/env \
-    && uv sync --index-strategy unsafe-best-match
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
     
 ENV PATH="/root/.local/bin/:$PATH"
 
