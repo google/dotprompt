@@ -287,6 +287,73 @@ def test_rejected_runtime_root_keeps_caller_data_and_renderer_reusable() -> None
     assert renderer(input_data, {'data': {'name': 'runtime'}}) == 'input/runtime'
 
 
+def test_unused_context_root_renders_when_template_never_reads_at_root() -> None:
+    """A leftover context root is fine when this prompt never asks for @root."""
+    template = Template()
+
+    result = template.render_template(
+        'Hello {{name}}',
+        {'name': 'Ada'},
+        {'data': {'root': '/app', 'request_id': 'r1'}},
+    )
+
+    assert result == 'Hello Ada'
+
+
+def test_commented_and_raw_at_root_do_not_count_as_reading_root() -> None:
+    template = Template()
+    options: RuntimeOptions = {'data': {'root': '/app', 'name': 'admin'}}
+
+    commented = template.render_template('Hello {{! @root }}{{name}}', {'name': 'Ada'}, options)
+    raw = template.render_template(
+        'Hello {{{{raw}}}}{{@root}}{{{{/raw}}}} {{name}}',
+        {'name': 'Ada'},
+        options,
+    )
+
+    assert commented == 'Hello Ada'
+    assert raw == 'Hello {{@root}} Ada'
+
+
+def test_rootless_context_key_is_not_at_root() -> None:
+    template = Template()
+
+    result = template.render_template(
+        '{{@rootless}}',
+        {},
+        {'data': {'root': '/app', 'rootless': 'ok'}},
+    )
+
+    assert result == 'ok'
+
+
+def test_partial_that_reads_at_root_still_raises() -> None:
+    template = Template()
+    template.register_partial('header', '{{@root.name}}')
+
+    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
+        template.render_template('{{> header}}', {'name': 'Ada'}, {'data': {'root': '/app'}})
+
+
+def test_unused_partial_that_reads_at_root_does_not_raise() -> None:
+    template = Template()
+    template.register_partial('header', '{{@root.name}}')
+
+    result = template.render_template(
+        'Hello {{name}}',
+        {'name': 'Ada'},
+        {'data': {'root': '/app'}},
+    )
+
+    assert result == 'Hello Ada'
+
+
+def test_compiled_hello_allows_unused_context_root() -> None:
+    renderer = Template().compile('Hello {{name}}')
+
+    assert renderer({'name': 'Ada'}, {'data': {'root': '/app'}}) == 'Hello Ada'
+
+
 def test_nested_root_key_remains_runtime_data() -> None:
     template = Template()
 

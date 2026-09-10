@@ -95,6 +95,16 @@ async def test_dotprompt_does_not_mutate_data_argument_mappings() -> None:
 
 
 @pytest.mark.asyncio
+async def test_dotprompt_allows_unused_context_root() -> None:
+    result = await Dotprompt().render(
+        'Hello {{name}}',
+        DataArgument(input={'name': 'Ada'}, context={'root': '/app', 'request_id': 'r1'}),
+    )
+
+    assert result.messages[0].content == [TextPart(text='Hello Ada')]
+
+
+@pytest.mark.asyncio
 async def test_dotprompt_render_rejects_context_root_without_mutating_data_argument() -> None:
     input_data = {'name': 'input'}
     context = {'root': {'name': 'runtime'}, 'request_id': 'r1'}

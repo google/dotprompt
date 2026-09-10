@@ -245,6 +245,14 @@ fn is_runtime_path(token: &str) -> bool {
     !matches!(&local_path[..name_end], "root" | "partial-block")
 }
 
+fn is_at_root_path(token: &str) -> bool {
+    let Some((_, local_path)) = split_runtime_path(token) else {
+        return false;
+    };
+    let name_end = local_path.find(['.', '/', '[']).unwrap_or(local_path.len());
+    &local_path[..name_end] == "root"
+}
+
 fn transform_expression(expression: &str) -> String {
     let mut output = String::with_capacity(expression.len());
     let chars: Vec<char> = expression.chars().collect();
@@ -486,6 +494,158 @@ fn transform_runtime_paths(source: &str) -> String {
     output
 }
 
+fn expression_reads_at_root(expression: &str) -> bool {
+    let chars: Vec<char> = expression.chars().collect();
+    let mut index = 0;
+    while index < chars.len() {
+        let ch = chars[index];
+        if ch == '"' || ch == '\'' {
+            let quote = ch;
+            index += 1;
+            while index < chars.len() {
+                let current = chars[index];
+                index += 1;
+                if current == '\\' && index < chars.len() {
+                    index += 1;
+                } else if current == quote {
+                    break;
+                }
+            }
+            continue;
+        }
+        if ch.is_whitespace() || matches!(ch, '(' | ')' | '=') {
+            index += 1;
+            continue;
+        }
+        let start = index;
+        let mut bracket_depth = 0;
+        while index < chars.len() {
+            let current = chars[index];
+            if current == '[' {
+                bracket_depth += 1;
+            } else if current == ']' && bracket_depth > 0 {
+                bracket_depth -= 1;
+            }
+            if bracket_depth == 0 && (current.is_whitespace() || matches!(current, '(' | ')' | '='))
+            {
+                break;
+            }
+            index += 1;
+        }
+        let token: String = chars[start..index].iter().collect();
+        let leading_control_len = usize::from(token.starts_with('~'));
+        let trailing_control_len = usize::from(token.ends_with('~'));
+        if leading_control_len + trailing_control_len >= token.len() {
+            continue;
+        }
+        let controlled_path = &token[leading_control_len..token.len() - trailing_control_len];
+        let sigil_len = controlled_path
+            .chars()
+            .take_while(|value| matches!(value, '#' | '^' | '&'))
+            .map(char::len_utf8)
+            .sum();
+        let path = &controlled_path[sigil_len..];
+        if is_at_root_path(path) {
+            return true;
+        }
+    }
+    false
+}
+
+fn partial_name_from_expression(expression: &str) -> Option<String> {
+    let mut rest = expression.trim().trim_start_matches('~').trim_start();
+    if let Some(stripped) = rest.strip_prefix('#') {
+        rest = stripped.trim_start();
+    }
+    rest = rest.strip_prefix('>')?.trim_start_matches('~').trim_start();
+    let name: String = rest
+        .chars()
+        .take_while(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '.' | '-'))
+        .collect();
+    if name.is_empty() { None } else { Some(name) }
+}
+
+fn visit_live_expressions(source: &str, mut visit: impl FnMut(&str)) {
+    let mut cursor = 0;
+    while let Some(relative_start) = source[cursor..].find("{{") {
+        let start = cursor + relative_start;
+        if source[start..].starts_with("{{{{") {
+            let Some(open_end) = source[start + 4..].find("}}}}") else {
+                return;
+            };
+            let open_end = start + 4 + open_end;
+            let raw_name = source[start + 4..open_end].trim().trim_start_matches('#');
+            let close_tag = format!("{{{{/{raw_name}}}}}");
+            let raw_content_start = open_end + 4;
+            if let Some(close_offset) = source[raw_content_start..].find(&close_tag) {
+                cursor = raw_content_start + close_offset + close_tag.len();
+                continue;
+            }
+            return;
+        }
+        if source[start..].starts_with("{{!--") {
+            let Some(close_offset) = source[start + 6..].find("--}}") else {
+                return;
+            };
+            cursor = start + 6 + close_offset + 4;
+            continue;
+        }
+        let triple = source[start..].starts_with("{{{");
+        let open_len = if triple { 3 } else { 2 };
+        let close = if triple { "}}}" } else { "}}" };
+        let content_start = start + open_len;
+        let Some(content_end) = find_tag_end(source, content_start, close) else {
+            return;
+        };
+        let expression = &source[content_start..content_end];
+        if !(expression.trim_start().starts_with('!') || expression.trim_start().starts_with('/')) {
+            visit(expression);
+        }
+        cursor = content_end + close.len();
+    }
+}
+
+fn source_reads_at_root(source: &str) -> bool {
+    let mut reads = false;
+    visit_live_expressions(source, |expression| {
+        if expression_reads_at_root(expression) {
+            reads = true;
+        }
+    });
+    reads
+}
+
+fn source_partial_names(source: &str) -> Vec<String> {
+    let mut names = Vec::new();
+    visit_live_expressions(source, |expression| {
+        if let Some(name) = partial_name_from_expression(expression) {
+            names.push(name);
+        }
+    });
+    names
+}
+
+fn reachable_reads_at_root(entry_source: &str, sources: &HashMap<String, String>) -> bool {
+    if source_reads_at_root(entry_source) {
+        return true;
+    }
+    let mut pending = source_partial_names(entry_source);
+    let mut seen = std::collections::HashSet::new();
+    while let Some(name) = pending.pop() {
+        if !seen.insert(name.clone()) {
+            continue;
+        }
+        let Some(source) = sources.get(&name) else {
+            continue;
+        };
+        if source_reads_at_root(source) {
+            return true;
+        }
+        pending.extend(source_partial_names(source));
+    }
+    false
+}
+
 fn compile_template(
     name: Option<&str>,
     source: &str,
@@ -501,14 +661,25 @@ fn render_with_runtime(
     template: &Template,
     input: Value,
     runtime_data: Value,
+    reads_at_root: bool,
 ) -> Result<String, RenderError> {
     let context = Context::wraps(input)?;
     let mut render_context = RenderContext::new(template.name.as_ref());
     if let Some(root) = render_context.block_mut() {
         root.set_local_var(RUNTIME_ROOT_SENTINEL, Value::Bool(true));
         if let Value::Object(values) = runtime_data {
+            if reads_at_root && values.contains_key("root") {
+                return Err(RenderError::from(RenderErrorReason::Other(
+                    "runtime data key 'root' is reserved".to_owned(),
+                )));
+            }
+            // @root is the input document. A leftover context "root" must not
+            // become that token, and must not fail a prompt that never asked
+            // for @root.
             for (name, value) in values {
-                root.set_local_var(&name, value);
+                if name != "root" {
+                    root.set_local_var(&name, value);
+                }
             }
         }
     }
@@ -753,6 +924,7 @@ struct HandlebarrzTemplate {
     registry: Handlebars<'static>,
     py_helpers: HashMap<String, PyObject>,
     template_files: HashMap<String, PathBuf>,
+    template_sources: HashMap<String, String>,
 }
 
 #[pymethods]
@@ -771,6 +943,7 @@ impl HandlebarrzTemplate {
             registry,
             py_helpers: HashMap::new(),
             template_files: HashMap::new(),
+            template_sources: HashMap::new(),
         }
     }
 
@@ -881,6 +1054,8 @@ impl HandlebarrzTemplate {
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         self.registry.register_template(name, template);
         self.template_files.remove(name);
+        self.template_sources
+            .insert(name.to_owned(), template_string.to_owned());
         Ok(())
     }
 
@@ -903,6 +1078,8 @@ impl HandlebarrzTemplate {
         let template = compile_template(Some(name), template_string)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         self.registry.register_template(name, template);
+        self.template_sources
+            .insert(name.to_owned(), template_string.to_owned());
         Ok(())
     }
 
@@ -935,6 +1112,7 @@ impl HandlebarrzTemplate {
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         self.registry.register_template(name, template);
         self.template_files.insert(name.to_owned(), path.to_owned());
+        self.template_sources.insert(name.to_owned(), source);
         Ok(())
     }
 
@@ -975,6 +1153,7 @@ impl HandlebarrzTemplate {
     fn unregister_template(&mut self, name: &str) -> PyResult<()> {
         self.registry.unregister_template(name);
         self.template_files.remove(name);
+        self.template_sources.remove(name);
         Ok(())
     }
 
@@ -1013,12 +1192,14 @@ impl HandlebarrzTemplate {
         let runtime_data: Value = serde_json::from_str(runtime_data)
             .map_err(|e| PyValueError::new_err(format!("invalid runtime data JSON: {e}")))?;
         let reloaded;
+        let mut reloaded_source = None;
         let template = if self.registry.dev_mode() {
             if let Some(path) = self.template_files.get(name) {
                 let source =
                     fs::read_to_string(path).map_err(|e| PyValueError::new_err(e.to_string()))?;
                 reloaded = compile_template(Some(name), &source)
                     .map_err(|e| PyValueError::new_err(e.to_string()))?;
+                reloaded_source = Some(source);
                 &reloaded
             } else {
                 self.registry
@@ -1030,7 +1211,12 @@ impl HandlebarrzTemplate {
                 .get_template(name)
                 .ok_or_else(|| PyValueError::new_err(format!("Template not found: {name}")))?
         };
-        render_with_runtime(&self.registry, template, data, runtime_data)
+        let entry_source = reloaded_source
+            .as_deref()
+            .or_else(|| self.template_sources.get(name).map(String::as_str))
+            .unwrap_or("");
+        let reads_at_root = reachable_reads_at_root(entry_source, &self.template_sources);
+        render_with_runtime(&self.registry, template, data, runtime_data, reads_at_root)
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
@@ -1061,7 +1247,8 @@ impl HandlebarrzTemplate {
             .map_err(|e| PyValueError::new_err(format!("invalid runtime data JSON: {e}")))?;
         let template = compile_template(None, template_string)
             .map_err(|e| PyValueError::new_err(format!("Failed to parse template: {e}")))?;
-        render_with_runtime(&self.registry, &template, data, runtime_data)
+        let reads_at_root = reachable_reads_at_root(template_string, &self.template_sources);
+        render_with_runtime(&self.registry, &template, data, runtime_data, reads_at_root)
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
