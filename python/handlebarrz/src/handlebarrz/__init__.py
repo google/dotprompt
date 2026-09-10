@@ -470,7 +470,9 @@ class Template:
 
         Raises:
             ValueError: If the template does not exist or there is a rendering
-                error.
+                error. KeyboardInterrupt, SystemExit, and other non-Exception
+                BaseExceptions raised by a helper are not converted to
+                ValueError.
         """
         try:
             runtime_data = (options or {}).get('data') or {}
@@ -506,7 +508,9 @@ class Template:
 
         Raises:
             ValueError: If there is a syntax error in the template or a
-                rendering error.
+                rendering error. KeyboardInterrupt, SystemExit, and other
+                non-Exception BaseExceptions raised by a helper are not
+                converted to ValueError.
         """
         try:
             runtime_data = (options.get('data') if options is not None else {}) or {}
