@@ -18,13 +18,35 @@ use handlebars::{
     BlockContext, Context, Handlebars, Helper, HelperDef, Output, RenderContext, RenderError,
     RenderErrorReason, Renderable, ScopedJson, StringOutput, Template,
 };
-use pyo3::exceptions::{PyFileNotFoundError, PyValueError};
+use pyo3::exceptions::{PyException, PyFileNotFoundError, PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 use serde_json::Value;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::Arc;
+use std::thread::{self, ThreadId};
+
+thread_local! {
+    static PENDING_HELPER_INTERRUPT: RefCell<Option<PyErr>> = const { RefCell::new(None) };
+}
+
+fn take_pending_helper_interrupt() -> Option<PyErr> {
+    PENDING_HELPER_INTERRUPT.with(|slot| slot.borrow_mut().take())
+}
+
+fn stash_helper_interrupt(error: PyErr) {
+    PENDING_HELPER_INTERRUPT.with(|slot| {
+        *slot.borrow_mut() = Some(error);
+    });
+}
+
+fn python_error_from_render(error: RenderError) -> PyErr {
+    take_pending_helper_interrupt().unwrap_or_else(|| PyValueError::new_err(error.to_string()))
+}
 
 mod helpers;
 
@@ -562,7 +584,11 @@ fn partial_name_from_expression(expression: &str) -> Option<String> {
         .chars()
         .take_while(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '.' | '-'))
         .collect();
-    if name.is_empty() { None } else { Some(name) }
+    if name.is_empty() {
+        None
+    } else {
+        Some(name)
+    }
 }
 
 fn visit_live_expressions(source: &str, mut visit: impl FnMut(&str)) {
@@ -752,33 +778,132 @@ fn no_escape(text: &str) -> String {
     handlebars::no_escape(text)
 }
 
+const OPTIONS_ACTIVE: u8 = 0;
+const OPTIONS_RENDERING_BRANCH: u8 = 1;
+const OPTIONS_EXPIRED: u8 = 2;
+const OPTIONS_EXPIRED_ERROR: &str =
+    "helper options are only available while the helper callback is running";
+const OPTIONS_REENTRANT_ERROR: &str =
+    "helper options cannot be accessed while one of its branches is rendering";
+const OPTIONS_THREAD_ERROR: &str =
+    "helper options can only be accessed from the helper callback thread";
+
+struct HelperOptionsLifetime {
+    state: AtomicU8,
+    owner: ThreadId,
+}
+
+impl HelperOptionsLifetime {
+    fn new() -> Self {
+        Self {
+            state: AtomicU8::new(OPTIONS_ACTIVE),
+            owner: thread::current().id(),
+        }
+    }
+
+    fn ensure_active(&self) -> PyResult<()> {
+        match self.state.load(Ordering::Acquire) {
+            OPTIONS_EXPIRED => return Err(PyRuntimeError::new_err(OPTIONS_EXPIRED_ERROR)),
+            OPTIONS_RENDERING_BRANCH => {
+                return Err(PyRuntimeError::new_err(OPTIONS_REENTRANT_ERROR));
+            }
+            OPTIONS_ACTIVE => {}
+            _ => return Err(PyRuntimeError::new_err(OPTIONS_EXPIRED_ERROR)),
+        }
+        if !self.is_owner_thread() {
+            return Err(PyRuntimeError::new_err(OPTIONS_THREAD_ERROR));
+        }
+        Ok(())
+    }
+
+    fn is_owner_thread(&self) -> bool {
+        thread::current().id() == self.owner
+    }
+
+    fn begin_branch(self: &Arc<Self>) -> PyResult<BranchRenderGuard> {
+        self.ensure_active()?;
+        self.state
+            .compare_exchange(
+                OPTIONS_ACTIVE,
+                OPTIONS_RENDERING_BRANCH,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            )
+            .map_err(|state| match state {
+                OPTIONS_RENDERING_BRANCH => PyRuntimeError::new_err(OPTIONS_REENTRANT_ERROR),
+                _ => PyRuntimeError::new_err(OPTIONS_EXPIRED_ERROR),
+            })?;
+        Ok(BranchRenderGuard {
+            lifetime: Arc::clone(self),
+        })
+    }
+}
+
+struct HelperOptionsGuard {
+    lifetime: Arc<HelperOptionsLifetime>,
+}
+
+impl Drop for HelperOptionsGuard {
+    fn drop(&mut self) {
+        self.lifetime
+            .state
+            .store(OPTIONS_EXPIRED, Ordering::Release);
+    }
+}
+
+struct BranchRenderGuard {
+    lifetime: Arc<HelperOptionsLifetime>,
+}
+
+impl Drop for BranchRenderGuard {
+    fn drop(&mut self) {
+        let _ = self.lifetime.state.compare_exchange(
+            OPTIONS_RENDERING_BRANCH,
+            OPTIONS_ACTIVE,
+            Ordering::AcqRel,
+            Ordering::Acquire,
+        );
+    }
+}
+
 /// Handlebars helper options Python wrapper.
 ///
-/// WARNING: only intended to be used within the Python::with_gil(...) scope and not stored across threads.
-#[pyclass(unsendable)]
+/// The addresses are valid only on the callback's owning thread while its
+/// lifetime is active. State and ownership checks therefore happen before
+/// every unsafe dereference, and branch rendering holds the lifetime in a
+/// distinct state until its guard drops.
+#[pyclass]
 pub struct HandlebarrzHelperOptions {
-    helper_ptr: *const Helper<'static>,
-    reg_ptr: *const Handlebars<'static>,
-    ctx_ptr: *const Context,
-    rc_ptr: *mut RenderContext<'static, 'static>,
+    helper_ptr: usize,
+    reg_ptr: usize,
+    ctx_ptr: usize,
+    rc_ptr: usize,
+    lifetime: Arc<HelperOptionsLifetime>,
+}
+
+impl HandlebarrzHelperOptions {
+    fn ensure_active(&self) -> PyResult<()> {
+        self.lifetime.ensure_active()?;
+        if !self.has_valid_addresses() {
+            return Err(PyRuntimeError::new_err(OPTIONS_EXPIRED_ERROR));
+        }
+        Ok(())
+    }
+
+    fn has_valid_addresses(&self) -> bool {
+        self.helper_ptr != 0 && self.reg_ptr != 0 && self.ctx_ptr != 0 && self.rc_ptr != 0
+    }
 }
 
 #[pymethods]
 impl HandlebarrzHelperOptions {
-    #[new]
-    fn new() -> Self {
-        Self {
-            helper_ptr: std::ptr::null(),
-            reg_ptr: std::ptr::null(),
-            ctx_ptr: std::ptr::null(),
-            rc_ptr: std::ptr::null_mut(),
-        }
-    }
-
     /// Returns JSON representation of a context.
     #[pyo3(text_signature = "($self)")]
     pub fn context_json(&self) -> PyResult<String> {
-        let ctx = unsafe { &*self.ctx_ptr };
+        self.ensure_active()?;
+        // SAFETY: ensure_active verifies callback state, owner thread, and all
+        // addresses before the callback-owned context is dereferenced.
+        let ctx = unsafe { &*(self.ctx_ptr as *const Context) };
         serde_json::to_string(ctx.data())
             .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
     }
@@ -786,7 +911,9 @@ impl HandlebarrzHelperOptions {
     /// Returns hash JSON value for a given key (resolved within the context).
     #[pyo3(text_signature = "($self, key)")]
     pub fn hash_value_json(&self, key: &str) -> PyResult<String> {
-        let helper = unsafe { &*self.helper_ptr };
+        self.ensure_active()?;
+        // SAFETY: ensure_active establishes the callback lifetime and owner.
+        let helper = unsafe { &*(self.helper_ptr as *const Helper<'static>) };
         if let Some(path_and_json) = helper.hash_get(key) {
             let value = path_and_json.value();
             serde_json::to_string(value)
@@ -799,32 +926,35 @@ impl HandlebarrzHelperOptions {
     // Renders into a string and returns the default inner template (if the helper is a block helper).
     #[pyo3(text_signature = "($self)")]
     pub fn template(&self) -> PyResult<String> {
-        let helper = unsafe { &*self.helper_ptr };
-        let reg = unsafe { &*self.reg_ptr };
-        let ctx = unsafe { &*self.ctx_ptr };
-        let rc = unsafe { &mut *self.rc_ptr };
-
-        if let Some(template) = helper.template() {
-            template
-                .renders(reg, ctx, rc)
-                .map_err(|e| PyValueError::new_err(e.to_string()))
-        } else {
-            Ok(String::new())
-        }
+        self.render_branch(false)
     }
 
     // Renders into a string and returns the template of else branch (if any).
     #[pyo3(text_signature = "($self)")]
     pub fn inverse(&self) -> PyResult<String> {
-        let helper = unsafe { &*self.helper_ptr };
-        let reg = unsafe { &*self.reg_ptr };
-        let ctx = unsafe { &*self.ctx_ptr };
-        let rc = unsafe { &mut *self.rc_ptr };
+        self.render_branch(true)
+    }
+}
 
-        if let Some(template) = helper.inverse() {
+impl HandlebarrzHelperOptions {
+    fn render_branch(&self, inverse: bool) -> PyResult<String> {
+        self.ensure_active()?;
+        let _branch_guard = self.lifetime.begin_branch()?;
+        // SAFETY: the branch guard reserves the callback-owned render context
+        // on its owner thread and keeps that state until rendering finishes.
+        let helper = unsafe { &*(self.helper_ptr as *const Helper<'static>) };
+        let reg = unsafe { &*(self.reg_ptr as *const Handlebars<'static>) };
+        let ctx = unsafe { &*(self.ctx_ptr as *const Context) };
+        let rc = unsafe { &mut *(self.rc_ptr as *mut RenderContext<'static, 'static>) };
+        let template = if inverse {
+            helper.inverse()
+        } else {
+            helper.template()
+        };
+        if let Some(template) = template {
             template
                 .renders(reg, ctx, rc)
-                .map_err(|e| PyValueError::new_err(e.to_string()))
+                .map_err(python_error_from_render)
         } else {
             Ok(String::new())
         }
@@ -857,20 +987,26 @@ impl HelperDef for PyHelperDef {
             };
 
             // Create template helper context.
+            let lifetime = Arc::new(HelperOptionsLifetime::new());
             let py_options = HandlebarrzHelperOptions {
-                helper_ptr: h as *const _ as *const _,
-                reg_ptr: reg as *const _ as *const _,
-                ctx_ptr: ctx as *const _,
-                rc_ptr: rc as *mut _ as *mut _,
+                helper_ptr: h as *const _ as usize,
+                reg_ptr: reg as *const _ as usize,
+                ctx_ptr: ctx as *const _ as usize,
+                rc_ptr: rc as *mut _ as usize,
+                lifetime: Arc::clone(&lifetime),
             };
             let py_options_obj = Py::new(py, py_options).map_err(|e| {
                 RenderError::from(RenderErrorReason::Other(format!(
                     "Failed to create HandlebarrzHelperOptions: {e}"
                 )))
             })?;
+            let options_guard = HelperOptionsGuard { lifetime };
 
             // Call Python function.
-            let result = self.func.call1(py, (params_json, py_options_obj));
+            let result = self
+                .func
+                .call1(py, (params_json, py_options_obj.clone_ref(py)));
+            drop(options_guard);
 
             match result {
                 Ok(result) => {
@@ -885,8 +1021,19 @@ impl HelperDef for PyHelperDef {
                     Ok(())
                 }
                 Err(e) => {
-                    let desc = format!("Helper execution failed: {e}");
-                    Err(RenderError::from(RenderErrorReason::Other(desc)))
+                    // Ctrl-C, sys.exit, and other non-Exception BaseExceptions
+                    // are the interpreter asking to stop, not a template
+                    // problem. Ordinary Exception stays a render ValueError so
+                    // callers catching that still see helper failures.
+                    if e.is_instance_of::<PyException>(py) {
+                        let desc = format!("Helper execution failed: {e}");
+                        Err(RenderError::from(RenderErrorReason::Other(desc)))
+                    } else {
+                        stash_helper_interrupt(e);
+                        Err(RenderError::from(RenderErrorReason::Other(
+                            "helper interrupted render".to_owned(),
+                        )))
+                    }
                 }
             }
         })
@@ -1184,7 +1331,9 @@ impl HandlebarrzTemplate {
     ///
     /// # Raises
     ///
-    /// `PyValueError` if the template cannot be rendered.
+    /// `PyValueError` if the template cannot be rendered. KeyboardInterrupt,
+    /// SystemExit, and other non-Exception BaseExceptions raised by a helper
+    /// are not converted to ValueError.
     #[pyo3(text_signature = "($self, name, data, runtime_data)")]
     fn render(&self, name: &str, data: &str, runtime_data: &str) -> PyResult<String> {
         let data: Value = serde_json::from_str(data)
@@ -1217,7 +1366,7 @@ impl HandlebarrzTemplate {
             .unwrap_or("");
         let reads_at_root = reachable_reads_at_root(entry_source, &self.template_sources);
         render_with_runtime(&self.registry, template, data, runtime_data, reads_at_root)
-            .map_err(|e| PyValueError::new_err(e.to_string()))
+            .map_err(python_error_from_render)
     }
 
     /// Renders a template string directly without registering.
@@ -1229,7 +1378,9 @@ impl HandlebarrzTemplate {
     ///
     /// # Raises
     ///
-    /// `PyValueError` if the template cannot be rendered.
+    /// `PyValueError` if the template cannot be rendered. KeyboardInterrupt,
+    /// SystemExit, and other non-Exception BaseExceptions raised by a helper
+    /// are not converted to ValueError.
     ///
     /// # Returns
     ///
@@ -1249,7 +1400,7 @@ impl HandlebarrzTemplate {
             .map_err(|e| PyValueError::new_err(format!("Failed to parse template: {e}")))?;
         let reads_at_root = reachable_reads_at_root(template_string, &self.template_sources);
         render_with_runtime(&self.registry, &template, data, runtime_data, reads_at_root)
-            .map_err(|e| PyValueError::new_err(e.to_string()))
+            .map_err(python_error_from_render)
     }
 
     /// Registers the extra helper functions.
@@ -1272,5 +1423,144 @@ impl HandlebarrzTemplate {
         self.registry
             .register_helper("json", Box::new(helpers::JsonHelper {}));
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::panic::{catch_unwind, AssertUnwindSafe};
+
+    #[test]
+    fn callback_guard_expires_its_lifetime() {
+        let lifetime = Arc::new(HelperOptionsLifetime::new());
+        let guard = HelperOptionsGuard {
+            lifetime: Arc::clone(&lifetime),
+        };
+
+        assert_eq!(lifetime.state.load(Ordering::Acquire), OPTIONS_ACTIVE);
+        drop(guard);
+        assert_eq!(lifetime.state.load(Ordering::Acquire), OPTIONS_EXPIRED);
+    }
+
+    #[test]
+    fn callback_guard_expires_lifetime_during_unwind() {
+        let lifetime = Arc::new(HelperOptionsLifetime::new());
+        let unwind_lifetime = Arc::clone(&lifetime);
+
+        let result = catch_unwind(AssertUnwindSafe(move || {
+            let _guard = HelperOptionsGuard {
+                lifetime: unwind_lifetime,
+            };
+            panic!("callback failed");
+        }));
+
+        assert!(result.is_err());
+        assert_eq!(lifetime.state.load(Ordering::Acquire), OPTIONS_EXPIRED);
+    }
+
+    #[test]
+    fn branch_guard_restores_active_state() {
+        let lifetime = Arc::new(HelperOptionsLifetime::new());
+
+        let guard = lifetime.begin_branch().expect("branch should start");
+        assert_eq!(
+            lifetime.state.load(Ordering::Acquire),
+            OPTIONS_RENDERING_BRANCH
+        );
+        drop(guard);
+
+        assert_eq!(lifetime.state.load(Ordering::Acquire), OPTIONS_ACTIVE);
+    }
+
+    #[test]
+    fn branch_guard_restores_state_during_unwind() {
+        let lifetime = Arc::new(HelperOptionsLifetime::new());
+        let unwind_lifetime = Arc::clone(&lifetime);
+
+        let result = catch_unwind(AssertUnwindSafe(move || {
+            let _guard = unwind_lifetime.begin_branch().expect("branch should start");
+            panic!("render failed");
+        }));
+
+        assert!(result.is_err());
+        assert_eq!(lifetime.state.load(Ordering::Acquire), OPTIONS_ACTIVE);
+    }
+
+    #[test]
+    fn branch_drop_never_reactivates_expired_lifetime() {
+        let lifetime = Arc::new(HelperOptionsLifetime::new());
+        let branch_guard = lifetime.begin_branch().expect("branch should start");
+        let callback_guard = HelperOptionsGuard {
+            lifetime: Arc::clone(&lifetime),
+        };
+
+        drop(callback_guard);
+        drop(branch_guard);
+
+        assert_eq!(lifetime.state.load(Ordering::Acquire), OPTIONS_EXPIRED);
+    }
+
+    #[test]
+    fn lifetimes_transition_independently() {
+        let first = Arc::new(HelperOptionsLifetime::new());
+        let second = Arc::new(HelperOptionsLifetime::new());
+        let first_guard = HelperOptionsGuard {
+            lifetime: Arc::clone(&first),
+        };
+        let second_guard = HelperOptionsGuard {
+            lifetime: Arc::clone(&second),
+        };
+
+        drop(first_guard);
+        assert_eq!(first.state.load(Ordering::Acquire), OPTIONS_EXPIRED);
+        assert_eq!(second.state.load(Ordering::Acquire), OPTIONS_ACTIVE);
+        drop(second_guard);
+    }
+
+    #[test]
+    fn zero_address_set_is_rejected_before_dereference() {
+        let options = HandlebarrzHelperOptions {
+            helper_ptr: 0,
+            reg_ptr: 1,
+            ctx_ptr: 1,
+            rc_ptr: 1,
+            lifetime: Arc::new(HelperOptionsLifetime::new()),
+        };
+
+        assert!(!options.has_valid_addresses());
+    }
+
+    #[test]
+    fn callback_owner_is_thread_specific() {
+        let lifetime = Arc::new(HelperOptionsLifetime::new());
+        assert!(lifetime.is_owner_thread());
+
+        let foreign = thread::spawn(move || lifetime.is_owner_thread())
+            .join()
+            .expect("thread should finish");
+
+        assert!(!foreign);
+    }
+
+    #[test]
+    fn final_foreign_thread_drop_releases_pyclass_lifetime() {
+        let lifetime = Arc::new(HelperOptionsLifetime::new());
+        let weak_lifetime = Arc::downgrade(&lifetime);
+        let options = HandlebarrzHelperOptions {
+            helper_ptr: 1,
+            reg_ptr: 1,
+            ctx_ptr: 1,
+            rc_ptr: 1,
+            lifetime: Arc::clone(&lifetime),
+        };
+        drop(lifetime);
+        assert_eq!(weak_lifetime.strong_count(), 1);
+
+        thread::spawn(move || drop(options))
+            .join()
+            .expect("foreign-thread drop should finish");
+
+        assert!(weak_lifetime.upgrade().is_none());
     }
 }

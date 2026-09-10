@@ -105,21 +105,24 @@ template.register_template(
 ### Custom Helpers
 
 ```python
-from handlebarrz import Template
+from handlebarrz import HelperOptions, Template
 
 template = Template()
 
 
 # Register a custom helper
-def uppercase(value):
-    return str(value).upper()
+def format_name(params: list[object], options: HelperOptions) -> str:
+    name = str(params[0]) if params else ''
+    return name.upper() if options.hash_value('uppercase') else name
 
 
-template.register_helper('uppercase', uppercase)
-template.register_template('custom', '{{uppercase name}}')
+template.register_helper('format', format_name)
+template.register_template('custom', '{{format name uppercase=true}}')
 print(template.render('custom', {'name': 'alice'}))
 # Output: ALICE
 ```
+
+`HelperOptions` is callback-scoped; do not retain it for later use or access it from background work.
 
 ### Partials
 
@@ -157,8 +160,8 @@ print(template.render('raw', {'content': '<b>bold</b>'}))
 |--------|-------------|
 | `register_template(name, source)` | Register a template with a name |
 | `render(name, context)` | Render a registered template with context |
-| `render_template_string(source, context)` | Render a template string directly |
-| `register_helper(name, func)` | Register a custom helper function |
+| `render_template(source, context)` | Render a template string directly |
+| `register_helper(name, func)` | Register a custom helper accepting `(params, options)` |
 | `register_partial(name, source)` | Register a partial template |
 | `unregister_template(name)` | Remove a registered template |
 | `set_strict_mode(enabled)` | Enable/disable strict mode |
