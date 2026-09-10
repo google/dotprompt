@@ -114,8 +114,6 @@ def _serialize_json(value: Any, label: str) -> str:
 
 
 def _serialize_runtime_data(value: dict[str, Any]) -> str:
-    if 'root' in value:
-        raise ValueError("runtime data key 'root' is reserved")
     return _serialize_json(value, 'runtime data')
 
 
