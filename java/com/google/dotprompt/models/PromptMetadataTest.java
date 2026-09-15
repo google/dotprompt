@@ -528,10 +528,8 @@ public class PromptMetadataTest {
         Map.of("field1", "value1", "field2", Map.of("nested", "value2"));
     Map<String, Object> inputConfig =
         Map.of("default", inputDefault, "schema", Map.of("type", "object"));
-    Map<String, Object> outputConfig =
-        Map.of("format", "json", "schema", Map.of("type", "array"));
-    Map<String, Object> modelConfig =
-        Map.of("temperature", 0.7, "maxTokens", 1000, "topP", 0.9);
+    Map<String, Object> outputConfig = Map.of("format", "json", "schema", Map.of("type", "array"));
+    Map<String, Object> modelConfig = Map.of("temperature", 0.7, "maxTokens", 1000, "topP", 0.9);
     Map<String, Object> extMap = Map.of("vendor.ext", Map.of("key", "value"));
 
     Map<String, Object> config =
@@ -562,9 +560,12 @@ public class PromptMetadataTest {
   public void fromConfig_multipleErrors_reportsFirstError() {
     Map<String, Object> config =
         Map.of(
-            "name", 123, // Wrong type
-            "variant", List.of("v1"), // Wrong type
-            "model", true // Wrong type
+            "name",
+            123, // Wrong type
+            "variant",
+            List.of("v1"), // Wrong type
+            "model",
+            true // Wrong type
             );
 
     try {
@@ -578,13 +579,7 @@ public class PromptMetadataTest {
 
   @Test
   public void fromConfig_allowsEmptyStrings() {
-    Map<String, Object> config =
-        Map.of(
-            "name", "",
-            "description",
-            "",
-            "model",
-            "");
+    Map<String, Object> config = Map.of("name", "", "description", "", "model", "");
 
     PromptMetadata result = PromptMetadata.fromConfig(config);
 
