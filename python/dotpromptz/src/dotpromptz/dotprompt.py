@@ -74,6 +74,12 @@ from handlebarrz import Context, EscapeFunction, Handlebars, HelperFn, RuntimeOp
 _PARTIAL_PATTERN = re.compile(r'{{\s*>\s*([a-zA-Z0-9_.-]+)\s*}}')
 
 
+def _present_model(model: str | None) -> str | None:
+    # The name is what they asked to run. An empty string means this
+    # layer skipped it, not a model named "".
+    return model or None
+
+
 def _merged_metadata_dict(
     current: PromptMetadata[ModelConfigT],
     merge: PromptMetadata[ModelConfigT],
@@ -92,8 +98,8 @@ def _merged_metadata_dict(
     original_input = current_dict.get('input')
     new_input = merge_dict.get('input')
 
-    if merge_dict.get('model') == '':
-        merge_dict.pop('model')
+    if _present_model(merge_dict.get('model')) is None:
+        merge_dict.pop('model', None)
 
     current_dict.update(merge_dict)
 
@@ -365,8 +371,10 @@ class Dotprompt:
         """
         prompt = self.parse(source) if isinstance(source, str) else source
 
-        default_model = prompt.model or self._default_model or None
-        model = additional_metadata.model if additional_metadata and additional_metadata.model else default_model
+        default_model = _present_model(prompt.model) or _present_model(self._default_model)
+        model = (
+            _present_model(additional_metadata.model) if additional_metadata is not None else None
+        ) or default_model
 
         config: ModelConfigT | None = None
         if model is not None and self._model_configs.get(model) is not None:
