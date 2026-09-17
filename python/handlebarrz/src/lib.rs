@@ -23,6 +23,7 @@ use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 use serde_json::Value;
 use std::collections::HashMap;
+use std::fmt::Write as _;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -86,22 +87,25 @@ impl HelperDef for DirectSectionHelper {
 }
 
 fn encode_runtime_section_path(path: &str) -> String {
-    path.as_bytes()
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect()
+    let mut encoded = String::with_capacity(path.len() * 2);
+    for byte in path.as_bytes() {
+        // Writing to a String is infallible.
+        let _ = write!(encoded, "{byte:02x}");
+    }
+    encoded
 }
 
 fn decode_runtime_section_path(encoded: &str) -> Result<String, RenderError> {
-    let bytes = encoded.as_bytes();
-    if bytes.len() % 2 != 0 {
-        return Err(RenderErrorReason::Other("invalid runtime section path".to_owned()).into());
-    }
-    let decoded = (0..bytes.len())
-        .step_by(2)
-        .map(|index| {
-            std::str::from_utf8(&bytes[index..index + 2])
+    // Bazel pins Rust 1.86, so `as_chunks` and `is_multiple_of` are unavailable.
+    // `chunks` plus an explicit pair check builds on every toolchain the repo
+    // uses; a trailing odd byte yields a one-char chunk and fails the filter.
+    let decoded = encoded
+        .as_bytes()
+        .chunks(2)
+        .map(|pair| {
+            std::str::from_utf8(pair)
                 .ok()
+                .filter(|pair| pair.len() == 2)
                 .and_then(|pair| u8::from_str_radix(pair, 16).ok())
         })
         .collect::<Option<Vec<_>>>()
