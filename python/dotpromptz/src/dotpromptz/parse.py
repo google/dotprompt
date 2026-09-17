@@ -387,6 +387,8 @@ def parse_document(source: str, *, source_name: str | None = None) -> ParsedProm
     except yaml.YAMLError as error:
         mark = getattr(error, 'problem_mark', None)
         reason = getattr(error, 'problem', None) or 'invalid YAML'
+        # Keep only the reasons we wrote. Anything else becomes "invalid YAML"
+        # so the error can't echo a snippet of the broken source.
         allowed_reasons = {
             'aliases are not allowed',
             'anchors are not allowed',
