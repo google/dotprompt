@@ -237,7 +237,6 @@ def test_unsafe_zip_members_are_rejected(tmp_path: Path, member: str) -> None:
         release_verifier.verify_wheel(wheel, target, VERSION)
 
 
-
 def test_duplicate_zip_member_is_rejected(tmp_path: Path) -> None:
     target = TARGETS[0]
     wheel = tmp_path / _wheel_name(target)

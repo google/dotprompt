@@ -25,8 +25,6 @@ except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore[no-redef]
 
 
-
-
 REPOSITORY_ROOT = Path(__file__).parents[3]
 PYTHON_ROOT = REPOSITORY_ROOT / 'python'
 WORKFLOW_PATH = REPOSITORY_ROOT / '.github/workflows/publish_python_handlebarrz_package.yml'

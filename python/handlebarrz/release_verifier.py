@@ -135,7 +135,6 @@ def verify_release_versions(
     except ModuleNotFoundError:
         import tomli as tomllib  # type: ignore[no-redef]
 
-
     tag_version = release_version(tag)
     with cargo_path.open('rb') as cargo_file:
         cargo_version = Version(tomllib.load(cargo_file)['package']['version'])
