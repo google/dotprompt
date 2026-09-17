@@ -33,6 +33,8 @@ const RUNTIME_PATH_HELPER: &str = "__handlebarrz_runtime_path";
 const RUNTIME_SECTION_HELPER_PREFIX: &str = "__handlebarrz_runtime_section_";
 const RUNTIME_INVERTED_SECTION_HELPER_PREFIX: &str = "__handlebarrz_runtime_inverted_section_";
 const RUNTIME_ROOT_SENTINEL: &str = "__handlebarrz_runtime_root";
+const COMMENT_OPEN: &str = "{{!--";
+const COMMENT_CLOSE: &str = "--}}";
 
 struct RuntimePathHelper;
 struct DirectSectionHelper;
@@ -401,31 +403,35 @@ fn lower_runtime_section(
     }
 }
 
-fn find_tag_end(source: &str, mut index: usize, close: &str) -> Option<usize> {
-    let bytes = source.as_bytes();
-    let mut quote = None;
-    while index < source.len() {
-        let ch = bytes[index] as char;
+/// Finds the byte offset of `close`, ignoring any occurrence inside a quoted
+/// string literal.
+///
+/// Walks characters rather than bytes. A byte walk casts UTF-8 continuation
+/// bytes to meaningless chars and, worse, slices at offsets that can land
+/// inside a multibyte sequence, which panics on templates as ordinary as
+/// `{{año}}` or `{{! 注释 }}`.
+fn find_tag_end(source: &str, index: usize, close: &str) -> Option<usize> {
+    let mut quote: Option<char> = None;
+    let mut escaped = false;
+    for (offset, ch) in source[index..].char_indices() {
+        let absolute = index + offset;
         if let Some(current_quote) = quote {
-            if ch == '\\' {
-                index += 2;
-                continue;
-            }
-            if ch == current_quote {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == current_quote {
                 quote = None;
             }
-            index += 1;
             continue;
         }
         if ch == '"' || ch == '\'' {
             quote = Some(ch);
-            index += 1;
             continue;
         }
-        if source[index..].starts_with(close) {
-            return Some(index);
+        if source[absolute..].starts_with(close) {
+            return Some(absolute);
         }
-        index += 1;
     }
     None
 }
@@ -458,12 +464,12 @@ fn transform_runtime_paths(source: &str) -> String {
             return output;
         }
 
-        if source[start..].starts_with("{{!--") {
-            let Some(close_offset) = source[start + 6..].find("--}}") else {
+        if let Some(body) = source[start..].strip_prefix(COMMENT_OPEN) {
+            let Some(close_offset) = body.find(COMMENT_CLOSE) else {
                 output.push_str(&source[start..]);
                 return output;
             };
-            let end = start + 6 + close_offset + 4;
+            let end = start + COMMENT_OPEN.len() + close_offset + COMMENT_CLOSE.len();
             output.push_str(&source[start..end]);
             cursor = end;
             continue;
@@ -590,11 +596,11 @@ fn visit_live_expressions(source: &str, mut visit: impl FnMut(&str)) {
             }
             return;
         }
-        if source[start..].starts_with("{{!--") {
-            let Some(close_offset) = source[start + 6..].find("--}}") else {
+        if let Some(body) = source[start..].strip_prefix(COMMENT_OPEN) {
+            let Some(close_offset) = body.find(COMMENT_CLOSE) else {
                 return;
             };
-            cursor = start + 6 + close_offset + 4;
+            cursor = start + COMMENT_OPEN.len() + close_offset + COMMENT_CLOSE.len();
             continue;
         }
         let triple = source[start..].starts_with("{{{");

@@ -688,3 +688,52 @@ def test_handwritten_internal_helper_names_raise(source: str, message: str) -> N
 
     with pytest.raises(ValueError, match=message):
         template.render_template(source, {}, {'data': {}})
+
+
+@pytest.mark.parametrize(
+    'source,context,expected',
+    [
+        ('{{año}}', {'año': '2026'}, '2026'),
+        ('{{名前}}', {'名前': 'Ada'}, 'Ada'),
+        ('{{{año}}}', {'año': '<b>'}, '<b>'),
+        ('{{#if año}}sí{{/if}}', {'año': True}, 'sí'),
+        ('{{#each días}}{{this}} {{/each}}', {'días': ['lunes', 'martes']}, 'lunes martes '),
+        ('A{{! 注释 }}B', {}, 'AB'),
+        ('A{{!--注释--}}B', {}, 'AB'),
+        ('A{{!-- 注释 --}}B', {}, 'AB'),
+        ('{{{{raw}}}}{{año}}{{{{/raw}}}}', {}, '{{año}}'),
+        ('{{ echo "café" }}', {}, 'CAFÉ'),
+    ],
+)
+def test_multibyte_sources_render_instead_of_panicking(source: str, context: dict[str, object], expected: str) -> None:
+    """Scanning a tag by byte used to slice mid-character and abort the interpreter."""
+    template = Template()
+    template.register_helper('echo', lambda params, options: str(params[0]).upper())
+
+    assert template.render_template(source, context) == expected
+
+
+@pytest.mark.parametrize(
+    'source,expected',
+    [
+        ('{{@año}}', 'oro'),
+        ('{{#@banderas.beta}}sí{{/@banderas.beta}}', 'sí'),
+        ('{{echo "@raíz" @año}}', '@raíz|oro'),
+    ],
+)
+def test_multibyte_runtime_paths_are_rewritten(source: str, expected: str) -> None:
+    """The rewrite itself has to survive multibyte paths, not just pass them through."""
+    template = Template()
+    template.register_helper('echo', lambda params, options: '|'.join(str(p) for p in params))
+
+    result = template.render_template(source, {}, {'data': {'año': 'oro', 'banderas': {'beta': True}}})
+
+    assert result == expected
+
+
+def test_multibyte_partial_names_survive_the_root_scan() -> None:
+    """Partial discovery walks the same scanner, so it has to be boundary safe too."""
+    template = Template()
+    template.register_partial('saludo', '¡Hola {{nombre}}!')
+
+    assert template.render_template('{{> saludo}}', {'nombre': 'Ada'}) == '¡Hola Ada!'
