@@ -74,10 +74,15 @@ from handlebarrz import Context, EscapeFunction, Handlebars, HelperFn, RuntimeOp
 _PARTIAL_PATTERN = re.compile(r'{{\s*>\s*([a-zA-Z0-9_.-]+)\s*}}')
 
 
-def _present_model(model: str | None) -> str | None:
-    # The name is what they asked to run. An empty string means this
-    # layer skipped it, not a model named "".
-    return model or None
+def _pick_model(*models: str | None) -> str:
+    """Return the first real model name, or '' if no layer named one.
+
+    None and '' are the same skip. Callers pass layers most-specific first.
+    """
+    for model in models:
+        if model:
+            return model
+    return ''
 
 
 def _merged_metadata_dict(
@@ -86,7 +91,7 @@ def _merged_metadata_dict(
 ) -> dict[str, Any]:
     """Overlay one metadata layer onto another.
 
-    A blank model is treated as absent so it doesn't wipe an earlier choice.
+    Later model wins when it is a real name; a blank string leaves the earlier one.
     Config keys and input.default keys overlay; later layers win those keys.
     """
     # Convert Pydantic models to raw dicts by alias first. Skip None values.
@@ -98,10 +103,15 @@ def _merged_metadata_dict(
     original_input = current_dict.get('input')
     new_input = merge_dict.get('input')
 
-    if _present_model(merge_dict.get('model')) is None:
-        merge_dict.pop('model', None)
+    model = _pick_model(merge_dict.get('model'), current_dict.get('model'))
+    merge_dict.pop('model', None)
 
     current_dict.update(merge_dict)
+
+    if model:
+        current_dict['model'] = model
+    else:
+        current_dict.pop('model', None)
 
     current_dict['config'] = {**original_config, **new_config}
     if original_input is not None and new_input is not None:
@@ -371,21 +381,22 @@ class Dotprompt:
         """
         prompt = self.parse(source) if isinstance(source, str) else source
 
-        default_model = _present_model(prompt.model) or _present_model(self._default_model)
-        model = (
-            _present_model(additional_metadata.model) if additional_metadata is not None else None
-        ) or default_model
+        model = _pick_model(
+            additional_metadata.model if additional_metadata is not None else None,
+            prompt.model,
+            self._default_model,
+        )
 
         config: ModelConfigT | None = None
-        if model is not None and self._model_configs.get(model) is not None:
+        if model and self._model_configs.get(model) is not None:
             config = self._model_configs.get(model)
 
         return await self._resolve_metadata(
             PromptMetadata[ModelConfigT](
-                model=model,
+                model=model or None,
                 config=config,
             )
-            if model is not None or config is not None
+            if model or config is not None
             else PromptMetadata[ModelConfigT](),
             prompt,
             additional_metadata,
