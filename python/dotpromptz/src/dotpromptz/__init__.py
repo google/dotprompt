@@ -156,4 +156,3 @@ def package_name() -> str:
 __all__ = [
     Dotprompt.__name__,
 ]
-

@@ -854,9 +854,13 @@ def test_parse_declared_frontmatter_after_supported_preamble(
     preamble: str,
 ) -> None:
     """Supported preambles and newline styles produce the same parsed prompt."""
-    source = preamble.format(nl=newline) + newline.join(
-        ['---', 'model: gemini-test', 'custom.field: kept', '---', 'Hello']
-    )
+    source = preamble.format(nl=newline) + newline.join([
+        '---',
+        'model: gemini-test',
+        'custom.field: kept',
+        '---',
+        'Hello',
+    ])
 
     parsed = parse_document(source)
 
