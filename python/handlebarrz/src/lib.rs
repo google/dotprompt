@@ -31,6 +31,9 @@ use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::Arc;
 use std::thread::{self, ThreadId};
 
+// A helper's KeyboardInterrupt is parked here until this render returns it.
+// Helper and render share this slot on one thread; a different thread
+// wouldn't see it, and a later render on this thread must not inherit it.
 thread_local! {
     static PENDING_HELPER_INTERRUPT: RefCell<Option<PyErr>> = const { RefCell::new(None) };
 }
