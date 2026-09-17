@@ -75,14 +75,26 @@ _PARTIAL_PATTERN = re.compile(r'{{\s*>\s*([a-zA-Z0-9_.-]+)\s*}}')
 
 
 def _pick_model(*models: str | None) -> str | None:
-    """Return the first real model name, or None if no layer named one.
+    """Return the first layer that named a model, or None if none did.
 
-    None and '' are the same skip. Callers pass layers most-specific first.
+    None and '' are the same skip: there is no model named ''. Callers pass
+    layers most-specific first.
     """
     for model in models:
         if model:
             return model
     return None
+
+
+def _drop_blank_model(dumped: dict[str, Any]) -> dict[str, Any]:
+    """Drop a blank model so the overlay never sees it as a value.
+
+    Normalizing here lets model merge under the same rule as every other
+    field: the later layer wins the key it supplied.
+    """
+    if _pick_model(dumped.get('model')) is None:
+        dumped.pop('model', None)
+    return dumped
 
 
 def _merged_metadata_dict(
@@ -91,24 +103,21 @@ def _merged_metadata_dict(
 ) -> dict[str, Any]:
     """Overlay one metadata layer onto another.
 
-    Later model wins when it is a real name; a blank string leaves the earlier one.
-    Config keys and input.default keys overlay; later layers win those keys.
+    One rule: the later layer wins whatever it supplied. Most fields overlay
+    whole, so a later value replaces an earlier one. Config and input.default
+    overlay per key, so the two layers combine and only shared keys are taken
+    by the later one. Nested values replace; they do not deep-merge.
     """
     # Convert Pydantic models to raw dicts by alias first. Skip None values.
-    merge_dict = merge.model_dump(exclude_none=True, by_alias=True)
-    current_dict = current.model_dump(exclude_none=True, by_alias=True)
+    merge_dict = _drop_blank_model(merge.model_dump(exclude_none=True, by_alias=True))
+    current_dict = _drop_blank_model(current.model_dump(exclude_none=True, by_alias=True))
 
     original_config = current_dict.get('config', {})
     new_config = merge_dict.get('config', {})
     original_input = current_dict.get('input')
     new_input = merge_dict.get('input')
 
-    model = _pick_model(merge_dict.pop('model', None), current_dict.pop('model', None))
-
     current_dict.update(merge_dict)
-
-    if model is not None:
-        current_dict['model'] = model
 
     current_dict['config'] = {**original_config, **new_config}
     if original_input is not None and new_input is not None:
