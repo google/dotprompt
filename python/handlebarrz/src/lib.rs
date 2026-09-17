@@ -494,8 +494,8 @@ fn transform_runtime_paths(source: &str) -> String {
     output
 }
 
-// Cheap scan of expressions that will actually run — not a full Handlebars
-// parse. Comments, raw blocks, and unused registered partials don't count as
+// Deliberate lightweight static pass — not a full Handlebars parse.
+// Comments, raw blocks, and unused registered partials don't count as
 // reading @root, so an ambient context["root"] shouldn't fail those prompts.
 fn expression_reads_at_root(expression: &str) -> bool {
     let chars: Vec<char> = expression.chars().collect();
