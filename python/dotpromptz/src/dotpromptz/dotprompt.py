@@ -74,15 +74,15 @@ from handlebarrz import Context, EscapeFunction, Handlebars, HelperFn, RuntimeOp
 _PARTIAL_PATTERN = re.compile(r'{{\s*>\s*([a-zA-Z0-9_.-]+)\s*}}')
 
 
-def _pick_model(*models: str | None) -> str:
-    """Return the first real model name, or '' if no layer named one.
+def _pick_model(*models: str | None) -> str | None:
+    """Return the first real model name, or None if no layer named one.
 
     None and '' are the same skip. Callers pass layers most-specific first.
     """
     for model in models:
         if model:
             return model
-    return ''
+    return None
 
 
 def _merged_metadata_dict(
@@ -103,15 +103,12 @@ def _merged_metadata_dict(
     original_input = current_dict.get('input')
     new_input = merge_dict.get('input')
 
-    model = _pick_model(merge_dict.get('model'), current_dict.get('model'))
-    merge_dict.pop('model', None)
+    model = _pick_model(merge_dict.pop('model', None), current_dict.pop('model', None))
 
     current_dict.update(merge_dict)
 
-    if model:
+    if model is not None:
         current_dict['model'] = model
-    else:
-        current_dict.pop('model', None)
 
     current_dict['config'] = {**original_config, **new_config}
     if original_input is not None and new_input is not None:
@@ -388,15 +385,15 @@ class Dotprompt:
         )
 
         config: ModelConfigT | None = None
-        if model and self._model_configs.get(model) is not None:
+        if model is not None and self._model_configs.get(model) is not None:
             config = self._model_configs.get(model)
 
         return await self._resolve_metadata(
             PromptMetadata[ModelConfigT](
-                model=model or None,
+                model=model,
                 config=config,
             )
-            if model or config is not None
+            if model is not None or config is not None
             else PromptMetadata[ModelConfigT](),
             prompt,
             additional_metadata,

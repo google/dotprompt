@@ -29,7 +29,7 @@ def test_pick_model_skips_blank_and_none() -> None:
     assert _pick_model(None, '', 'gemini-default') == 'gemini-default'
 
 
-def test_pick_model_empty_when_nothing_named() -> None:
-    """No layer named a model: the leftover is ''."""
-    assert _pick_model() == ''
-    assert _pick_model(None, '') == ''
+def test_pick_model_none_when_nothing_named() -> None:
+    """No layer named a model, so there is nothing to carry forward."""
+    assert _pick_model() is None
+    assert _pick_model(None, '') is None
