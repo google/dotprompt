@@ -253,6 +253,7 @@ def parse_document(source: str) -> ParsedPrompt[T]:
                 description=raw.get('description'),
                 variant=raw.get('variant'),
                 version=raw.get('version'),
+                model=raw.get('model'),
                 input=raw.get('input'),
                 output=raw.get('output'),
                 tool_defs=raw.get('toolDefs'),

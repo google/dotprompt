@@ -40,9 +40,11 @@ import pytest
 
 from dotpromptz.dotprompt import Dotprompt, _identify_partials
 from dotpromptz.typing import (
+    DataArgument,
     ModelConfigT,
     ParsedPrompt,
     PromptMetadata,
+    TextPart,
     ToolDefinition,
 )
 from handlebarrz import HelperFn, HelperOptions
@@ -150,6 +152,33 @@ def test_define_tool(mock_handlebars: Mock) -> None:
 
 
 class TestCompileRender(IsolatedAsyncioTestCase):
+    async def test_render_preserves_model_and_applies_prompt_input_defaults(self) -> None:
+        """Prompt model is kept; file input defaults fill {{name}}."""
+        source = """---
+model: gemini-2.5-flash
+input:
+  default:
+    name: World
+---
+Hello, {{name}}!"""
+
+        result = await Dotprompt().render(source, DataArgument(input={}))
+
+        assert result.model == 'gemini-2.5-flash'
+        assert result.messages[0].content == [TextPart(text='Hello, World!')]
+
+    async def test_runtime_input_fills_template_variables(self) -> None:
+        source = """---
+input:
+  default:
+    name: World
+---
+Hello, {{name}}!"""
+
+        result = await Dotprompt().render(source, DataArgument(input={'name': 'Ada'}))
+
+        assert result.messages[0].content == [TextPart(text='Hello, Ada!')]
+
     async def test_compile_render_mock(self) -> None:
         """Test that handlebarrz compile produces a working render function.
 
@@ -529,7 +558,7 @@ def test_render_metadata() -> None:
         result = asyncio.run(dotprompt.render_metadata(parsed_source))
 
         resolve_metadata_mock.assert_called_with(
-            PromptMetadata(),
+            PromptMetadata(model='gemini-2.5-pro'),
             ParsedPrompt(
                 model='gemini-2.5-pro',
                 template='Template content',
@@ -582,9 +611,33 @@ def test_use_available_model_config() -> None:
 
     with patch.object(dotprompt, '_resolve_metadata', resolve_metadata_mock):
         result = asyncio.run(dotprompt.render_metadata(parsed_source))
-        resolve_metadata_mock.assert_called_with(PromptMetadata(config={'temperature': 0.7}), parsed_source, None)
+        resolve_metadata_mock.assert_called_with(
+            PromptMetadata(model='gemini-2.5-pro', config={'temperature': 0.7}),
+            parsed_source,
+            None,
+        )
 
         assert result.config == {'temperature': 0.7}
+
+
+def test_metadata_override_without_model_keeps_model_config() -> None:
+    """Metadata overrides do not disable defaults for the selected model."""
+    dotprompt = Dotprompt(model_configs={'gemini-2.5-pro': {'temperature': 0.7}})
+    parsed_source: ParsedPrompt[dict[str, Any]] = ParsedPrompt(
+        template='Template content',
+        model='gemini-2.5-pro',
+    )
+
+    result = asyncio.run(
+        dotprompt.render_metadata(
+            parsed_source,
+            PromptMetadata(description='A useful prompt'),
+        )
+    )
+
+    assert result.model == 'gemini-2.5-pro'
+    assert result.description == 'A useful prompt'
+    assert result.config == {'temperature': 0.7}
 
 
 class TestResolvePartialsCycleDetection(IsolatedAsyncioTestCase):
