@@ -27,8 +27,8 @@ use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU8, Ordering};
 use std::thread::{self, ThreadId};
 
 // A helper's KeyboardInterrupt is parked here until this render returns it.
@@ -600,11 +600,7 @@ fn partial_name_from_expression(expression: &str) -> Option<String> {
         .chars()
         .take_while(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '.' | '-'))
         .collect();
-    if name.is_empty() {
-        None
-    } else {
-        Some(name)
-    }
+    if name.is_empty() { None } else { Some(name) }
 }
 
 fn visit_live_expressions(source: &str, mut visit: impl FnMut(&str)) {
