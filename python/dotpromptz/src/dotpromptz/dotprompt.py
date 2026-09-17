@@ -78,6 +78,11 @@ def _merged_metadata_dict(
     current: PromptMetadata[ModelConfigT],
     merge: PromptMetadata[ModelConfigT],
 ) -> dict[str, Any]:
+    """Overlay one metadata layer onto another.
+
+    A blank model is treated as absent so it doesn't wipe an earlier choice.
+    Config keys and input.default keys overlay; later layers win those keys.
+    """
     # Convert Pydantic models to raw dicts by alias first. Skip None values.
     merge_dict = merge.model_dump(exclude_none=True, by_alias=True)
     current_dict = current.model_dump(exclude_none=True, by_alias=True)
