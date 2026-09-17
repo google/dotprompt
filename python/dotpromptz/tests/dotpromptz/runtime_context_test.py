@@ -28,16 +28,17 @@ async def test_context_is_separate_from_same_named_prompt_default() -> None:
     source = """---
 input:
   default:
-    name: default
+    name: Ada
 ---
 {{name}}/{{@name}}"""
 
     result = await Dotprompt().render(
         source,
-        DataArgument(input={}, context={'name': 'runtime'}),
+        DataArgument(input={}, context={'name': 'admin'}),
     )
 
-    assert result.messages[0].content == [TextPart(text='/runtime')]
+    # The default fills the template key; the context keeps its own name.
+    assert result.messages[0].content == [TextPart(text='Ada/admin')]
 
 
 @pytest.mark.asyncio
@@ -45,16 +46,17 @@ async def test_input_override_and_context_collision_remain_separate() -> None:
     source = """---
 input:
   default:
-    name: default
+    name: Ada
 ---
 {{name}}/{{@name}}"""
 
     result = await Dotprompt().render(
         source,
-        DataArgument(input={'name': 'input'}, context={'name': 'runtime'}),
+        DataArgument(input={'name': 'Grace'}, context={'name': 'admin'}),
     )
 
-    assert result.messages[0].content == [TextPart(text='input/runtime')]
+    # Runtime input wins the template key; the context is still its own.
+    assert result.messages[0].content == [TextPart(text='Grace/admin')]
 
 
 @pytest.mark.asyncio
