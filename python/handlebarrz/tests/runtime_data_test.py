@@ -618,3 +618,73 @@ def test_whitespace_control_comments_and_raw_blocks_are_preserved() -> None:
     result = template.render_template(source, {}, {'data': {'profile': {'name': 'X'}, 'raw': 'changed'}})
 
     assert result == 'AXB{{@raw}}'
+
+
+@pytest.mark.parametrize(
+    'source',
+    [
+        '{{{{raw}}}}{{@tier}}',
+        '{{{{raw {{@tier}}',
+        'Signed in as {{@tier}',
+    ],
+)
+def test_unparseable_sources_raise_instead_of_rewriting(source: str) -> None:
+    """A source the rewriter cannot scan reaches Handlebars untouched and fails there."""
+    template = Template()
+
+    with pytest.raises(ValueError, match='Failed to parse template'):
+        template.render_template(source, {}, {'data': {'tier': 'gold'}})
+
+
+def test_unclosed_comment_swallows_the_rest_of_the_source() -> None:
+    """An unterminated comment is dead text, so the @root it hides never reserves the key."""
+    template = Template()
+
+    result = template.render_template('{{!-- note {{@root}}', {}, {'data': {'root': '/app'}})
+
+    assert result == ''
+
+
+def test_a_quoted_at_root_is_a_string_not_a_path() -> None:
+    """Only a real @root read reserves the key; the same characters in a literal do not."""
+    template = Template()
+    template.register_helper('echo', lambda params, options: '|'.join(str(p) for p in params))
+
+    result = template.render_template('{{echo "@root" @tier}}', {}, {'data': {'root': '/app', 'tier': 'gold'}})
+
+    assert result == '@root|gold'
+
+
+@pytest.mark.parametrize(
+    'source,expected',
+    [
+        (r'{{echo "say \"@root\"" @tier}}', 'say "@root"|gold'),
+        ('{{echo "}}" @tier}}', '}}|gold'),
+    ],
+)
+def test_string_literals_survive_the_rewrite(source: str, expected: str) -> None:
+    """Escaped quotes and closing braces stay inside the literal instead of ending the tag."""
+    template = Template()
+    template.register_helper('echo', lambda params, options: '|'.join(str(p) for p in params))
+
+    result = template.render_template(source, {}, {'data': {'root': '/app', 'tier': 'gold'}})
+
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    'source,message',
+    [
+        (
+            '{{#__handlebarrz_runtime_section_zz}}x{{/__handlebarrz_runtime_section_zz}}',
+            'invalid runtime section path',
+        ),
+        ('{{__handlebarrz_runtime_path}}', 'runtime path helper requires a path'),
+    ],
+)
+def test_handwritten_internal_helper_names_raise(source: str, message: str) -> None:
+    """The rewriter's private helpers reject calls it did not generate."""
+    template = Template()
+
+    with pytest.raises(ValueError, match=message):
+        template.render_template(source, {}, {'data': {}})
