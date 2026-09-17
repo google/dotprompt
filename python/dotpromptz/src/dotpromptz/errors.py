@@ -85,7 +85,8 @@ class FrontmatterError(DotpromptError):
         self.line = line
         self.column = column
         self.source_name = source_name
-        super().__init__(f'Malformed frontmatter at line {line}, column {column}: {reason}.')
+        origin = f' in {source_name}' if source_name else ''
+        super().__init__(f'Malformed frontmatter{origin} at line {line}, column {column}: {reason}.')
 
 
 class PartialCycleError(ValueError):

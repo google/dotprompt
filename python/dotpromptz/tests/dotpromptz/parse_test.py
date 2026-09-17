@@ -1026,24 +1026,36 @@ def test_parse_rejects_yaml_graph_and_tag_features(
 
 def test_parse_reports_only_known_reasons() -> None:
     """Every reported reason is one we wrote, and every reason we wrote is reachable."""
-    frontmatters = [
-        'config: *shared',
-        'config: &shared {temperature: 1}',
-        'model: !!str gemini',
-        '1: value',
-        'name: one\nname: two',
-        'name: [unterminated',
-        'value',
-        'name: [not, text]',
+    sources = [
+        '---\nconfig: *shared\n---\nBody',
+        '---\nconfig: &shared {temperature: 1}\n---\nBody',
+        '---\nmodel: !!str gemini\n---\nBody',
+        '---\n1: value\n---\nBody',
+        '---\nname: one\nname: two\n---\nBody',
+        '---\nname: [unterminated\n---\nBody',
+        '---\nvalue\n---\nBody',
+        '---\nname: [not, text]\n---\nBody',
+        '---\nname: never closed\nBody',
     ]
 
     reported = set()
-    for frontmatter in frontmatters:
+    for source in sources:
         with pytest.raises(FrontmatterError) as exc_info:
-            parse_document(f'---\n{frontmatter}\n---\nBody')
+            parse_document(source)
         reported.add(exc_info.value.reason)
 
     assert reported == {reason.value for reason in _FrontmatterReason}
+
+
+def test_parse_names_the_source_in_the_message() -> None:
+    """A caller with many prompt files needs to know which one failed."""
+    with pytest.raises(FrontmatterError) as exc_info:
+        parse_document('---\nconfig: *shared\n---\nBody', source_name='greeting.prompt')
+
+    assert str(exc_info.value) == (
+        'Malformed frontmatter in greeting.prompt at line 2, column 9: aliases are not allowed.'
+    )
+    assert exc_info.value.source_name == 'greeting.prompt'
 
 
 @pytest.mark.parametrize(

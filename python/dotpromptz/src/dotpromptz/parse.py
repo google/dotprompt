@@ -156,6 +156,7 @@ class _FrontmatterReason(str, Enum):
     INVALID_YAML = 'invalid YAML'
     NOT_A_MAPPING = 'frontmatter must be a mapping'
     INVALID_FIELD_TYPE = 'invalid recognized field type'
+    MISSING_CLOSING_DELIMITER = 'missing closing delimiter'
 
 
 class RestrictedFrontmatterLoader(yaml.SafeLoader):
@@ -280,7 +281,7 @@ def identify_frontmatter(source: str, *, source_name: str | None = None) -> Fron
         return FrontmatterSource(False, '', source, 1)
     if opening_index >= len(line_breaks):
         raise FrontmatterError(
-            'missing closing delimiter',
+            _FrontmatterReason.MISSING_CLOSING_DELIMITER.value,
             line=opening_index + 1,
             column=1,
             source_name=source_name,
@@ -294,7 +295,7 @@ def identify_frontmatter(source: str, *, source_name: str | None = None) -> Fron
 
     if closing_index is None:
         raise FrontmatterError(
-            'missing closing delimiter',
+            _FrontmatterReason.MISSING_CLOSING_DELIMITER.value,
             line=opening_index + 1,
             column=1,
             source_name=source_name,
