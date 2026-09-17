@@ -36,6 +36,7 @@ Key functionalities include:
 import re
 from collections.abc import Hashable
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, TypeVar
 
 import yaml
@@ -139,6 +140,24 @@ class FrontmatterSource:
     content_line: int
 
 
+class _FrontmatterReason(str, Enum):
+    """Every reason this module reports on a FrontmatterError.
+
+    Membership is the allowlist. PyYAML's own messages can quote the broken
+    source, so parse_document echoes a parser message only when it matches a
+    member here and falls back to INVALID_YAML otherwise.
+    """
+
+    ALIASES = 'aliases are not allowed'
+    ANCHORS = 'anchors are not allowed'
+    EXPLICIT_TAGS = 'explicit tags are not allowed'
+    NON_STRING_KEYS = 'mapping keys must be strings'
+    DUPLICATE_KEYS = 'duplicate mapping keys are not allowed'
+    INVALID_YAML = 'invalid YAML'
+    NOT_A_MAPPING = 'frontmatter must be a mapping'
+    INVALID_FIELD_TYPE = 'invalid recognized field type'
+
+
 class RestrictedFrontmatterLoader(yaml.SafeLoader):
     """Safe YAML loader for the portable Dotprompt metadata subset."""
 
@@ -146,12 +165,12 @@ class RestrictedFrontmatterLoader(yaml.SafeLoader):
         """Reject graph and type features before constructing values."""
         event = self.peek_event()
         if isinstance(event, AliasEvent):
-            raise ComposerError(None, None, 'aliases are not allowed', event.start_mark)
+            raise ComposerError(None, None, _FrontmatterReason.ALIASES.value, event.start_mark)
         if isinstance(event, NodeEvent):
             if event.anchor is not None:
-                raise ComposerError(None, None, 'anchors are not allowed', event.start_mark)
+                raise ComposerError(None, None, _FrontmatterReason.ANCHORS.value, event.start_mark)
             if getattr(event, 'tag', None) is not None:
-                raise ComposerError(None, None, 'explicit tags are not allowed', event.start_mark)
+                raise ComposerError(None, None, _FrontmatterReason.EXPLICIT_TAGS.value, event.start_mark)
         return super().compose_node(parent, index)
 
     def construct_mapping(self, node: MappingNode, deep: bool = False) -> dict[Hashable, Any]:
@@ -159,10 +178,10 @@ class RestrictedFrontmatterLoader(yaml.SafeLoader):
         result: dict[Hashable, Any] = {}
         for key_node, value_node in node.value:
             if not isinstance(key_node, ScalarNode) or key_node.tag != 'tag:yaml.org,2002:str':
-                raise ComposerError(None, None, 'mapping keys must be strings', key_node.start_mark)
+                raise ComposerError(None, None, _FrontmatterReason.NON_STRING_KEYS.value, key_node.start_mark)
             key = self.construct_object(key_node, deep=True)
             if key in result:
-                raise ComposerError(None, None, 'duplicate mapping keys are not allowed', key_node.start_mark)
+                raise ComposerError(None, None, _FrontmatterReason.DUPLICATE_KEYS.value, key_node.start_mark)
             result[key] = self.construct_object(value_node, deep=deep)
         return result
 
@@ -386,18 +405,12 @@ def parse_document(source: str, *, source_name: str | None = None) -> ParsedProm
             parsed_metadata = {}
     except yaml.YAMLError as error:
         mark = getattr(error, 'problem_mark', None)
-        reason = getattr(error, 'problem', None) or 'invalid YAML'
-        # Keep only the reasons we wrote. Anything else becomes "invalid YAML"
-        # so the error can't echo a snippet of the broken source.
-        allowed_reasons = {
-            'aliases are not allowed',
-            'anchors are not allowed',
-            'duplicate mapping keys are not allowed',
-            'explicit tags are not allowed',
-            'mapping keys must be strings',
-        }
-        if reason not in allowed_reasons:
-            reason = 'invalid YAML'
+        try:
+            # Only strings we wrote survive. PyYAML's own messages can quote
+            # the broken source, so they degrade to a fixed reason.
+            reason = _FrontmatterReason(getattr(error, 'problem', None)).value
+        except ValueError:
+            reason = _FrontmatterReason.INVALID_YAML.value
         raise frontmatter_error(
             reason,
             identified=identified,
@@ -414,7 +427,7 @@ def parse_document(source: str, *, source_name: str | None = None) -> ParsedProm
         line = root.start_mark.line if root is not None else 0
         column = root.start_mark.column if root is not None else 0
         raise frontmatter_error(
-            'frontmatter must be a mapping',
+            _FrontmatterReason.NOT_A_MAPPING.value,
             identified=identified,
             line=line,
             column=column,
@@ -433,7 +446,7 @@ def parse_document(source: str, *, source_name: str | None = None) -> ParsedProm
         if value is not None and not isinstance(value, dict):
             node = node_at_location(root, (field_name,)) if root is not None else None
             raise frontmatter_error(
-                'invalid recognized field type',
+                _FrontmatterReason.INVALID_FIELD_TYPE.value,
                 identified=identified,
                 line=node.start_mark.line if node is not None else 0,
                 column=node.start_mark.column if node is not None else 0,
@@ -462,7 +475,7 @@ def parse_document(source: str, *, source_name: str | None = None) -> ParsedProm
         location = tuple(part for part in detail['loc'] if isinstance(part, (str, int)))
         node = node_at_location(root, location) if root is not None else None
         raise frontmatter_error(
-            'invalid recognized field type',
+            _FrontmatterReason.INVALID_FIELD_TYPE.value,
             identified=identified,
             line=node.start_mark.line if node is not None else 0,
             column=node.start_mark.column if node is not None else 0,

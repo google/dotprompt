@@ -27,6 +27,7 @@ from dotpromptz.parse import (
     MEDIA_AND_SECTION_MARKER_REGEX,
     ROLE_AND_HISTORY_MARKER_REGEX,
     MessageSource,
+    _FrontmatterReason,
     convert_namespaced_entry_to_nested_object,
     extract_frontmatter_and_body,
     insert_history,
@@ -1021,6 +1022,28 @@ def test_parse_rejects_yaml_graph_and_tag_features(
         parse_document(f'---\n{frontmatter}\n---\nBody')
 
     assert str(exc_info.value) == f'Malformed frontmatter at line {line}, column {column}: {reason}.'
+
+
+def test_parse_reports_only_known_reasons() -> None:
+    """Every reported reason is one we wrote, and every reason we wrote is reachable."""
+    frontmatters = [
+        'config: *shared',
+        'config: &shared {temperature: 1}',
+        'model: !!str gemini',
+        '1: value',
+        'name: one\nname: two',
+        'name: [unterminated',
+        'value',
+        'name: [not, text]',
+    ]
+
+    reported = set()
+    for frontmatter in frontmatters:
+        with pytest.raises(FrontmatterError) as exc_info:
+            parse_document(f'---\n{frontmatter}\n---\nBody')
+        reported.add(exc_info.value.reason)
+
+    assert reported == {reason.value for reason in _FrontmatterReason}
 
 
 @pytest.mark.parametrize(
