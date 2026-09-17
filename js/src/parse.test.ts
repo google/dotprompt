@@ -291,13 +291,18 @@ describe('extractFrontmatterAndBody', () => {
     expect(body).toBe('This is the body.');
   });
 
-  it('should match as empty frontmatter and body when there is no frontmatter', () => {
-    // Both the frontmatter and the body match as empty when there is no
-    // frontmatter.
+  it('should return the source as the body when there is no frontmatter', () => {
     const source = 'No frontmatter here.';
     const { frontmatter, body } = extractFrontmatterAndBody(source);
     expect(frontmatter).toBe('');
-    expect(body).toBe('');
+    expect(body).toBe(source);
+  });
+
+  it('should extract the body when the frontmatter block is empty', () => {
+    const source = '---\n---\nThis is the body.';
+    const { frontmatter, body } = extractFrontmatterAndBody(source);
+    expect(frontmatter).toBe('');
+    expect(body).toBe('This is the body.');
   });
 });
 
@@ -856,12 +861,19 @@ Template content`;
   });
 
   it('should handle document with empty frontmatter', () => {
-    // TODO(#495): Check whether this is the correct behavior.
     const source = '---\n\n---\nJust template content';
     const result = parseDocument(source);
     expect(result).toMatchObject({
       ext: {},
-      template: source.trim(),
+      template: 'Just template content',
+    });
+  });
+
+  it('should handle empty frontmatter and an empty body', () => {
+    const result = parseDocument('---\n---\n');
+    expect(result).toMatchObject({
+      ext: {},
+      template: '',
     });
   });
 
