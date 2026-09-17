@@ -575,7 +575,8 @@ class Dotprompt:
         """Resolve all partials in a template.
 
         Partial sources are validated before registration so a reference cycle
-        can't reach the template engine.
+        can't reach the template engine. Lookups run one at a time so the
+        error can name the path that looped (city → weather → city).
 
         Args:
             template: The template to resolve partials in.
