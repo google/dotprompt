@@ -39,7 +39,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
 from dotpromptz.dotprompt import Dotprompt, _identify_partials
-from dotpromptz.errors import PartialCycleError
+from dotpromptz.errors import FrontmatterError, PartialCycleError
 from dotpromptz.typing import (
     DataArgument,
     ModelConfigT,
@@ -214,6 +214,90 @@ def test_parse(mock_parse_document: Mock, mock_handlebars: Mock) -> None:
 
     # Ensure chaining works.
     assert result == ParsedPrompt(template='Hello {{name}}', tool_defs=None)
+
+
+def test_parse_passes_source_name_to_frontmatter_errors(mock_handlebars: Mock) -> None:
+    """Parse attaches a caller-provided source identifier to failures."""
+    with pytest.raises(FrontmatterError) as exc_info:
+        Dotprompt().parse(
+            '---\nname: [invalid\n---\nBody',
+            source_name='prompts/example.prompt',
+        )
+
+    assert exc_info.value.source_name == 'prompts/example.prompt'
+
+
+@pytest.mark.asyncio
+async def test_frontmatter_error_object_propagates_through_every_public_entry_point(
+    mock_handlebars: Mock,
+) -> None:
+    """Public operations propagate the parser's error object unchanged."""
+    error = FrontmatterError(
+        'invalid YAML',
+        line=2,
+        column=7,
+        source_name='prompt.prompt',
+    )
+    dotprompt = Dotprompt()
+
+    with patch('dotpromptz.dotprompt.parse_document', side_effect=error):
+        with pytest.raises(FrontmatterError) as parse_exc:
+            dotprompt.parse('source')
+    assert parse_exc.value is error
+
+    for operation in (
+        dotprompt.compile('source'),
+        dotprompt.render('source', DataArgument()),
+        dotprompt.render_metadata('source'),
+    ):
+        with patch.object(dotprompt, 'parse', side_effect=error):
+            with pytest.raises(FrontmatterError) as operation_exc:
+                await operation
+        assert operation_exc.value is error
+
+
+@pytest.mark.asyncio
+async def test_frontmatter_failure_runs_no_resolvers_or_template_helpers() -> None:
+    """Malformed metadata fails before partial, tool, schema, or helper work."""
+    helper = Mock(return_value='should not run')
+    partial_resolver = AsyncMock(return_value='should not run')
+    tool_resolver = AsyncMock()
+    schema_resolver = AsyncMock()
+    dotprompt = Dotprompt(
+        helpers={'custom': helper},
+        partial_resolver=partial_resolver,
+        tool_resolver=tool_resolver,
+        schema_resolver=schema_resolver,
+    )
+    source = """---
+tools: [lookup]
+input:
+  schema: customSchema(name)
+secret: [unterminated
+---
+{{custom}}{{> partial}}"""
+
+    for operation in (
+        dotprompt.compile(source),
+        dotprompt.render(source, DataArgument()),
+        dotprompt.render_metadata(source),
+    ):
+        with pytest.raises(FrontmatterError):
+            await operation
+
+    helper.assert_not_called()
+    partial_resolver.assert_not_called()
+    tool_resolver.assert_not_called()
+    schema_resolver.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_template_syntax_error_is_not_frontmatter_error() -> None:
+    """Template grammar failures remain distinct from metadata failures."""
+    with pytest.raises(ValueError) as exc_info:
+        await Dotprompt().render('{{#if}}', DataArgument())
+
+    assert not isinstance(exc_info.value, FrontmatterError)
 
 
 def test_chainable_interface(mock_handlebars: Mock) -> None:

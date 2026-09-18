@@ -34,11 +34,18 @@ Key functionalities include:
 """
 
 import re
+from collections.abc import Hashable
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, TypeVar
 
 import yaml
+from pydantic import ValidationError
+from yaml.composer import ComposerError
+from yaml.events import AliasEvent, NodeEvent
+from yaml.nodes import MappingNode, Node, ScalarNode, SequenceNode
 
+from dotpromptz.errors import FrontmatterError
 from dotpromptz.typing import (
     DataArgument,
     MediaContent,
@@ -82,6 +89,8 @@ SECTION_MARKER_PREFIX = '<<<dotprompt:section'
 FRONTMATTER_AND_BODY_REGEX = re.compile(
     r'^(?:(?:#[^\n]*|[ \t]*)\n)*---\s*(?:\r\n|\r|\n)([\s\S]*?)(?:\r\n|\r|\n)---\s*(?:\r\n|\r|\n)([\s\S]*)$'
 )
+DELIMITER_REGEX = re.compile(r'^---[ \t]*$')
+LINE_BREAK_REGEX = re.compile(r'\r\n|\r|\n')
 
 # Regular expression to match <<<dotprompt:role:xxx>>> and
 # <<<dotprompt:history>>> markers in the template.
@@ -119,6 +128,63 @@ RESERVED_METADATA_KEYWORDS = [
     'variant',
     'version',
 ]
+
+
+@dataclass(frozen=True)
+class FrontmatterSource:
+    """The declared frontmatter and template body."""
+
+    declared: bool
+    frontmatter: str
+    body: str
+    content_line: int
+
+
+class _FrontmatterReason(str, Enum):
+    """Every reason this module reports on a FrontmatterError.
+
+    Membership is the allowlist. PyYAML's own messages can quote the broken
+    source, so parse_document echoes a parser message only when it matches a
+    member here and falls back to INVALID_YAML otherwise.
+    """
+
+    ALIASES = 'aliases are not allowed'
+    ANCHORS = 'anchors are not allowed'
+    EXPLICIT_TAGS = 'explicit tags are not allowed'
+    NON_STRING_KEYS = 'mapping keys must be strings'
+    DUPLICATE_KEYS = 'duplicate mapping keys are not allowed'
+    INVALID_YAML = 'invalid YAML'
+    NOT_A_MAPPING = 'frontmatter must be a mapping'
+    INVALID_FIELD_TYPE = 'invalid recognized field type'
+    MISSING_CLOSING_DELIMITER = 'missing closing delimiter'
+
+
+class RestrictedFrontmatterLoader(yaml.SafeLoader):
+    """Safe YAML loader for the portable Dotprompt metadata subset."""
+
+    def compose_node(self, parent: Node | None, index: int) -> Node | None:
+        """Reject graph and type features before constructing values."""
+        event = self.peek_event()
+        if isinstance(event, AliasEvent):
+            raise ComposerError(None, None, _FrontmatterReason.ALIASES.value, event.start_mark)
+        if isinstance(event, NodeEvent):
+            if event.anchor is not None:
+                raise ComposerError(None, None, _FrontmatterReason.ANCHORS.value, event.start_mark)
+            if getattr(event, 'tag', None) is not None:
+                raise ComposerError(None, None, _FrontmatterReason.EXPLICIT_TAGS.value, event.start_mark)
+        return super().compose_node(parent, index)
+
+    def construct_mapping(self, node: MappingNode, deep: bool = False) -> dict[Hashable, Any]:
+        """Construct a mapping while rejecting ambiguous keys."""
+        result: dict[Hashable, Any] = {}
+        for key_node, value_node in node.value:
+            if not isinstance(key_node, ScalarNode) or key_node.tag != 'tag:yaml.org,2002:str':
+                raise ComposerError(None, None, _FrontmatterReason.NON_STRING_KEYS.value, key_node.start_mark)
+            key = self.construct_object(key_node, deep=True)
+            if key in result:
+                raise ComposerError(None, None, _FrontmatterReason.DUPLICATE_KEYS.value, key_node.start_mark)
+            result[key] = self.construct_object(value_node, deep=deep)
+        return result
 
 
 def split_by_regex(source: str, regex: re.Pattern[str]) -> list[str]:
@@ -198,6 +264,62 @@ def convert_namespaced_entry_to_nested_object(
     return obj
 
 
+def identify_frontmatter(source: str, *, source_name: str | None = None) -> FrontmatterSource:
+    """Identify declared frontmatter without interpreting its contents."""
+    lines = LINE_BREAK_REGEX.split(source)
+    line_breaks = list(LINE_BREAK_REGEX.finditer(source))
+
+    opening_index: int | None = None
+    for index, line in enumerate(lines):
+        if DELIMITER_REGEX.fullmatch(line):
+            opening_index = index
+            break
+        if line.strip() and not line.startswith('#'):
+            return FrontmatterSource(False, '', source, 1)
+
+    if opening_index is None:
+        return FrontmatterSource(False, '', source, 1)
+    if opening_index >= len(line_breaks):
+        raise FrontmatterError(
+            _FrontmatterReason.MISSING_CLOSING_DELIMITER.value,
+            line=opening_index + 1,
+            column=1,
+            source_name=source_name,
+        ) from None
+
+    closing_index: int | None = None
+    for index in range(opening_index + 1, len(lines)):
+        if DELIMITER_REGEX.fullmatch(lines[index]):
+            closing_index = index
+            break
+
+    if closing_index is None:
+        raise FrontmatterError(
+            _FrontmatterReason.MISSING_CLOSING_DELIMITER.value,
+            line=opening_index + 1,
+            column=1,
+            source_name=source_name,
+        ) from None
+
+    frontmatter_start = line_breaks[opening_index].end()
+    if closing_index == opening_index + 1:
+        frontmatter_end = frontmatter_start
+    else:
+        frontmatter_end = line_breaks[closing_index - 1].start()
+
+    if closing_index < len(line_breaks):
+        body_start = line_breaks[closing_index].end()
+    else:
+        body_start = len(source)
+
+    return FrontmatterSource(
+        True,
+        source[frontmatter_start:frontmatter_end],
+        source[body_start:],
+        opening_index + 2,
+    )
+
+
 def extract_frontmatter_and_body(source: str) -> tuple[str, str]:
     """Extracts the YAML frontmatter and body from a document.
 
@@ -208,83 +330,158 @@ def extract_frontmatter_and_body(source: str) -> tuple[str, str]:
         A tuple containing the frontmatter and body If the pattern does not
         match, both the values returned will be empty.
     """
-    match = FRONTMATTER_AND_BODY_REGEX.match(source)
-    if match:
-        frontmatter, body = match.groups()
-        return frontmatter, body
+    identified = identify_frontmatter(source)
+    if identified.declared:
+        return identified.frontmatter, identified.body
     return '', ''
 
 
-def parse_document(source: str) -> ParsedPrompt[T]:
+def frontmatter_error(
+    reason: str,
+    *,
+    identified: FrontmatterSource,
+    line: int,
+    column: int,
+    source_name: str | None,
+) -> FrontmatterError:
+    """Create an error located in the complete prompt source."""
+    return FrontmatterError(
+        reason,
+        line=identified.content_line + line,
+        column=column + 1,
+        source_name=source_name,
+    )
+
+
+def node_at_location(node: Node, location: tuple[str | int, ...]) -> Node:
+    """Find the YAML node associated with a validation location."""
+    current = node
+    yaml_names = {
+        'input_schema': 'inputSchema',
+        'output_schema': 'outputSchema',
+        'tool_defs': 'toolDefs',
+    }
+    for part in location:
+        if isinstance(part, str):
+            part = yaml_names.get(part, part)
+        if isinstance(current, MappingNode) and isinstance(part, str):
+            match = next(
+                (
+                    value_node
+                    for key_node, value_node in current.value
+                    if isinstance(key_node, ScalarNode) and key_node.value == part
+                ),
+                None,
+            )
+            if match is None:
+                break
+            current = match
+        elif isinstance(current, SequenceNode) and isinstance(part, int) and part < len(current.value):
+            current = current.value[part]
+        else:
+            break
+    return current
+
+
+def parse_document(source: str, *, source_name: str | None = None) -> ParsedPrompt[T]:
     """Parses document containing YAML frontmatter and template content.
 
     The frontmatter contains metadata and configuration for the prompt.
 
     Args:
         source: The source document containing frontmatter and template
+        source_name: Optional identifier attached to frontmatter errors.
 
     Returns:
         Parsed prompt with metadata and template content
     """
-    frontmatter, body = extract_frontmatter_and_body(source)
-    if not frontmatter:
+    identified = identify_frontmatter(source, source_name=source_name)
+    if not identified.declared:
         # No frontmatter, return a basic ParsedPrompt with just the template
         return ParsedPrompt(ext={}, config=None, metadata={}, tool_defs=None, template=source)
 
     try:
-        parsed_metadata = yaml.safe_load(frontmatter)
+        parsed_metadata = yaml.load(identified.frontmatter, Loader=RestrictedFrontmatterLoader)
         if parsed_metadata is None:
             parsed_metadata = {}
-
-        raw = dict(parsed_metadata)
-        pruned: dict[str, Any] = {'ext': {}, 'config': {}, 'metadata': {}}
-        ext: dict[str, dict[str, Any]] = {}
-
-        # Process each key in the raw metadata
-        for key, value in raw.items():
-            if key in RESERVED_METADATA_KEYWORDS:
-                pruned[key] = value
-            elif '.' in key:
-                convert_namespaced_entry_to_nested_object(key, value, ext)
-
+    except yaml.YAMLError as error:
+        mark = getattr(error, 'problem_mark', None)
         try:
-            return ParsedPrompt(
-                name=raw.get('name'),
-                description=raw.get('description'),
-                variant=raw.get('variant'),
-                version=raw.get('version'),
-                model=raw.get('model'),
-                input=raw.get('input'),
-                output=raw.get('output'),
-                tool_defs=raw.get('toolDefs'),
-                tools=raw.get('tools'),
-                ext=ext,
-                config=pruned.get('config'),
-                metadata=pruned.get('metadata', {}),
-                raw=raw,
-                template=body.strip(),
-            )
-        except Exception as e:
-            print(f'Dotprompt: Error building a parsed prompt object: {e}')
-            # Return a basic ParsedPrompt with just the template
-            return ParsedPrompt(
-                ext={},
-                config=None,
-                metadata={},
-                tool_defs=None,
-                template=body.strip(),
-            )
-    except Exception as e:
-        # TODO(#496): Should this be an error?
-        print(f'Dotprompt: Error parsing YAML frontmatter: {e}')
-        # Return a basic ParsedPrompt with just the template
+            # Only strings we wrote survive. PyYAML's own messages can quote
+            # the broken source, so they degrade to a fixed reason.
+            reason = _FrontmatterReason(getattr(error, 'problem', None)).value
+        except ValueError:
+            reason = _FrontmatterReason.INVALID_YAML.value
+        raise frontmatter_error(
+            reason,
+            identified=identified,
+            line=mark.line if mark is not None else 0,
+            column=mark.column if mark is not None else 0,
+            source_name=source_name,
+        ) from None
+
+    if not isinstance(parsed_metadata, dict):
+        try:
+            root = yaml.compose(identified.frontmatter, Loader=RestrictedFrontmatterLoader)
+        except yaml.YAMLError:
+            root = None
+        line = root.start_mark.line if root is not None else 0
+        column = root.start_mark.column if root is not None else 0
+        raise frontmatter_error(
+            _FrontmatterReason.NOT_A_MAPPING.value,
+            identified=identified,
+            line=line,
+            column=column,
+            source_name=source_name,
+        ) from None
+
+    raw = dict(parsed_metadata)
+    ext: dict[str, dict[str, Any]] = {}
+    for key, value in raw.items():
+        if key not in RESERVED_METADATA_KEYWORDS and '.' in key:
+            convert_namespaced_entry_to_nested_object(key, value, ext)
+
+    root = yaml.compose(identified.frontmatter, Loader=RestrictedFrontmatterLoader)
+    for field_name in ('config', 'ext', 'raw'):
+        value = raw.get(field_name)
+        if value is not None and not isinstance(value, dict):
+            node = node_at_location(root, (field_name,)) if root is not None else None
+            raise frontmatter_error(
+                _FrontmatterReason.INVALID_FIELD_TYPE.value,
+                identified=identified,
+                line=node.start_mark.line if node is not None else 0,
+                column=node.start_mark.column if node is not None else 0,
+                source_name=source_name,
+            ) from None
+
+    try:
         return ParsedPrompt(
-            ext={},
-            config=None,
-            metadata={},
-            tool_defs=None,
-            template=source.strip(),
+            name=raw.get('name'),
+            description=raw.get('description'),
+            variant=raw.get('variant'),
+            version=raw.get('version'),
+            model=raw.get('model'),
+            input=raw.get('input'),
+            output=raw.get('output'),
+            tool_defs=raw.get('toolDefs'),
+            tools=raw.get('tools'),
+            ext=ext,
+            config=raw.get('config'),
+            metadata=raw.get('metadata', {}),
+            raw=raw,
+            template=identified.body.strip(),
         )
+    except ValidationError as error:
+        detail = error.errors(include_url=False, include_context=False, include_input=False)[0]
+        location = tuple(part for part in detail['loc'] if isinstance(part, (str, int)))
+        node = node_at_location(root, location) if root is not None else None
+        raise frontmatter_error(
+            _FrontmatterReason.INVALID_FIELD_TYPE.value,
+            identified=identified,
+            line=node.start_mark.line if node is not None else 0,
+            column=node.start_mark.column if node is not None else 0,
+            source_name=source_name,
+        ) from None
 
 
 def to_messages(
