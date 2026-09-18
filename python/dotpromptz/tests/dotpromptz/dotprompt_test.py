@@ -39,6 +39,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
 from dotpromptz.dotprompt import Dotprompt, _identify_partials
+from dotpromptz.errors import PartialCycleError
 from dotpromptz.typing import (
     DataArgument,
     ModelConfigT,
@@ -255,6 +256,24 @@ def test_chainable_interface(mock_handlebars: Mock) -> None:
         ),
         # Partial with dash and underscore.
         ('Hello {{> header-component_name}}', {'header-component_name'}),
+        # Hash arguments, which Handlebars calls partial parameters.
+        ('{{> userGreeting name=username}}', {'userGreeting'}),
+        ('{{> licensedPartial name="World"}}', {'licensedPartial'}),
+        # A context argument rather than a hash.
+        ('{{> card this}}', {'card'}),
+        # Whitespace control on either side.
+        ('{{~> card}}', {'card'}),
+        ('{{ ~> card}}', {'card'}),
+        ('{{> card ~}}', {'card'}),
+        # Partial blocks, whose closing tag is not a reference.
+        ('{{#> layout}}body{{/layout}}', {'layout'}),
+        ('{{~#> layout}}body{{/layout}}', {'layout'}),
+        # A dynamic name cannot be known before render, so it stays unmatched.
+        ("{{> (lookup . 'card')}}", set()),
+        # @partial-block is supplied by the engine, not by the caller.
+        ('{{#> layout}}{{> @partial-block}}{{/layout}}', {'layout'}),
+        # Closing tags and ordinary mustaches are not partial references.
+        ('{{#if card}}{{card}}{{/if}}', set()),
     ],
 )
 def test_identify_partials(template: str, expected: set[str]) -> None:
@@ -643,12 +662,70 @@ def test_metadata_override_without_model_keeps_model_config() -> None:
 class TestResolvePartialsCycleDetection(IsolatedAsyncioTestCase):
     """Test cycle detection in _resolve_partials."""
 
-    async def test_handles_cycles_without_infinite_recursion(self) -> None:
-        """Should handle cycles in partial references without infinite recursion.
+    async def test_all_three_node_partial_graphs(self) -> None:
+        """Every small graph agrees with an independent cycle oracle."""
+        nodes = ('a', 'b', 'c')
+        possible_edges = tuple((source, target) for source in nodes for target in nodes)
 
-        Setup partials that reference each other: A -> B -> A
-        The resolver should only be called once per partial.
-        """
+        for mask in range(1 << len(possible_edges)):
+            graph = {edge for index, edge in enumerate(possible_edges) if mask & (1 << index)}
+            reachable = {'a'}
+            pending = ['a']
+            while pending:
+                source = pending.pop()
+                for edge_source, target in graph:
+                    if edge_source == source and target not in reachable:
+                        reachable.add(target)
+                        pending.append(target)
+
+            indegree = dict.fromkeys(reachable, 0)
+            for source, target in graph:
+                if source in reachable and target in reachable:
+                    indegree[target] += 1
+            ready = [node for node, degree in indegree.items() if degree == 0]
+            visited = 0
+            while ready:
+                source = ready.pop()
+                visited += 1
+                for edge_source, target in graph:
+                    if edge_source == source and target in reachable:
+                        indegree[target] -= 1
+                        if indegree[target] == 0:
+                            ready.append(target)
+            has_cycle = visited != len(reachable)
+
+            sources = {
+                node: ''.join(f'{{{{> {target}}}}}' for source, target in sorted(graph) if source == node) or node
+                for node in nodes
+            }
+            calls = dict.fromkeys(nodes, 0)
+
+            async def partial_resolver(
+                name: str,
+                _calls: dict[str, int] = calls,
+                _sources: dict[str, str] = sources,
+            ) -> str | None:
+                _calls[name] += 1
+                return _sources.get(name)
+
+            dotprompt = Dotprompt(partial_resolver=partial_resolver)
+            with self.subTest(mask=mask, graph=sorted(graph)):
+                if has_cycle:
+                    with pytest.raises(PartialCycleError) as exc_info:
+                        await dotprompt._resolve_partials('{{> a}}')
+
+                    cycle = exc_info.value.cycle
+                    assert cycle[0] == cycle[-1]
+                    assert set(cycle[:-1]) <= reachable
+                    assert all(edge in graph for edge in zip(cycle, cycle[1:], strict=False))
+                else:
+                    await dotprompt._resolve_partials('{{> a}}')
+
+                    assert {node for node, count in calls.items() if count} == reachable
+                    assert all(calls[node] == 1 for node in reachable)
+
+    async def test_rejects_resolver_cycle_before_rendering(self) -> None:
+        """Resolver-backed cycles raise before reaching the template engine."""
         call_counts: dict[str, int] = {'partialA': 0, 'partialB': 0}
 
         async def partial_resolver(name: str) -> str | None:
@@ -663,15 +740,145 @@ class TestResolvePartialsCycleDetection(IsolatedAsyncioTestCase):
 
         dotprompt = Dotprompt(partial_resolver=partial_resolver)
 
-        # Start with a template that references partialA
-        template = '{{> partialA}}'
+        with pytest.raises(
+            PartialCycleError,
+            match=r'Circular partial reference: partialA -> partialB -> partialA',
+        ):
+            await dotprompt.render('{{> partialA}}', DataArgument())
 
-        # This should complete without infinite recursion
-        await dotprompt._resolve_partials(template)
-
-        # Each partial should only be resolved once despite the cycle
         self.assertEqual(call_counts['partialA'], 1)
         self.assertEqual(call_counts['partialB'], 1)
+
+    async def test_rejects_pre_registered_cycle_before_rendering(self) -> None:
+        """Pre-registered cycles raise before reaching the template engine."""
+        dotprompt = Dotprompt(
+            partials={
+                'partialA': 'Content A {{> partialB}}',
+                'partialB': 'Content B {{> partialA}}',
+            }
+        )
+
+        with pytest.raises(PartialCycleError) as exc_info:
+            await dotprompt.render('{{> partialA}}', DataArgument())
+
+        assert exc_info.value.cycle == ('partialA', 'partialB', 'partialA')
+
+    async def test_rejects_self_referencing_partial(self) -> None:
+        """A direct self-reference reports the shortest cycle."""
+        dotprompt = Dotprompt(partials={'loop': '{{> loop}}'})
+
+        with pytest.raises(PartialCycleError) as exc_info:
+            await dotprompt.render('{{> loop}}', DataArgument())
+
+        assert exc_info.value.cycle == ('loop', 'loop')
+
+    async def test_rejects_cycle_across_registered_and_resolved_partials(self) -> None:
+        """Cycle detection spans registered and resolver-backed sources."""
+
+        async def partial_resolver(name: str) -> str | None:
+            return '{{> registered}}' if name == 'resolved' else None
+
+        dotprompt = Dotprompt(
+            partials={'registered': '{{> resolved}}'},
+            partial_resolver=partial_resolver,
+        )
+
+        with pytest.raises(PartialCycleError) as exc_info:
+            await dotprompt.render('{{> registered}}', DataArgument())
+
+        assert exc_info.value.cycle == ('registered', 'resolved', 'registered')
+
+    async def test_false_if_around_self_include_still_raises(self) -> None:
+        """A {{> loop}} inside {{#if}} still raises even when the branch is skipped."""
+        dotprompt = Dotprompt(partials={'loop': '{{> loop}}'})
+
+        with pytest.raises(PartialCycleError) as exc_info:
+            await dotprompt.render('{{#if skip}}{{> loop}}{{/if}}', DataArgument())
+
+        assert exc_info.value.cycle == ('loop', 'loop')
+
+    async def test_true_if_around_self_include_still_raises(self) -> None:
+        """A {{> loop}} inside a taken {{#if}} still raises before render."""
+        dotprompt = Dotprompt(partials={'loop': '{{> loop}}'})
+
+        with pytest.raises(PartialCycleError) as exc_info:
+            await dotprompt.render(
+                '{{#if skip}}{{> loop}}{{/if}}',
+                DataArgument(input={'skip': True}),
+            )
+
+        assert exc_info.value.cycle == ('loop', 'loop')
+
+    async def test_false_if_around_ok_include_renders_without_partial(self) -> None:
+        """A skipped {{#if}} around an acyclic include still renders the rest."""
+        result = await Dotprompt(partials={'ok': 'inside'}).render(
+            '{{#if skip}}{{> ok}}{{/if}}Hello',
+            DataArgument(),
+        )
+
+        assert result.messages[0].content == [TextPart(text='Hello')]
+
+    async def test_unused_store_cycle_does_not_raise(self) -> None:
+        """A cycle this template never names does not raise."""
+        result = await Dotprompt(
+            partials={
+                'ok': 'Hello',
+                'a': '{{> b}}',
+                'b': '{{> a}}',
+            }
+        ).render('{{> ok}}', DataArgument())
+
+        assert result.messages[0].content == [TextPart(text='Hello')]
+
+    async def test_person_that_includes_itself_for_each_report_still_raises(self) -> None:
+        """A person snippet that pastes itself for each report still raises."""
+        person = '{{name}}{{#if reports}}{{#each reports}}{{> person}}{{/each}}{{/if}}'
+
+        with pytest.raises(PartialCycleError) as exc_info:
+            await Dotprompt(partials={'person': person}).render(
+                '{{> person}}',
+                DataArgument(
+                    input={
+                        'name': 'Ada',
+                        'reports': [{'name': 'Grace'}],
+                    }
+                ),
+            )
+
+        assert exc_info.value.cycle == ('person', 'person')
+
+    async def test_person_that_includes_itself_still_raises_when_reports_absent(self) -> None:
+        """The same person snippet still raises when this row has no reports."""
+        person = '{{name}}{{#if reports}}{{#each reports}}{{> person}}{{/each}}{{/if}}'
+
+        with pytest.raises(PartialCycleError) as exc_info:
+            await Dotprompt(partials={'person': person}).render(
+                '{{> person}}',
+                DataArgument(input={'name': 'Ada'}),
+            )
+
+        assert exc_info.value.cycle == ('person', 'person')
+
+    async def test_shared_dependency_is_resolved_once_without_false_cycle(self) -> None:
+        """A diamond dependency remains valid and resolves shared work once."""
+        calls: list[str] = []
+        sources = {
+            'left': '{{> shared}}',
+            'right': '{{> shared}}',
+            'shared': 'Shared',
+        }
+
+        async def partial_resolver(name: str) -> str | None:
+            calls.append(name)
+            return sources.get(name)
+
+        result = await Dotprompt(partial_resolver=partial_resolver).render(
+            '{{> left}}{{> right}}',
+            DataArgument(),
+        )
+
+        assert result.messages[0].content == [TextPart(text='SharedShared')]
+        assert calls.count('shared') == 1
 
     async def test_deep_chain_resolution_without_cycles(self) -> None:
         """Should resolve deep chains of partials correctly.
@@ -703,6 +910,108 @@ class TestResolvePartialsCycleDetection(IsolatedAsyncioTestCase):
         self.assertIn('partialC', resolved_partials)
         # Each should only be resolved once
         self.assertEqual(len(resolved_partials), 3)
+
+
+class TestPartialArgumentForms(IsolatedAsyncioTestCase):
+    """Partials carrying arguments or control characters still reach the resolver."""
+
+    async def _resolve(self, template: str) -> set[str]:
+        """Return the partial names the resolver was asked for."""
+        asked: set[str] = set()
+
+        async def partial_resolver(name: str) -> str | None:
+            asked.add(name)
+            return 'Welcome back, {{name}}!'
+
+        dotprompt = Dotprompt(partial_resolver=partial_resolver)
+        await dotprompt._resolve_partials(template)
+        return asked
+
+    async def test_hash_argument_partial_is_resolved(self) -> None:
+        """spec/partials.yaml pairs partial parameters with a resolver; both have to work together."""
+        self.assertEqual(await self._resolve('{{> userGreeting name=username}}'), {'userGreeting'})
+
+    async def test_quoted_hash_argument_partial_is_resolved(self) -> None:
+        """A quoted argument value does not end the partial reference."""
+        self.assertEqual(await self._resolve('{{> licensedPartial name="World"}}'), {'licensedPartial'})
+
+    async def test_context_argument_partial_is_resolved(self) -> None:
+        """A positional context argument is still a reference to the same partial."""
+        self.assertEqual(await self._resolve('{{> card this}}'), {'card'})
+
+    async def test_whitespace_control_partial_is_resolved(self) -> None:
+        """Whitespace control sits outside the name and must not hide it."""
+        self.assertEqual(await self._resolve('{{~> card}}'), {'card'})
+
+    async def test_partial_block_is_resolved(self) -> None:
+        """A partial block names a partial even though it also opens a block."""
+        self.assertEqual(await self._resolve('{{#> layout}}body{{/layout}}'), {'layout'})
+
+    async def test_hash_argument_partial_renders_through_the_resolver(self) -> None:
+        """spec/partials.yaml supplies this case through define_partial; a resolver has to work too."""
+
+        async def partial_resolver(name: str) -> str | None:
+            return 'Welcome back, {{name}}!' if name == 'userGreeting' else None
+
+        result = await Dotprompt(partial_resolver=partial_resolver).render(
+            '{{> userGreeting name=username}}',
+            DataArgument(input={'username': 'Ada'}),
+        )
+
+        assert result.messages[0].content == [TextPart(text='Welcome back, Ada!')]
+
+    async def test_whitespace_control_partial_renders_through_the_resolver(self) -> None:
+        """Whitespace control trims the output but must not hide the name from the resolver."""
+
+        async def partial_resolver(name: str) -> str | None:
+            return 'Ada' if name == 'author' else None
+
+        result = await Dotprompt(partial_resolver=partial_resolver).render(
+            'by {{~> author}}',
+            DataArgument(),
+        )
+
+        assert result.messages[0].content == [TextPart(text='byAda')]
+
+
+class TestCycleDetectionAcrossPartialForms(IsolatedAsyncioTestCase):
+    """Cycles are refused whichever syntax expresses the back-edge.
+
+    A cycle the scan misses reaches the native runtime, which does not raise:
+    it takes the process down with SIGSEGV. Every form that names a partial
+    has to be visible here.
+    """
+
+    async def _assert_cycle(self, library: dict[str, str], template: str) -> tuple[str, ...]:
+        """Render a template against a pre-registered partial library and return the reported cycle.
+
+        The partials are registered with the engine up front, so a missed
+        back-edge is handed straight to handlebars-rust.
+        """
+        dotprompt = Dotprompt(partials=library)
+        with pytest.raises(PartialCycleError) as exc_info:
+            await dotprompt.render(template, DataArgument())
+        return exc_info.value.cycle
+
+    async def test_cycle_through_whitespace_control(self) -> None:
+        """`{{~> name}}` is a back-edge like any other."""
+        library = {'city': '{{~> weather}}', 'weather': '{{~> city}}'}
+        self.assertEqual(await self._assert_cycle(library, '{{> city}}'), ('city', 'weather', 'city'))
+
+    async def test_cycle_through_hash_arguments(self) -> None:
+        """Passing a parameter does not make the reference invisible."""
+        library = {'city': '{{> weather unit="C"}}', 'weather': '{{> city zoom=2}}'}
+        self.assertEqual(await self._assert_cycle(library, '{{> city}}'), ('city', 'weather', 'city'))
+
+    async def test_cycle_through_partial_blocks(self) -> None:
+        """A partial block can close a loop just as a plain reference can."""
+        library = {'city': '{{#> weather}}x{{/weather}}', 'weather': '{{#> city}}y{{/city}}'}
+        self.assertEqual(await self._assert_cycle(library, '{{> city}}'), ('city', 'weather', 'city'))
+
+    async def test_self_cycle_through_whitespace_control(self) -> None:
+        """A partial that includes itself with `{{~>}}` loops just as directly."""
+        library = {'loop': 'x {{~> loop}}'}
+        self.assertEqual(await self._assert_cycle(library, '{{> loop}}'), ('loop', 'loop'))
 
 
 if __name__ == '__main__':

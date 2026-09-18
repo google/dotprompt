@@ -44,6 +44,7 @@ from typing import Any
 
 import anyio
 
+from dotpromptz.errors import PartialCycleError
 from dotpromptz.helpers import BUILTIN_HELPERS
 from dotpromptz.parse import parse_document, to_messages
 from dotpromptz.picoschema import picoschema_to_json_schema
@@ -71,7 +72,14 @@ from handlebarrz import Context, EscapeFunction, Handlebars, HelperFn, RuntimeOp
 # Since the handlebars-rust implementation doesn't expose a visitor
 # to walk the AST to find partial nodes, we're using a crude regular expression
 # to find partials.
-_PARTIAL_PATTERN = re.compile(r'{{\s*>\s*([a-zA-Z0-9_.-]+)\s*}}')
+#
+# The name is not anchored to the closing braces: a partial can carry arguments
+# (`{{> card name="Ada"}}`), whitespace control (`{{~> card}}`) or open a block
+# (`{{#> layout}}`), and anchoring hid all three from the resolver and from
+# cycle detection. Two things stay unmatched on purpose: a dynamic name
+# (`{{> (lookup . 'card')}}`) isn't knowable before render, and `@partial-block`
+# is supplied by the engine rather than the caller.
+_PARTIAL_PATTERN = re.compile(r'\{\{\s*~?\s*#?\s*>\s*([a-zA-Z0-9_.\-/]+)')
 
 
 def _pick_model(*models: str | None) -> str | None:
@@ -310,6 +318,7 @@ class Dotprompt:
             The Dotprompt instance.
         """
         self._handlebars.register_partial(name, source)
+        self._partials[name] = source
         return self
 
     def define_tool(self, definition: ToolDefinition) -> Dotprompt:
@@ -564,47 +573,42 @@ class Dotprompt:
         out.tools = unregistered_names
         return out
 
-    async def _resolve_partials(self, template: str, visited: set[str] | None = None) -> None:
+    async def _resolve_partials(
+        self,
+        template: str,
+        resolving: tuple[str, ...] = (),
+        resolved: set[str] | None = None,
+    ) -> None:
         """Resolve all partials in a template.
 
-        This method recursively resolves partials, meaning if a partial itself
-        contains partial references, those will also be resolved. Cycle detection
-        prevents infinite loops when partials reference each other.
+        Partial sources are validated before registration so a reference cycle
+        can't reach the template engine. Lookups run one at a time so the
+        error can name the path that looped (city → weather → city).
 
         Args:
             template: The template to resolve partials in.
-            visited: Set of partial names currently being processed (for cycle detection).
+            resolving: Partial names in the current resolution path.
+            resolved: Partial names already validated during this resolution.
 
         Returns:
             None
+
+        Raises:
+            PartialCycleError: If partials contain a reference cycle.
         """
-        if self._partial_resolver is None and self._store is None:
-            return
+        if resolved is None:
+            resolved = set()
 
-        if visited is None:
-            visited = set()
+        for name in sorted(_identify_partials(template)):
+            if name in resolving:
+                cycle_start = resolving.index(name)
+                raise PartialCycleError((*resolving[cycle_start:], name))
+            if name in resolved:
+                continue
 
-        names = _identify_partials(template)
-        # Skip partials that are already registered OR currently being processed (cycle detection)
-        unregistered_names: list[str] = [
-            name for name in names if not self._handlebars.has_partial(name) and name not in visited
-        ]
+            content = self._partials.get(name)
 
-        async def resolve_and_register(name: str) -> None:
-            """Resolve a partial from the resolver or store and register it.
-
-            The partial resolver is preferred, and the store is used as a
-            fallback. If neither is available, the partial is not registered.
-
-            Args:
-                name: The name of the partial to resolve.
-
-            Returns:
-                None.
-            """
-            content: str | None = None
-
-            if self._partial_resolver is not None:
+            if content is None and self._partial_resolver is not None:
                 content = await resolve_partial(name, self._partial_resolver)
 
             if content is None and self._store is not None:
@@ -613,18 +617,11 @@ class Dotprompt:
                     content = partial.source
 
             if content is not None:
-                self.define_partial(name, content)
+                await self._resolve_partials(content, (*resolving, name), resolved)
+                if not self._handlebars.has_partial(name):
+                    self.define_partial(name, content)
 
-                # Recursively resolve partials in the content.
-                await self._resolve_partials(content, visited)
-
-        # Mark all partials as being processed before starting resolution
-        for name in unregistered_names:
-            visited.add(name)
-
-        async with anyio.create_task_group() as tg:
-            for name in unregistered_names:
-                tg.start_soon(resolve_and_register, name)
+            resolved.add(name)
 
     def _register_initial_helpers(
         self,
