@@ -256,6 +256,24 @@ def test_chainable_interface(mock_handlebars: Mock) -> None:
         ),
         # Partial with dash and underscore.
         ('Hello {{> header-component_name}}', {'header-component_name'}),
+        # Hash arguments, which Handlebars calls partial parameters.
+        ('{{> userGreeting name=username}}', {'userGreeting'}),
+        ('{{> licensedPartial name="World"}}', {'licensedPartial'}),
+        # A context argument rather than a hash.
+        ('{{> card this}}', {'card'}),
+        # Whitespace control on either side.
+        ('{{~> card}}', {'card'}),
+        ('{{ ~> card}}', {'card'}),
+        ('{{> card ~}}', {'card'}),
+        # Partial blocks, whose closing tag is not a reference.
+        ('{{#> layout}}body{{/layout}}', {'layout'}),
+        ('{{~#> layout}}body{{/layout}}', {'layout'}),
+        # A dynamic name cannot be known before render, so it stays unmatched.
+        ("{{> (lookup . 'card')}}", set()),
+        # @partial-block is supplied by the engine, not by the caller.
+        ('{{#> layout}}{{> @partial-block}}{{/layout}}', {'layout'}),
+        # Closing tags and ordinary mustaches are not partial references.
+        ('{{#if card}}{{card}}{{/if}}', set()),
     ],
 )
 def test_identify_partials(template: str, expected: set[str]) -> None:
@@ -892,6 +910,108 @@ class TestResolvePartialsCycleDetection(IsolatedAsyncioTestCase):
         self.assertIn('partialC', resolved_partials)
         # Each should only be resolved once
         self.assertEqual(len(resolved_partials), 3)
+
+
+class TestPartialArgumentForms(IsolatedAsyncioTestCase):
+    """Partials carrying arguments or control characters still reach the resolver."""
+
+    async def _resolve(self, template: str) -> set[str]:
+        """Return the partial names the resolver was asked for."""
+        asked: set[str] = set()
+
+        async def partial_resolver(name: str) -> str | None:
+            asked.add(name)
+            return 'Welcome back, {{name}}!'
+
+        dotprompt = Dotprompt(partial_resolver=partial_resolver)
+        await dotprompt._resolve_partials(template)
+        return asked
+
+    async def test_hash_argument_partial_is_resolved(self) -> None:
+        """spec/partials.yaml pairs partial parameters with a resolver; both have to work together."""
+        self.assertEqual(await self._resolve('{{> userGreeting name=username}}'), {'userGreeting'})
+
+    async def test_quoted_hash_argument_partial_is_resolved(self) -> None:
+        """A quoted argument value does not end the partial reference."""
+        self.assertEqual(await self._resolve('{{> licensedPartial name="World"}}'), {'licensedPartial'})
+
+    async def test_context_argument_partial_is_resolved(self) -> None:
+        """A positional context argument is still a reference to the same partial."""
+        self.assertEqual(await self._resolve('{{> card this}}'), {'card'})
+
+    async def test_whitespace_control_partial_is_resolved(self) -> None:
+        """Whitespace control sits outside the name and must not hide it."""
+        self.assertEqual(await self._resolve('{{~> card}}'), {'card'})
+
+    async def test_partial_block_is_resolved(self) -> None:
+        """A partial block names a partial even though it also opens a block."""
+        self.assertEqual(await self._resolve('{{#> layout}}body{{/layout}}'), {'layout'})
+
+    async def test_hash_argument_partial_renders_through_the_resolver(self) -> None:
+        """spec/partials.yaml supplies this case through define_partial; a resolver has to work too."""
+
+        async def partial_resolver(name: str) -> str | None:
+            return 'Welcome back, {{name}}!' if name == 'userGreeting' else None
+
+        result = await Dotprompt(partial_resolver=partial_resolver).render(
+            '{{> userGreeting name=username}}',
+            DataArgument(input={'username': 'Ada'}),
+        )
+
+        assert result.messages[0].content == [TextPart(text='Welcome back, Ada!')]
+
+    async def test_whitespace_control_partial_renders_through_the_resolver(self) -> None:
+        """Whitespace control trims the output but must not hide the name from the resolver."""
+
+        async def partial_resolver(name: str) -> str | None:
+            return 'Ada' if name == 'author' else None
+
+        result = await Dotprompt(partial_resolver=partial_resolver).render(
+            'by {{~> author}}',
+            DataArgument(),
+        )
+
+        assert result.messages[0].content == [TextPart(text='byAda')]
+
+
+class TestCycleDetectionAcrossPartialForms(IsolatedAsyncioTestCase):
+    """Cycles are refused whichever syntax expresses the back-edge.
+
+    A cycle the scan misses reaches the native runtime, which does not raise:
+    it takes the process down with SIGSEGV. Every form that names a partial
+    has to be visible here.
+    """
+
+    async def _assert_cycle(self, library: dict[str, str], template: str) -> tuple[str, ...]:
+        """Render a template against a pre-registered partial library and return the reported cycle.
+
+        The partials are registered with the engine up front, so a missed
+        back-edge is handed straight to handlebars-rust.
+        """
+        dotprompt = Dotprompt(partials=library)
+        with pytest.raises(PartialCycleError) as exc_info:
+            await dotprompt.render(template, DataArgument())
+        return exc_info.value.cycle
+
+    async def test_cycle_through_whitespace_control(self) -> None:
+        """`{{~> name}}` is a back-edge like any other."""
+        library = {'city': '{{~> weather}}', 'weather': '{{~> city}}'}
+        self.assertEqual(await self._assert_cycle(library, '{{> city}}'), ('city', 'weather', 'city'))
+
+    async def test_cycle_through_hash_arguments(self) -> None:
+        """Passing a parameter does not make the reference invisible."""
+        library = {'city': '{{> weather unit="C"}}', 'weather': '{{> city zoom=2}}'}
+        self.assertEqual(await self._assert_cycle(library, '{{> city}}'), ('city', 'weather', 'city'))
+
+    async def test_cycle_through_partial_blocks(self) -> None:
+        """A partial block can close a loop just as a plain reference can."""
+        library = {'city': '{{#> weather}}x{{/weather}}', 'weather': '{{#> city}}y{{/city}}'}
+        self.assertEqual(await self._assert_cycle(library, '{{> city}}'), ('city', 'weather', 'city'))
+
+    async def test_self_cycle_through_whitespace_control(self) -> None:
+        """A partial that includes itself with `{{~>}}` loops just as directly."""
+        library = {'loop': 'x {{~> loop}}'}
+        self.assertEqual(await self._assert_cycle(library, '{{> loop}}'), ('loop', 'loop'))
 
 
 if __name__ == '__main__':

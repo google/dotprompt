@@ -72,7 +72,14 @@ from handlebarrz import Context, EscapeFunction, Handlebars, HelperFn, RuntimeOp
 # Since the handlebars-rust implementation doesn't expose a visitor
 # to walk the AST to find partial nodes, we're using a crude regular expression
 # to find partials.
-_PARTIAL_PATTERN = re.compile(r'{{\s*>\s*([a-zA-Z0-9_.-]+)\s*}}')
+#
+# The name is not anchored to the closing braces: a partial can carry arguments
+# (`{{> card name="Ada"}}`), whitespace control (`{{~> card}}`) or open a block
+# (`{{#> layout}}`), and anchoring hid all three from the resolver and from
+# cycle detection. Two things stay unmatched on purpose: a dynamic name
+# (`{{> (lookup . 'card')}}`) isn't knowable before render, and `@partial-block`
+# is supplied by the engine rather than the caller.
+_PARTIAL_PATTERN = re.compile(r'\{\{\s*~?\s*#?\s*>\s*([a-zA-Z0-9_.\-/]+)')
 
 
 def _pick_model(*models: str | None) -> str | None:
