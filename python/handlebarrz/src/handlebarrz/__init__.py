@@ -54,9 +54,9 @@ result = handlebars.render('greeting', {'name': 'World'})  # "Hello World!"
 
 
 # Using custom helpers.
-def format_name(params, hash, ctx):
+def format_name(params, options):
     name = params[0]
-    return name.upper() if hash.get('uppercase') else name
+    return name.upper() if options.hash_value('uppercase') else name
 
 
 handlebars.register_helper('format', format_name)
@@ -65,6 +65,9 @@ handlebars.register_template(
 )
 result = handlebars.render('formatted', {'name': 'World'})  # "Hello WORLD!"
 ```
+
+Helper options are valid only during their callback and cannot be used later or
+from background work.
 """
 
 from __future__ import annotations
@@ -391,26 +394,26 @@ class Template:
         be called from templates using the `{{helper_name arg1 arg2 key=value}}`
         syntax.
 
-        The helper function should take three parameters:
+        The helper function should take two parameters:
         - params: List of positional parameters passed to the helper
-        - hash: Dictionary of named parameters (hash) passed to the helper
-        - context: Dictionary containing the current context
+        - options: Callback-scoped access to hash values, context, and block
+          branches
 
         It should return a string that will be inserted into the template.
+        The options object cannot be used after the callback returns or from
+        background work.
 
         Examples:
             ```python
-            # A helper that formats a date
-            def format_date(params, hash, ctx):
-                date_obj = params[0]
-                format_str = hash.get('format', '%Y-%m-%d')
-                return date_obj.strftime(format_str)
+            def format_name(params, options):
+                name = str(params[0]) if params else ''
+                return name.upper() if options.hash_value('uppercase') else name
 
 
-            template.register_helper('formatDate', format_date)
+            template.register_helper('format', format_name)
 
             # Usage in template:
-            # {{formatDate date format="%-d %B %Y"}}
+            # {{format name uppercase=true}}
             ```
 
         Args:
@@ -467,7 +470,9 @@ class Template:
 
         Raises:
             ValueError: If the template does not exist or there is a rendering
-                error.
+                error. KeyboardInterrupt, SystemExit, and other non-Exception
+                BaseExceptions raised by a helper are not converted to
+                ValueError.
         """
         try:
             runtime_data = (options or {}).get('data') or {}
@@ -503,7 +508,9 @@ class Template:
 
         Raises:
             ValueError: If there is a syntax error in the template or a
-                rendering error.
+                rendering error. KeyboardInterrupt, SystemExit, and other
+                non-Exception BaseExceptions raised by a helper are not
+                converted to ValueError.
         """
         try:
             runtime_data = (options.get('data') if options is not None else {}) or {}
@@ -632,7 +639,7 @@ def create_helper(
     - Transforming data (sorting, filtering, mapping).
 
     Args:
-        fn: A function taking of type HelperFn (params, hash, context).
+        fn: A function taking arguments (params, options).
 
     Returns:
         Function compatible with the Rust interface.
