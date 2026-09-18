@@ -877,7 +877,7 @@ lint = [{ name = "ruff", specifier = ">=0.9.2" }]
 
 [[package]]
 name = "dotpromptz"
-version = "0.1.5"
+version = "0.1.6"
 source = { editable = "dotpromptz" }
 dependencies = [
     { name = "aiofiles" },
@@ -920,7 +920,7 @@ dev = [
 
 [[package]]
 name = "dotpromptz-handlebars"
-version = "0.1.8"
+version = "0.1.9"
 source = { editable = "handlebarrz" }
 dependencies = [
     { name = "structlog" },
