@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.6](https://github.com/google/dotprompt/compare/dotpromptz-0.1.5...dotpromptz-0.1.6) (2026-09-18)
+
+
+### Features
+
+* **python:** add output schema validation and JSON Schema to Picoschema reverse conversion ([#540](https://github.com/google/dotprompt/issues/540)) ([5c0ea0a](https://github.com/google/dotprompt/commit/5c0ea0a3545d89165b2bbf4c422059ef35df07bb))
+
+
+### Bug Fixes
+
+* add Apache-2.0 license metadata to all packages ([#528](https://github.com/google/dotprompt/issues/528)) ([c76c663](https://github.com/google/dotprompt/commit/c76c6639fb77b39ef5b45a1a8dbebacc4c9bd422))
+* **docs:** update deprecated model references to Gemini 2.5/3 ([#541](https://github.com/google/dotprompt/issues/541)) ([fce691c](https://github.com/google/dotprompt/commit/fce691c831abddfcfc8bcdeee79d564c141298d0))
+* **py:** fill omitted template variables from prompt input.default ([#601](https://github.com/google/dotprompt/issues/601)) ([8650034](https://github.com/google/dotprompt/commit/8650034e2801e7d50d198502821844b5da6b4734))
+* **python:** isolate runtime context from input and reject cyclic partials ([#604](https://github.com/google/dotprompt/issues/604)) ([6b97598](https://github.com/google/dotprompt/commit/6b97598cb33bf9433ae7ad6cff63ced15299de0d))
+* **python:** raise FrontmatterError on invalid YAML instead of falling through to body text ([#605](https://github.com/google/dotprompt/issues/605)) ([2a57383](https://github.com/google/dotprompt/commit/2a573833cdf00800549680c2d447ea510751f4c6))
+
 ## [0.1.5](https://github.com/google/dotprompt/compare/dotpromptz-0.1.4...dotpromptz-0.1.5) (2026-01-30)
 
 
