@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.9](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.8...dotpromptz-handlebars-0.1.9) (2026-09-18)
+
+
+### Bug Fixes
+
+* add Apache-2.0 license metadata to all packages ([#528](https://github.com/google/dotprompt/issues/528)) ([c76c663](https://github.com/google/dotprompt/commit/c76c6639fb77b39ef5b45a1a8dbebacc4c9bd422))
+* **python:** expire helper options on return and pass through helper exits in render_template ([#607](https://github.com/google/dotprompt/issues/607)) ([df61290](https://github.com/google/dotprompt/commit/df612903a8777ce626b926f5c840c6d4758874f1))
+* **python:** isolate runtime context from input and reject cyclic partials ([#604](https://github.com/google/dotprompt/issues/604)) ([6b97598](https://github.com/google/dotprompt/commit/6b97598cb33bf9433ae7ad6cff63ced15299de0d))
+
 ## [0.1.8](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.7...dotpromptz-handlebars-0.1.8) (2026-01-30)
 
 
