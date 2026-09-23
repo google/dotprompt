@@ -16,7 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import Handlebars from 'handlebars/dist/cjs/handlebars.js';
+import type Handlebars from 'handlebars';
+import HandlebarsRuntime from 'handlebars/dist/cjs/handlebars.js';
 import * as builtinHelpers from './helpers';
 import { parseDocument, toMessages } from './parse';
 import { picoschema } from './picoschema';
@@ -78,7 +79,7 @@ export class Dotprompt {
   private store?: PromptStore;
 
   constructor(options?: DotpromptOptions) {
-    this.handlebars = Handlebars.noConflict();
+    this.handlebars = HandlebarsRuntime.noConflict();
     this.modelConfigs = options?.modelConfigs || this.modelConfigs;
     this.defaultModel = options?.defaultModel;
     this.tools = options?.tools || {};

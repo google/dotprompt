@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Google LLC
+ * Copyright 2026 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// Type declarations for handlebars/dist/cjs/handlebars.js
-// This simply maps the CJS dist path to the official handlebars types
-declare module 'handlebars/dist/cjs/handlebars.js' {
-  // Import and re-export everything from the main handlebars package
-  // This leverages the official types from node_modules/handlebars/types/index.d.ts
-  export * from 'handlebars';
+import { Dotprompt as CjsDotprompt } from '../dist/index.js';
+import { Dotprompt as EsmDotprompt } from '../dist/index.mjs';
 
-  import handlebars from 'handlebars';
-  export default handlebars;
-}
+const helper = (value: string) => value;
+
+new CjsDotprompt({ helpers: { echo: helper } });
+new EsmDotprompt({ helpers: { echo: helper } });
