@@ -595,9 +595,7 @@ jobs:
 #          python-version: ${{ matrix.python_version }}
 #
 #      - name: Set up Rust
-#        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-with:
-  toolchain: stable
+#        uses: dtolnay/rust-toolchain@stable
 #        with:
 #          toolchain: stable
 #          target: aarch64-pc-windows-msvc
