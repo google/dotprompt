@@ -612,9 +612,12 @@ jobs:
     permissions:
       id-token: write
     steps:
+      # abi3 wheels from every Python version share one filename per platform.
+      # Keep a single build so that file is written once.
       - name: Download wheels
         uses: actions/download-artifact@v7
         with:
+          pattern: '*-3.10*'
           merge-multiple: true
           path: dist/
 
