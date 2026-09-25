@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [project]
-dependencies    = ["dotpromptz", "dotpromptz-handlebars"]
+dependencies    = ["dotpromptz", "dotpromptz-handlebars", "handlebars-python"]
 description     = "Workspace for Dotprompt packages"
 license         = "Apache-2.0"
 name            = "dotprompt-workspace"
@@ -78,12 +78,18 @@ constraint-dependencies = [
 ]
 default-groups = ["dev", "lint"]
 
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+default = true
+
 [tool.uv.sources]
 dotpromptz            = { workspace = true }
 dotpromptz-handlebars = { workspace = true }
+handlebars-python     = { workspace = true }
 
 [tool.uv.workspace]
-members = ["dotpromptz", "handlebarrz", "tests/*"]
+members = ["dotpromptz", "handlebarrz", "handlebars", "tests/*"]
 
 # Ruff checks and formatting.
 [tool.ruff]
@@ -138,7 +144,7 @@ select = [
 [tool.ruff.lint.isort]
 combine-as-imports = true
 force-single-line = false
-known-first-party = ["dotpromptz", "dotpromptz-handlebars"]
+known-first-party = ["dotpromptz", "dotpromptz-handlebars", "handlebars"]
 section-order = [
   "future",
   "standard-library",
