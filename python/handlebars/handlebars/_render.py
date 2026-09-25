@@ -58,9 +58,10 @@ class Block:
 class Partial:
     """A {{> name}} inclusion."""
 
-    def __init__(self, name, context_path):
+    def __init__(self, name, context_path, hash=None):
         self.name = name
         self.context_path = context_path
+        self.hash = hash or {}
 
 
 class PartialBlock:
@@ -144,7 +145,7 @@ def _tokens(source):
         body = body[:-1] if strip_after else body
         parts.append(('tag', body.strip(), triple or raw_block, strip_before, strip_after, raw_block))
         i = end + closer
-    return _strip_neighbors(parts)
+    return _drop_standalone_lines(_strip_neighbors(parts))
 
 
 def _strip_neighbors(parts):
@@ -157,6 +158,82 @@ def _strip_neighbors(parts):
         if strip_after and index + 1 < len(parts) and isinstance(parts[index + 1], str):
             parts[index + 1] = parts[index + 1].lstrip()
     return parts
+
+
+def _drop_standalone_lines(parts):
+    """A block, partial, or comment alone on a line does not leave that blank line."""
+    for index, part in enumerate(parts):
+        if not isinstance(part, tuple) or not _standalone_tag(part[1]):
+            continue
+        if not _starts_line(parts, index):
+            continue
+        line_end = _line_ending_after(parts, index)
+        if line_end is None:
+            continue
+        _trim_indent_before(parts, index)
+        if line_end:
+            nxt = parts[index + 1]
+            parts[index + 1] = nxt[line_end:]
+    return parts
+
+
+def _starts_line(parts, index):
+    """True when only spaces or tabs sit between this tag and the previous newline."""
+    for cursor in range(index - 1, -1, -1):
+        part = parts[cursor]
+        if not isinstance(part, str):
+            return False
+        newline = part.rfind('\n')
+        if newline >= 0:
+            return not part[newline + 1 :].strip(' \t')
+        if part.strip(' \t'):
+            return False
+    return True
+
+
+def _line_ending_after(parts, index):
+    """How many characters of the following line ending to drop, or None."""
+    if index + 1 >= len(parts):
+        return 0
+    nxt = parts[index + 1]
+    if not isinstance(nxt, str):
+        return None
+    line_end = _standalone_line_end(nxt)
+    if nxt and line_end is None:
+        return None
+    return len(line_end)
+
+
+def _trim_indent_before(parts, index):
+    for cursor in range(index - 1, -1, -1):
+        part = parts[cursor]
+        if not isinstance(part, str):
+            return
+        newline = part.rfind('\n')
+        if newline >= 0:
+            parts[cursor] = part[: newline + 1]
+            return
+        parts[cursor] = ''
+
+
+def _standalone_line_end(text):
+    """The spaces and newline after a tag that sits at the end of its line."""
+    index = 0
+    while index < len(text) and text[index] in ' \t':
+        index += 1
+    if index == len(text):
+        return text
+    if text.startswith('\r\n', index):
+        return text[: index + 2]
+    if text.startswith('\n', index):
+        return text[: index + 1]
+    return None
+
+
+def _standalone_tag(body):
+    if body.startswith(('!', '#', '/', '>')):
+        return True
+    return body == 'else' or body.startswith('else ')
 
 
 def _parse(parts):
@@ -210,8 +287,9 @@ def _until(parts, index, stop):
             nodes.append(Block(call, body_nodes, inverse))
             continue
         if body.startswith('>'):
-            bits = body[1:].split()
-            nodes.append(Partial(bits[0], bits[1] if len(bits) > 1 else None))
+            call = _call(body[1:].strip())
+            context_path = call['args'][0] if call['args'] else None
+            nodes.append(Partial(call['name'], context_path, call['hash']))
             continue
         src = body[1:].strip() if body.startswith('&') else body
         nodes.append(Mustache(_call(src), raw=triple or body.startswith('&')))
@@ -319,7 +397,7 @@ def _render_one(node, **env):
         value = _eval_block(node, **env)
         return '' if value is None else str(value)
     if isinstance(node, Partial):
-        return _render_partial(node.name, node.context_path, None, **env)
+        return _render_partial(node.name, node.context_path, None, **{**env, 'partial_hash': node.hash})
     if isinstance(node, PartialBlock):
         return _render_partial(node.name, None, node.body, **env)
     return ''
@@ -373,7 +451,7 @@ def _each(node, **env):
 
 
 def _eval_call(call, *, block, **env):
-    from handlebars import Options
+    from handlebars.compiler import Options
 
     helper = env['helpers'].get(call['name'])
     args = [_value(bit, **env) for bit in call['args']]
@@ -456,7 +534,7 @@ def _truthy(value):
 
 
 def _show(value, *, raw, escape_html):
-    from handlebars import SafeString
+    from handlebars.compiler import SafeString
 
     if value is None:
         return ''
@@ -469,12 +547,32 @@ def _render_partial(name, context_path, fallback, **env):
     program = env['partials'].get(name)
     if program is None:
         if fallback is not None:
-            return _render(fallback, **env)
+            return _render(fallback, **_render_kwargs(env))
         return ''
     if isinstance(program, str):
         program = compile_template(program)
         env['partials'][name] = program
     scopes = env['scopes']
+    hashed = {key: _value(token, **env) for key, token in (env.get('partial_hash') or {}).items()}
     if context_path:
-        scopes = [*scopes, _value(context_path, **env)]
-    return _render(program, **{**env, 'scopes': scopes})
+        # {{> card user}} renders the partial against user, not the surrounding input.
+        scopes = [*scopes, _overlay(_value(context_path, **env), hashed)]
+    elif hashed:
+        # {{> greeting name=username}} keeps the current input and adds name.
+        scopes = [*scopes[:-1], _overlay(scopes[-1], hashed)]
+    return _render(program, **_render_kwargs(env, scopes=scopes))
+
+
+def _render_kwargs(env, **overrides):
+    allowed = ('scopes', 'frame', 'helpers', 'partials', 'escape_html', 'strict')
+    kwargs = {key: env[key] for key in allowed}
+    kwargs.update(overrides)
+    return kwargs
+
+
+def _overlay(base, hashed):
+    if not hashed:
+        return base
+    if isinstance(base, dict):
+        return {**base, **hashed}
+    return dict(hashed)
