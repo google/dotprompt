@@ -24,7 +24,7 @@ import pytest
 
 from dotpromptz import Dotprompt
 from dotpromptz.typing import DataArgument, Role, TextPart
-from handlebarrz import HelperOptions
+from handlebars import HelperOptions
 
 
 def _assert_single_message(result: Any, *, role: Role, text: str) -> None:

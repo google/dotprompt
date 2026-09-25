@@ -20,7 +20,7 @@ import pytest
 
 from dotpromptz.dotprompt import Dotprompt
 from dotpromptz.typing import DataArgument, TextPart
-from handlebarrz import HelperOptions
+from handlebars import HelperOptions
 
 
 @pytest.mark.asyncio

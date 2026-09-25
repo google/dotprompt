@@ -48,7 +48,7 @@ from dotpromptz.typing import (
     TextPart,
     ToolDefinition,
 )
-from handlebarrz import HelperFn, HelperOptions
+from handlebars import HelperFn, HelperOptions
 
 
 @pytest.fixture
@@ -181,9 +181,9 @@ Hello, {{name}}!"""
         assert result.messages[0].content == [TextPart(text='Hello, Ada!')]
 
     async def test_compile_render_mock(self) -> None:
-        """Test that handlebarrz compile produces a working render function.
+        """Test that compile produces a working render function.
 
-        The handlebarrz.compile() method returns a function that takes:
+        The compile() method returns a function that takes:
         - context: A dict with the template variables
         - options: RuntimeOptions with a 'data' key for @ variables
         """
@@ -435,21 +435,23 @@ class TestResolveTools(IsolatedAsyncioTestCase):
         """Should resolve registered tools."""
         dotprompt = Dotprompt()
 
-        tool_def = ToolDefinition.model_validate({
-            'name': 'testTool',
-            'description': 'A test tool',
-            'inputSchema': {
-                'type': 'object',
-                'properties': {
-                    'param1': {'type': 'string'},
+        tool_def = ToolDefinition.model_validate(
+            {
+                'name': 'testTool',
+                'description': 'A test tool',
+                'inputSchema': {
+                    'type': 'object',
+                    'properties': {
+                        'param1': {'type': 'string'},
+                    },
                 },
-            },
-        })
+            }
+        )
 
         dotprompt.define_tool(tool_def)
-        metadata: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate({
-            'tools': ['testTool', 'unknownTool']
-        })
+        metadata: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate(
+            {'tools': ['testTool', 'unknownTool']}
+        )
 
         result = await dotprompt._resolve_tools(metadata)
 
@@ -460,16 +462,18 @@ class TestResolveTools(IsolatedAsyncioTestCase):
 
     async def test_resolve_raises_error_for_unregistered_tool(self) -> None:
         """Should raise an error for unregistered tools."""
-        tool_def = ToolDefinition.model_validate({
-            'name': 'resolvedTool',
-            'description': 'A test tool',
-            'inputSchema': {
-                'type': 'object',
-                'properties': {
-                    'param1': {'type': 'string'},
+        tool_def = ToolDefinition.model_validate(
+            {
+                'name': 'resolvedTool',
+                'description': 'A test tool',
+                'inputSchema': {
+                    'type': 'object',
+                    'properties': {
+                        'param1': {'type': 'string'},
+                    },
                 },
-            },
-        })
+            }
+        )
 
         resolve_metadata_mock = AsyncMock(return_value=tool_def)
         dotprompt = Dotprompt(tool_resolver=resolve_metadata_mock)
@@ -493,14 +497,16 @@ class TestRenderPicoSchema(IsolatedAsyncioTestCase):
         """Should process picoschema definitions."""
         dotprompt = Dotprompt()
 
-        metadata: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate({
-            'input': {
-                'schema': {'type': 'string'},
-            },
-            'output': {
-                'schema': {'type': 'number'},
-            },
-        })
+        metadata: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate(
+            {
+                'input': {
+                    'schema': {'type': 'string'},
+                },
+                'output': {
+                    'schema': {'type': 'number'},
+                },
+            }
+        )
         values_assert = {'type': 'object', 'properties': {'expanded': True}}
         # Now call the function that uses picoschema.picoschema internally
         result: PromptMetadata[dict[str, Any]] = await dotprompt._render_picoschema(metadata)
@@ -513,15 +519,17 @@ class TestRenderPicoSchema(IsolatedAsyncioTestCase):
         """Test that the original metadata is returned unchanged when no schemas are present."""
         dotprompt = Dotprompt()
 
-        metadata: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate({
-            'input': {
-                'schema': {'type': 'string'},
-            },
-            'output': {
-                'schema': {'type': 'number'},
-            },
-            'model': 'gemini-2.5-pro',
-        })
+        metadata: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate(
+            {
+                'input': {
+                    'schema': {'type': 'string'},
+                },
+                'output': {
+                    'schema': {'type': 'number'},
+                },
+                'model': 'gemini-2.5-pro',
+            }
+        )
         result: PromptMetadata[dict[str, Any]] = await dotprompt._render_picoschema(metadata)
         assert result == metadata
 
@@ -574,26 +582,32 @@ class TestResolveMetaData(IsolatedAsyncioTestCase):
         """Should merge multiple metadata objects."""
         dotprompt = Dotprompt()
 
-        base: PromptMetadata[dict[str, Any]] = PromptMetadata.model_validate({
-            'model': 'gemini-2.5-pro',
-            'config': {
-                'temperature': 0.7,
-            },
-        })
+        base: PromptMetadata[dict[str, Any]] = PromptMetadata.model_validate(
+            {
+                'model': 'gemini-2.5-pro',
+                'config': {
+                    'temperature': 0.7,
+                },
+            }
+        )
 
-        merge1: PromptMetadata[dict[str, Any]] = PromptMetadata.model_validate({
-            'config': {
-                'top_p': 0.9,
-            },
-            'tools': ['tool1'],
-        })
+        merge1: PromptMetadata[dict[str, Any]] = PromptMetadata.model_validate(
+            {
+                'config': {
+                    'top_p': 0.9,
+                },
+                'tools': ['tool1'],
+            }
+        )
 
-        merge2: PromptMetadata[dict[str, Any]] = PromptMetadata.model_validate({
-            'model': 'gemini-2.5-flash',
-            'config': {
-                'max_tokens': 2000,
-            },
-        })
+        merge2: PromptMetadata[dict[str, Any]] = PromptMetadata.model_validate(
+            {
+                'model': 'gemini-2.5-flash',
+                'config': {
+                    'max_tokens': 2000,
+                },
+            }
+        )
         render_pico_mock = AsyncMock(side_effect=lambda arg: arg)
         resolve_tools_mock = AsyncMock(side_effect=lambda arg: arg)
         with (
@@ -619,12 +633,14 @@ class TestResolveMetaData(IsolatedAsyncioTestCase):
         """Should handle undefined merges."""
         dotprompt = Dotprompt()
 
-        base: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate({
-            'model': 'gemini-2.5-pro',
-            'config': {
-                'temperature': 0.7,
-            },
-        })
+        base: PromptMetadata[dict[str, Any]] = PromptMetadata[dict[str, Any]].model_validate(
+            {
+                'model': 'gemini-2.5-pro',
+                'config': {
+                    'temperature': 0.7,
+                },
+            }
+        )
 
         render_pico_mock = AsyncMock(side_effect=lambda arg: arg)
         resolve_tools_mock = AsyncMock(side_effect=lambda arg: arg)

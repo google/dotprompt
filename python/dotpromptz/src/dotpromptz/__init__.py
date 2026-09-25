@@ -62,9 +62,9 @@ templates to create self-contained, executable prompt definitions:
 │  └──────────────┘  └──────────────┘  └──────────────────────┘  │
 │                                                                 │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │   helpers    │  │    stores    │  │      handlebarrz     │  │
+│  │   helpers    │  │    stores    │  │      handlebars      │  │
 │  │  (Built-in   │  │  (Prompt     │  │  (Handlebars engine  │  │
-│  │   functions) │  │   storage)   │  │   via Rust FFI)      │  │
+│  │   functions) │  │   storage)   │  │   for templates)     │  │
 │  └──────────────┘  └──────────────┘  └──────────────────────┘  │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘

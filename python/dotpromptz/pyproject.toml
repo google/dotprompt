@@ -37,7 +37,7 @@ classifiers = [
 dependencies = [
   "aiofiles>=24.1.0",
   "anyio>=4.9.0",
-  "dotpromptz-handlebars>=0.1.8",
+  "handlebars-python",
   "pydantic[email]>=2.10.6",
   "pyyaml>=6.0.2",
   "jsonschema>=4.23.0",
