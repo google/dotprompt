@@ -16,6 +16,9 @@
 
 name: Python checks
 
+permissions:
+  contents: read
+
 on:
   pull_request:
     branches: [main]
@@ -26,12 +29,13 @@ jobs:
     outputs:
       any_changed: ${{ steps.changed-files.outputs.any_changed }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v45
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c # v45
         with:
           files: |
             python/**
@@ -46,15 +50,16 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           # Use the PR head ref to allow pushing back to the branch
           ref: ${{ github.head_ref }}
           # Use a token that can push to the branch (for release-please PRs)
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
         with:
           enable-cache: true
 
@@ -127,33 +132,35 @@ jobs:
         exclude:
           # PyPy not available on ARM64 runners yet
           - os: ubuntu-24.04-arm
-            python-version: "pypy-3.11"
+            python-version: "pypy-3.11.13"
         include:
           # Add PyPy only for x86_64
           - os: ubuntu-latest
-            python-version: "pypy-3.11"
+            python-version: "pypy-3.11.13"
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: stable
 
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
           components: rustfmt, clippy
         env:
           RUSTUP_MAX_RETRIES: 3
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
 
       - name: Install uv and setup Python version
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
         with:
           enable-cache: true
           python-version: ${{ matrix.python-version }}
