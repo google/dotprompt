@@ -193,3 +193,15 @@ def test_strict_mode_names_the_missing_path():
 def test_block_params():
     source = '{{#each items as |item index|}}{{index}}:{{item}};{{/each}}'
     assert render(source, {'items': ['a', 'b']}) == '0:a;1:b;'
+
+
+def test_boolean_values_render_as_lowercase():
+    assert render('{{val}}', {'val': True}) == 'true'
+    assert render('{{val}}', {'val': False}) == 'false'
+
+
+def test_reserved_root_key_raises_only_when_template_reads_at_root():
+    assert render('Hello {{name}}', {'name': 'Ada'}, data_hash={'root': '/app'}) == 'Hello Ada'
+
+    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
+        render('Hello {{@root.name}}', {'name': 'Ada'}, data_hash={'root': {'name': 'runtime'}})
