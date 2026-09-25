@@ -63,7 +63,6 @@ module.exports = grammar({
         $.handlebars_block,
         $.handlebars_expression,
         $.handlebars_comment,
-        $.dotprompt_marker,
         $.text
       ),
 
@@ -91,6 +90,9 @@ module.exports = grammar({
       choice(
         seq('>', alias($.path, $.partial_reference)),
         'else',
+        alias('history', $.helper_name),
+        seq(alias(choice('role', 'section'), $.helper_name), $.argument),
+        seq(alias('media', $.helper_name), repeat1($.argument)),
         seq(alias($.path, $.helper_name), repeat1($.argument)),
         alias($.variable_reference, $.variable_reference)
       ),
@@ -135,9 +137,6 @@ module.exports = grammar({
 
     boolean: ($) => choice('true', 'false'),
 
-    dotprompt_marker: ($) =>
-      seq('<<<dotprompt:', alias(/[^>]+/, $.marker_content), '>>>'),
-
-    text: ($) => /[^{<#]+|\{|<|#/,
+    text: ($) => /[^{#]+|\{|#/,
   },
 });
