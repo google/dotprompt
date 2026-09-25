@@ -78,6 +78,11 @@ constraint-dependencies = [
 ]
 default-groups = ["dev", "lint"]
 
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+default = true
+
 [tool.uv.sources]
 dotpromptz            = { workspace = true }
 dotpromptz-handlebars = { workspace = true }
