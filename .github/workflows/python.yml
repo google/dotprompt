@@ -129,14 +129,6 @@ jobs:
           - "3.12"
           - "3.13"
           - "3.14"
-        exclude:
-          # PyPy not available on ARM64 runners yet
-          - os: ubuntu-24.04-arm
-            python-version: "pypy-3.11.13"
-        include:
-          # Add PyPy only for x86_64
-          - os: ubuntu-latest
-            python-version: "pypy-3.11.13"
       fail-fast: false
 
     steps:
