@@ -87,15 +87,86 @@ def compile_template(source):
 
 def render_program(program, context, *, data, helpers, partials, escape_html, strict):
     """Renders parsed nodes. data is the dict {{@name}} reads."""
+    data_dict = data or {}
+    partials_dict = dict(partials)
+    if 'root' in data_dict and _reads_at_root(program, partials_dict):
+        raise ValueError("runtime data key 'root' is reserved")
+    clean_data = {k: v for k, v in data_dict.items() if k != 'root'}
     return _render(
         program,
         scopes=[context],
-        frame={'root': context, **(data or {})},
+        frame={'root': context, **clean_data},
         helpers=helpers,
-        partials=dict(partials),
+        partials=partials_dict,
         escape_html=escape_html,
         strict=strict,
     )
+
+
+def _reads_at_root(nodes, partials, seen_partials=None):
+    if seen_partials is None:
+        seen_partials = set()
+    for node in nodes:
+        if isinstance(node, Mustache):
+            if _call_reads_at_root(node.call):
+                return True
+        elif isinstance(node, Block):
+            if _call_reads_at_root(node.call):
+                return True
+            if _reads_at_root(node.body, partials, seen_partials):
+                return True
+            if _reads_at_root(node.inverse, partials, seen_partials):
+                return True
+        elif isinstance(node, Partial):
+            if _call_reads_at_root({
+                'name': node.name,
+                'args': [node.context_path] if node.context_path else [],
+                'hash': node.hash,
+                'params': [],
+            }):
+                return True
+            if node.name not in seen_partials:
+                seen_partials.add(node.name)
+                part = partials.get(node.name)
+                if isinstance(part, str):
+                    part = compile_template(part)
+                    partials[node.name] = part
+                if isinstance(part, list) and _reads_at_root(part, partials, seen_partials):
+                    return True
+        elif isinstance(node, PartialBlock):
+            if _reads_at_root(node.body, partials, seen_partials):
+                return True
+            if node.name not in seen_partials:
+                seen_partials.add(node.name)
+                part = partials.get(node.name)
+                if isinstance(part, str):
+                    part = compile_template(part)
+                    partials[node.name] = part
+                if isinstance(part, list) and _reads_at_root(part, partials, seen_partials):
+                    return True
+    return False
+
+
+def _call_reads_at_root(call):
+    if _token_reads_at_root(call.get('name', '')):
+        return True
+    for arg in call.get('args', []):
+        if _token_reads_at_root(arg):
+            return True
+    for val in call.get('hash', {}).values():
+        if _token_reads_at_root(val):
+            return True
+    return False
+
+
+def _token_reads_at_root(token):
+    if not isinstance(token, str):
+        return False
+    if token.startswith('(') and token.endswith(')'):
+        return any(_token_reads_at_root(b) for b in _args(token[1:-1].strip()))
+    if len(token) >= 2 and token[0] == token[-1] and token[0] in '"\'':
+        return False
+    return token == '@root' or token.startswith('@root.') or token.startswith('@root/')
 
 
 def _tokens(source):
@@ -538,6 +609,8 @@ def _show(value, *, raw, escape_html):
 
     if value is None:
         return ''
+    if isinstance(value, bool):
+        return 'true' if value else 'false'
     if isinstance(value, SafeString) or raw or not escape_html:
         return str(value)
     return html.escape(str(value), quote=True).replace("'", '&#x27;')
