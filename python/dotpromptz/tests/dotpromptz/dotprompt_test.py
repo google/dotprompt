@@ -48,7 +48,7 @@ from dotpromptz.typing import (
     TextPart,
     ToolDefinition,
 )
-from handlebarrz import HelperFn, HelperOptions
+from handlebars import HelperFn, HelperOptions
 
 
 @pytest.fixture
@@ -181,9 +181,9 @@ Hello, {{name}}!"""
         assert result.messages[0].content == [TextPart(text='Hello, Ada!')]
 
     async def test_compile_render_mock(self) -> None:
-        """Test that handlebarrz compile produces a working render function.
+        """Test that compile produces a working render function.
 
-        The handlebarrz.compile() method returns a function that takes:
+        The compile() method returns a function that takes:
         - context: A dict with the template variables
         - options: RuntimeOptions with a 'data' key for @ variables
         """

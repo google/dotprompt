@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [project]
-dependencies    = ["dotpromptz", "dotpromptz-handlebars", "handlebars-python"]
+dependencies    = ["dotpromptz", "handlebars-python"]
 description     = "Workspace for Dotprompt packages"
 license         = "Apache-2.0"
 name            = "dotprompt-workspace"
@@ -65,7 +65,7 @@ python_files                       = ["**/*_test.py"]
 
 [tool.coverage.run]
 omit   = ["tests/*", "**/tests/*", "**/*_test.py"]
-source = ["dotpromptz", "handlebarrz"]
+source = ["dotpromptz", "handlebars"]
 
 [tool.coverage.report]
 fail_under = 85
@@ -84,12 +84,11 @@ url = "https://pypi.org/simple"
 default = true
 
 [tool.uv.sources]
-dotpromptz            = { workspace = true }
-dotpromptz-handlebars = { workspace = true }
-handlebars-python     = { workspace = true }
+dotpromptz        = { workspace = true }
+handlebars-python = { workspace = true }
 
 [tool.uv.workspace]
-members = ["dotpromptz", "handlebarrz", "handlebars", "tests/*"]
+members = ["dotpromptz", "handlebars", "tests/*"]
 
 # Ruff checks and formatting.
 [tool.ruff]
@@ -144,7 +143,7 @@ select = [
 [tool.ruff.lint.isort]
 combine-as-imports = true
 force-single-line = false
-known-first-party = ["dotpromptz", "dotpromptz-handlebars", "handlebars"]
+known-first-party = ["dotpromptz", "handlebars"]
 section-order = [
   "future",
   "standard-library",
@@ -184,7 +183,7 @@ project_excludes = [
   "dist",
   "node_modules",
 ]
-project_includes = ["dotpromptz", "handlebarrz", "tests"]
+project_includes = ["dotpromptz", "handlebars", "tests"]
 python_version = "3.10" # Matches ruff.target-version
 search_path = ["."]
 

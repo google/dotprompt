@@ -36,7 +36,6 @@ crate.from_cargo(
         "//rs/smoke:Cargo.toml",
         "//rs/dotprompt:Cargo.toml",
         "//rs/promptly:Cargo.toml",
-        "//python/handlebarrz:Cargo.toml",
     ],
 )
 use_repo(crate, "crates")

@@ -65,7 +65,7 @@ from dotpromptz.typing import (
     VariablesT,
 )
 from dotpromptz.util import remove_undefined_fields
-from handlebarrz import Context, EscapeFunction, Handlebars, HelperFn, RuntimeOptions
+from handlebars import Context, EscapeFunction, Handlebars, HelperFn, RuntimeOptions
 
 # Pre-compiled regex for finding partial references in handlebars templates
 

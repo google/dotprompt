@@ -39,7 +39,7 @@
 import json
 from typing import Any
 
-from handlebarrz import Handlebars, HelperFn, HelperOptions
+from handlebars import Handlebars, HelperFn, HelperOptions, SafeString
 
 
 def json_helper(params: list[Any], options: HelperOptions) -> str:
@@ -67,10 +67,10 @@ def json_helper(params: list[Any], options: HelperOptions) -> str:
     except (ValueError, TypeError):
         indent = 0
 
-    # Let serialization errors propagate like JS JSON.stringify
+    # The JSON text is the value the caller asked to insert, quotes included.
     if indent == 0:
-        return json.dumps(obj, separators=(',', ':'))
-    return json.dumps(obj, indent=indent)
+        return SafeString(json.dumps(obj, separators=(',', ':')))
+    return SafeString(json.dumps(obj, indent=indent))
 
 
 def role_helper(params: list[Any], options: HelperOptions) -> str:
@@ -92,7 +92,7 @@ def role_helper(params: list[Any], options: HelperOptions) -> str:
         return ''
 
     role_name = str(params[0])
-    return f'<<<dotprompt:role:{role_name}>>>'
+    return SafeString(f'<<<dotprompt:role:{role_name}>>>')
 
 
 def history_helper(params: list[Any], options: HelperOptions) -> str:
@@ -110,7 +110,7 @@ def history_helper(params: list[Any], options: HelperOptions) -> str:
     Returns:
         History marker of the form `<<<dotprompt:history>>>`.
     """
-    return '<<<dotprompt:history>>>'
+    return SafeString('<<<dotprompt:history>>>')
 
 
 def section_helper(params: list[Any], options: HelperOptions) -> str:
@@ -132,7 +132,7 @@ def section_helper(params: list[Any], options: HelperOptions) -> str:
         return ''
 
     section_name = str(params[0])
-    return f'<<<dotprompt:section {section_name}>>>'
+    return SafeString(f'<<<dotprompt:section {section_name}>>>')
 
 
 def media_helper(params: list[Any], options: HelperOptions) -> str:
@@ -156,9 +156,8 @@ def media_helper(params: list[Any], options: HelperOptions) -> str:
 
     content_type = options.hash_value('contentType')
     if content_type:
-        return f'<<<dotprompt:media:url {url} {content_type}>>>'
-    else:
-        return f'<<<dotprompt:media:url {url}>>>'
+        return SafeString(f'<<<dotprompt:media:url {url} {content_type}>>>')
+    return SafeString(f'<<<dotprompt:media:url {url}>>>')
 
 
 def if_equals_helper(params: list[Any], options: HelperOptions) -> str:

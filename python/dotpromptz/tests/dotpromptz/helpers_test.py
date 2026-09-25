@@ -28,7 +28,7 @@ from dotpromptz.helpers import (
     section_helper,
     unless_equals_helper,
 )
-from handlebarrz import Handlebars
+from handlebars import Handlebars
 
 
 class TestDotpromptHelpers(unittest.TestCase):
@@ -206,7 +206,7 @@ class TestDotpromptHelpers(unittest.TestCase):
 
         self.handlebars.register_template('non_serial', '{{json data}}')
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(TypeError):
             self.handlebars.render('non_serial', {'data': NonSerializable()})
 
     def test_if_equals_type_safety_int_vs_string(self) -> None:
