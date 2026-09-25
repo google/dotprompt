@@ -825,6 +825,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "dotpromptz" },
     { name = "dotpromptz-handlebars" },
+    { name = "handlebars-python" },
 ]
 
 [package.dev-dependencies]
@@ -854,6 +855,7 @@ lint = [
 requires-dist = [
     { name = "dotpromptz", editable = "dotpromptz" },
     { name = "dotpromptz-handlebars", editable = "handlebarrz" },
+    { name = "handlebars-python", editable = "handlebars" },
 ]
 
 [package.metadata.requires-dev]

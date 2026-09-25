@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [project]
-dependencies    = ["dotpromptz", "dotpromptz-handlebars"]
+dependencies    = ["dotpromptz", "dotpromptz-handlebars", "handlebars-python"]
 description     = "Workspace for Dotprompt packages"
 license         = "Apache-2.0"
 name            = "dotprompt-workspace"
