@@ -137,7 +137,13 @@ def test_nested_each_has_its_own_index():
 
 
 def test_parent_path_inside_with():
-    assert render('{{#with person}}{{name}} works at {{../company}}{{/with}}', {'company': 'Acme', 'person': {'name': 'Alice'}}) == 'Alice works at Acme'
+    assert (
+        render(
+            '{{#with person}}{{name}} works at {{../company}}{{/with}}',
+            {'company': 'Acme', 'person': {'name': 'Alice'}},
+        )
+        == 'Alice works at Acme'
+    )
 
 
 def test_grandparent_path():
@@ -169,7 +175,10 @@ def test_each_block_param_is_the_item():
 
 
 def test_each_block_params_are_the_item_and_the_index():
-    assert render('{{#each items as |item index|}}{{index}}:{{item}};{{/each}}', {'items': ['a', 'b', 'c']}) == '0:a;1:b;2:c;'
+    assert (
+        render('{{#each items as |item index|}}{{index}}:{{item}};{{/each}}', {'items': ['a', 'b', 'c']})
+        == '0:a;1:b;2:c;'
+    )
 
 
 def test_each_block_params_over_an_object_are_the_value_and_the_key():
