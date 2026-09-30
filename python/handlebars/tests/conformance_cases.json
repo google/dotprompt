@@ -1,0 +1,3137 @@
+[
+  {
+    "name": "plain_name_and_persona_in_greeting",
+    "template": "Say hello to {{name}} in the voice of a {{persona}}.",
+    "context": {
+      "name": "Ada",
+      "persona": "Space Pirate"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Say hello to Ada in the voice of a Space Pirate."
+  },
+  {
+    "name": "plain_food_in_recipe_request",
+    "template": "Generate a recipe for {{food}}.",
+    "context": {
+      "food": "pad thai"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Generate a recipe for pad thai."
+  },
+  {
+    "name": "plain_language_and_code_in_review_prompt",
+    "template": "Analyze the following {{language}} code for bugs.\n\n```{{language}}\n{{code}}\n```",
+    "context": {
+      "language": "python",
+      "code": "print('hi')"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Analyze the following python code for bugs.\n\n```python\nprint(&#x27;hi&#x27;)\n```"
+  },
+  {
+    "name": "if_context_optional_block_before_diff",
+    "template": "You are a code reviewer.\n\n{{#if context}}\nContext: {{context}}\n{{/if}}\n\nDiff:\n```diff\n{{diff}}\n```",
+    "context": {
+      "context": "Auth module refactor",
+      "diff": "+ token check"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "You are a code reviewer.\n\nContext: Auth module refactor\n\nDiff:\n```diff\n+ token check\n```"
+  },
+  {
+    "name": "if_ingredients_optional_list_section",
+    "template": "Generate a recipe for {{food}}.\n\n{{#if ingredients}}\nMake sure to include the following ingredients:\n{{#each ingredients}}\n- {{this}}\n{{/each}}\n{{/if}}",
+    "context": {
+      "food": "curry",
+      "ingredients": [
+        "coconut milk",
+        "lime"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Generate a recipe for curry.\n\nMake sure to include the following ingredients:\n- coconut milk\n- lime\n"
+  },
+  {
+    "name": "if_theme_optional_themed_restaurant_phrase",
+    "template": "Invent a menu item for a {{#if theme}}{{theme}} themed{{/if}} restaurant.",
+    "context": {
+      "theme": "steampunk"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Invent a menu item for a steampunk themed restaurant."
+  },
+  {
+    "name": "if_name_and_if_style_optional_greeting_clauses",
+    "template": "Greet a guest{{#if name}} named {{name}}{{/if}}{{#if style}} in the style of {{style}}{{/if}}.",
+    "context": {
+      "name": "Morgan",
+      "style": "pirate"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Greet a guest named Morgan in the style of pirate."
+  },
+  {
+    "name": "if_dietary_restrictions_wraps_each_comma_list",
+    "template": "Create a {{dish}} recipe.\n{{#if dietaryRestrictions}}\nDietary restrictions: {{#each dietaryRestrictions}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}.\n{{/if}}",
+    "context": {
+      "dish": "salad",
+      "dietaryRestrictions": [
+        "vegan",
+        "nut-free"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Create a salad recipe.\nDietary restrictions: vegan, nut-free.\n"
+  },
+  {
+    "name": "each_context_bullet_list_for_rag",
+    "template": "Use the following context to answer the question.\n{{#each context}}\n  - {{this}}\n{{/each}}\n\nQuestion: {{question}}",
+    "context": {
+      "context": [
+        "Doc A",
+        "Doc B"
+      ],
+      "question": "What changed?"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Use the following context to answer the question.\n  - Doc A\n  - Doc B\n\nQuestion: What changed?"
+  },
+  {
+    "name": "each_team_members_name_role_email_lines",
+    "template": "Team:\n{{#each teamMembers}}\n- {{name}} ({{role}}) - {{email}}\n{{/each}}",
+    "context": {
+      "teamMembers": [
+        {
+          "name": "Ada",
+          "role": "lead",
+          "email": "ada@example.com"
+        },
+        {
+          "name": "Grace",
+          "role": "reviewer",
+          "email": "grace@example.com"
+        }
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Team:\n- Ada (lead) - ada@example.com\n- Grace (reviewer) - grace@example.com\n"
+  },
+  {
+    "name": "each_requirements_numbered_with_add_index_helper",
+    "template": "Requirements:\n{{#each requirements}}\n{{add @index 1}}. {{this}}\n{{/each}}",
+    "context": {
+      "requirements": [
+        "Fast startup",
+        "Clear errors"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "add"
+    ],
+    "strict": false,
+    "layer": "reality",
+    "text": "Requirements:\n1. Fast startup\n2. Clear errors\n"
+  },
+  {
+    "name": "nested_each_orders_then_item_lines",
+    "template": "Orders:\n{{#each orders}}\n- Order #{{id}}: {{status}}\n{{#each items}}\n  \u2022 {{name}} x{{quantity}} @ ${{price}}\n{{/each}}\n{{/each}}",
+    "context": {
+      "orders": [
+        {
+          "id": 42,
+          "status": "pending",
+          "items": [
+            {
+              "name": "Widget",
+              "quantity": 2,
+              "price": 9
+            }
+          ]
+        }
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Orders:\n- Order #42: pending\n  \u2022 Widget x2 @ $9\n"
+  },
+  {
+    "name": "else_personality_falls_back_to_pirate",
+    "template": "You should speak as if you are a {{#if personality}}{{personality}}{{else}}pirate{{/if}}.",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "You should speak as if you are a pirate."
+  },
+  {
+    "name": "else_notifications_enabled_or_disabled_from_dotted_path",
+    "template": "Notifications: {{#if user.preferences.notifications}}enabled{{else}}disabled{{/if}}",
+    "context": {
+      "user": {
+        "preferences": {
+          "notifications": false
+        }
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Notifications: disabled"
+  },
+  {
+    "name": "else_empty_each_shows_no_items_message",
+    "template": "{{#if items}}\nYou have {{items.length}} items:\n{{#each items}}\n- {{this}}\n{{/each}}\n{{else}}\nYour cart is empty.\n{{/if}}",
+    "context": {
+      "items": []
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Your cart is empty.\n"
+  },
+  {
+    "name": "dotted_user_name_and_email_in_summary",
+    "template": "User: {{user.name}} ({{user.email}})",
+    "context": {
+      "user": {
+        "name": "Ada Lovelace",
+        "email": "ada@example.com"
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "User: Ada Lovelace (ada@example.com)"
+  },
+  {
+    "name": "dotted_user_preferences_theme_and_language",
+    "template": "Theme: {{user.preferences.theme}}\nLanguage: {{user.preferences.language}}",
+    "context": {
+      "user": {
+        "preferences": {
+          "theme": "dark",
+          "language": "en"
+        }
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Theme: dark\nLanguage: en"
+  },
+  {
+    "name": "partial_style_injected_with_personality_argument",
+    "template": "{{>style personality=personality}}\n\nTell me a story about {{subject}}.",
+    "context": {
+      "personality": "robot chef",
+      "subject": "noodles"
+    },
+    "data": null,
+    "partials": {
+      "style": "You should speak as if you are a {{#if personality}}{{personality}}{{else}}pirate{{/if}}."
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "You should speak as if you are a robot chef.\nTell me a story about noodles."
+  },
+  {
+    "name": "partial_chef_persona_prepended_to_recipe",
+    "template": "{{> chefPersona}}\n\nCreate a {{cuisine}} {{dish}} recipe for {{servingSize}} people.",
+    "context": {
+      "cuisine": "Thai",
+      "dish": "green curry",
+      "servingSize": 4
+    },
+    "data": null,
+    "partials": {
+      "chefPersona": "You are an expert chef who writes concise recipes."
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "You are an expert chef who writes concise recipes.\nCreate a Thai green curry recipe for 4 people."
+  },
+  {
+    "name": "partial_product_line_for_each_product_row",
+    "template": "Order #{{orderNumber}}\n{{#each products}}\n{{> productLine}}\n{{/each}}",
+    "context": {
+      "orderNumber": 1001,
+      "products": [
+        {
+          "sku": "A1",
+          "qty": 2
+        },
+        {
+          "sku": "B2",
+          "qty": 1
+        }
+      ]
+    },
+    "data": null,
+    "partials": {
+      "productLine": "- {{sku}} x{{qty}}"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Order #1001\n- A1 x2- B2 x1"
+  },
+  {
+    "name": "comment_section_title_stripped_from_output",
+    "template": "{{! Recipe request section }}\nGenerate a recipe for {{food}}.",
+    "context": {
+      "food": "ramen"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Generate a recipe for ramen."
+  },
+  {
+    "name": "unless_last_omits_comma_after_final_each_item",
+    "template": "Tags: {{#each tags}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}",
+    "context": {
+      "tags": [
+        "fast",
+        "safe",
+        "simple"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Tags: fast, safe, simple"
+  },
+  {
+    "name": "unless_empty_inventory_shows_in_stock_message",
+    "template": "{{#unless outOfStock}}\nItem is in stock.\n{{/unless}}",
+    "context": {
+      "outOfStock": false
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Item is in stock.\n"
+  },
+  {
+    "name": "with_metadata_shows_created_at_and_version",
+    "template": "{{#with metadata}}\nCreated: {{createdAt}}\nVersion: v{{version}}\n{{/with}}",
+    "context": {
+      "metadata": {
+        "createdAt": "2024-01-15",
+        "version": 2
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Created: 2024-01-15\nVersion: v2\n"
+  },
+  {
+    "name": "at_index_labels_each_context_document",
+    "template": "Sources:\n{{#each sources}}\n{{@index}}. {{this}}\n{{/each}}",
+    "context": {
+      "sources": [
+        "README",
+        "CHANGELOG"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Sources:\n0. README\n1. CHANGELOG\n"
+  },
+  {
+    "name": "at_root_each_tools_listed_from_root",
+    "template": "Tools:\n{{#each @root.tools}}\n- {{this}}\n{{/each}}",
+    "context": {
+      "tools": [
+        "search",
+        "calculator"
+      ],
+      "projectName": "demo"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Tools:\n- search\n- calculator\n"
+  },
+  {
+    "name": "at_key_each_person_field_as_key_equals_value",
+    "template": "Profile:\n{{#each person}}\n{{@key}}={{this}}\n{{/each}}",
+    "context": {
+      "person": {
+        "name": "Ada",
+        "role": "engineer"
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Profile:\nname=Ada\nrole=engineer\n"
+  },
+  {
+    "name": "triple_stash_markup_rendered_without_escaping",
+    "template": "Notes: {{{notes}}}",
+    "context": {
+      "notes": "<b>important</b>"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "reality",
+    "text": "Notes: <b>important</b>"
+  },
+  {
+    "name": "eq_status_active_shows_active_branch_else_inactive",
+    "template": "Status: {{#eq status \"active\"}}Active{{else}}Inactive{{/eq}}",
+    "context": {
+      "status": "active"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "eq"
+    ],
+    "strict": false,
+    "layer": "reality",
+    "text": "Status: Active"
+  },
+  {
+    "name": "wrap_brackets_around_uppercased_display_name",
+    "template": "Welcome {{wrap (upper name)}}!",
+    "context": {
+      "name": "ada"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "upper",
+      "wrap"
+    ],
+    "strict": false,
+    "layer": "reality",
+    "text": "Welcome [ADA]!"
+  },
+  {
+    "name": "ident_helper_returns_name_value_unchanged",
+    "template": "Signed by {{ident name}}",
+    "context": {
+      "name": "Genkit"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "ident"
+    ],
+    "strict": false,
+    "layer": "reality",
+    "text": "Signed by Genkit"
+  },
+  {
+    "name": "if_missing_key_falsy_prints_else",
+    "template": "{{#if missing}}IF{{else}}ELSE{{/if}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "ELSE"
+  },
+  {
+    "name": "if_null_value_falsy_prints_else",
+    "template": "{{#if val}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "val": null
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "ELSE"
+  },
+  {
+    "name": "if_false_boolean_falsy_prints_else",
+    "template": "{{#if val}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "val": false
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "ELSE"
+  },
+  {
+    "name": "if_zero_number_falsy_prints_else",
+    "template": "{{#if val}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "val": 0
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "ELSE"
+  },
+  {
+    "name": "if_empty_string_falsy_prints_else",
+    "template": "{{#if val}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "val": ""
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "ELSE"
+  },
+  {
+    "name": "if_empty_array_falsy_prints_else",
+    "template": "{{#if val}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "val": []
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "ELSE"
+  },
+  {
+    "name": "if_empty_object_truthy_prints_if",
+    "template": "{{#if val}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "val": {}
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "IF"
+  },
+  {
+    "name": "if_string_zero_truthy_prints_if",
+    "template": "{{#if val}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "val": "0"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "IF"
+  },
+  {
+    "name": "if_string_false_truthy_prints_if",
+    "template": "{{#if val}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "val": "false"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "IF"
+  },
+  {
+    "name": "if_array_with_zero_element_truthy_prints_if",
+    "template": "{{#if val}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "val": [
+        0
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "IF"
+  },
+  {
+    "name": "if_array_with_empty_string_element_truthy_prints_if",
+    "template": "{{#if val}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "val": [
+        ""
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "IF"
+  },
+  {
+    "name": "if_true_boolean_truthy_prints_if",
+    "template": "{{#if val}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "val": true
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "IF"
+  },
+  {
+    "name": "if_number_one_truthy_prints_if",
+    "template": "{{#if val}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "val": 1
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "IF"
+  },
+  {
+    "name": "if_non_empty_string_ab_truthy_prints_if",
+    "template": "{{#if val}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "val": "ab"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "IF"
+  },
+  {
+    "name": "if_nested_object_truthy_prints_if",
+    "template": "{{#if user.profile}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "user": {
+        "profile": {
+          "name": "Alice"
+        }
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "IF"
+  },
+  {
+    "name": "if_include_zero_with_zero_number_truthy_prints_if",
+    "template": "{{#if val includeZero=true}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "val": 0
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "IF"
+  },
+  {
+    "name": "if_include_zero_with_false_boolean_falsy_prints_else",
+    "template": "{{#if val includeZero=true}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "val": false
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "ELSE"
+  },
+  {
+    "name": "if_include_zero_with_empty_string_falsy_prints_else",
+    "template": "{{#if val includeZero=true}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "val": ""
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "ELSE"
+  },
+  {
+    "name": "if_eq_helper_matching_values_truthy_prints_if",
+    "template": "{{#if (eq a b)}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "a": 1,
+      "b": 1
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "eq"
+    ],
+    "strict": false,
+    "layer": "blocks",
+    "text": "IF"
+  },
+  {
+    "name": "if_eq_helper_different_values_falsy_prints_else",
+    "template": "{{#if (eq a b)}}IF{{else}}ELSE{{/if}}",
+    "context": {
+      "a": 1,
+      "b": 2
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "eq"
+    ],
+    "strict": false,
+    "layer": "blocks",
+    "text": "ELSE"
+  },
+  {
+    "name": "unless_missing_key_falsy_prints_body",
+    "template": "{{#unless missing}}UNLESS{{else}}ELSE{{/unless}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "UNLESS"
+  },
+  {
+    "name": "unless_false_boolean_falsy_prints_body",
+    "template": "{{#unless val}}UNLESS{{else}}ELSE{{/unless}}",
+    "context": {
+      "val": false
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "UNLESS"
+  },
+  {
+    "name": "unless_zero_number_falsy_prints_body",
+    "template": "{{#unless val}}UNLESS{{else}}ELSE{{/unless}}",
+    "context": {
+      "val": 0
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "UNLESS"
+  },
+  {
+    "name": "unless_empty_string_falsy_prints_body",
+    "template": "{{#unless val}}UNLESS{{else}}ELSE{{/unless}}",
+    "context": {
+      "val": ""
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "UNLESS"
+  },
+  {
+    "name": "unless_empty_array_falsy_prints_body",
+    "template": "{{#unless val}}UNLESS{{else}}ELSE{{/unless}}",
+    "context": {
+      "val": []
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "UNLESS"
+  },
+  {
+    "name": "unless_true_boolean_truthy_prints_else",
+    "template": "{{#unless val}}UNLESS{{else}}ELSE{{/unless}}",
+    "context": {
+      "val": true
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "ELSE"
+  },
+  {
+    "name": "unless_string_zero_truthy_prints_else",
+    "template": "{{#unless val}}UNLESS{{else}}ELSE{{/unless}}",
+    "context": {
+      "val": "0"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "ELSE"
+  },
+  {
+    "name": "unless_include_zero_with_zero_number_truthy_prints_else",
+    "template": "{{#unless val includeZero=true}}UNLESS{{else}}ELSE{{/unless}}",
+    "context": {
+      "val": 0
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "ELSE"
+  },
+  {
+    "name": "else_if_first_true_prints_first_if_branch",
+    "template": "{{#if a}}A{{else if b}}B{{else}}C{{/if}}",
+    "context": {
+      "a": true,
+      "b": false
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "A"
+  },
+  {
+    "name": "else_if_first_false_second_true_prints_second_if_branch",
+    "template": "{{#if a}}A{{else if b}}B{{else}}C{{/if}}",
+    "context": {
+      "a": false,
+      "b": true
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "B"
+  },
+  {
+    "name": "else_if_all_false_prints_final_else_branch",
+    "template": "{{#if a}}A{{else if b}}B{{else if c}}C{{else}}D{{/if}}",
+    "context": {
+      "a": false,
+      "b": false,
+      "c": false
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "D"
+  },
+  {
+    "name": "else_unless_first_false_second_false_prints_else_unless_body_branch",
+    "template": "{{#if a}}A{{else unless b}}B{{else}}C{{/if}}",
+    "context": {
+      "a": false,
+      "b": false
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "B"
+  },
+  {
+    "name": "else_unless_first_false_second_true_prints_final_else_branch",
+    "template": "{{#if a}}A{{else unless b}}B{{else}}C{{/if}}",
+    "context": {
+      "a": false,
+      "b": true
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "C"
+  },
+  {
+    "name": "with_zero_number_truthy_context_prints_body",
+    "template": "{{#with val}}BODY:{{.}}{{else}}ELSE{{/with}}",
+    "context": {
+      "val": 0
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "BODY:0"
+  },
+  {
+    "name": "with_null_value_falsy_prints_else",
+    "template": "{{#with val}}BODY:{{.}}{{else}}ELSE{{/with}}",
+    "context": {
+      "val": null
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "ELSE"
+  },
+  {
+    "name": "with_false_boolean_falsy_prints_else",
+    "template": "{{#with val}}BODY:{{.}}{{else}}ELSE{{/with}}",
+    "context": {
+      "val": false
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "ELSE"
+  },
+  {
+    "name": "with_empty_array_falsy_prints_else",
+    "template": "{{#with val}}BODY{{else}}ELSE{{/with}}",
+    "context": {
+      "val": []
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "ELSE"
+  },
+  {
+    "name": "with_nested_object_changes_scope_prints_body",
+    "template": "{{#with user}}NAME:{{name}}{{else}}ELSE{{/with}}",
+    "context": {
+      "user": {
+        "name": "Alice"
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "NAME:Alice"
+  },
+  {
+    "name": "with_block_param_as_single_param_prints_body",
+    "template": "{{#with user as |u|}}USER:{{u.name}}{{else}}ELSE{{/with}}",
+    "context": {
+      "user": {
+        "name": "Bob"
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "USER:Bob"
+  },
+  {
+    "name": "each_empty_list_prints_else",
+    "template": "{{#each items}}{{.}}{{else}}EMPTY{{/each}}",
+    "context": {
+      "items": []
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "EMPTY"
+  },
+  {
+    "name": "each_array_of_strings_iterates_and_prints_body",
+    "template": "{{#each items}}{{.}};{{else}}EMPTY{{/each}}",
+    "context": {
+      "items": [
+        "a",
+        "b"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "a;b;"
+  },
+  {
+    "name": "each_string_primitive_non_iterable_prints_else",
+    "template": "{{#each text}}{{.}}{{else}}EMPTY{{/each}}",
+    "context": {
+      "text": "ab"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "EMPTY"
+  },
+  {
+    "name": "each_number_primitive_non_iterable_prints_else",
+    "template": "{{#each num}}{{.}}{{else}}EMPTY{{/each}}",
+    "context": {
+      "num": 123
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "EMPTY"
+  },
+  {
+    "name": "each_zero_number_primitive_prints_else",
+    "template": "{{#each val}}{{.}}{{else}}EMPTY{{/each}}",
+    "context": {
+      "val": 0
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "EMPTY"
+  },
+  {
+    "name": "each_empty_object_prints_else",
+    "template": "{{#each dict}}{{.}}{{else}}EMPTY{{/each}}",
+    "context": {
+      "dict": {}
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "EMPTY"
+  },
+  {
+    "name": "each_non_empty_object_iterates_keys_prints_body",
+    "template": "{{#each dict}}{{@key}}:{{.}};{{else}}EMPTY{{/each}}",
+    "context": {
+      "dict": {
+        "x": "1",
+        "y": "2"
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "x:1;y:2;"
+  },
+  {
+    "name": "nested_each_two_dimensional_array_prints_outer_and_inner_body",
+    "template": "{{#each matrix}}{{#each .}}{{.}},{{/each}}|{{/each}}",
+    "context": {
+      "matrix": [
+        [
+          "a",
+          "b"
+        ],
+        [
+          "c"
+        ]
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "a,b,|c,|"
+  },
+  {
+    "name": "nested_each_outer_has_items_inner_empty_prints_inner_else",
+    "template": "{{#each groups}}[{{#each items}}{{.}}{{else}}NONE{{/each}}]{{/each}}",
+    "context": {
+      "groups": [
+        {
+          "items": [
+            "a"
+          ]
+        },
+        {
+          "items": []
+        }
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "[a][NONE]"
+  },
+  {
+    "name": "each_block_params_item_and_index_on_string_list_prints_dot_and_param_body",
+    "template": "{{#each items as |item idx|}}{{@index}}:{{idx}}:{{.}}:{{item}};{{/each}}",
+    "context": {
+      "items": [
+        "apple",
+        "banana"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "0:0:apple:apple;1:1:banana:banana;"
+  },
+  {
+    "name": "each_block_param_single_item_on_string_list_prints_dot_and_param_body",
+    "template": "{{#each items as |item|}}{{.}}:{{item}};{{/each}}",
+    "context": {
+      "items": [
+        "foo",
+        "bar"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "foo:foo;bar:bar;"
+  },
+  {
+    "name": "section_on_zero_enters_and_prints_zero",
+    "template": "{{#val}}CONTENT:{{.}}{{/val}}",
+    "context": {
+      "val": 0
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "CONTENT:0"
+  },
+  {
+    "name": "section_on_empty_string_enters",
+    "template": "{{#val}}CONTENT:{{.}}{{/val}}",
+    "context": {
+      "val": ""
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "CONTENT:"
+  },
+  {
+    "name": "section_on_false_prints_nothing",
+    "template": "{{#val}}CONTENT{{/val}}",
+    "context": {
+      "val": false
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": ""
+  },
+  {
+    "name": "section_nested_object_changes_scope_prints_body",
+    "template": "{{#user}}NAME:{{name}}{{/user}}",
+    "context": {
+      "user": {
+        "name": "Carol"
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "NAME:Carol"
+  },
+  {
+    "name": "inverse_section_empty_array_falsy_prints_body",
+    "template": "{{^items}}NO_ITEMS{{/items}}",
+    "context": {
+      "items": []
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "NO_ITEMS"
+  },
+  {
+    "name": "inverse_section_on_a_non_empty_list_prints_nothing",
+    "template": "{{^items}}NO_ITEMS{{/items}}",
+    "context": {
+      "items": [
+        1
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": ""
+  },
+  {
+    "name": "path_dot_notation",
+    "template": "{{user.name}}",
+    "context": {
+      "user": {
+        "name": "Alice"
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "Alice"
+  },
+  {
+    "name": "path_slash_notation",
+    "template": "{{user/name}}",
+    "context": {
+      "user": {
+        "name": "Bob"
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "Bob"
+  },
+  {
+    "name": "path_bracket_with_space",
+    "template": "{{a.[b c]}}",
+    "context": {
+      "a": {
+        "b c": "hello space"
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "hello space"
+  },
+  {
+    "name": "path_root_bracket_with_space",
+    "template": "{{[first name]}}",
+    "context": {
+      "first name": "Charlie"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "Charlie"
+  },
+  {
+    "name": "path_mixed_dot_and_slash",
+    "template": "{{user.address/city}}",
+    "context": {
+      "user": {
+        "address": {
+          "city": "Boston"
+        }
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "Boston"
+  },
+  {
+    "name": "dotted_numeric_segment_is_rejected",
+    "template": "{{items.0}}",
+    "context": {
+      "items": [
+        "first",
+        "second"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "raises": true
+  },
+  {
+    "name": "slashed_numeric_segment_is_rejected",
+    "template": "{{items/1}}",
+    "context": {
+      "items": [
+        "first",
+        "second"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "raises": true
+  },
+  {
+    "name": "path_this_root",
+    "template": "{{this}}",
+    "context": "standalone value",
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "standalone value"
+  },
+  {
+    "name": "path_this_property",
+    "template": "{{this.name}}",
+    "context": {
+      "name": "Alice"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "Alice"
+  },
+  {
+    "name": "path_dot_slash",
+    "template": "{{./name}}",
+    "context": {
+      "name": "Bob"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "Bob"
+  },
+  {
+    "name": "path_dot_slash_nested",
+    "template": "{{./user.name}}",
+    "context": {
+      "user": {
+        "name": "Carol"
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "Carol"
+  },
+  {
+    "name": "path_this_in_each",
+    "template": "{{#each items}}{{this}} {{/each}}",
+    "context": {
+      "items": [
+        "a",
+        "b",
+        "c"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "a b c "
+  },
+  {
+    "name": "path_parent_single",
+    "template": "{{#each items}}{{../title}}: {{name}} {{/each}}",
+    "context": {
+      "title": "Report",
+      "items": [
+        {
+          "name": "Item 1"
+        },
+        {
+          "name": "Item 2"
+        }
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "Report: Item 1 Report: Item 2 "
+  },
+  {
+    "name": "path_parent_with_block",
+    "template": "{{#with user}}{{../company}} - {{name}}{{/with}}",
+    "context": {
+      "company": "Acme",
+      "user": {
+        "name": "Alice"
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "Acme - Alice"
+  },
+  {
+    "name": "path_parent_double",
+    "template": "{{#with company}}{{#with department}}{{../../country}} > {{../name}} > {{name}}{{/with}}{{/with}}",
+    "context": {
+      "country": "USA",
+      "company": {
+        "name": "Acme",
+        "department": {
+          "name": "Engineering"
+        }
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "USA > Acme > Engineering"
+  },
+  {
+    "name": "path_parent_double_in_nested_each",
+    "template": "{{#each groups}}{{#each members}}{{../../category}} / {{../name}} / {{this}} {{/each}}{{/each}}",
+    "context": {
+      "category": "Engineering",
+      "groups": [
+        {
+          "name": "Platform",
+          "members": [
+            "Dev1",
+            "Dev2"
+          ]
+        }
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "Engineering / Platform / Dev1 Engineering / Platform / Dev2 "
+  },
+  {
+    "name": "data_distinct_from_input",
+    "template": "{{name}} {{@name}}",
+    "context": {
+      "name": "input"
+    },
+    "data": {
+      "name": "context"
+    },
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "input context"
+  },
+  {
+    "name": "data_at_root",
+    "template": "{{#with user}}{{name}} from {{@root.org}}{{/with}}",
+    "context": {
+      "org": "Genkit",
+      "user": {
+        "name": "Alice"
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "Alice from Genkit"
+  },
+  {
+    "name": "data_at_root_nested",
+    "template": "{{#each items}}{{#with details}}{{@root.appName}}: {{title}}{{/with}}{{/each}}",
+    "context": {
+      "appName": "Inventory",
+      "items": [
+        {
+          "details": {
+            "title": "Widget"
+          }
+        }
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "Inventory: Widget"
+  },
+  {
+    "name": "data_at_index",
+    "template": "{{#each items}}{{@index}}:{{this}} {{/each}}",
+    "context": {
+      "items": [
+        "x",
+        "y",
+        "z"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "0:x 1:y 2:z "
+  },
+  {
+    "name": "data_at_key",
+    "template": "{{#each profile}}{{@key}}={{this}} {{/each}}",
+    "context": {
+      "profile": {
+        "role": "admin",
+        "status": "active"
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "role=admin status=active "
+  },
+  {
+    "name": "data_at_first_and_last",
+    "template": "{{#each items}}{{#if @first}}START:{{/if}}{{this}}{{#if @last}}:END{{/if}} {{/each}}",
+    "context": {
+      "items": [
+        "alpha",
+        "beta",
+        "gamma"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "START:alpha beta gamma:END "
+  },
+  {
+    "name": "data_parent_index_nested_lists",
+    "template": "{{#each grid}}{{#each this}}[{{@../index}},{{@index}}:{{this}}] {{/each}}{{/each}}",
+    "context": {
+      "grid": [
+        [
+          "a",
+          "b"
+        ],
+        [
+          "c",
+          "d"
+        ]
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "[0,0:a] [0,1:b] [1,0:c] [1,1:d] "
+  },
+  {
+    "name": "data_custom_variable",
+    "template": "{{@version}} - {{title}}",
+    "context": {
+      "title": "Release"
+    },
+    "data": {
+      "version": "2.1.0"
+    },
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "2.1.0 - Release"
+  },
+  {
+    "name": "strict_false_missing_path",
+    "template": "{{missing}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": ""
+  },
+  {
+    "name": "strict_true_missing_path",
+    "template": "{{missing}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": true,
+    "layer": "paths",
+    "raises": true
+  },
+  {
+    "name": "strict_false_missing_nested_path",
+    "template": "{{user.profile.bio}}",
+    "context": {
+      "user": {}
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": ""
+  },
+  {
+    "name": "strict_true_missing_nested_path",
+    "template": "{{user.profile.bio}}",
+    "context": {
+      "user": {}
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": true,
+    "layer": "paths",
+    "raises": true
+  },
+  {
+    "name": "strict_false_missing_bracket_path",
+    "template": "{{a.[b c]}}",
+    "context": {
+      "a": {}
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": ""
+  },
+  {
+    "name": "strict_true_missing_bracket_path",
+    "template": "{{a.[b c]}}",
+    "context": {
+      "a": {}
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": true,
+    "layer": "paths",
+    "raises": true
+  },
+  {
+    "name": "strict_false_missing_block_invocation",
+    "template": "{{#missing}}body{{/missing}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": ""
+  },
+  {
+    "name": "strict_true_missing_block_invocation",
+    "template": "{{#missing}}body{{/missing}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": true,
+    "layer": "paths",
+    "raises": true
+  },
+  {
+    "name": "strict_true_missing_if_block",
+    "template": "{{#if missing}}yes{{else}}no{{/if}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": true,
+    "layer": "paths",
+    "text": "no"
+  },
+  {
+    "name": "strict_true_missing_unless_block",
+    "template": "{{#unless missing}}fallback{{/unless}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": true,
+    "layer": "paths",
+    "text": "fallback"
+  },
+  {
+    "name": "strict_true_helper_missing_arg",
+    "template": "{{ident missing}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "ident"
+    ],
+    "strict": true,
+    "layer": "paths",
+    "text": ""
+  },
+  {
+    "name": "strict_true_helper_missing_nested_arg",
+    "template": "{{ident user.missing}}",
+    "context": {
+      "user": {}
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "ident"
+    ],
+    "strict": true,
+    "layer": "paths",
+    "text": ""
+  },
+  {
+    "name": "strict_true_present_null_variable",
+    "template": "{{val}}",
+    "context": {
+      "val": null
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": true,
+    "layer": "paths",
+    "text": ""
+  },
+  {
+    "name": "strict_true_present_null_nested_path",
+    "template": "{{user.middle_name}}",
+    "context": {
+      "user": {
+        "middle_name": null
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": true,
+    "layer": "paths",
+    "text": ""
+  },
+  {
+    "name": "strict_true_present_null_in_if",
+    "template": "{{#if val}}yes{{else}}null-falsy{{/if}}",
+    "context": {
+      "val": null
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": true,
+    "layer": "paths",
+    "text": "null-falsy"
+  },
+  {
+    "name": "strict_true_helper_with_valid_path",
+    "template": "{{upper user.name}}",
+    "context": {
+      "user": {
+        "name": "alice"
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "upper"
+    ],
+    "strict": true,
+    "layer": "paths",
+    "text": "ALICE"
+  },
+  {
+    "name": "partial_basic_inherits_scope",
+    "template": "START{{> greeting}}END",
+    "context": {
+      "name": "World"
+    },
+    "data": null,
+    "partials": {
+      "greeting": " Hello {{name}}!"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "START Hello World!END"
+  },
+  {
+    "name": "partial_with_object_context_path",
+    "template": "{{> card user}}",
+    "context": {
+      "user": {
+        "name": "Ada",
+        "role": "admin"
+      }
+    },
+    "data": null,
+    "partials": {
+      "card": "{{name}} ({{role}})"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "Ada (admin)"
+  },
+  {
+    "name": "partial_with_string_context_path",
+    "template": "{{> echo label}}",
+    "context": {
+      "label": "hello"
+    },
+    "data": null,
+    "partials": {
+      "echo": "[{{.}}]"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "[hello]"
+  },
+  {
+    "name": "partial_hash_only_context",
+    "template": "{{> badge status=active kind=pill}}",
+    "context": {},
+    "data": null,
+    "partials": {
+      "badge": "<span class=\"{{status}} {{kind}}\">ok</span>"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "<span class=\" \">ok</span>"
+  },
+  {
+    "name": "partial_string_context_with_hash_override",
+    "template": "{{> echo label caption=NEW}}",
+    "context": {
+      "label": "body",
+      "caption": "OLD"
+    },
+    "data": null,
+    "partials": {
+      "echo": "{{caption}}|{{.}}"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "|[object Object]"
+  },
+  {
+    "name": "partial_object_context_merged_with_hash",
+    "template": "{{> row item suffix=\"!\"}}",
+    "context": {
+      "item": {
+        "text": "hi",
+        "suffix": "?"
+      },
+      "noise": "x"
+    },
+    "data": null,
+    "partials": {
+      "row": "{{text}}{{suffix}}"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "hi!"
+  },
+  {
+    "name": "partial_nested_invocation",
+    "template": "{{> outer}}",
+    "context": {
+      "name": "Ada"
+    },
+    "data": null,
+    "partials": {
+      "outer": "({{> inner}})",
+      "inner": "{{name}}"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "(Ada)"
+  },
+  {
+    "name": "partial_indented_on_own_line",
+    "template": "before\n  {{> greeting}}\nafter",
+    "context": {
+      "name": "World"
+    },
+    "data": null,
+    "partials": {
+      "greeting": "hi {{name}}"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "before\n  hi Worldafter"
+  },
+  {
+    "name": "partial_dynamic_name_via_ident",
+    "template": "{{> (ident which)}}",
+    "context": {
+      "which": "picked",
+      "name": "Ada"
+    },
+    "data": null,
+    "partials": {
+      "picked": "Hello {{name}}"
+    },
+    "helpers": [
+      "ident"
+    ],
+    "strict": false,
+    "layer": "partials",
+    "text": "Hello Ada"
+  },
+  {
+    "name": "missing_partial_raises",
+    "template": "A{{> missing}}B",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "raises": true
+  },
+  {
+    "name": "partial_block_wrap_renders_body",
+    "template": "{{#> wrap}}Hello{{/wrap}}",
+    "context": {},
+    "data": null,
+    "partials": {
+      "wrap": "[{{> @partial-block}}]"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "[Hello]"
+  },
+  {
+    "name": "partial_block_wrap_with_static_prefix",
+    "template": "{{#> wrap}}BODY{{/wrap}}",
+    "context": {},
+    "data": null,
+    "partials": {
+      "wrap": "START:{{> @partial-block}}:END"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "START:BODY:END"
+  },
+  {
+    "name": "partial_block_fallback_when_partial_missing",
+    "template": "{{#> missing}}DEFAULT{{/missing}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "DEFAULT"
+  },
+  {
+    "name": "partial_block_wrap_each_in_body",
+    "template": "{{#> wrap}}{{#each items}}{{.}}{{/each}}{{/wrap}}",
+    "context": {
+      "items": [
+        "a",
+        "b"
+      ]
+    },
+    "data": null,
+    "partials": {
+      "wrap": "<ul>{{> @partial-block}}</ul>"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "<ul>ab</ul>"
+  },
+  {
+    "name": "inline_partial_then_invoke",
+    "template": "{{#*inline \"p\"}}Hi {{name}}{{/inline}}{{> p}}",
+    "context": {
+      "name": "World"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "Hi World"
+  },
+  {
+    "name": "inline_partial_with_helper_call",
+    "template": "{{#*inline \"p\"}}{{upper name}}{{/inline}}{{> p}}",
+    "context": {
+      "name": "ada"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "upper"
+    ],
+    "strict": false,
+    "layer": "partials",
+    "text": "ADA"
+  },
+  {
+    "name": "inline_partial_then_nested_partial",
+    "template": "{{#*inline \"p\"}}({{> inner}}){{/inline}}{{> p}}",
+    "context": {
+      "name": "Ada"
+    },
+    "data": null,
+    "partials": {
+      "inner": "{{name}}"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "(Ada)"
+  },
+  {
+    "name": "partial_inside_each_sees_at_index",
+    "template": "{{#each items}}{{> row}}{{/each}}",
+    "context": {
+      "items": [
+        "a",
+        "b",
+        "c"
+      ]
+    },
+    "data": null,
+    "partials": {
+      "row": "{{@index}}:{{.}};"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "0:a;1:b;2:c;"
+  },
+  {
+    "name": "partial_each_explicit_context_hides_caller_via_parent",
+    "template": "{{#each items}}{{> row .}}{{/each}}",
+    "context": {
+      "caller": "ROOT",
+      "items": [
+        {
+          "name": "a"
+        },
+        {
+          "name": "b"
+        }
+      ]
+    },
+    "data": null,
+    "partials": {
+      "row": "{{@index}}|{{name}}|{{../caller}}|{{../../caller}}"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "0|a||1|b||"
+  },
+  {
+    "name": "partial_inside_each_without_context_sees_root_caller",
+    "template": "{{#each items}}{{> row}}{{/each}}",
+    "context": {
+      "caller": "ROOT",
+      "items": [
+        "a",
+        "b"
+      ]
+    },
+    "data": null,
+    "partials": {
+      "row": "{{@index}}:{{../caller}}|"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "0:|1:|"
+  },
+  {
+    "name": "partial_with_dot_context_inside_each",
+    "template": "{{#each items}}{{> tag .}}{{/each}}",
+    "context": {
+      "items": [
+        "x",
+        "y"
+      ]
+    },
+    "data": null,
+    "partials": {
+      "tag": "<i>{{.}}</i>"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "<i>x</i><i>y</i>"
+  },
+  {
+    "name": "helper_upper_basic",
+    "template": "{{upper name}}",
+    "context": {
+      "name": "hello"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "upper"
+    ],
+    "strict": false,
+    "layer": "partials",
+    "text": "HELLO"
+  },
+  {
+    "name": "helper_upper_inside_partial",
+    "template": "{{> title}}",
+    "context": {
+      "name": "hello"
+    },
+    "data": null,
+    "partials": {
+      "title": "{{upper name}}"
+    },
+    "helpers": [
+      "upper"
+    ],
+    "strict": false,
+    "layer": "partials",
+    "text": "HELLO"
+  },
+  {
+    "name": "helper_add_two_positive_literals",
+    "template": "{{add 10 5}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "add"
+    ],
+    "strict": false,
+    "layer": "partials",
+    "text": "15"
+  },
+  {
+    "name": "helper_add_negative_literal",
+    "template": "{{add 10 -5}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "add"
+    ],
+    "strict": false,
+    "layer": "partials",
+    "text": "5"
+  },
+  {
+    "name": "helper_add_zero_and_zero_returns_zero",
+    "template": "({{add 0 0}})",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "add"
+    ],
+    "strict": false,
+    "layer": "partials",
+    "text": "(0)"
+  },
+  {
+    "name": "helper_ident_returns_argument",
+    "template": "{{ident label}}",
+    "context": {
+      "label": "keep"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "ident"
+    ],
+    "strict": false,
+    "layer": "partials",
+    "text": "keep"
+  },
+  {
+    "name": "helper_eq_block_true_branch",
+    "template": "{{#eq status \"ok\"}}YES{{else}}NO{{/eq}}",
+    "context": {
+      "status": "ok"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "eq"
+    ],
+    "strict": false,
+    "layer": "partials",
+    "text": "YES"
+  },
+  {
+    "name": "helper_eq_block_false_branch",
+    "template": "{{#eq status \"ok\"}}YES{{else}}NO{{/eq}}",
+    "context": {
+      "status": "bad"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "eq"
+    ],
+    "strict": false,
+    "layer": "partials",
+    "text": "NO"
+  },
+  {
+    "name": "helper_eq_with_hash_in_partial",
+    "template": "{{> check}}",
+    "context": {
+      "left": 1,
+      "right": 1
+    },
+    "data": null,
+    "partials": {
+      "check": "{{#eq left right mode=strict}}EQ{{else}}NE{{/eq}}"
+    },
+    "helpers": [
+      "eq"
+    ],
+    "strict": false,
+    "layer": "partials",
+    "text": "EQ"
+  },
+  {
+    "name": "helper_wrap_nested_subexpression",
+    "template": "{{wrap (upper name)}}",
+    "context": {
+      "name": "hello"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "wrap",
+      "upper"
+    ],
+    "strict": false,
+    "layer": "partials",
+    "text": "[HELLO]"
+  },
+  {
+    "name": "helper_wrap_with_hash_prefix",
+    "template": "{{wrap name prefix=\">>\"}}",
+    "context": {
+      "name": "hello"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "wrap"
+    ],
+    "strict": false,
+    "layer": "partials",
+    "text": "&gt;&gt;[hello]"
+  },
+  {
+    "name": "helper_wrap_block_with_inverse",
+    "template": "{{#wrap tag=\"b\"}}INNER{{else}}OUT{{/wrap}}",
+    "context": {
+      "show": true
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "wrap"
+    ],
+    "strict": false,
+    "layer": "partials",
+    "text": "INNER"
+  },
+  {
+    "name": "lookup_map_key",
+    "template": "{{lookup person field}}",
+    "context": {
+      "person": {
+        "name": "Ada",
+        "role": "dev"
+      },
+      "field": "name"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "Ada"
+  },
+  {
+    "name": "lookup_list_numeric_index",
+    "template": "{{lookup items 1}}",
+    "context": {
+      "items": [
+        "a",
+        "b",
+        "c"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "b"
+  },
+  {
+    "name": "lookup_missing_key_empty",
+    "template": "({{lookup person missing}})",
+    "context": {
+      "person": {
+        "name": "Ada"
+      },
+      "missing": "nope"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "()"
+  },
+  {
+    "name": "lookup_inside_partial",
+    "template": "{{> pick}}",
+    "context": {
+      "rows": [
+        "r0",
+        "r1"
+      ],
+      "idx": 1
+    },
+    "data": null,
+    "partials": {
+      "pick": "{{lookup rows idx}}"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "text": "r1"
+  },
+  {
+    "name": "partial_strict_mode_undefined_path",
+    "template": "{{> card}}",
+    "context": {},
+    "data": null,
+    "partials": {
+      "card": "{{user.name}}"
+    },
+    "helpers": [],
+    "strict": true,
+    "layer": "partials",
+    "raises": true
+  },
+  {
+    "name": "tilde_left_on_variable",
+    "template": "Hello   {{~name}}",
+    "context": {
+      "name": "World"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "HelloWorld"
+  },
+  {
+    "name": "tilde_right_on_variable",
+    "template": "{{name~}}   World",
+    "context": {
+      "name": "Hello"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "HelloWorld"
+  },
+  {
+    "name": "tilde_both_sides_on_variable",
+    "template": "Hello  {{~name~}}  World",
+    "context": {
+      "name": "Beautiful"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "HelloBeautifulWorld"
+  },
+  {
+    "name": "tilde_across_newlines",
+    "template": "Line 1\n   {{~text~}}   \nLine 3",
+    "context": {
+      "text": "Line 2"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Line 1Line 2Line 3"
+  },
+  {
+    "name": "tilde_with_block_each",
+    "template": "Items: {{~#each items~}} {{.}} {{~/each~}} done",
+    "context": {
+      "items": [
+        "a",
+        "b"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Items:abdone"
+  },
+  {
+    "name": "standalone_if_multiline_prompt",
+    "template": "System instruction:\n{{#if verbose}}\nProvide detailed step-by-step reasoning.\n{{/if}}\nEnd of instructions.",
+    "context": {
+      "verbose": true
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "System instruction:\nProvide detailed step-by-step reasoning.\nEnd of instructions."
+  },
+  {
+    "name": "standalone_if_false_multiline",
+    "template": "Header\n{{#if show}}\nHidden content\n{{/if}}\nFooter",
+    "context": {
+      "show": false
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Header\nFooter"
+  },
+  {
+    "name": "standalone_each_multiline",
+    "template": "Items:\n{{#each items}}\n- {{.}}\n{{/each}}\nDone",
+    "context": {
+      "items": [
+        "apple",
+        "banana"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Items:\n- apple\n- banana\nDone"
+  },
+  {
+    "name": "standalone_inverse_else_multiline",
+    "template": "Status:\n{{#if active}}\nOnline\n{{else}}\nOffline\n{{/if}}\nEnd",
+    "context": {
+      "active": false
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Status:\nOffline\nEnd"
+  },
+  {
+    "name": "standalone_partial_multiline",
+    "template": "Start\n  {{> user_card}}  \nEnd",
+    "context": {
+      "name": "Alice"
+    },
+    "data": null,
+    "partials": {
+      "user_card": "User: {{name}}"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Start\n  User: AliceEnd"
+  },
+  {
+    "name": "standalone_comment_line",
+    "template": "First line\n  {{! This comment line should disappear entirely }}  \nLast line",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "First line\nLast line"
+  },
+  {
+    "name": "mustache_alone_on_line_not_standalone",
+    "template": "First line\n  {{name}}  \nLast line",
+    "context": {
+      "name": "Middle"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "First line\n  Middle  \nLast line"
+  },
+  {
+    "name": "comment_inline_preserves_surrounding_spaces",
+    "template": "Hello {{! inline comment }} World",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Hello  World"
+  },
+  {
+    "name": "comment_bang_dash_syntax",
+    "template": "Before {{!-- comment with {{mustache}} inside --}} After",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Before  After"
+  },
+  {
+    "name": "backslash_single_escapes_mustache",
+    "template": "Hello \\{{name}}",
+    "context": {
+      "name": "World"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Hello {{name}}"
+  },
+  {
+    "name": "backslash_double_prints_one_backslash",
+    "template": "Hello \\\\{{name}}",
+    "context": {
+      "name": "World"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Hello \\World"
+  },
+  {
+    "name": "backslash_triple_prints_two_backslashes",
+    "template": "Hello \\\\\\{{name}}",
+    "context": {
+      "name": "World"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Hello \\\\World"
+  },
+  {
+    "name": "quoted_mustache_without_helper_prints_empty",
+    "template": "{{\"hi\"}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": ""
+  },
+  {
+    "name": "single_quoted_mustache_without_helper_prints_empty",
+    "template": "{{'single'}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": ""
+  },
+  {
+    "name": "literal_string_escaped_quote",
+    "template": "{{ident \"hello \\\"world\\\"\"}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "ident"
+    ],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "hello &quot;world&quot;"
+  },
+  {
+    "name": "literal_string_backslash_n_is_not_newline",
+    "template": "{{ident \"a\\nb\"}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "ident"
+    ],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "a\\nb"
+  },
+  {
+    "name": "literal_integer_positive",
+    "template": "{{ident 10}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "ident"
+    ],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "10"
+  },
+  {
+    "name": "literal_integer_negative",
+    "template": "{{ident -5}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "ident"
+    ],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "-5"
+  },
+  {
+    "name": "literal_float",
+    "template": "{{ident 1.5}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "ident"
+    ],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "1.5"
+  },
+  {
+    "name": "literal_boolean_true",
+    "template": "{{ident true}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "ident"
+    ],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "true"
+  },
+  {
+    "name": "literal_boolean_false",
+    "template": "{{ident false}}",
+    "context": {},
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "ident"
+    ],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "false"
+  },
+  {
+    "name": "html_escape_all_special_chars",
+    "template": "{{chars}}",
+    "context": {
+      "chars": "& < > \" ' ` ="
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "&amp; &lt; &gt; &quot; &#x27; &#x60; &#x3D;"
+  },
+  {
+    "name": "html_escape_ampersand",
+    "template": "{{val}}",
+    "context": {
+      "val": "rock & roll"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "rock &amp; roll"
+  },
+  {
+    "name": "html_escape_tags",
+    "template": "{{val}}",
+    "context": {
+      "val": "<script>alert('xss')</script>"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "&lt;script&gt;alert(&#x27;xss&#x27;)&lt;/script&gt;"
+  },
+  {
+    "name": "triple_stash_does_not_escape_html",
+    "template": "{{{chars}}}",
+    "context": {
+      "chars": "& < > \" ' ` ="
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "& < > \" ' ` ="
+  },
+  {
+    "name": "ampersand_stash_does_not_escape_html",
+    "template": "{{&chars}}",
+    "context": {
+      "chars": "& < > \" ' ` ="
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "& < > \" ' ` ="
+  },
+  {
+    "name": "unicode_identifier_key",
+    "template": "Name: {{\u540d\u524d}}",
+    "context": {
+      "\u540d\u524d": "\u592a\u90ce"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Name: \u592a\u90ce"
+  },
+  {
+    "name": "dashed_identifier_key",
+    "template": "Value: {{[my-key]}}",
+    "context": {
+      "my-key": "custom-value"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Value: custom-value"
+  },
+  {
+    "name": "dashed_identifier_key_unbracketed",
+    "template": "Value: {{my-key}}",
+    "context": {
+      "my-key": "dashed-value"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Value: dashed-value"
+  },
+  {
+    "name": "print_list_value",
+    "template": "List: {{items}}",
+    "context": {
+      "items": [
+        1,
+        2
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "List: 1,2"
+  },
+  {
+    "name": "print_dict_value",
+    "template": "Dict: {{data}}",
+    "context": {
+      "data": {
+        "a": 1
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Dict: [object Object]"
+  },
+  {
+    "name": "print_float_value",
+    "template": "Float: {{val}}",
+    "context": {
+      "val": 1.0
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Float: 1"
+  },
+  {
+    "name": "print_boolean_false_value",
+    "template": "Bool: {{val}}",
+    "context": {
+      "val": false
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Bool: false"
+  },
+  {
+    "name": "print_null_value",
+    "template": "Null: {{val}}",
+    "context": {
+      "val": null
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Null: "
+  },
+  {
+    "name": "path_list_index_in_brackets",
+    "template": "{{items.[0]}}-{{items.[1]}}",
+    "context": {
+      "items": [
+        "first",
+        "second"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "paths",
+    "text": "first-second"
+  },
+  {
+    "name": "section_block_param_names_each_user",
+    "template": "{{#users as |u|}}{{u.name}} {{/users}}",
+    "context": {
+      "users": [
+        {
+          "name": "Ada"
+        },
+        {
+          "name": "Bea"
+        }
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "Ada Bea "
+  },
+  {
+    "name": "section_block_param_on_one_object",
+    "template": "{{#user as |u|}}{{name}}-{{u.name}}{{/user}}",
+    "context": {
+      "user": {
+        "name": "Ada"
+      }
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "Ada-"
+  },
+  {
+    "name": "hash_bang_is_not_a_value",
+    "template": "{{> row item suffix=!}}",
+    "context": {
+      "item": {
+        "text": "hi"
+      }
+    },
+    "data": null,
+    "partials": {
+      "row": "{{text}}{{suffix}}"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "partials",
+    "raises": true
+  },
+  {
+    "name": "hash_gt_is_not_a_value",
+    "template": "{{wrap name prefix=>>}}",
+    "context": {
+      "name": "hello"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [
+      "wrap"
+    ],
+    "strict": false,
+    "layer": "partials",
+    "raises": true
+  },
+  {
+    "name": "nested_block_param_outer_name_stays_visible",
+    "template": "{{#each outer as |o|}}{{#each o.inner as |i|}}{{o.name}}-{{i.name}};{{/each}}{{/each}}",
+    "context": {
+      "outer": [
+        {
+          "name": "O",
+          "inner": [
+            {
+              "name": "I"
+            }
+          ]
+        }
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "O-I;"
+  },
+  {
+    "name": "parent_path_reads_the_value_not_the_block_param",
+    "template": "{{#each outer as |o|}}{{#each o.inner as |i|}}{{../o.name}}{{../name}};{{/each}}{{/each}}",
+    "context": {
+      "outer": [
+        {
+          "name": "O",
+          "inner": [
+            {
+              "name": "I"
+            }
+          ]
+        }
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "O;"
+  },
+  {
+    "name": "true_section_block_param_unread_prints_the_body",
+    "template": "{{#ok as |u|}}yes{{/ok}}",
+    "context": {
+      "ok": true
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "text": "yes"
+  },
+  {
+    "name": "true_section_block_param_read_raises",
+    "template": "{{#ok as |u|}}{{u}}{{/ok}}",
+    "context": {
+      "ok": true
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "blocks",
+    "raises": true
+  }
+]

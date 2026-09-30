@@ -117,7 +117,8 @@ def test_partials_and_missing_partial():
     assert render('{{> greeting}}', {'name': 'World'}, hb=hb) == 'Hello World!'
     hb.register_partial('userCard', 'Name: {{name}}')
     assert render('{{> userCard user}}', {'user': {'name': 'Alice'}}, hb=hb) == 'Name: Alice'
-    assert render('{{> missing}}', {}, hb=hb) == ''
+    with pytest.raises(ValueError, match='could not be found'):
+        render('{{> missing}}', {}, hb=hb)
 
 
 def test_partial_block_falls_back_to_its_body():
@@ -136,12 +137,12 @@ def test_comments_whitespace_and_literal_braces():
     assert render('Hello {{! this is a comment }}World', {}) == 'Hello World'
     assert render('Hello   {{~name}}!', {'name': 'World'}) == 'HelloWorld!'
     assert render(r'Show \{{name}} literally', {'name': 'World'}) == 'Show {{name}} literally'
-    assert render(r'\\{{name}}', {'name': 'World'}) == r'\\World'
+    assert render(r'\\{{name}}', {'name': 'World'}) == '\\World'
 
 
-def test_raw_block_is_literal():
-    source = 'Before {{{{raw}}}}{{name}} is literal{{{{/raw}}}} After'
-    assert render(source, {'name': 'World'}) == 'Before {{name}} is literal After'
+def test_raw_block_raises():
+    with pytest.raises(ValueError, match='raw blocks are not supported'):
+        Handlebars().compile('{{{{raw}}}}{{name}}{{{{/raw}}}}')
 
 
 def test_subexpression_and_literals():
@@ -200,8 +201,6 @@ def test_boolean_values_render_as_lowercase():
     assert render('{{val}}', {'val': False}) == 'false'
 
 
-def test_reserved_root_key_raises_only_when_template_reads_at_root():
-    assert render('Hello {{name}}', {'name': 'Ada'}, data_hash={'root': '/app'}) == 'Hello Ada'
-
-    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
-        render('Hello {{@root.name}}', {'name': 'Ada'}, data_hash={'root': {'name': 'runtime'}})
+def test_data_root_replaces_at_root():
+    assert render('{{@root.name}}', {'name': 'Ada'}, data_hash={'root': {'name': 'runtime'}}) == 'runtime'
+    assert render('{{@root.company}}', {'company': 'Acme'}, data_hash={'name': 'ctx'}) == 'Acme'
