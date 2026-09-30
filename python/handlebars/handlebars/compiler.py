@@ -45,7 +45,7 @@ class SafeString(str):
 class Options:
     """What a helper receives besides its positional arguments."""
 
-    def __init__(self, *, hash, fn, inverse, data, context):
+    def __init__(self, *, hash, fn, inverse, data, context, is_block=False):
         """Stores the hash args, block bodies, and the data frame.
 
         Args:
@@ -54,12 +54,15 @@ class Options:
             inverse: Renders the else body.
             data: The frame `{{@name}}` reads.
             context: The current input scope.
+            is_block: True when the helper is the {{#name}} form, so it can
+                render fn or inverse. An inline call leaves this false.
         """
         self.hash = hash
         self.fn = fn
         self.inverse = inverse
         self.data = data
         self.context = context
+        self.is_block = is_block
 
     def hash_value(self, key):
         """Returns a named argument, or '' when the helper call omitted it."""
@@ -82,7 +85,8 @@ class Handlebars:
         Args:
             escape_html: When true, `{{name}}` escapes HTML. Triple braces
                 and `{{&name}}` still leave markup as written.
-            strict: When true, a missing path raises StrictModeError.
+            strict: When true, printing a missing path raises StrictModeError.
+                A missing path passed to if, each, with, or a helper is empty.
             escape_fn: EscapeFunction.NO_ESCAPE leaves markup as written.
                 This wins over escape_html.
         """
@@ -101,7 +105,7 @@ class Handlebars:
         self._helpers[name] = fn
 
     def unregister_helper(self, name):
-        """Removes a helper. A later call to that name renders nothing."""
+        """Removes a helper. {{name arg}} then raises; {{name}} reads the input."""
         self._helpers.pop(name, None)
 
     def register_partial(self, name, source):
@@ -109,7 +113,7 @@ class Handlebars:
         self._partials[name] = source
 
     def unregister_partial(self, name):
-        """Removes a partial. {{> name}} then renders nothing."""
+        """Removes a partial. {{> name}} then raises."""
         self._partials.pop(name, None)
 
     def has_partial(self, name):
@@ -165,16 +169,18 @@ class Handlebars:
 
 def _lookup_helper(args, options):
     collection, key = (args + [None, None])[:2]
+    if not collection and collection != 0:
+        return collection
     if isinstance(collection, dict):
-        return collection.get(key, '')
+        return collection.get(key)
     if isinstance(collection, list):
         try:
             index = int(key)
         except (TypeError, ValueError):
-            return ''
+            return None
         if 0 <= index < len(collection):
             return collection[index]
-    return ''
+    return None
 
 
 def _log_helper(args, options):
