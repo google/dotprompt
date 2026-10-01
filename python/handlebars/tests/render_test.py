@@ -31,6 +31,11 @@ def render(source, data=None, *, hb=None, data_hash=None):
     return hb.compile(source)(data if data is not None else {}, data=data_hash)
 
 
+# ==============================================================================
+# 1. Variables & Paths
+# ==============================================================================
+
+
 def test_simple_variable():
     assert render('Hello {{name}}!', {'name': 'World'}) == 'Hello World!'
 
@@ -51,6 +56,16 @@ def test_slash_path_notation():
     assert render('{{user/name}}', {'user': {'name': 'Alice'}}) == 'Alice'
 
 
+def test_boolean_values_render_as_lowercase():
+    assert render('{{val}}', {'val': True}) == 'true'
+    assert render('{{val}}', {'val': False}) == 'false'
+
+
+# ==============================================================================
+# 2. HTML Escaping & Raw Outputs
+# ==============================================================================
+
+
 def test_escapes_html_by_default():
     assert render('{{content}}', {'content': "<script>alert('xss')</script>"}) == (
         '&lt;script&gt;alert(&#x27;xss&#x27;)&lt;/script&gt;'
@@ -68,6 +83,11 @@ def test_ampersand_disables_escaping():
 def test_escape_html_off_leaves_markup():
     hb = Handlebars(escape_html=False)
     assert render('{{content}}', {'content': '<b>bold</b>'}, hb=hb) == '<b>bold</b>'
+
+
+# ==============================================================================
+# 3. Conditionals & Iteration
+# ==============================================================================
 
 
 def test_if_else_and_falsy_values():
@@ -105,6 +125,16 @@ def test_each_first_last_and_parent():
     assert render('{{#each items}}{{.}}-{{../prefix}}{{/each}}', {'prefix': 'X', 'items': ['a', 'b']}) == 'a-Xb-X'
 
 
+def test_block_params():
+    source = '{{#each items as |item index|}}{{index}}:{{item}};{{/each}}'
+    assert render(source, {'items': ['a', 'b']}) == '0:a;1:b;'
+
+
+# ==============================================================================
+# 4. Context Frames & @root Data
+# ==============================================================================
+
+
 def test_with_block_and_root():
     assert render('{{#with user}}{{name}}{{/with}}', {'user': {'name': 'Alice'}}) == 'Alice'
     source = '{{#with user}}{{name}} from {{@root.company}}{{/with}}'
@@ -114,6 +144,16 @@ def test_with_block_and_root():
 def test_at_data_is_separate_from_input():
     source = '{{name}} {{@name}}'
     assert render(source, {'name': 'input'}, data_hash={'name': 'context'}) == 'input context'
+
+
+def test_data_root_replaces_at_root():
+    assert render('{{@root.name}}', {'name': 'Ada'}, data_hash={'root': {'name': 'runtime'}}) == 'runtime'
+    assert render('{{@root.company}}', {'company': 'Acme'}, data_hash={'name': 'ctx'}) == 'Acme'
+
+
+# ==============================================================================
+# 5. Partials & Template Composition
+# ==============================================================================
 
 
 def test_partials_and_missing_partial():
@@ -138,6 +178,11 @@ def test_inline_partial():
     assert render(source, {'name': 'World'}).strip() == 'Hello World!'
 
 
+# ==============================================================================
+# 6. Whitespace Control & Comments
+# ==============================================================================
+
+
 def test_comments_whitespace_and_literal_braces():
     assert render('Hello {{! this is a comment }}World', {}) == 'Hello World'
     assert render('Hello   {{~name}}!', {'name': 'World'}) == 'HelloWorld!'
@@ -145,9 +190,9 @@ def test_comments_whitespace_and_literal_braces():
     assert render(r'\\{{name}}', {'name': 'World'}) == '\\World'
 
 
-def test_raw_block_raises():
-    with pytest.raises(ValueError, match='raw blocks are not supported'):
-        Handlebars().compile('{{{{raw}}}}{{name}}{{{{/raw}}}}')
+# ==============================================================================
+# 7. Custom Helpers & Subexpressions
+# ==============================================================================
 
 
 def test_subexpression_and_literals():
@@ -182,6 +227,16 @@ def test_safe_string_skips_escaping():
     assert render('{{bold name}}', {'name': 'test'}, hb=hb) == '<b>test</b>'
 
 
+# ==============================================================================
+# 8. Strict Mode & Error Handling
+# ==============================================================================
+
+
+def test_raw_block_raises():
+    with pytest.raises(ValueError, match='raw blocks are not supported'):
+        Handlebars().compile('{{{{raw}}}}{{name}}{{{{/raw}}}}')
+
+
 def test_unclosed_block_raises():
     with pytest.raises(ValueError):
         Handlebars().compile('{{#if show}}yes')
@@ -194,18 +249,3 @@ def test_strict_mode_names_the_missing_path():
     assert raised.value.path == 'user.name'
     assert 'is not defined' in str(raised.value)
     assert hb.compile('{{#if name}}yes{{else}}no{{/if}}')({'name': None}) == 'no'
-
-
-def test_block_params():
-    source = '{{#each items as |item index|}}{{index}}:{{item}};{{/each}}'
-    assert render(source, {'items': ['a', 'b']}) == '0:a;1:b;'
-
-
-def test_boolean_values_render_as_lowercase():
-    assert render('{{val}}', {'val': True}) == 'true'
-    assert render('{{val}}', {'val': False}) == 'false'
-
-
-def test_data_root_replaces_at_root():
-    assert render('{{@root.name}}', {'name': 'Ada'}, data_hash={'root': {'name': 'runtime'}}) == 'runtime'
-    assert render('{{@root.company}}', {'company': 'Acme'}, data_hash={'name': 'ctx'}) == 'Acme'
