@@ -151,6 +151,21 @@ def test_data_root_replaces_at_root():
     assert render('{{@root.company}}', {'company': 'Acme'}, data_hash={'name': 'ctx'}) == 'Acme'
 
 
+def test_at_data_whitespace_and_deep_paths():
+    assert render('Hello {{ @name }}!', data_hash={'name': 'Ada'}) == 'Hello Ada!'
+    assert render('Hello {{   @name   }}!', data_hash={'name': 'Ada'}) == 'Hello Ada!'
+    source = '{{@auth.user.email}}'
+    assert render(source, data_hash={'auth': {'user': {'email': 'ada@example.com'}}}) == 'ada@example.com'
+
+
+def test_at_data_in_conditionals_and_helpers():
+    hb = Handlebars()
+    hb.register_helper('upper', lambda args, opt: str(args[0]).upper())
+    assert render('{{#if @isAdmin}}admin{{else}}user{{/if}}', data_hash={'isAdmin': True}) == 'admin'
+    assert render('{{#if @isAdmin}}admin{{else}}user{{/if}}', data_hash={'isAdmin': False}) == 'user'
+    assert render('{{upper @role}}', hb=hb, data_hash={'role': 'engineer'}) == 'ENGINEER'
+
+
 # ==============================================================================
 # 5. Partials & Template Composition
 # ==============================================================================
