@@ -23,7 +23,7 @@ array and object stringification, call-site partial indentation, and scope bound
 
 import pytest
 
-from handlebars_dotprompt import Handlebars, StrictModeError
+from dotpromptz_handlebars import Handlebars, StrictModeError
 
 
 def render(source, data=None, *, hb=None, strict=False):

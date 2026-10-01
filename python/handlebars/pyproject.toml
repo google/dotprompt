@@ -41,7 +41,7 @@ build-backend = "hatchling.build"
 requires = ["hatchling"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["handlebars_dotprompt"]
+packages = ["dotpromptz_handlebars"]
 
 [dependency-groups]
 dev = ["pytest>=8.3.5"]
