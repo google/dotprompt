@@ -880,10 +880,13 @@ def _parts(path):
 
 
 def _is_empty(value):
-    """What {{#with}} and {{#if}} treat as empty / nothing to enter."""
+    """What {{#with}} treats as nothing to step into.
+
+    An empty object was still passed. A list with no items was not.
+    """
     if value is None or value is False or value == '':
         return True
-    return isinstance(value, (list, dict)) and len(value) == 0
+    return isinstance(value, list) and len(value) == 0
 
 
 def _if_shows(value, *, include_zero):
