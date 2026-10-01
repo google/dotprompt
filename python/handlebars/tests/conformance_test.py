@@ -17,7 +17,7 @@
 """The supported Handlebars subset verified against Handlebars.js 4.7.8.
 
 The contract is structured into five distinct conformance layers:
-1. `reality`: Real-world LLM prompt templates (RAG context injection, role
+1. `prompts`: Real-world LLM prompt templates (RAG context injection, role
    instructions, diff reviews, persona greetings, numbered requirement lists).
 2. `paths`: Variable and property resolution rules (dotted paths, slash paths,
    bracket indexing `items.[0]`, parent traversals `../`, and `@root` lookups).
