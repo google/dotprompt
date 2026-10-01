@@ -73,7 +73,7 @@ A partial starts a new context. `{{../name}}` inside it does not see the caller.
 
 `{{* decorator}}` raises. Decorators are not part of a prompt.
 
-`{{{{raw}}}}` raises. In Handlebars those braces do not mean "print this literally". They hand the inside to a helper, and with no helper the block prints nothing. Prompts do not use them, so the syntax is an error instead of a silent blank.
+`{{{{raw}}}}` outputs its content literally without parsing. In Handlebars, 4-brace blocks pass unparsed content to a helper (`options.fn()`). A built-in `raw` helper renders the literal body as a safe string, matching Dart and Handlebars.js when `raw` is registered.
 
 A function stored in the input raises. Register it with `register_helper`. The input is data.
 
@@ -83,4 +83,4 @@ A broken template raises `ValueError`. The wording is ours. What raises, and wha
 
 A prompt needs variables, `if` / `each` / `with`, helpers, partials, and `@root` / `@index`. The rows above are the cases a prompt author actually hits, including the ones that look like they should agree and do not.
 
-The Dart library is the other pure implementation on the team, and its feature list is wider than its tests. A missing partial prints nothing there. A raw block prints its text. `{{#with ""}}` enters. Those are not Handlebars. This package does not copy them.
+The Dart library is the other pure implementation on the team, and its feature list is wider than its tests. A missing partial prints nothing there. `{{#with ""}}` enters. Those are not Handlebars. This package does not copy them.

@@ -140,8 +140,27 @@ def _tokens(source):
         elif start > i:
             parts.append(source[i:start])
         if source.startswith('{{{{', start):
-            raise ValueError('raw blocks are not supported')
-        # {{!-- comments end at --}}, so a }} inside one is still comment text.
+            if source.startswith('{{{{/', start):
+                raise ValueError('unexpected closing tag')
+            open_end = source.find('}}}}', start + 4)
+            if open_end < 0:
+                raise ValueError('unclosed tag')
+            header = source[start + 4 : open_end].strip()
+            if not header:
+                raise ValueError('empty tag')
+            raw_name = header.split()[0]
+            close_tag = '{{{{/' + raw_name + '}}}}'
+            content_start = open_end + 4
+            close_pos = source.find(close_tag, content_start)
+            if close_pos < 0:
+                raise ValueError(f'unclosed raw block {raw_name}')
+            raw_content = source[content_start:close_pos]
+            parts.append(('tag', f'#{header}', False, False, False, False, ''))
+            if raw_content:
+                parts.append(raw_content)
+            parts.append(('tag', f'/{raw_name}', False, False, False, False, ''))
+            i = close_pos + len(close_tag)
+            continue
         long_end = _long_comment_end(source, start)
         if long_end is not None:
             end, closer = long_end
@@ -505,6 +524,8 @@ def _render_one(node, **env):
 
 def _eval_block(node, **env):
     name = node.call['name']
+    if name == 'raw' and name not in env['helpers']:
+        return Rendered(_render(node.body, **env))
     if name == 'if':
         show, _ = _if_condition(node, **env)
         return Rendered(_choose(show, node, **env))

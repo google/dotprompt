@@ -232,9 +232,28 @@ def test_safe_string_skips_escaping():
 # ==============================================================================
 
 
-def test_raw_block_raises():
-    with pytest.raises(ValueError, match='raw blocks are not supported'):
-        Handlebars().compile('{{{{raw}}}}{{name}}{{{{/raw}}}}')
+def test_raw_block_outputs_content_literally():
+    hb = Handlebars()
+    assert hb.compile('Before {{{{raw}}}}{{name}} is literal{{{{/raw}}}} After')({'name': 'World'}) == (
+        'Before {{name}} is literal After'
+    )
+
+
+def test_raw_block_standalone_line_trimming():
+    hb = Handlebars()
+    source = 'Before\n{{{{raw}}}}\n{{name}}\n{{{{/raw}}}}\nAfter'
+    assert hb.compile(source)({'name': 'World'}) == 'Before\n{{name}}\nAfter'
+
+
+def test_custom_raw_block_helper():
+    hb = Handlebars()
+    hb.register_helper('wrap', lambda args, opt: f'[{opt.fn()}]')
+    assert hb.compile('{{{{wrap}}}}{{name}}{{{{/wrap}}}}')({'name': 'World'}) == '[{{name}}]'
+
+
+def test_unclosed_raw_block_raises():
+    with pytest.raises(ValueError, match='unclosed raw block'):
+        Handlebars().compile('{{{{raw}}}}{{name}}')
 
 
 def test_unclosed_block_raises():

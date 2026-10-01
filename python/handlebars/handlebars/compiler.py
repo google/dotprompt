@@ -113,6 +113,7 @@ class Handlebars:
         self._templates = {}
         self.register_helper('lookup', _lookup_helper)
         self.register_helper('log', _log_helper)
+        self.register_helper('raw', _raw_helper)
 
     def register_helper(self, name, fn):
         """Registers a helper callable for template invocations.
@@ -241,3 +242,7 @@ def _lookup_helper(args, options):
 def _log_helper(args, options):
     print('[Handlebars]', *(args or ['']))
     return ''
+
+
+def _raw_helper(args, options):
+    return options.fn()
