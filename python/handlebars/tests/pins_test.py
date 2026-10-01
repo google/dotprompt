@@ -14,7 +14,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""One case per Dart test the first file did not already assert."""
+"""Regression pins ported from cross-language test suites (e.g. Dotprompt Dart).
+
+These test cases pin down established behavioral contracts across SDKs—
+including path resolution, block helper scopes, helper argument types,
+and whitespace trimming—ensuring future refactors do not drift from
+cross-language expectations.
+"""
 
 import pytest
 

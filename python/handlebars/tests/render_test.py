@@ -14,7 +14,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""What compile(template)(data) returns."""
+"""Core functional unit tests for the Handlebars compiler and runtime.
+
+Covers standard template syntax: variable interpolation, HTML escaping,
+built-in block helpers (if, unless, each, with), partials, subexpressions,
+and helper registrations.
+"""
 
 import pytest
 

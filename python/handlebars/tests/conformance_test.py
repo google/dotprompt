@@ -50,7 +50,7 @@ def _add(args, options):
             return 0
         if value is True:
             return 1
-        if isinstance(value, (int, float)):
+        if isinstance(value, int | float):
             return value
         return float(value)
 
