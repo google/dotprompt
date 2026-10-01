@@ -1,8 +1,8 @@
 # handlebars-dotprompt
 
-A pure-Python Handlebars implementation, owned by the Genkit team. It implements the subset of the Handlebars spec that [Dotprompt](https://github.com/google/dotprompt) templates use, not the full language.
+A pure-Python Handlebars implementation, owned by the Genkit team. It implements the subset of Handlebars that [Dotprompt](https://github.com/google/dotprompt) templates use, not the full language.
 
-Dotprompt is language-agnostic. A `.prompt` file should render the same way in every SDK, so what a prompt does is defined by the file, not by the language running it. To keep that true, this package treats Handlebars.js 4.7.8 as the spec. Handlebars started in JavaScript, and Handlebars.js is the most mature implementation, so where implementations disagree, it wins. Conformance tests check this package's output against Handlebars.js 4.7.8.
+Dotprompt is language-agnostic. A `.prompt` file should render the same way in every SDK, so what a prompt does is defined by the file, not by the language running it. To keep that true, this package treats Handlebars.js 4.7.8 as the spec. Handlebars has no standalone spec. Handlebars.js is the reference implementation that the other ports follow, so where implementations disagree, Handlebars.js wins. 4.7.8 is the version the Dotprompt JS SDK uses. Conformance tests check this package's output against it.
 
 No Rust or Node at runtime.
 
