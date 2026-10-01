@@ -1,13 +1,31 @@
-# handlebars-python
+# handlebars-dotprompt
 
 Renders the templates a Genkit prompt writes. The behavior follows Handlebars 4.7.8 (JavaScript).
 
+```
+pip install handlebars-dotprompt
+```
+
 ```python
-from handlebars import Handlebars
+from handlebars_dotprompt import EscapeFunction, Handlebars, SafeString
 
 template = Handlebars().compile('Hello {{name}}!')
 print(template({'name': 'World'}))
 ```
+
+## API
+
+`Handlebars()` compiles templates. `escape_html=True` is the default, so `{{name}}` escapes `& < > " ' ` =`. Pass `escape_html=False`, or `escape_fn=EscapeFunction.NO_ESCAPE`, to leave those characters as they are. `{{{name}}}` and `{{&name}}` are never escaped.
+
+`strict=True` raises `StrictModeError` when a printed path is missing. The error's `path` is that path. A missing path passed to `if`, `unless`, `each`, `with`, or a helper does not raise.
+
+`compile(source)` returns a function. Call it with the input dict. `data=` is what `{{@name}}` reads.
+
+`register_helper(name, fn)` adds a helper. `fn` is called as `fn(args, options)`. `args` is the positional values. `options.hash` holds the `key=value` arguments. `options.fn()` renders the block body, and `options.inverse()` renders the else body. `options.context` is the current input. `options.is_block` is true for the `{{#name}}` form.
+
+Return a `SafeString` when the helper output should be inserted as written. Any other string is escaped.
+
+`register_partial(name, source)` adds a partial for `{{> name}}`.
 
 `{{name}}` reads the input. `{{@name}}` reads `data=`.
 

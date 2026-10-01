@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [project]
-dependencies    = ["dotpromptz", "dotpromptz-handlebars", "handlebars-python"]
+dependencies    = ["dotpromptz", "dotpromptz-handlebars", "handlebars-dotprompt"]
 description     = "Workspace for Dotprompt packages"
 license         = "Apache-2.0"
 name            = "dotprompt-workspace"
@@ -86,7 +86,7 @@ default = true
 [tool.uv.sources]
 dotpromptz            = { workspace = true }
 dotpromptz-handlebars = { workspace = true }
-handlebars-python     = { workspace = true }
+handlebars-dotprompt  = { workspace = true }
 
 [tool.uv.workspace]
 members = ["dotpromptz", "handlebarrz", "handlebars", "tests/*"]
@@ -144,7 +144,7 @@ select = [
 [tool.ruff.lint.isort]
 combine-as-imports = true
 force-single-line = false
-known-first-party = ["dotpromptz", "dotpromptz-handlebars", "handlebars"]
+known-first-party = ["dotpromptz", "dotpromptz-handlebars", "handlebars_dotprompt"]
 section-order = [
   "future",
   "standard-library",

@@ -631,7 +631,7 @@ def _pushed(env, ctx, param_scope, frame=None):
 
 
 def _eval_call(call, *, block, as_call=False, **env):
-    from handlebars.compiler import Options
+    from handlebars_dotprompt._compiler import Options
 
     name = call['name']
     if name in _BUILTINS and block is not None:
@@ -641,7 +641,7 @@ def _eval_call(call, *, block, as_call=False, **env):
     hashed = {key: _value(bit, **_loose(env)) for key, bit in call['hash'].items()}
 
     def fn(context=None):
-        from handlebars.compiler import SafeString
+        from handlebars_dotprompt._compiler import SafeString
 
         if block is None:
             return ''
@@ -650,7 +650,7 @@ def _eval_call(call, *, block, as_call=False, **env):
         return SafeString(_render(block.body, **pushed))
 
     def inverse(context=None):
-        from handlebars.compiler import SafeString
+        from handlebars_dotprompt._compiler import SafeString
 
         if block is None:
             return ''
@@ -906,7 +906,7 @@ def _reject_function(value):
 
 
 def _show(value, *, raw, escape_html):
-    from handlebars.compiler import SafeString
+    from handlebars_dotprompt._compiler import SafeString
 
     value = _reject_function(value)
     text = _js_text(value)

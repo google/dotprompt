@@ -16,8 +16,7 @@
 
 """A pure Python Handlebars template engine."""
 
-from handlebars._render import StrictModeError
-from handlebars.compiler import (
+from handlebars_dotprompt._compiler import (
     Context,
     EscapeFunction,
     Handlebars,
@@ -27,6 +26,7 @@ from handlebars.compiler import (
     RuntimeOptions,
     SafeString,
 )
+from handlebars_dotprompt._render import StrictModeError
 
 __all__ = [
     'Context',

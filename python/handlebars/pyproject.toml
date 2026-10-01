@@ -31,7 +31,7 @@ classifiers = [
 ]
 description = "A pure Python implementation of the Handlebars template engine."
 license = "Apache-2.0"
-name = "handlebars-python"
+name = "handlebars-dotprompt"
 readme = "README.md"
 requires-python = ">=3.10"
 version = "0.1.0"
@@ -41,7 +41,7 @@ build-backend = "hatchling.build"
 requires = ["hatchling"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["handlebars"]
+packages = ["handlebars_dotprompt"]
 
 [dependency-groups]
 dev = ["pytest>=8.3.5"]
