@@ -128,6 +128,8 @@ def test_each_first_last_and_parent():
 def test_block_params():
     source = '{{#each items as |item index|}}{{index}}:{{item}};{{/each}}'
     assert render(source, {'items': ['a', 'b']}) == '0:a;1:b;'
+    obj_source = '{{#each obj as |val key|}}{{key}}={{val}};{{/each}}'
+    assert render(obj_source, {'obj': {'x': 1, 'y': 2}}) == 'x=1;y=2;'
 
 
 # ==============================================================================
@@ -139,6 +141,8 @@ def test_with_block_and_root():
     assert render('{{#with user}}{{name}}{{/with}}', {'user': {'name': 'Alice'}}) == 'Alice'
     source = '{{#with user}}{{name}} from {{@root.company}}{{/with}}'
     assert render(source, {'user': {'name': 'Alice'}, 'company': 'Acme'}) == 'Alice from Acme'
+    grandparent = '{{#with l1}}{{#with l2}}{{val}}-{{../../root}}{{/with}}{{/with}}'
+    assert render(grandparent, {'root': 'R', 'l1': {'l2': {'val': 'V'}}}) == 'V-R'
 
 
 def test_at_data_is_separate_from_input():
@@ -228,8 +232,15 @@ def test_subexpression_and_literals():
     hb.register_helper('upper', lambda args, options: str(args[0]).upper())
     hb.register_helper('wrap', lambda args, options: f'[{args[0]}]')
     hb.register_helper('add', lambda args, options: args[0] + args[1])
+    hb.register_helper('mult', lambda args, options: args[0] * args[1])
+    hb.register_helper('format', lambda args, options: options.hash.get('prefix', '') + args[0])
+    hb.register_helper('tag', lambda args, options: f'<{options.hash.get("text", "")}>')
+
     assert render('{{wrap (upper name)}}', {'name': 'hello'}, hb=hb) == '[HELLO]'
     assert render('{{add 10 -5}}', {}, hb=hb) == '5'
+    assert render('{{mult (add 2 3) 4}}', {}, hb=hb) == '20'
+    assert render('{{wrap (format name prefix="Dr. ")}}', {'name': 'Who'}, hb=hb) == '[Dr. Who]'
+    assert render('{{{tag text=(format name prefix="Dr. ")}}}', {'name': 'Who'}, hb=hb) == '<Dr. Who>'
 
 
 def test_helper_passes_through_keyboard_interrupt():
