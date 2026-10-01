@@ -2,7 +2,7 @@
 
 A pure-Python Handlebars implementation, owned by the Genkit team. It implements the subset of Handlebars that [Dotprompt](https://github.com/google/dotprompt) templates use, not the full language.
 
-Dotprompt is language-agnostic. A `.prompt` file should render the same way in every SDK, so what a prompt does is defined by the file, not by the language running it. To keep that true, this package treats Handlebars.js 4.7.8 as the spec. Handlebars has no standalone spec. Handlebars.js is the reference implementation that the other ports follow, so where implementations disagree, Handlebars.js wins. 4.7.8 is the version the Dotprompt JS SDK uses. Conformance tests check this package's output against it.
+Dotprompt is language-agnostic. A `.prompt` file should render the same way in every SDK, so what a prompt does is defined by the file, not by the language running it. To keep that true, this package treats Handlebars.js 4.7.9 as the spec. Handlebars has no standalone spec. Handlebars.js is the reference implementation that the other ports follow, so where implementations disagree, Handlebars.js wins. 4.7.9 is the latest Handlebars.js release, and it's what the Dotprompt JS SDK's `^4.7.8` range resolves to on a fresh install. Conformance tests check this package's output against it.
 
 No Rust or Node at runtime.
 
@@ -48,6 +48,7 @@ def price(args, options):
     currency = options.hash.get('currency', 'USD')
     return f'{cents / 100:.2f} {currency}'
 
+
 hb.register_helper('price', price)
 print(hb.compile('Salmon: {{price cents currency="EUR"}}')({'cents': 1850}))
 # => Salmon: 18.50 EUR
@@ -58,6 +59,7 @@ For a block helper (`{{#name}}...{{/name}}`), `options.fn(context)` renders the 
 ```python
 def loud(args, options):
     return options.fn(options.context).upper()
+
 
 hb.register_helper('loud', loud)
 print(hb.compile('{{#loud}}chef says {{dish}}{{/loud}}')({'dish': 'tartine'}))

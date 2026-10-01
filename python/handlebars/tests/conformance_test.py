@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""The supported Handlebars subset verified against Handlebars.js 4.7.8.
+"""The supported Handlebars subset verified against Handlebars.js 4.7.9.
 
 The contract is structured into five distinct conformance layers:
 1. `prompts`: Real-world LLM prompt templates (RAG context injection, role
@@ -30,7 +30,7 @@ The contract is structured into five distinct conformance layers:
    and literal escape sequences (`\\{{` vs `\\\\{{`).
 
 Every case defines canonical input context, optional helpers/partials, and
-asserts byte-for-byte output parity against Handlebars.js 4.7.8 recorded outputs
+asserts byte-for-byte output parity against Handlebars.js 4.7.9 recorded outputs
 (`text`) or matching syntax rejection (`raises`).
 """
 
@@ -45,7 +45,7 @@ import pytest
 from handlebars_dotprompt import Handlebars, StrictModeError
 
 _CASES = json.loads(Path(__file__).with_name('conformance_cases.json').read_text())
-_REFERENCE = '4.7.8'
+_REFERENCE = '4.7.9'
 
 
 def _upper(args, options):
@@ -125,15 +125,15 @@ def _reference_engine():
     return None
 
 
-def test_recorded_output_still_matches_handlebars_4_7_8():
-    """Re-render the recorded cases with Handlebars 4.7.8. A missing install fails the run."""
+def test_recorded_output_still_matches_handlebars_4_7_9():
+    """Re-render the recorded cases with Handlebars 4.7.9. A missing install fails the run."""
     if shutil.which('node') is None:
-        pytest.fail('node is not installed, so the Handlebars 4.7.8 check cannot run')
+        pytest.fail('node is not installed, so the Handlebars 4.7.9 check cannot run')
     root = _reference_engine()
     if root is None:
         pytest.fail(
-            'Handlebars 4.7.8 is not installed. '
-            'npm install handlebars@4.7.8 and set HANDLEBARS_JS to that package directory.'
+            'Handlebars 4.7.9 is not installed. '
+            'npm install handlebars@4.7.9 and set HANDLEBARS_JS to that package directory.'
         )
     script = Path(__file__).with_name('conformance_oracle.js')
     cases = Path(__file__).with_name('conformance_cases.json')
