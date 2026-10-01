@@ -193,6 +193,13 @@ def test_inline_partial():
     assert render(source, {'name': 'World'}).strip() == 'Hello World!'
 
 
+def test_recursive_partial_raises_recursion_error():
+    hb = Handlebars()
+    hb.register_partial('loop', '{{> loop}}')
+    with pytest.raises(RecursionError):
+        hb.compile('{{> loop}}')({})
+
+
 # ==============================================================================
 # 6. Whitespace Control & Comments
 # ==============================================================================
@@ -203,6 +210,12 @@ def test_comments_whitespace_and_literal_braces():
     assert render('Hello   {{~name}}!', {'name': 'World'}) == 'HelloWorld!'
     assert render(r'Show \{{name}} literally', {'name': 'World'}) == 'Show {{name}} literally'
     assert render(r'\\{{name}}', {'name': 'World'}) == '\\World'
+
+
+def test_multibyte_utf8_identifiers_and_comments():
+    source = 'Hola {{año}}, こんにちは {{名前}}! {{! 注释 }} {{!-- 详细注释 --}}'
+    assert render(source, {'año': 2026, '名前': '太郎'}) == 'Hola 2026, こんにちは 太郎!  '
+    assert render('{{{año}}}', {'año': '<b>2026</b>'}) == '<b>2026</b>'
 
 
 # ==============================================================================
@@ -217,6 +230,13 @@ def test_subexpression_and_literals():
     hb.register_helper('add', lambda args, options: args[0] + args[1])
     assert render('{{wrap (upper name)}}', {'name': 'hello'}, hb=hb) == '[HELLO]'
     assert render('{{add 10 -5}}', {}, hb=hb) == '5'
+
+
+def test_helper_passes_through_keyboard_interrupt():
+    hb = Handlebars()
+    hb.register_helper('interrupt', lambda args, opt: (_ for _ in ()).throw(KeyboardInterrupt))
+    with pytest.raises(KeyboardInterrupt):
+        hb.compile('{{interrupt}}')({})
 
 
 def test_lookup_helper():
