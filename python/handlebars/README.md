@@ -1,106 +1,134 @@
 # handlebars-dotprompt
 
-Renders the templates a Genkit prompt writes. The behavior follows Handlebars 4.7.8 (JavaScript).
+A pure-Python Handlebars implementation, owned by the Genkit team. It implements the subset of the Handlebars spec that [Dotprompt](https://github.com/google/dotprompt) templates use, not the full language.
+
+Handlebars implementations don't always agree. Where they differ, Handlebars.js 4.7.8 is the source of truth. Handlebars started in JavaScript, and Handlebars.js is the most mature implementation. A conformance suite checks this package's output against Handlebars.js 4.7.8, so a `.prompt` file renders the same way in Python as in the JS SDK.
+
+No Rust or Node at runtime.
 
 ```
-pip install handlebars-dotprompt
+uv add handlebars-dotprompt
 ```
+
+## Quick start
 
 ```python
-from handlebars_dotprompt import EscapeFunction, Handlebars, SafeString
+from handlebars_dotprompt import Handlebars
 
-template = Handlebars().compile('Hello {{name}}!')
-print(template({'name': 'World'}))
+# 1. Compile once
+hb = Handlebars()
+render = hb.compile(
+    'Table for {{party}}. '
+    '{{#if allergies}}Avoid: {{#each allergies}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}.{{/if}}'
+)
+
+# 2. Render many times
+print(render({'party': 4, 'allergies': ['peanuts', 'shellfish']}))
+# => Table for 4. Avoid: peanuts, shellfish.
+
+print(render({'party': 2, 'allergies': []}))
+# => Table for 2.
 ```
 
-## API
-
-`Handlebars()` compiles templates. `escape_html=True` is the default, so `{{name}}` escapes `& < > " ' ` =`. Pass `escape_html=False`, or `escape_fn=EscapeFunction.NO_ESCAPE`, to leave those characters as they are. `{{{name}}}` and `{{&name}}` are never escaped.
-
-`strict=True` raises `StrictModeError` when a printed path is missing. The error's `path` is that path. A missing path passed to `if`, `unless`, `each`, `with`, or a helper does not raise.
-
-`compile(source)` returns a function. Call it with the input dict. `data=` is what `{{@name}}` reads.
-
-`register_helper(name, fn)` adds a helper. `fn` is called as `fn(args, options)`. `args` is the positional values. `options.hash` holds the `key=value` arguments. `options.fn()` renders the block body, and `options.inverse()` renders the else body. `options.context` is the current input. `options.is_block` is true for the `{{#name}}` form.
-
-Return a `SafeString` when the helper output should be inserted as written. Any other string is escaped.
-
-`register_partial(name, source)` adds a partial for `{{> name}}`.
-
-`{{name}}` reads the input. `{{@name}}` reads `data=`.
+`compile()` returns a function. Call it with your input dict. Pass `data=` for values the template reads with `@`:
 
 ```python
-template = Handlebars().compile('{{name}} {{@name}}')
-print(template({'name': 'input'}, data={'name': 'context'}))
+render = hb.compile('{{name}} / {{@request_id}}')
+print(render({'name': 'Ana'}, data={'request_id': 'r-42'}))
+# => Ana / r-42
 ```
 
-## What you can write
+## Helpers
 
-Variables: `{{name}}`, `{{user.name}}`, `{{user/name}}`, `{{a.[b c]}}`, `{{items.[0]}}`, `{{this.name}}`, `{{../name}}`. A list index is the bracket form. `{{items.0}}` is a broken template.
+A helper is `fn(args, options)`. `args` holds the positional arguments and `options.hash` holds the `key=value` ones.
 
-`{{{name}}}` and `{{&name}}` skip HTML escaping. Escaping is on by default and covers `& < > " ' ` =`.
+```python
+def price(args, options):
+    cents = args[0]
+    currency = options.hash.get('currency', 'USD')
+    return f'{cents / 100:.2f} {currency}'
 
-Comments: `{{! ... }}` and `{{!-- ... --}}`. The long form can contain `}}`.
+hb.register_helper('price', price)
+print(hb.compile('Salmon: {{price cents currency="EUR"}}')({'cents': 1850}))
+# => Salmon: 18.50 EUR
+```
 
-Blocks: `{{#if}}`, `{{#unless}}`, `{{#each}}`, `{{#with}}`, plus `{{else}}`, `{{else if}}`, and `{{else unless}}`. `{{#if n includeZero=true}}` treats 0 as yes.
+For a block helper (`{{#name}}...{{/name}}`), `options.fn(context)` renders the body and `options.inverse(context)` renders the `{{else}}` body:
 
-`{{#name}}` and `{{^name}}` when `name` is data, not a helper. A list repeats. `{{^name}}` is the branch that runs when `{{#name}}` would not.
+```python
+def loud(args, options):
+    return options.fn(options.context).upper()
 
-`{{#each items as |item index|}}` and `{{#with user as |u|}}` bind those names. Inside each, `{{.}}` is still the item. An outer name stays visible inside an inner each. `{{../name}}` is the parent value, not that name. `{{#user as |u|}}` does not bind `u`; `{{name}}` still reads the user.
+hb.register_helper('loud', loud)
+print(hb.compile('{{#loud}}chef says {{dish}}{{/loud}}')({'dish': 'tartine'}))
+# => CHEF SAYS TARTINE
+```
 
-Helpers, `key=value` arguments, and `(subexpressions)`. `{{"name"}}` calls a helper named `name`. With no such helper it prints nothing; it does not print the quotes' contents. `lookup` and `log` are built in. A helper that returns `SafeString` is inserted as written. `if`, `unless`, `each`, and `with` are built in and are not replaced by `register_helper`.
+Helper output gets escaped like any other value. Return a `SafeString` to insert markup as written. Escaping is then up to you.
 
-Partials: `{{> name}}`, `{{> name context key=value}}`, `{{> (which)}}` when `which` is a helper. `{{#> name}}default{{/name}}` uses the partial, or the default when it was never registered. The partial prints that default with `{{> @partial-block}}`. `{{#*inline "name"}}...{{/inline}}` defines a partial for the rest of that render.
+`if`, `unless`, `each`, `with`, `lookup`, and `log` are built in. You can't override them with `register_helper`.
 
-Data: `{{@root}}`, `{{@index}}`, `{{@key}}`, `{{@first}}`, `{{@last}}`, `{{@../index}}`. On a list, `@key` is the index. On an object, `@key` is the key. Objects keep insertion order.
+## Partials
 
-`~` removes the whitespace touching that side of a tag. A block, partial, or comment that is the only thing on its line does not leave the line behind. A partial called from an indented line indents its output to match.
+```python
+hb.register_partial('dish', '- {{name}} ({{price}})\n')
+render = hb.compile('Menu:\n{{#each dishes}}{{> dish}}{{/each}}')
+print(render({'dishes': [{'name': 'Tartine', 'price': 14}, {'name': 'Soup', 'price': 9}]}))
+# => Menu:
+#    - Tartine (14)
+#    - Soup (9)
+```
 
-`\{{` prints `{{`. `\\{{name}}` prints one backslash and then the value.
+A missing partial raises. `{{#> name}}fallback{{/name}}` renders the fallback instead. Inline partials (`{{#*inline "name"}}`) and dynamic partials (`{{> (helperName)}}`) work too.
 
-Numbers in a template are `1`, `-2`, and `1.5`. `.5` and `1e2` are not numbers.
+## Escaping
 
-## Which branch runs
+`{{value}}` HTML-escapes by default. `{{{value}}}` doesn't.
 
-| Value | `{{value}}` prints | `{{#if}}` | `{{#with}}` | `{{#each}}` | `{{#value}}` |
-| --- | --- | --- | --- | --- | --- |
-| missing or null | nothing | else | else | else | else |
-| `false` | `false` | else | else | else | else |
-| `0` | `0` | else (`includeZero=true` enters) | enters, and `{{.}}` is 0 | else | enters |
-| `""` | nothing | else | else | else | enters |
-| `[]` | nothing | else | else | else | else |
-| `{}` | `[object Object]` | enters | enters | else | enters once |
-| `[1, 2]` | `1,2` | enters | enters | once per item | once per item |
-| `"ab"` | `ab` | enters | enters | else | enters once |
+```python
+render = Handlebars().compile('{{note}} | {{{note}}}')
+print(render({'note': 'Fish & <b>Chips</b>'}))
+# => Fish &amp; &lt;b&gt;Chips&lt;/b&gt; | Fish & <b>Chips</b>
+```
 
-`{{#if}}` asks whether to show the branch. `{{#with}}` asks whether there is a value to step into. They disagree on `0`.
-
-`{}` means an object was passed. `None` means it was not. `{{#if}}` and `{{#with}}` enter for `{}`, and `{{name}}` inside that branch is blank. `0`, `false`, `""`, and `[]` still take the else branch. The prompt means the same thing in every language. A Python `if` would skip `{}`. This package does not.
+Prompts usually go to a model, not a browser. To turn escaping off everywhere, use `Handlebars(escape_html=False)`.
 
 ## Strict mode
 
-`Handlebars(strict=True)` raises `StrictModeError` when the template prints a missing path, or uses one as `{{#name}}`. The error's `path` is that path. A missing path passed to `if`, `unless`, `each`, `with`, or a helper does not raise. It counts as empty. A key that is present and null does not raise.
+`Handlebars(strict=True)` raises when the template prints a path that isn't in the input:
 
-## Partials and `@root`
+```python
+from handlebars_dotprompt import Handlebars, StrictModeError
 
-`{{> missing}}` raises. `{{#> missing}}default{{/missing}}` prints `default`.
+try:
+    Handlebars(strict=True).compile('Hello {{user.name}}')({'user': {}})
+except StrictModeError as err:
+    print(err.path)
+# => user.name
+```
 
-A partial starts a new context. `{{../name}}` inside it does not see the caller. `{{@root}}` and `{{@index}}` do.
+Conditions don't raise. `{{#if user.name}}` on a missing path takes the else branch.
 
-`{{@root}}` is the input. If the `data` dict already contains `root`, that value is `{{@root}}` instead. Dotprompt still refuses a context key named `root` when the template reads `@root`. That check stays in the prompt layer. This package does not do it.
+## Values that surprise Python developers
 
-## Refused on purpose
+Rendering follows JavaScript, not Python, so one template means the same thing in every SDK:
 
-`{{* decorator}}` raises. Decorators are not part of a prompt.
+- `0` fails `{{#if}}` but enters `{{#with}}`. Use `{{#if n includeZero=true}}` to keep `0`.
+- `{}` is truthy. `{{#if user}}` enters for an empty dict. Only `None`, `False`, `""`, `0`, and `[]` take the else branch.
+- Lists print as `1,2` and dicts print as `[object Object]`. Format structured data with a helper. Dotprompt ships `{{json value}}` for this.
+- `1.0` prints as `1`, and `False` prints as `false`.
 
-`{{{{raw}}}}` outputs its content literally without parsing. In Handlebars, 4-brace blocks pass unparsed content to a helper (`options.fn()`). A built-in `raw` helper renders the literal body as a safe string, matching Handlebars 4.7.8 (JavaScript).
+## What's not supported
 
-A function stored in the input raises. Register it with `register_helper`. The input is data.
+These raise `ValueError`:
 
-A broken template raises `ValueError`. The wording is ours. What raises, and what renders, matches Handlebars 4.7.8 (JavaScript).
+- Decorators (`{{* name}}`).
+- Functions in the input dict. Register them with `register_helper`, so a template can only call code you chose.
+- Broken templates. Which templates fail matches Handlebars.js, but the error messages are worded differently.
 
-## Why this cut
-
-A prompt needs variables, `if` / `each` / `with`, helpers, partials, and `@root` / `@index`. The rows above are the cases a prompt author actually hits, including the ones that look like they should agree and do not.
-
-The implementation adheres strictly to Handlebars 4.7.8 (JavaScript) semantics so prompt templates behave predictably across all SDKs.
+Everything else a prompt uses is supported:
+- **Paths:** `user.name`, `../name`, `items.[0]`
+- **Blocks:** `if`, `unless`, `each`, `with`, with `else` and `else if`
+- **Block parameters:** `as |item index|`
+- **Data:** `@index`, `@key`, `@first`, `@last`, `@root`
+- **Syntax:** subexpressions, comments, `~` whitespace control, and raw blocks (`{{{{raw}}}}`)
