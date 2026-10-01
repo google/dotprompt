@@ -14,15 +14,24 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""The supported subset, checked against Handlebars 4.7.8.
+"""The supported Handlebars subset verified against Handlebars.js 4.7.8.
 
-Real prompts are mostly a variable, an if, an each, an else, a dotted path,
-or a partial. Those cases are the ``reality`` layer. The other layers walk
-the edges of that same subset: paths, blocks, partials, and whitespace.
-Decorators, raw blocks, and ``.5`` are refused on purpose and are not here.
+The contract is structured into five distinct conformance layers:
+1. `reality`: Real-world LLM prompt templates (RAG context injection, role
+   instructions, diff reviews, persona greetings, numbered requirement lists).
+2. `paths`: Variable and property resolution rules (dotted paths, slash paths,
+   bracket indexing `items.[0]`, parent traversals `../`, and `@root` lookups).
+3. `blocks`: Built-in conditionals and iteration (`if`, `unless`, `each`, `with`),
+   truthiness matrix (including `0` vs `includeZero=true`), block params
+   (`as |item index|`), and section blocks (`{{#name}}` / `{{^name}}`).
+4. `partials`: Template composition (`> name`), context overlays, partial
+   blocks (`#> name` with `@partial-block`), and call-site indentation inheritance.
+5. `whitespace`: Standalone block/partial newline stripping, tilde trimming (`~`),
+   and literal escape sequences (`\\{{` vs `\\\\{{`).
 
-``text`` is what Handlebars 4.7.8 renders. ``raises`` means both sides
-reject the template. The wording of the error is not compared.
+Every case defines canonical input context, optional helpers/partials, and
+asserts byte-for-byte output parity against Handlebars.js 4.7.8 recorded outputs
+(`text`) or matching syntax rejection (`raises`).
 """
 
 import json
@@ -90,7 +99,7 @@ def _render(case):
     return hb.compile(case['template'])(case['context'], data=case['data'])
 
 
-@pytest.mark.parametrize('case', _CASES, ids=[case['name'] for case in _CASES])
+@pytest.mark.parametrize('case', _CASES, ids=[f'{case.get("layer", "general")}::{case["name"]}' for case in _CASES])
 def test_conformance(case):
     if case.get('raises'):
         with pytest.raises((ValueError, StrictModeError)):

@@ -31,6 +31,11 @@ def render(source, data=None, *, hb=None, strict=False):
     return hb.compile(source)(data if data is not None else {})
 
 
+# ==============================================================================
+# 1. Truthiness & Branching Matrix
+# ==============================================================================
+
+
 def test_zero_skips_if_and_enters_with():
     assert render('{{#if z}}I{{else}}no{{/if}}', {'z': 0}) == 'no'
     assert render('{{#with z}}[{{.}}]{{else}}no{{/with}}', {'z': 0}) == '[0]'
@@ -53,6 +58,11 @@ def test_each_on_a_number_takes_the_else_branch():
     assert render('{{#each n}}x{{else}}empty{{/each}}', {'n': 5}) == 'empty'
 
 
+# ==============================================================================
+# 2. Type Formatting & Output Escaping
+# ==============================================================================
+
+
 def test_list_prints_values_separated_by_commas():
     assert render('{{items}}', {'items': [1, 2]}) == '1,2'
 
@@ -70,9 +80,19 @@ def test_escape_includes_equals_and_backtick():
     assert render('{{v}}', {'v': 'a=`b'}) == 'a&#x3D;&#x60;b'
 
 
+# ==============================================================================
+# 3. Block Parameters & Lexical Scopes
+# ==============================================================================
+
+
 def test_block_param_names_the_item_and_this_is_still_the_item():
     source = '{{#each items as |it|}}{{name}}/{{it.name}}/{{../name}};{{/each}}'
     assert render(source, {'name': 'OUTER', 'items': [{'name': 'I1'}]}) == 'I1/I1/OUTER;'
+
+
+# ==============================================================================
+# 4. Partials & Call-Site Indentation
+# ==============================================================================
 
 
 def test_partial_does_not_see_the_caller_parent():
@@ -96,6 +116,30 @@ def test_partial_indents_to_the_call_site():
 def test_nested_each_parent_index():
     source = '{{#each outer}}{{#each .}}{{@../index}}{{/each}}{{/each}}'
     assert render(source, {'outer': [['a'], ['b', 'c']]}) == '011'
+
+
+def test_dynamic_partial_uses_the_helper_result_as_the_name():
+    hb = Handlebars()
+    hb.register_helper('which', lambda args, options: 'card')
+    hb.register_partial('card', 'DYN')
+    assert render('{{> (which)}}', {}, hb=hb) == 'DYN'
+
+
+def test_partial_block_inserts_its_body_where_the_partial_asks():
+    hb = Handlebars()
+    hb.register_partial('wrap', 'X{{> @partial-block}}Y')
+    assert render('{{#> wrap}}IN{{/wrap}}', {}, hb=hb) == 'XINY'
+
+
+def test_partial_hash_replaces_a_string_context():
+    hb = Handlebars()
+    hb.register_partial('card', '{{who}}|{{.}}')
+    assert render('{{> card "x" who="W"}}', {}, hb=hb) == 'W|[object Object]'
+
+
+# ==============================================================================
+# 5. Sections & Block Inversion
+# ==============================================================================
 
 
 def test_missing_helper_raises():
@@ -124,6 +168,11 @@ def test_else_unless_skips_the_branch_when_the_value_is_set():
     assert render(source, {'a': False, 'b': True}) == 'B'
 
 
+# ==============================================================================
+# 6. Paths & Bracket Syntax
+# ==============================================================================
+
+
 def test_bracket_path_reads_a_key_that_has_a_space():
     assert render('{{a.[b c]}}', {'a': {'b c': 'OK'}}) == 'OK'
 
@@ -132,17 +181,9 @@ def test_this_dot_reads_the_current_object():
     assert render('{{this.name}}|{{./name}}', {'name': 'N'}) == 'N|N'
 
 
-def test_dynamic_partial_uses_the_helper_result_as_the_name():
-    hb = Handlebars()
-    hb.register_helper('which', lambda args, options: 'card')
-    hb.register_partial('card', 'DYN')
-    assert render('{{> (which)}}', {}, hb=hb) == 'DYN'
-
-
-def test_partial_block_inserts_its_body_where_the_partial_asks():
-    hb = Handlebars()
-    hb.register_partial('wrap', 'X{{> @partial-block}}Y')
-    assert render('{{#> wrap}}IN{{/wrap}}', {}, hb=hb) == 'XINY'
+# ==============================================================================
+# 7. Strict Mode Contracts
+# ==============================================================================
 
 
 def test_strict_if_on_a_missing_name_takes_the_else_branch():
@@ -159,6 +200,11 @@ def test_strict_helper_argument_may_be_missing():
     hb = Handlebars(strict=True)
     hb.register_helper('show', lambda args, options: 'yes' if args[0] is None else 'no')
     assert render('{{show missing}}', {}, hb=hb) == 'yes'
+
+
+# ==============================================================================
+# 8. Literal Delimiter & String Escaping
+# ==============================================================================
 
 
 def test_three_backslashes_leave_two_and_render_the_variable():
@@ -191,15 +237,14 @@ def test_escaped_quote_inside_a_string_is_a_quote():
     assert seen['value'] == 'a"b'
 
 
+# ==============================================================================
+# 9. Explicit Syntax Rejections (Compile / Runtime Rejections)
+# ==============================================================================
+
+
 def test_leading_dot_number_raises():
     with pytest.raises(ValueError, match='not a valid number'):
         render('{{.5}}', {})
-
-
-def test_partial_hash_replaces_a_string_context():
-    hb = Handlebars()
-    hb.register_partial('card', '{{who}}|{{.}}')
-    assert render('{{> card "x" who="W"}}', {}, hb=hb) == 'W|[object Object]'
 
 
 def test_decorator_raises():
