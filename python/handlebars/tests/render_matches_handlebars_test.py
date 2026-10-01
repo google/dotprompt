@@ -49,8 +49,8 @@ def test_empty_string_skips_with():
     assert render('{{#with s}}yes{{else}}no{{/with}}', {'s': ''}) == 'no'
 
 
-def test_empty_object_enters_if_and_each_takes_else():
-    assert render('{{#if o}}yes{{else}}no{{/if}}', {'o': {}}) == 'yes'
+def test_empty_object_skips_if_and_each_takes_else():
+    assert render('{{#if o}}yes{{else}}no{{/if}}', {'o': {}}) == 'no'
     assert render('{{#each o}}x{{else}}empty{{/each}}', {'o': {}}) == 'empty'
 
 

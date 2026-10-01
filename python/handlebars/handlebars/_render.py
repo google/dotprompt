@@ -493,15 +493,17 @@ def _render(nodes, *, scopes, blocks, frames, helpers, partials, escape_html, st
 
 _BUILTINS = ('if', 'unless', 'each', 'with')
 
-_ESCAPE = str.maketrans({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#x27;',
-    '`': '&#x60;',
-    '=': '&#x3D;',
-})
+_ESCAPE = str.maketrans(
+    {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        '`': '&#x60;',
+        '=': '&#x3D;',
+    }
+)
 
 
 def _render_one(node, **env):
@@ -880,10 +882,10 @@ def _parts(path):
 
 
 def _is_empty(value):
-    """What {{#with}} treats as "nothing to enter"."""
+    """What {{#with}} and {{#if}} treat as empty / nothing to enter."""
     if value is None or value is False or value == '':
         return True
-    return isinstance(value, list) and len(value) == 0
+    return isinstance(value, (list, dict)) and len(value) == 0
 
 
 def _if_shows(value, *, include_zero):
