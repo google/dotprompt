@@ -14,7 +14,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Cases where a prompt author would not guess, checked against Handlebars 4.7."""
+"""Edge-case semantics verified against Handlebars 4.7.8.
+
+Documents and asserts non-obvious Handlebars behaviors that prompt authors
+encounter—such as zero falsiness in {{#if}} vs truthiness in {{#with}},
+array and object stringification, call-site partial indentation, and scope boundaries.
+"""
 
 import pytest
 

@@ -77,18 +77,32 @@ HelperOptions = Options
 
 
 class Handlebars:
-    """Compiles a template and renders it with an input dict."""
+    """Compiles and renders Handlebars templates against input context dictionaries.
+
+    Example:
+        ```python
+        # 1. Initialize compiler
+        hb = Handlebars()
+
+        # 2. Compile template string
+        render = hb.compile('Hello {{user.name}}!')
+
+        # 3. Render with context
+        output = render({'user': {'name': 'Ada'}})
+        # => Hello Ada!
+        ```
+    """
 
     def __init__(self, *, escape_html=True, strict=False, escape_fn=None):
-        """Creates a compiler.
+        """Creates a compiler instance.
 
         Args:
             escape_html: When true, `{{name}}` escapes HTML. Triple braces
-                and `{{&name}}` still leave markup as written.
+                `{{{name}}}` and `{{&name}}` leave markup unescaped.
             strict: When true, printing a missing path raises StrictModeError.
-                A missing path passed to if, each, with, or a helper is empty.
-            escape_fn: EscapeFunction.NO_ESCAPE leaves markup as written.
-                This wins over escape_html.
+                A missing path passed to if, each, with, or a helper evaluates as empty.
+            escape_fn: EscapeFunction.NO_ESCAPE leaves markup unescaped.
+                Overrides escape_html when specified.
         """
         if escape_fn is not None:
             escape_html = escape_fn not in (EscapeFunction.NO_ESCAPE, 'no_escape')
@@ -101,43 +115,66 @@ class Handlebars:
         self.register_helper('log', _log_helper)
 
     def register_helper(self, name, fn):
-        """Registers a helper the template can call by name."""
+        """Registers a helper callable for template invocations.
+
+        Args:
+            name: Helper name used in tags like `{{name arg}}` or `{{#name}}`.
+            fn: Callable receiving `(args, options)`:
+                - `args`: List of positional argument values evaluated from the template.
+                - `options`: Helper Options containing `hash`, `fn`, `inverse`, `data`,
+                  and `context`.
+
+        Example:
+            ```python
+            # 1. Register uppercase helper
+            hb.register_helper('upper', lambda args, opt: str(args[0]).upper())
+
+            # 2. Render helper call
+            output = hb.compile('{{upper name}}')({'name': 'world'})
+            # => WORLD
+            ```
+        """
         self._helpers[name] = fn
 
     def unregister_helper(self, name):
-        """Removes a helper. {{name arg}} then raises; {{name}} reads the input."""
+        """Removes a helper. Invocations like `{{name arg}}` then raise ValueError."""
         self._helpers.pop(name, None)
 
     def register_partial(self, name, source):
-        """Registers a partial template. {{> name}} renders it."""
+        """Registers a partial template for `{{> name}}` inclusions.
+
+        Args:
+            name: Partial name.
+            source: Handlebars template source string.
+        """
         self._partials[name] = source
 
     def unregister_partial(self, name):
-        """Removes a partial. {{> name}} then raises."""
+        """Removes a partial. Subsequent `{{> name}}` calls will raise ValueError."""
         self._partials.pop(name, None)
 
     def has_partial(self, name):
-        """Returns whether register_partial was called for this name."""
+        """Returns whether a partial is registered under this name."""
         return name in self._partials
 
     def register_template(self, name, source):
-        """Stores a named template so render(name, context) can fill it in."""
+        """Compiles and stores a named template for later calls to `render(name, context)`."""
         self._templates[name] = compile_template(source)
 
     def render(self, name, context=None, options=None, *, data=None):
         """Renders the template registered under name.
 
         Args:
-            name: The name passed to register_template.
-            context: The input dict. {{name}} reads keys from here.
-            options: A runtime options dict. options['data'] is what {{@name}} reads.
-            data: The same {{@name}} dict, when passed as a keyword.
+            name: The name passed to `register_template`.
+            context: The input dictionary. `{{name}}` reads keys from here.
+            options: Optional runtime options dict. `options['data']` is what `{{@name}}` reads.
+            data: Optional `{{@name}}` data dictionary passed as a keyword argument.
 
         Returns:
             The rendered string.
 
         Raises:
-            ValueError: The name was never registered.
+            ValueError: If the template name was not registered.
         """
         program = self._templates.get(name)
         if program is None:
@@ -145,7 +182,25 @@ class Handlebars:
         return self._render_program(program, context, options, data=data)
 
     def compile(self, source):
-        """Returns a function that renders this template."""
+        """Compiles a template string into a reusable render function.
+
+        Args:
+            source: Handlebars template string.
+
+        Returns:
+            A render callable `render(context=None, options=None, *, data=None)`
+            that evaluates the compiled template into a rendered string.
+
+        Example:
+            ```python
+            # 1. Compile template
+            render = hb.compile('Hello {{name}}!')
+
+            # 2. Execute render
+            output = render({'name': 'World'})
+            # => Hello World!
+            ```
+        """
         program = compile_template(source)
 
         def render(context=None, options=None, *, data=None):
