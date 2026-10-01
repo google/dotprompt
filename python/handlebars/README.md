@@ -113,10 +113,10 @@ Conditions don't raise. `{{#if user.name}}` on a missing path takes the else bra
 
 ## Values that surprise Python developers
 
-Rendering follows JavaScript, not Python, so one template means the same thing in every SDK:
+Dotprompt defines what a template means, independent of the language that renders it. Dotprompt templates use Handlebars semantics, and this package takes them from Handlebars.js 4.7.9. Conditionals and printed values follow those semantics, not Python's `bool()` or `str()`:
 
 - `0` fails `{{#if}}` but enters `{{#with}}`. Use `{{#if n includeZero=true}}` to keep `0`.
-- `{}` is truthy. `{{#if user}}` enters for an empty dict. Only `None`, `False`, `""`, `0`, and `[]` take the else branch.
+- `{}` enters `{{#if}}`. `{{#if}}` takes the else branch only for a missing key, `None`, `False`, `""`, `0`, or `[]`.
 - Lists print as `1,2` and dicts print as `[object Object]`. Format structured data with a helper. Dotprompt ships `{{json value}}` for this.
 - `1.0` prints as `1`, and `False` prints as `false`.
 
