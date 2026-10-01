@@ -493,17 +493,15 @@ def _render(nodes, *, scopes, blocks, frames, helpers, partials, escape_html, st
 
 _BUILTINS = ('if', 'unless', 'each', 'with')
 
-_ESCAPE = str.maketrans(
-    {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#x27;',
-        '`': '&#x60;',
-        '=': '&#x3D;',
-    }
-)
+_ESCAPE = str.maketrans({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#x27;',
+    '`': '&#x60;',
+    '=': '&#x3D;',
+})
 
 
 def _render_one(node, **env):
