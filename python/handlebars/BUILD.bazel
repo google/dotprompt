@@ -20,6 +20,6 @@ package(default_visibility = ["//visibility:public"])
 
 py_library(
     name = "handlebars",
-    srcs = glob(["handlebars/**/*.py"]),
+    srcs = glob(["handlebars_dotprompt/**/*.py"]),
     imports = ["."],
 )

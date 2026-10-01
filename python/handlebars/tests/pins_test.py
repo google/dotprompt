@@ -24,7 +24,7 @@ cross-language expectations.
 
 import pytest
 
-from handlebars import Handlebars, SafeString, StrictModeError
+from handlebars_dotprompt import Handlebars, SafeString, StrictModeError
 
 
 def render(source, data=None, *, hb=None):

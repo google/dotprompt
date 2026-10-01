@@ -124,6 +124,10 @@ jobs:
           - "3.12"
           - "3.13"
           - "3.14"
+        include:
+          # PyPy is not on the ARM runner. The Rust extension is not built for it.
+          - os: ubuntu-latest
+            python-version: "pypy-3.11.13"
       fail-fast: false
 
     steps:
@@ -164,15 +168,18 @@ jobs:
 
       # TODO(#505): Move this to a rust workflow once we have one.
       - name: Run rust lint
+        if: ${{ !startsWith(matrix.python-version, 'pypy') }}
         run: pushd python/handlebarrz && cargo clippy --all-targets --all-features -- -D warnings && popd
 
       - name: Check licenses
         run: ./scripts/check_license
 
       - name: Run Rust checks for handlebarrz
+        if: ${{ !startsWith(matrix.python-version, 'pypy') }}
         run: ./scripts/run_handlebarrz_checks
 
       - name: Build Rust extension for Python ${{ matrix.python-version }}
+        if: ${{ !startsWith(matrix.python-version, 'pypy') }}
         working-directory: ./python
         run: |
           uv run --python ${{ matrix.python-version }} --active --isolated --directory handlebarrz maturin develop

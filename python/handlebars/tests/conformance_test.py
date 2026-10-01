@@ -42,7 +42,7 @@ from pathlib import Path
 
 import pytest
 
-from handlebars import Handlebars, StrictModeError
+from handlebars_dotprompt import Handlebars, StrictModeError
 
 _CASES = json.loads(Path(__file__).with_name('conformance_cases.json').read_text())
 _REFERENCE = '4.7.8'
