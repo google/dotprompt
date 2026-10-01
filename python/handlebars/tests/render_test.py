@@ -23,7 +23,7 @@ and helper registrations.
 
 import pytest
 
-from handlebars_dotprompt import Handlebars, SafeString, StrictModeError
+from dotpromptz_handlebars import Handlebars, SafeString, StrictModeError
 
 
 def render(source, data=None, *, hb=None, data_hash=None):

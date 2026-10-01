@@ -20,7 +20,7 @@ from collections.abc import Callable
 from enum import Enum
 from typing import Any, TypedDict
 
-from handlebars_dotprompt._render import compile_template, render_program
+from dotpromptz_handlebars._render import compile_template, render_program
 
 Context = dict[str, Any]
 

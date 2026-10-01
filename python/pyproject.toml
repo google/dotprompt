@@ -144,7 +144,7 @@ select = [
 [tool.ruff.lint.isort]
 combine-as-imports = true
 force-single-line = false
-known-first-party = ["dotpromptz", "dotpromptz-handlebars", "handlebars_dotprompt"]
+known-first-party = ["dotpromptz", "dotpromptz-handlebars", "dotpromptz_handlebars"]
 section-order = [
   "future",
   "standard-library",

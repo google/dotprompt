@@ -13,7 +13,7 @@ uv add handlebars-dotprompt
 ## Quick start
 
 ```python
-from handlebars_dotprompt import Handlebars
+from dotpromptz_handlebars import Handlebars
 
 # 1. Compile once
 hb = Handlebars()
@@ -100,7 +100,7 @@ Prompts usually go to a model, not a browser. To turn escaping off everywhere, u
 `Handlebars(strict=True)` raises when the template prints a path that isn't in the input:
 
 ```python
-from handlebars_dotprompt import Handlebars, StrictModeError
+from dotpromptz_handlebars import Handlebars, StrictModeError
 
 try:
     Handlebars(strict=True).compile('Hello {{user.name}}')({'user': {}})
