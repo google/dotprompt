@@ -57,6 +57,8 @@ Numbers in a template are `1`, `-2`, and `1.5`. `.5` and `1e2` are not numbers.
 
 `{{#if}}` asks whether to show the branch. `{{#with}}` asks whether there is a value to step into. They disagree on `0`.
 
+`{}` means an object was passed. `None` means it was not. `{{#if}}` and `{{#with}}` enter for `{}`, and `{{name}}` inside that branch is blank. `0`, `false`, `""`, and `[]` still take the else branch. The prompt means the same thing in every language. A Python `if` would skip `{}`. This package does not.
+
 ## Strict mode
 
 `Handlebars(strict=True)` raises `StrictModeError` when the template prints a missing path, or uses one as `{{#name}}`. The error's `path` is that path. A missing path passed to `if`, `unless`, `each`, `with`, or a helper does not raise. It counts as empty. A key that is present and null does not raise.

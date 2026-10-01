@@ -576,7 +576,7 @@
     "text": "ELSE"
   },
   {
-    "name": "if_empty_object_falsy_prints_else",
+    "name": "if_empty_object_enters",
     "template": "{{#if val}}IF{{else}}ELSE{{/if}}",
     "context": {
       "val": {}
@@ -586,7 +586,7 @@
     "helpers": [],
     "strict": false,
     "layer": "blocks",
-    "text": "ELSE"
+    "text": "IF"
   },
   {
     "name": "if_string_zero_truthy_prints_if",
