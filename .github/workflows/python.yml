@@ -184,6 +184,11 @@ jobs:
         run: |
           uv run --python ${{ matrix.python-version }} --active --isolated --directory handlebarrz maturin develop
 
+      - name: Install Handlebars 4.7.8
+        run: |
+          npm install --prefix "${RUNNER_TEMP}/hbjs" handlebars@4.7.8
+          echo "HANDLEBARS_JS=${RUNNER_TEMP}/hbjs/node_modules/handlebars" >> "$GITHUB_ENV"
+
       - name: Run Python tests for Python ${{ matrix.python-version }}
         working-directory: ./python
         run: |

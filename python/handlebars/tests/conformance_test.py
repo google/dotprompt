@@ -126,9 +126,15 @@ def _reference_engine():
 
 
 def test_recorded_output_still_matches_handlebars_4_7_8():
+    """Re-render the recorded cases with Handlebars 4.7.8. A missing install fails the run."""
+    if shutil.which('node') is None:
+        pytest.fail('node is not installed, so the Handlebars 4.7.8 check cannot run')
     root = _reference_engine()
-    if root is None or shutil.which('node') is None:
-        pytest.skip('Handlebars 4.7.8 is not installed')
+    if root is None:
+        pytest.fail(
+            'Handlebars 4.7.8 is not installed. '
+            'npm install handlebars@4.7.8 and set HANDLEBARS_JS to that package directory.'
+        )
     script = Path(__file__).with_name('conformance_oracle.js')
     cases = Path(__file__).with_name('conformance_cases.json')
     result = subprocess.run(
