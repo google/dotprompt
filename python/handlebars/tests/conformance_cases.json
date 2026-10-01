@@ -10,7 +10,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Say hello to Ada in the voice of a Space Pirate."
   },
   {
@@ -23,7 +23,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Generate a recipe for pad thai."
   },
   {
@@ -37,7 +37,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Analyze the following python code for bugs.\n\n```python\nprint(&#x27;hi&#x27;)\n```"
   },
   {
@@ -51,7 +51,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "You are a code reviewer.\n\nContext: Auth module refactor\n\nDiff:\n```diff\n+ token check\n```"
   },
   {
@@ -68,7 +68,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Generate a recipe for curry.\n\nMake sure to include the following ingredients:\n- coconut milk\n- lime\n"
   },
   {
@@ -81,7 +81,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Invent a menu item for a steampunk themed restaurant."
   },
   {
@@ -95,7 +95,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Greet a guest named Morgan in the style of pirate."
   },
   {
@@ -112,7 +112,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Create a salad recipe.\nDietary restrictions: vegan, nut-free.\n"
   },
   {
@@ -129,7 +129,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Use the following context to answer the question.\n  - Doc A\n  - Doc B\n\nQuestion: What changed?"
   },
   {
@@ -153,7 +153,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Team:\n- Ada (lead) - ada@example.com\n- Grace (reviewer) - grace@example.com\n"
   },
   {
@@ -171,7 +171,7 @@
       "add"
     ],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Requirements:\n1. Fast startup\n2. Clear errors\n"
   },
   {
@@ -196,7 +196,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Orders:\n- Order #42: pending\n  \u2022 Widget x2 @ $9\n"
   },
   {
@@ -207,7 +207,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "You should speak as if you are a pirate."
   },
   {
@@ -224,7 +224,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Notifications: disabled"
   },
   {
@@ -237,7 +237,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Your cart is empty.\n"
   },
   {
@@ -253,7 +253,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "User: Ada Lovelace (ada@example.com)"
   },
   {
@@ -271,7 +271,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Theme: dark\nLanguage: en"
   },
   {
@@ -287,7 +287,7 @@
     },
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "You should speak as if you are a robot chef.\nTell me a story about noodles."
   },
   {
@@ -304,7 +304,7 @@
     },
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "You are an expert chef who writes concise recipes.\nCreate a Thai green curry recipe for 4 people."
   },
   {
@@ -329,7 +329,7 @@
     },
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Order #1001\n- A1 x2- B2 x1"
   },
   {
@@ -342,7 +342,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Generate a recipe for ramen."
   },
   {
@@ -359,7 +359,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Tags: fast, safe, simple"
   },
   {
@@ -372,7 +372,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Item is in stock.\n"
   },
   {
@@ -388,7 +388,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Created: 2024-01-15\nVersion: v2\n"
   },
   {
@@ -404,7 +404,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Sources:\n0. README\n1. CHANGELOG\n"
   },
   {
@@ -421,7 +421,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Tools:\n- search\n- calculator\n"
   },
   {
@@ -437,7 +437,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Profile:\nname=Ada\nrole=engineer\n"
   },
   {
@@ -450,7 +450,7 @@
     "partials": {},
     "helpers": [],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Notes: <b>important</b>"
   },
   {
@@ -465,7 +465,7 @@
       "eq"
     ],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Status: Active"
   },
   {
@@ -481,7 +481,7 @@
       "wrap"
     ],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Welcome [ADA]!"
   },
   {
@@ -496,7 +496,7 @@
       "ident"
     ],
     "strict": false,
-    "layer": "reality",
+    "layer": "prompts",
     "text": "Signed by Genkit"
   },
   {
