@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Edge-case semantics verified against Handlebars 4.7.8.
+"""Edge-case semantics verified against Handlebars 4.7.9.
 
 Documents and asserts non-obvious Handlebars behaviors that prompt authors
 encounter—such as zero falsiness in {{#if}} vs truthiness in {{#with}},
