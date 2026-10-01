@@ -1,6 +1,6 @@
 # handlebars-python
 
-Renders the templates a Genkit prompt writes. The behavior is Handlebars 4.7.8. Where the Dart package disagrees with that, this package follows Handlebars.
+Renders the templates a Genkit prompt writes. The behavior follows Handlebars 4.7.8 (JavaScript).
 
 ```python
 from handlebars import Handlebars
@@ -73,14 +73,14 @@ A partial starts a new context. `{{../name}}` inside it does not see the caller.
 
 `{{* decorator}}` raises. Decorators are not part of a prompt.
 
-`{{{{raw}}}}` outputs its content literally without parsing. In Handlebars, 4-brace blocks pass unparsed content to a helper (`options.fn()`). A built-in `raw` helper renders the literal body as a safe string, matching Dart and Handlebars.js when `raw` is registered.
+`{{{{raw}}}}` outputs its content literally without parsing. In Handlebars, 4-brace blocks pass unparsed content to a helper (`options.fn()`). A built-in `raw` helper renders the literal body as a safe string, matching Handlebars 4.7.8 (JavaScript).
 
 A function stored in the input raises. Register it with `register_helper`. The input is data.
 
-A broken template raises `ValueError`. The wording is ours. What raises, and what renders, matches Handlebars 4.7.8.
+A broken template raises `ValueError`. The wording is ours. What raises, and what renders, matches Handlebars 4.7.8 (JavaScript).
 
 ## Why this cut
 
 A prompt needs variables, `if` / `each` / `with`, helpers, partials, and `@root` / `@index`. The rows above are the cases a prompt author actually hits, including the ones that look like they should agree and do not.
 
-The Dart library is the other pure implementation on the team, and its feature list is wider than its tests. A missing partial prints nothing there. `{{#with ""}}` enters. Those are not Handlebars. This package does not copy them.
+The implementation adheres strictly to Handlebars 4.7.8 (JavaScript) semantics so prompt templates behave predictably across all SDKs.
