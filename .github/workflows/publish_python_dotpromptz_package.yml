@@ -62,39 +62,35 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # Dependency Check of handlebars
-      - name: Install Dependencies for Check
-        run: pip install requests
-
-      - name: Smoke Test - Check handlebarrz Dependency on PyPI
-        id: check_dependency
+      # dotpromptz pins a floor on dotpromptz-handlebars. Publishing before
+      # that floor exists on PyPI makes dotpromptz uninstallable.
+      - name: Check dotpromptz-handlebars floor is on PyPI
         run: |
-          IS_FOUND=$(python -c '
-          import requests
-          url = "https://pypi.org/project/dotpromptz-handlebars/json"
-          response = requests.get(url)
+          python - <<'EOF'
+          import re
+          import sys
+          import tomllib
+          import urllib.error
+          import urllib.request
 
-          if response.status_code == 200:
-            print("true")
-          else:
-            print("false")
-          ')
+          with open('python/dotpromptz/pyproject.toml', 'rb') as f:
+              deps = tomllib.load(f)['project']['dependencies']
+          spec = next((d for d in deps if d.startswith('dotpromptz-handlebars')), None)
+          m = re.fullmatch(r'dotpromptz-handlebars\s*>=\s*([0-9][0-9A-Za-z.]*)', spec or '')
+          if not m:
+              print(f'::error::Expected dotpromptz-handlebars>=X.Y.Z, got {spec!r}.')
+              sys.exit(1)
+          floor = m.group(1)
+          url = f'https://pypi.org/pypi/dotpromptz-handlebars/{floor}/json'
+          try:
+              urllib.request.urlopen(url, timeout=30)
+          except urllib.error.HTTPError as e:
+              print(f'::error::dotpromptz-handlebars {floor} not on PyPI ({e.code}). Release it first.')
+              sys.exit(1)
+          print(f'dotpromptz-handlebars {floor} is on PyPI.')
+          EOF
 
-                  echo "Dependency 'handlebarrz' checked. Status: $IS_FOUND"
-
-                  if [ "$IS_FOUND" = "true" ]; then
-                  echo "BUILD_SUCCESS=true" >> "$GITHUB_OUTPUT"
-                  else
-                  echo "BUILD_SUCCESS=false" >> "$GITHUB_OUTPUT"
-                  fi
-
-      - name: Dependency Check Failed - Exit
-        if: steps.check_dependency.outputs.BUILD_SUCCESS == 'false'
-        run: |
-          echo "::error::Dependency 'handlebarrz' not found on PyPI. Aborting publish."
-          exit 1
-
-      # BUILD dotpromptz (Only if handlebarrz check passed)
+      # BUILD dotpromptz (only if the dependency check passed)
       - name: Set up uv and Create VENV
         uses: astral-sh/setup-uv@v7
         with:

@@ -14,6 +14,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# Publishes python/handlebars as dotpromptz-handlebars. The package is pure
+# Python, so one py3-none-any wheel and one sdist cover every platform.
+#
+# PyPI trusted publishing is bound to this file name and the
+# pypi_github_publishing environment. Keep both when editing.
+
 name: Publish dotpromptz-handlebars Package to PyPI
 
 permissions:
@@ -25,7 +31,7 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: "The exact release tag of handlebarrz to publish"
+        description: "The exact release tag to publish, e.g. dotpromptz-handlebars-0.2.0"
         required: true
         type: string
       repository_url:
@@ -35,630 +41,71 @@ on:
           - 'https://upload.pypi.org/legacy/'
           - 'https://test.pypi.org/legacy/'
         default: 'https://test.pypi.org/legacy/'
-      # -------------------------------------------------------------------------
-      # Platform override inputs for workflow_dispatch (one-off builds)
-      # These override the env defaults below when manually triggering the workflow
-      # -------------------------------------------------------------------------
-      enable_linux_arm64:
-        description: 'Enable Linux ARM64 (Ubuntu) builds'
-        type: boolean
-        default: true
-      enable_linux_x86_64:
-        description: 'Enable Linux x86_64 (Ubuntu) builds'
-        type: boolean
-        default: true
-      enable_alpine_arm64:
-        description: 'Enable Alpine ARM64 (musl) builds'
-        type: boolean
-        default: true
-      enable_alpine_x86_64:
-        description: 'Enable Alpine x86_64 (musl) builds'
-        type: boolean
-        default: true
-      enable_macos_arm64:
-        description: 'Enable macOS ARM64 (Apple Silicon) builds'
-        type: boolean
-        default: true
-      enable_macos_x86_64:
-        description: 'Enable macOS x86_64 (Intel) builds'
-        type: boolean
-        default: true
-      enable_windows_x86_64:
-        description: 'Enable Windows x86_64 builds (may have wheel corruption issues)'
-        type: boolean
-        default: false
-#  pull_request:
-#    branches: [ main ]
-
-# ==============================================================================
-# PLATFORM SUPPORT FLAGS
-# ==============================================================================
-# Toggle platform builds by changing the default values in the setup job below.
-# For one-off builds with different settings, use workflow_dispatch inputs.
-#
-# Current status:
-#   - Linux ARM64:   ENABLED  (native ubuntu-24.04-arm runner)
-#   - Linux x86_64:  ENABLED  (native ubuntu-latest runner)
-#   - Alpine ARM64:  ENABLED  (musl cross-compile on ARM64 runner)
-#   - Alpine x86_64: ENABLED  (musl cross-compile on x86_64 runner)
-#   - macOS ARM64:   ENABLED  (native macos-14 Apple Silicon runner)
-#   - macOS x86_64:  ENABLED  (cross-compile on macos-14)
-#   - Windows x86_64: DISABLED (wheel corruption issue - see TODO below)
-#
-# TODO(handlebarrz): Re-enable Windows support once wheel corruption issue is fixed.
-# Issue: PyPI upload fails with "400 Invalid distribution file. ZIP archive not
-# accepted: Mis-matched data size" for Windows wheels.
-# ==============================================================================
 
 jobs:
-  # ===========================================================================
-  # SETUP JOB - Determines which platforms to build
-  # ===========================================================================
-  # This job outputs platform flags that other jobs reference.
-  # To enable/disable a platform permanently, change the default value below.
-  # For one-off changes, use workflow_dispatch inputs.
-
-  setup:
-    name: Setup platform flags
+  build:
+    name: Build wheel and sdist
     runs-on: ubuntu-latest
-    # Only run for handlebarrz releases or workflow_dispatch
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'dotpromptz-handlebars-'))
     outputs:
-      # Platform flags - change these defaults to enable/disable platforms
-      enable_linux_arm64: ${{ steps.flags.outputs.enable_linux_arm64 }}
-      enable_linux_x86_64: ${{ steps.flags.outputs.enable_linux_x86_64 }}
-      enable_alpine_arm64: ${{ steps.flags.outputs.enable_alpine_arm64 }}
-      enable_alpine_x86_64: ${{ steps.flags.outputs.enable_alpine_x86_64 }}
-      enable_macos_arm64: ${{ steps.flags.outputs.enable_macos_arm64 }}
-      enable_macos_x86_64: ${{ steps.flags.outputs.enable_macos_x86_64 }}
-      enable_windows_x86_64: ${{ steps.flags.outputs.enable_windows_x86_64 }}
-    steps:
-      - name: Set platform flags
-        id: flags
-        run: |
-          # =====================================================================
-          # PLATFORM DEFAULTS - Change these to enable/disable platforms
-          # =====================================================================
-          # For workflow_dispatch, inputs override these defaults.
-          # For release events, these defaults are used.
-
-          # Linux platforms
-          DEFAULT_LINUX_ARM64="true"
-          DEFAULT_LINUX_X86_64="true"
-
-          # Alpine (musl) platforms
-          DEFAULT_ALPINE_ARM64="true"
-          DEFAULT_ALPINE_X86_64="true"
-
-          # macOS platforms
-          DEFAULT_MACOS_ARM64="true"
-          DEFAULT_MACOS_X86_64="true"
-
-          # Windows platforms (disabled due to wheel corruption issue)
-          DEFAULT_WINDOWS_X86_64="false"
-
-          # =====================================================================
-          # Output logic - workflow_dispatch inputs override defaults
-          # =====================================================================
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "enable_linux_arm64=${{ inputs.enable_linux_arm64 }}" >> $GITHUB_OUTPUT
-            echo "enable_linux_x86_64=${{ inputs.enable_linux_x86_64 }}" >> $GITHUB_OUTPUT
-            echo "enable_alpine_arm64=${{ inputs.enable_alpine_arm64 }}" >> $GITHUB_OUTPUT
-            echo "enable_alpine_x86_64=${{ inputs.enable_alpine_x86_64 }}" >> $GITHUB_OUTPUT
-            echo "enable_macos_arm64=${{ inputs.enable_macos_arm64 }}" >> $GITHUB_OUTPUT
-            echo "enable_macos_x86_64=${{ inputs.enable_macos_x86_64 }}" >> $GITHUB_OUTPUT
-            echo "enable_windows_x86_64=${{ inputs.enable_windows_x86_64 }}" >> $GITHUB_OUTPUT
-          else
-            echo "enable_linux_arm64=$DEFAULT_LINUX_ARM64" >> $GITHUB_OUTPUT
-            echo "enable_linux_x86_64=$DEFAULT_LINUX_X86_64" >> $GITHUB_OUTPUT
-            echo "enable_alpine_arm64=$DEFAULT_ALPINE_ARM64" >> $GITHUB_OUTPUT
-            echo "enable_alpine_x86_64=$DEFAULT_ALPINE_X86_64" >> $GITHUB_OUTPUT
-            echo "enable_macos_arm64=$DEFAULT_MACOS_ARM64" >> $GITHUB_OUTPUT
-            echo "enable_macos_x86_64=$DEFAULT_MACOS_X86_64" >> $GITHUB_OUTPUT
-            echo "enable_windows_x86_64=$DEFAULT_WINDOWS_X86_64" >> $GITHUB_OUTPUT
-          fi
-
-          # Log the flags for debugging
-          echo "Platform flags set:"
-          cat $GITHUB_OUTPUT
-
-  # ===========================================================================
-  # BUILD JOBS
-  # ===========================================================================
-
-  build_ubuntu_arm64:
-    name: Build for Ubuntu ARM64
-    needs: [setup]
-    runs-on: ubuntu-24.04-arm  # Native ARM64 runner - no QEMU needed
-    if: needs.setup.outputs.enable_linux_arm64 == 'true'
-    env:
-      SCCACHE_GHA_ENABLED: "true"
-      RUSTC_WRAPPER: "sccache"
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
+          ref: ${{ inputs.tag_name || github.event.release.tag_name }}
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-        with:
-          toolchain: stable
+      - name: Read version from tag
+        id: version
         env:
-          RUSTUP_MAX_RETRIES: 3
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
+          TAG: ${{ inputs.tag_name || github.event.release.tag_name }}
+        run: |
+          case "$TAG" in
+            dotpromptz-handlebars-*) ;;
+            *) echo "::error::Tag '$TAG' is not a dotpromptz-handlebars release tag."; exit 1 ;;
+          esac
+          echo "version=${TAG#dotpromptz-handlebars-}" >> "$GITHUB_OUTPUT"
 
       - name: Install uv
         uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
-        with:
-          enable-cache: false
 
-      - name: Install maturin
-        run: uv pip install --system "maturin[patchelf]"
+      - name: Build
+        working-directory: python
+        run: uv build --package dotpromptz-handlebars --out-dir dist
 
-      - name: Build wheels
-        working-directory: ./python/handlebarrz
+      - name: Check the build matches the tag
+        working-directory: python
         env:
-          PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          # Build for multiple manylinux compatibility levels
-          for i in $(seq 40 -1 24); do
-            maturin build --release -i python${{ matrix.python_version }} --compatibility manylinux_2_$i --auditwheel=skip -o dist || true
-          done
-          maturin build --release -i python${{ matrix.python_version }} -o dist
+          ls -l dist
+          test -f "dist/dotpromptz_handlebars-${VERSION}-py3-none-any.whl" \
+            || { echo "::error::Expected dotpromptz_handlebars-${VERSION}-py3-none-any.whl"; exit 1; }
+          test -f "dist/dotpromptz_handlebars-${VERSION}.tar.gz" \
+            || { echo "::error::Expected dotpromptz_handlebars-${VERSION}.tar.gz"; exit 1; }
+          test "$(ls dist | wc -l)" -eq 2 \
+            || { echo "::error::Expected exactly one wheel and one sdist"; exit 1; }
 
-      - name: Upload build packages
+      - name: Upload distributions
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
-          name: wheels-ubuntu-arm64-${{ matrix.python_version }}
-          path: python/handlebarrz/dist
-
-  build_alpine_arm64:
-    name: Build for Alpine ARM64
-    needs: [setup]
-    runs-on: ubuntu-24.04-arm  # Native ARM64 runner - cross-compile for musl
-    if: needs.setup.outputs.enable_alpine_arm64 == 'true'
-    env:
-      SCCACHE_GHA_ENABLED: "true"
-      RUSTC_WRAPPER: "sccache"
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          persist-credentials: false
-
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-        with:
-          toolchain: stable
-          targets: aarch64-unknown-linux-musl
-        env:
-          RUSTUP_MAX_RETRIES: 3
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
-
-      - name: Install musl tools
-        run: sudo apt-get update && sudo apt-get install -y musl-tools
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
-        with:
-          enable-cache: false
-
-      - name: Install maturin
-        run: uv pip install --system "maturin[patchelf]"
-
-      - name: Build wheels
-        working-directory: ./python/handlebarrz
-        env:
-          PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
-        run: |
-          maturin build --release --target aarch64-unknown-linux-musl -i python${{ matrix.python_version }} -o dist
-
-      - name: Upload build packages
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
-        with:
-          name: wheels-alpine-arm64-${{ matrix.python_version }}
-          path: python/handlebarrz/dist
-
-  build_alpine_x86_64:
-    name: Build for Alpine x86_64
-    needs: [setup]
-    runs-on: ubuntu-latest  # Native x86_64 runner - cross-compile for musl
-    if: needs.setup.outputs.enable_alpine_x86_64 == 'true'
-    env:
-      SCCACHE_GHA_ENABLED: "true"
-      RUSTC_WRAPPER: "sccache"
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          persist-credentials: false
-
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-        with:
-          toolchain: stable
-          targets: x86_64-unknown-linux-musl
-        env:
-          RUSTUP_MAX_RETRIES: 3
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
-
-      - name: Install musl tools
-        run: sudo apt-get update && sudo apt-get install -y musl-tools
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
-        with:
-          enable-cache: false
-
-      - name: Install maturin
-        run: uv pip install --system "maturin[patchelf]"
-
-      - name: Build wheels
-        working-directory: ./python/handlebarrz
-        env:
-          PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
-        run: |
-          maturin build --release --target x86_64-unknown-linux-musl -i python${{ matrix.python_version }} -o dist
-
-      - name: Upload build packages
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
-        with:
-          name: wheels-alpine-x86_64-${{ matrix.python_version }}
-          path: python/handlebarrz/dist
-
-  build_ubuntu_x86_64:
-    name: Build for Ubuntu x86_64
-    needs: [setup]
-    runs-on: ubuntu-latest  # Native x86_64 runner
-    if: needs.setup.outputs.enable_linux_x86_64 == 'true'
-    env:
-      SCCACHE_GHA_ENABLED: "true"
-      RUSTC_WRAPPER: "sccache"
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
-
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          persist-credentials: false
-
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-        with:
-          toolchain: stable
-        env:
-          RUSTUP_MAX_RETRIES: 3
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
-        with:
-          enable-cache: false
-
-      - name: Install maturin
-        run: uv pip install --system "maturin[patchelf]"
-
-      - name: Build wheels
-        working-directory: ./python/handlebarrz
-        env:
-          PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
-        run: |
-          # Build for multiple manylinux compatibility levels
-          for i in $(seq 40 -1 24); do
-            maturin build --release -i python${{ matrix.python_version }} --compatibility manylinux_2_$i --auditwheel=skip -o dist || true
-          done
-          maturin build --release -i python${{ matrix.python_version }} -o dist
-
-      - name: Upload build packages
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
-        with:
-          name: wheels-ubuntu-x86-64-${{ matrix.python_version }}
-          path: python/handlebarrz/dist
-
-  build_windows_x86_64:
-    name: Build for Windows x86_64
-    needs: [setup]
-    runs-on: windows-latest
-    # Currently disabled due to wheel corruption issues - see setup job defaults
-    if: needs.setup.outputs.enable_windows_x86_64 == 'true'
-    env:
-      SCCACHE_GHA_ENABLED: "true"
-      RUSTC_WRAPPER: "sccache"
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          persist-credentials: false
-
-      - name: Set up Python
-        id: setup_py
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-        with:
-          toolchain: stable
-        env:
-          RUSTUP_MAX_RETRIES: 3
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
-
-      - name: Install maturin
-        run: pip install maturin
-
-      - name: Build wheel
-        working-directory: ./python/handlebarrz
-        run: maturin build --release --strip -o dist -i $env:STEPS_SETUP_PY_OUTPUTS_PYTHON_PATH
-        env:
-          STEPS_SETUP_PY_OUTPUTS_PYTHON_PATH: ${{ steps.setup_py.outputs.python-path }}
-
-      - name: Upload build packages
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
-        with:
-          name: wheels-windows-x86_64-${{ matrix.python_version }}
-          path: python/handlebarrz/dist
-
-  build_macos_arm64:
-    name: Build for macOS ARM64
-    needs: [setup]
-    runs-on: macos-14  # Apple Silicon
-    if: needs.setup.outputs.enable_macos_arm64 == 'true'
-    env:
-      SCCACHE_GHA_ENABLED: "true"
-      RUSTC_WRAPPER: "sccache"
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          persist-credentials: false
-
-      - name: Set up Node.js for Actions
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
-        with:
-          node-version: '20'
-
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-        with:
-          toolchain: stable
-        env:
-          RUSTUP_MAX_RETRIES: 3
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
-
-      - name: Install maturin
-        run: pip install maturin
-
-      - name: Clean Cargo Target Directory
-        run: rm -rf target/
-        working-directory: ./python/handlebarrz
-
-      - name: Build wheel
-        working-directory: ./python/handlebarrz
-        run: maturin build --release --strip -o dist
-
-      - name: Upload build packages
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
-        with:
-          name: wheels-macos-arm64-${{ matrix.python_version }}-${{ github.job }}
-          path: python/handlebarrz/dist
-
-  build_macos_x86_64:
-    name: Build for macOS x86_64
-    needs: [setup]
-    runs-on: macos-14
-    if: needs.setup.outputs.enable_macos_x86_64 == 'true'
-    env:
-      SCCACHE_GHA_ENABLED: "true"
-      RUSTC_WRAPPER: "sccache"
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          persist-credentials: false
-
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-        with:
-          toolchain: stable
-          target: x86_64-apple-darwin
-        env:
-          RUSTUP_MAX_RETRIES: 3
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
-
-      - name: Install maturin
-        run: pip install maturin
-
-      - name: Build wheel
-        working-directory: ./python/handlebarrz
-        run: maturin build --release --strip -o dist --target x86_64-apple-darwin
-
-      - name: Upload build packages
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
-        with:
-          name: wheels-macos-x86_64-${{ matrix.python_version }}-${{ github.job }}
-          path: python/handlebarrz/dist
-
-#  build_windows_arm64:
-#    name: Build for Windows ARM64
-#    runs-on: windows-latest
-#    env:
-#      PYO3_NO_PYTHON: '1'
-#    strategy:
-#      matrix:
-#        python_version:
-#          - "3.10"
-#          - "3.11"
-#          - "3.12"
-#          - "3.13"
-#          - "3.14"
-#    steps:
-#      - uses: actions/checkout@v6
-#
-#      - name: Set up Python
-#        id: setup_py
-#        uses: actions/setup-python@v6
-#        with:
-#          python-version: ${{ matrix.python_version }}
-#
-#      - name: Set up Rust
-#        uses: dtolnay/rust-toolchain@stable
-#        with:
-#          toolchain: stable
-#          target: aarch64-pc-windows-msvc
-#
-#      - name: Install maturin
-#        run: pip install maturin
-#
-#      - name: Patch Cargo.toml for Windows ARM64 (Bump abi3 to 3.11)
-#        working-directory: ./python/handlebarrz
-#        run: |
-#          (Get-Content Cargo.toml) -replace 'abi3-py310', 'abi3-py311' | Set-Content Cargo.toml
-#
-#      - name: Build wheel
-#        working-directory: ./python/handlebarrz
-#        run: maturin build --release --strip -o dist --target aarch64-pc-windows-msvc
-#
-#      - name: Upload build packages
-#        uses: actions/upload-artifact@v6
-#        with:
-#          name: wheels-windows-arm64-${{ matrix.python_version }}
-#          path: python/handlebarrz/dist
-
-  # ===========================================================================
-  # PUBLISH JOB
-  # ===========================================================================
+          name: dist-dotpromptz-handlebars
+          path: python/dist/
 
   pypi_publish:
-    name: Upload to PyPI by python version
-    # NOTE: Build jobs with conditional 'if' may be skipped. We use always() to run
-    # this job regardless, and check that at least one build succeeded or was skipped
-    # (skipped jobs don't produce artifacts but don't block the workflow).
-    needs: [setup, build_ubuntu_arm64, build_ubuntu_x86_64, build_alpine_arm64, build_alpine_x86_64, build_macos_arm64, build_macos_x86_64, build_windows_x86_64]
-    if: |
-      always() && !cancelled() && needs.setup.result == 'success' &&
-      (needs.build_ubuntu_arm64.result == 'success' || needs.build_ubuntu_arm64.result == 'skipped' ||
-       needs.build_ubuntu_x86_64.result == 'success' || needs.build_ubuntu_x86_64.result == 'skipped' ||
-       needs.build_alpine_arm64.result == 'success' || needs.build_alpine_arm64.result == 'skipped' ||
-       needs.build_alpine_x86_64.result == 'success' || needs.build_alpine_x86_64.result == 'skipped' ||
-       needs.build_macos_arm64.result == 'success' || needs.build_macos_arm64.result == 'skipped' ||
-       needs.build_macos_x86_64.result == 'success' || needs.build_macos_x86_64.result == 'skipped' ||
-       needs.build_windows_x86_64.result == 'success' || needs.build_windows_x86_64.result == 'skipped')
+    name: Upload to PyPI
+    needs: [build]
     runs-on: ubuntu-latest
     environment:
       name: pypi_github_publishing
     permissions:
       id-token: write
     steps:
-      # abi3 wheels from every Python version share one filename per platform.
-      # Keep a single build so that file is written once.
-      - name: Download wheels
+      - name: Download distributions
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
-          pattern: '*-3.10*'
-          merge-multiple: true
+          name: dist-dotpromptz-handlebars
           path: dist/
-
-      - name: Delete unsupported wheels
-        run: |
-          FILES=$(find dist/ -type f -name "*linux_aarch64*")
-          if [[ -n "$FILES" ]]; then
-            echo "removing local wheel"
-            rm -f $FILES
-          fi
 
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e  # release/v1.13
@@ -667,258 +114,41 @@ jobs:
           packages-dir: dist/
           repository-url: ${{ github.event_name == 'release' && 'https://upload.pypi.org/legacy/' || inputs.repository_url || 'https://upload.pypi.org/legacy/' }}
 
-      - name: Sleep for pypi server to load
-        run: sleep 180
-
-  # ===========================================================================
-  # SMOKE TEST JOBS
-  # ===========================================================================
-
-  smoke_test_linux_arm64:
-    name: Test for Linux ARM64
-    needs: [setup, pypi_publish]
-    runs-on: ubuntu-24.04-arm  # Native ARM64 runner - no QEMU needed
-    if: needs.setup.outputs.enable_linux_arm64 == 'true'
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
-        linux_platform:
-          - "debian"
-          - "fedora"
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          persist-credentials: false
-
-      - name: Build container
-        run: |
-          cd python/handlebarrz/smoke_tests
-          docker build \
-          -t test-${{ matrix.linux_platform }}-arm64 \
-          -f Dockerfile-${{ matrix.linux_platform }}-arm64 .
-
-      - name: Run container
-        run: |
-          docker run test-${{ matrix.linux_platform }}-arm64:latest sh ./execute-test.sh "${{ matrix.python_version }}"
-    continue-on-error: true
-
-  smoke_test_alpine_arm64:
-    name: Test for Alpine ARM64
-    needs: [setup, pypi_publish]
-    runs-on: ubuntu-24.04-arm  # Native ARM64 runner - no QEMU needed
-    if: needs.setup.outputs.enable_alpine_arm64 == 'true'
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          persist-credentials: false
-
-      - name: Build container
-        run: |
-          cd python/handlebarrz/smoke_tests
-          docker build \
-          -t test-alpine \
-          -f Dockerfile-alpine .
-
-      - name: Run container
-        run: |
-          docker run test-alpine:latest sh ./execute-test.sh "${{ matrix.python_version }}"
-    continue-on-error: true
-
-  smoke_test_alpine_x86_64:
-    name: Test for Alpine x86_64
-    needs: [setup, pypi_publish]
-    runs-on: ubuntu-latest  # Native x86_64 - no QEMU needed
-    if: needs.setup.outputs.enable_alpine_x86_64 == 'true'
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          persist-credentials: false
-
-      - name: Build container
-        run: |
-          cd python/handlebarrz/smoke_tests
-          docker build \
-          -t test-alpine-x86-64 \
-          -f Dockerfile-alpine-x86-64 .
-
-      - name: Run container
-        run: |
-          docker run test-alpine-x86-64:latest sh ./execute-test.sh "${{ matrix.python_version }}"
-    continue-on-error: true
-
-  smoke_test_linux_x86_64:
-    name: Test for Linux x86_64
-    needs: [setup, pypi_publish]
+  smoke_test:
+    name: Install from the index on Python ${{ matrix.python_version }}
+    needs: [build, pypi_publish]
     runs-on: ubuntu-latest
-    if: needs.setup.outputs.enable_linux_x86_64 == 'true'
     strategy:
+      fail-fast: false
       matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
-        linux_platform:
-          - "debian"
-          - "fedora"
+        python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
-          persist-credentials: false
+          python-version: ${{ matrix.python_version }}
 
-      - name: Build container
+      - name: Install the published version
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+          INDEX_URL: ${{ (github.event_name != 'release' && inputs.repository_url == 'https://test.pypi.org/legacy/') && 'https://test.pypi.org/simple/' || 'https://pypi.org/simple/' }}
         run: |
-          cd python/handlebarrz/smoke_tests
-          docker build \
-          -t test-${{ matrix.linux_platform }} \
-          -f Dockerfile-${{ matrix.linux_platform }} .
+          # A new upload can take a few minutes to reach the index.
+          for attempt in $(seq 1 20); do
+            if python -m pip install --no-cache-dir --index-url "$INDEX_URL" "dotpromptz-handlebars==${VERSION}"; then
+              exit 0
+            fi
+            echo "dotpromptz-handlebars ${VERSION} not installable yet (attempt ${attempt}/20)"
+            sleep 30
+          done
+          echo "::error::dotpromptz-handlebars ${VERSION} never became installable from ${INDEX_URL}"
+          exit 1
 
-      - name: Run container
+      - name: Import and render
         run: |
-          docker run test-${{ matrix.linux_platform }}:latest sh ./execute-test.sh "${{ matrix.python_version }}"
-    continue-on-error: true
+          python - <<'PY'
+          from dotpromptz_handlebars import Handlebars
 
-
-  smoke_test_macos_arm64:
-    name: Test for macOS ARM64
-    needs: [setup, pypi_publish]
-    runs-on: macos-14
-    if: needs.setup.outputs.enable_macos_arm64 == 'true'
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          persist-credentials: false
-
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Install package from PyPI
-        run: pip install dotpromptz-handlebars
-
-      - name: Run smoke test
-        working-directory: ./python/handlebarrz/smoke_tests
-        run: python -c "import handlebarrz; print('Import successful')"
-
-  smoke_test_macos_x86_64:
-    name: Test for macOS x86_64
-    needs: [setup, pypi_publish]
-    runs-on: macos-14
-    if: needs.setup.outputs.enable_macos_x86_64 == 'true'
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          persist-credentials: false
-
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with:
-          python-version: ${{ matrix.python_version }}
-          architecture: x64
-
-      - name: Install package from PyPI
-        run: pip install dotpromptz-handlebars
-
-      - name: Run smoke test
-        working-directory: ./python/handlebarrz/smoke_tests
-        run: python -c "import handlebarrz; print('Import successful')"
-    continue-on-error: true
-
-  smoke_test_windows_x86_64:
-    name: Test for Windows x86_64
-    needs: [setup, pypi_publish]
-    runs-on: windows-latest
-    # Currently disabled due to wheel corruption issues - see setup job defaults
-    if: needs.setup.outputs.enable_windows_x86_64 == 'true'
-    strategy:
-      matrix:
-        python_version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          persist-credentials: false
-
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with:
-          python-version: ${{ matrix.python_version }}
-
-      - name: Install package from PyPI
-        run: pip install dotpromptz-handlebars
-
-      - name: Run smoke test
-        working-directory: ./python/handlebarrz/smoke_tests
-        run: python -c "import handlebarrz; print('Import successful')"
-    continue-on-error: true
-
-#  smoke_test_windows_arm64:
-#    name: Test for Windows ARM64
-#    needs: [ pypi_publish ]
-#    runs-on: windows-latest
-#    strategy:
-#      matrix:
-#        python_version:
-#          - "3.10"
-#          - "3.11"
-#          - "3.12"
-#          - "3.13"
-#          - "3.14"
-#    steps:
-#      - uses: actions/checkout@v6
-#
-#      - name: Set up Python
-#        uses: actions/setup-python@v6
-#        with:
-#          python-version: ${{ matrix.python_version }}
-#
-#      - name: Install package from PyPI
-#        run: pip install dotpromptz-handlebars
-#
-#      - name: Run smoke test
-#        working-directory: ./python/handlebarrz/smoke_tests
-#        run: python -c "import handlebarrz; print('Import successful')"
-#    continue-on-error: true
+          out = Handlebars().compile('Hello {{name}}!')({'name': 'World'})
+          assert out == 'Hello World!', out
+          print(out)
+          PY

@@ -34,7 +34,7 @@ jobs:
       prs_created: ${{ steps.release.outputs.prs_created }}
       prs: ${{ steps.release.outputs.prs }}
       dotpromptz_release_created: ${{ steps.release.outputs['dotpromptz--release_created'] }}
-      handlebarrz_release_created: ${{ steps.release.outputs['dotpromptz-handlebars--release_created'] }}
+      handlebars_release_created: ${{ steps.release.outputs['dotpromptz-handlebars--release_created'] }}
       pr: ${{ steps.release.outputs.pr }}
     steps:
       - uses: googleapis/release-please-action@v4
@@ -105,11 +105,6 @@ jobs:
       - name: Update Cargo.lock (root)
         run: |
           cargo update --workspace || echo "Root Cargo.lock update skipped"
-
-      - name: Update Cargo.lock (handlebarrz)
-        working-directory: python/handlebarrz
-        run: |
-          cargo update || echo "handlebarrz Cargo.lock update skipped"
 
       - name: Update Go lockfile
         run: |
