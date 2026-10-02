@@ -5,12 +5,12 @@
 ### ⚠ BREAKING CHANGES
 
 * **helpers:** `{{json ...}}` now raises `TypeError` instead of `ValueError` when passed non-serializable objects, matching Python `json.dumps()` semantics. Callers catching `ValueError` during render calls should catch `(TypeError, ValueError)`.
-* **helpers:** `HelperOptions.context` is now an attribute holding the current scope rather than a method. Calling `options.context()` remains supported for backward compatibility when context is a dict, but callers should migrate to `options.context`.
-* **helpers:** `options.fn([context])` and `options.inverse([context])` now accept an optional context argument to render the block with an explicit scope (matching Handlebars.js).
 
 ### Features
 
 * **python:** replace Rust `handlebarrz` extension with pure-Python `dotpromptz-handlebars` ([#620](https://github.com/google/dotprompt/pull/620))
+* **helpers:** `options.fn([context])` and `options.inverse([context])` accept an optional context argument to render block bodies with an explicit scope.
+* **helpers:** `HelperOptions.context` provides direct attribute access to the active scope, while maintaining `options.context()` callable compatibility for dictionary scopes.
 
 ## [0.1.6](https://github.com/google/dotprompt/compare/dotpromptz-0.1.5...dotpromptz-0.1.6) (2026-09-18)
 

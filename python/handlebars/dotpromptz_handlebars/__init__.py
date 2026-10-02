@@ -20,7 +20,6 @@ from dotpromptz_handlebars._compiler import (
     EscapeFunction,
     Handlebars,
     HelperFn,
-    Options,
     RuntimeOptions,
 )
 from dotpromptz_handlebars._render import StrictModeError
@@ -34,6 +33,7 @@ from dotpromptz_handlebars._types import (
     InlinePartial,
     Mustache,
     Node,
+    Options,
     Partial,
     PartialBlock,
     Program,

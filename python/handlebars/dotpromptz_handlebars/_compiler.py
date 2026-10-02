@@ -23,8 +23,8 @@ from dotpromptz_handlebars._render import compile_template, render_program
 from dotpromptz_handlebars._types import (
     EscapeFunction,
     HelperFn,
+    HelperOptions,
     Node,
-    Options,
     RuntimeOptions,
 )
 
@@ -217,7 +217,7 @@ class Handlebars:
         )
 
 
-def _lookup_helper(args: list[Any], options: Options) -> Any:
+def _lookup_helper(args: list[Any], options: HelperOptions) -> Any:
     collection, key = (args + [None, None])[:2]
     if not collection and collection != 0:
         return collection
@@ -233,6 +233,6 @@ def _lookup_helper(args: list[Any], options: Options) -> Any:
     return None
 
 
-def _log_helper(args: list[Any], options: Options) -> str:
+def _log_helper(args: list[Any], options: HelperOptions) -> str:
     print('[Handlebars]', *(args or ['']))
     return ''
