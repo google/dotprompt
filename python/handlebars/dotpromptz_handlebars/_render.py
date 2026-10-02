@@ -27,10 +27,10 @@ from dotpromptz_handlebars._types import (
     Block,
     ElseNode,
     HelperFn,
+    HelperOptions,
     InlinePartial,
     Mustache,
     Node,
-    Options,
     Partial,
     PartialBlock,
     SafeString,
@@ -725,7 +725,7 @@ def _eval_call(call: dict[str, Any], *, block: Block | None, as_call: bool = Fal
         raise ValueError(f'Missing helper: "{name}"')
     return helper(
         args,
-        Options(
+        HelperOptions(
             hash=hashed,
             fn=fn,
             inverse=inverse,

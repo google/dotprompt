@@ -28,6 +28,7 @@ import pytest
 
 from dotpromptz_handlebars import (
     Handlebars,
+    HelperOptions,
     Options,
     SafeString,
     StrictModeError,
@@ -528,9 +529,11 @@ def test_custom_block_helper():
 
 
 def test_typed_helper_options_and_block_fn():
+    assert Options is HelperOptions
     hb = Handlebars()
 
-    def custom_section(args: list[Any], options: Options) -> SafeString:
+    def custom_section(args: list[Any], options: HelperOptions) -> SafeString:
+        assert isinstance(options, HelperOptions)
         assert isinstance(options.hash, dict)
         assert isinstance(options.data, dict)
         assert options.is_block is True
