@@ -295,6 +295,6 @@ mod tests {
     fn test_generate_completions_produces_output() {
         let mut cmd = clap::Command::new("test");
         let output = generate_completions(Shell::Bash, &mut cmd);
-        assert!(!output.is_empty());
+        assert_ne!(output, Vec::<u8>::new());
     }
 }
