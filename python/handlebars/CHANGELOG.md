@@ -5,7 +5,6 @@
 ### ⚠ BREAKING CHANGES
 
 * **package:** package name is now `dotpromptz-handlebars` (import as `dotpromptz_handlebars`), replacing the native `handlebarrz` extension.
-* **helpers:** `{{json ...}}` now raises `TypeError` instead of `ValueError` on non-serializable objects, aligning with Python `json.dumps()` semantics. Callers catching serialization errors during render should catch `(TypeError, ValueError)`.
 
 ### Features
 

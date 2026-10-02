@@ -4,7 +4,7 @@
 
 ### ⚠ BREAKING CHANGES
 
-* **helpers:** `{{json ...}}` in prompt templates now raises `TypeError` instead of `ValueError` when passed non-serializable objects, matching Python `json.dumps()` semantics. Callers catching `ValueError` during render calls should catch `(TypeError, ValueError)`.
+* **helpers:** `{{json ...}}` in prompt templates now raises `TypeError` (standard Python `json.dumps()` behavior) instead of `ValueError` when passed non-serializable objects.
 
 ### Features
 
