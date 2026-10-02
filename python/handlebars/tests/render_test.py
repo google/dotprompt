@@ -28,7 +28,7 @@ import pytest
 
 from dotpromptz_handlebars import (
     Handlebars,
-    Options,
+    HelperOptions,
     SafeString,
     StrictModeError,
     TemplateRecursionError,
@@ -315,34 +315,6 @@ def test_at_data_in_conditionals_and_helpers():
     assert render('{{upper @role}}', hb=hb, data_hash={'role': 'engineer'}) == 'ENGINEER'
 
 
-def test_reserved_data_keys_rejects_only_when_template_resolves_key():
-    hb = Handlebars(reserved_data_keys={'root'})
-    hb.register_helper('h', lambda args, opt: f'h:{args[0]}')
-    hb.register_helper('s', lambda args, opt: f's:{opt.hash.get("k")}')
-
-    # Allowed when data does not contain reserved key
-    assert hb.compile('{{@root.name}}')({'name': 'Ada'}, {'data': {}}) == 'Ada'
-
-    # Allowed when data contains reserved key but template does not access it
-    assert hb.compile('Hello {{name}}')({'name': 'Ada'}, {'data': {'root': 'custom'}}) == 'Hello Ada'
-
-    # Direct access to @root with reserved key in data raises ValueError
-    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
-        hb.compile('{{@root}}')({'name': 'Ada'}, {'data': {'root': 'custom'}})
-
-    # Nested access to @root.name with reserved key in data raises ValueError
-    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
-        hb.compile('{{@root.name}}')({'name': 'Ada'}, {'data': {'root': 'custom'}})
-
-    # Subexpression {{h (s k=@root)}} with reserved key in data raises ValueError
-    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
-        hb.compile('{{h (s k=@root)}}')({'name': 'Ada'}, {'data': {'root': 'custom'}})
-
-    # Parent path {{@../root}} with reserved key in data raises ValueError
-    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
-        hb.compile('{{#each list}}{{@../root}}{{/each}}')({'list': ['item']}, {'data': {'root': 'custom'}})
-
-
 # ==============================================================================
 # 6. Partials, Blocks & Call-Site Indentation
 # ==============================================================================
@@ -483,7 +455,7 @@ def test_multibyte_utf8_identifiers_and_comments():
 
 
 # ==============================================================================
-# 8. Custom Helpers, Options & Subexpressions
+# 8. Custom Helpers, HelperOptions & Subexpressions
 # ==============================================================================
 
 
@@ -530,7 +502,8 @@ def test_custom_block_helper():
 def test_typed_helper_options_and_block_fn():
     hb = Handlebars()
 
-    def custom_section(args: list[Any], options: Options) -> SafeString:
+    def custom_section(args: list[Any], options: HelperOptions) -> SafeString:
+        assert isinstance(options, HelperOptions)
         assert isinstance(options.hash, dict)
         assert isinstance(options.data, dict)
         assert options.is_block is True
@@ -546,7 +519,7 @@ def test_typed_helper_options_and_block_fn():
 def test_context_callable_backward_compat():
     hb = Handlebars()
 
-    def legacy_helper(args: list[Any], options: Options) -> str:
+    def legacy_helper(args: list[Any], options: HelperOptions) -> str:
         # Legacy handlebarrz syntax called options.context() as a method
         ctx = options.context()
         assert isinstance(ctx, dict)

@@ -20,17 +20,17 @@ Text stays text. {{name}} looks up a value. {{#if}} owns a body and an else
 body. ~ on a tag removes the whitespace touching that tag.
 """
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any, cast
 
 from dotpromptz_handlebars._types import (
     Block,
     ElseNode,
     HelperFn,
+    HelperOptions,
     InlinePartial,
     Mustache,
     Node,
-    Options,
     Partial,
     PartialBlock,
     SafeString,
@@ -77,7 +77,6 @@ def render_program(
     partials: dict[str, Any],
     escape_html: bool,
     strict: bool,
-    reserved_data_keys: Iterable[str] | None = None,
     max_depth: int = _MAX_DEPTH,
 ) -> str:
     """Renders parsed nodes. data is the dict {{@name}} reads.
@@ -94,8 +93,6 @@ def render_program(
         partials=dict(partials),
         escape_html=escape_html,
         strict=strict,
-        reserved_data_keys=set(reserved_data_keys) if reserved_data_keys else None,
-        raw_data=data or {},
         depth=0,
         max_depth=max_depth,
     )
@@ -521,8 +518,6 @@ def _render(
     partials: dict[str, Any],
     escape_html: bool,
     strict: bool,
-    reserved_data_keys: set[str] | None = None,
-    raw_data: dict[str, Any] | None = None,
     depth: int = 0,
     max_depth: int = _MAX_DEPTH,
 ) -> str:
@@ -544,8 +539,6 @@ def _render(
                 partials=partials,
                 escape_html=escape_html,
                 strict=strict,
-                reserved_data_keys=reserved_data_keys,
-                raw_data=raw_data,
                 depth=depth + 1,
                 max_depth=max_depth,
             )
@@ -725,7 +718,7 @@ def _eval_call(call: dict[str, Any], *, block: Block | None, as_call: bool = Fal
         raise ValueError(f'Missing helper: "{name}"')
     return helper(
         args,
-        Options(
+        HelperOptions(
             hash=hashed,
             fn=fn,
             inverse=inverse,
@@ -829,8 +822,6 @@ def _context_path(path: str, *, original: str, **env: Any) -> Any:
 
 def _data_path(path: str, *, original: str, **env: Any) -> Any:
     strict: bool = env['strict']
-    reserved_keys: set[str] | None = env.get('reserved_data_keys')
-    raw_data: dict[str, Any] = env.get('raw_data', {})
     parts = _parts(path)
     frames: list[dict[str, Any]] = env['frames']
     current: Any = frames[-1]
@@ -843,8 +834,6 @@ def _data_path(path: str, *, original: str, **env: Any) -> Any:
                     raise StrictModeError(original)
                 return None
             continue
-        if reserved_keys and part in reserved_keys and part in raw_data:
-            raise ValueError(f'runtime data key {part!r} is reserved')
         current = _step(current, part, strict=strict, original=original)
     return current
 
@@ -1040,8 +1029,6 @@ def _render_partial(
         partials=env['partials'],
         escape_html=env['escape_html'],
         strict=env['strict'],
-        reserved_data_keys=env.get('reserved_data_keys'),
-        raw_data=env.get('raw_data'),
         depth=env.get('depth', 0),
         max_depth=env.get('max_depth', _MAX_DEPTH),
     )
