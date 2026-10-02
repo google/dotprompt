@@ -8,7 +8,7 @@
 
 ### Features
 
-* **dependencies:** replace native Rust `handlebarrz` extension with pure-Python `dotpromptz-handlebars`, removing all C/Rust compiler and platform wheel requirements ([#620](https://github.com/google/dotprompt/pull/620)).
+* **dependencies:** upgrade to pure-Python `dotpromptz-handlebars>=0.2.0`, removing all native C/Rust compiler and platform wheel requirements ([#620](https://github.com/google/dotprompt/pull/620)).
 * **performance:** pre-compile prompt templates during initialization so repeated prompt executions reuse the compiled template without recompilation overhead.
 * **helpers:** custom helper functions registered on `Dotprompt` receive `HelperOptions` with direct attribute access to `options.context`.
 
