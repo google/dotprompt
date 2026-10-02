@@ -49,5 +49,5 @@ prompts = sync_store.list()
 """
 
 from ._dir_async import DirStore as DirStore
-from ._dir_sync import DirStoreSync
-from ._typing import DirStoreOptions
+from ._dir_sync import DirStoreSync as DirStoreSync
+from ._typing import DirStoreOptions as DirStoreOptions

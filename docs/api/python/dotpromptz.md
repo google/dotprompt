@@ -35,47 +35,11 @@ print(rendered.messages[0].content[0].text)
 # => Hello, Ada!
 ```
 
-## Module Reference
+## API Reference
 
-::: dotpromptz.Dotprompt
+::: dotpromptz
     options:
-      show_root_heading: true
-      members_order: source
-      heading_level: 3
-
-::: dotpromptz.DataArgument
-    options:
-      show_root_heading: true
-      members_order: source
-      heading_level: 3
-
-::: dotpromptz.RenderedPrompt
-    options:
-      show_root_heading: true
-      members_order: source
-      heading_level: 3
-
-::: dotpromptz.Message
-    options:
-      show_root_heading: true
-      members_order: source
-      heading_level: 3
-
-::: dotpromptz.Role
-    options:
-      show_root_heading: true
-      members_order: source
-      heading_level: 3
-
-::: dotpromptz.DirStore
-    options:
-      show_root_heading: true
-      members_order: source
-      heading_level: 3
-
-::: dotpromptz.DotpromptError
-    options:
-      show_root_heading: true
+      show_root_heading: false
       members_order: source
       heading_level: 3
 
