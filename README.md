@@ -18,7 +18,7 @@
 [![View Code Wiki](https://www.gstatic.com/_/boq-sdlc-agents-ui/_/r/YUi5dj2UWvE.svg)](https://codewiki.google/github.com/google/dotprompt)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/google/dotprompt)
 
-[![Star History Chart](https://api.star-history.com/svg?repos=google/dotprompt&type=Date)](https://star-history.com/#google/dotprompt&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=google/dotprompt&type=Date)](https://star-history.dera.page/#google/dotprompt&Date)
 
 # Dotprompt: Executable GenAI Prompt Templates
 
