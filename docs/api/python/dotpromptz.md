@@ -20,7 +20,7 @@ dp = Dotprompt()
 # 2. Parse and render a prompt
 source = '''
 ---
-model: googleai/gemini-2.5-pro
+model: googleai/gemini-flash-latest
 input:
   schema:
     name: string

@@ -29,7 +29,7 @@ Example:
     # 2. Render prompt source with input data
     rendered = await prompt.render(
         '''---
-        model: googleai/gemini-2.5-pro
+        model: googleai/gemini-flash-latest
         input:
           schema:
             customer: string
@@ -76,6 +76,7 @@ from dotpromptz._typing import (
     DataArgument,
     DataPart,
     Document,
+    JsonSchema,
     MediaPart,
     Message,
     ParsedPrompt,
@@ -85,6 +86,8 @@ from dotpromptz._typing import (
     PartialResolver,
     PromptBundle,
     PromptData,
+    PromptFunction,
+    PromptInputConfig,
     PromptMetadata,
     PromptRef,
     PromptStore,
@@ -101,6 +104,7 @@ from dotpromptz._typing import (
     ToolResolver,
     ToolResponsePart,
 )
+from dotpromptz_handlebars import EscapeFunction, HelperFn
 
 __all__ = [
     # Engine & Functional Parsing
@@ -111,7 +115,10 @@ __all__ = [
     'Document',
     'ParsedPrompt',
     'PromptBundle',
+    'JsonSchema',
     'PromptData',
+    'PromptFunction',
+    'PromptInputConfig',
     'PromptMetadata',
     'PromptRef',
     'RenderedPrompt',
@@ -140,6 +147,9 @@ __all__ = [
     'PromptStoreSync',
     'PromptStoreWritable',
     'PromptStoreWritableSync',
+    # Engine types used in Dotprompt's public signatures
+    'EscapeFunction',
+    'HelperFn',
     # Schema
     'json_schema_to_picoschema',
     'picoschema_to_json_schema',
