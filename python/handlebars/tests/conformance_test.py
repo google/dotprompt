@@ -125,13 +125,20 @@ def _reference_engine():
     return None
 
 
+def _fail_in_ci(message: str) -> None:
+    # A Python checkout often has no Node. CI does, so a missing install fails there.
+    if os.environ.get('CI'):
+        pytest.fail(message)
+    pytest.skip(message)
+
+
 def test_recorded_output_still_matches_handlebars_4_7_9():
-    """Re-render the recorded cases with Handlebars 4.7.9. A missing install fails the run."""
+    """Re-render the recorded cases with Handlebars 4.7.9."""
     if shutil.which('node') is None:
-        pytest.fail('node is not installed, so the Handlebars 4.7.9 check cannot run')
+        _fail_in_ci('node is not installed, so the Handlebars 4.7.9 check cannot run')
     root = _reference_engine()
     if root is None:
-        pytest.fail(
+        _fail_in_ci(
             'Handlebars 4.7.9 is not installed. '
             'npm install handlebars@4.7.9 and set HANDLEBARS_JS to that package directory.'
         )
