@@ -144,15 +144,13 @@ def _convert_object(node: dict[str, Any]) -> dict[str, Any]:
         prop_type = prop_schema.get('type')
         description = prop_schema.get('description')
 
-        # Detect nullable from type list
-        is_nullable = False
+        # Strip null from type list to get the underlying scalar type
         if isinstance(prop_type, list):
             non_null = [t for t in prop_type if t != 'null']
-            is_nullable = 'null' in prop_type
             prop_type = non_null[0] if len(non_null) == 1 else None
 
-        # Build the key: add ? suffix for optional or nullable fields
-        key = prop_name if is_required and not is_nullable else f'{prop_name}?'
+        # Build the key: add ? suffix for optional fields
+        key = prop_name if is_required else f'{prop_name}?'
 
         # Enum property
         if 'enum' in prop_schema:
