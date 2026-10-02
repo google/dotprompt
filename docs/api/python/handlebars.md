@@ -23,26 +23,10 @@ print(render({'dish': 'Smoked Salmon Tartine', 'price': 14}))
 
 See the [package README](https://github.com/google/dotprompt/tree/main/python/handlebars) for helpers, partials, escaping, strict mode, and where Handlebars semantics differ from Python's.
 
-## Module Reference
+## API Reference
 
-::: dotpromptz_handlebars.Handlebars
+::: dotpromptz_handlebars
     options:
-      show_root_heading: true
+      show_root_heading: false
       members_order: source
-      heading_level: 3
-
-::: dotpromptz_handlebars.HelperOptions
-    options:
-      show_root_heading: true
-      members_order: source
-      heading_level: 3
-
-::: dotpromptz_handlebars.SafeString
-    options:
-      show_root_heading: true
-      heading_level: 3
-
-::: dotpromptz_handlebars.StrictModeError
-    options:
-      show_root_heading: true
       heading_level: 3
