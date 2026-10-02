@@ -39,7 +39,6 @@ jobs:
         with:
           files: |
             rs/**
-            python/handlebarrz/**
             Cargo.toml
             Cargo.lock
             .github/workflows/rust.yml

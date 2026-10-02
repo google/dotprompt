@@ -20,8 +20,9 @@ permissions:
   contents: read
 
 on:
+  # Stacked PRs target a feature branch, so Python checks also run when the base is not main.
   pull_request:
-    
+
 jobs:
   check-paths:
     runs-on: ubuntu-latest

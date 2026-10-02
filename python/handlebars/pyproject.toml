@@ -41,7 +41,10 @@ build-backend = "hatchling.build"
 requires = ["hatchling"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["dotpromptz_handlebars"]
+# handlebarrz is the import name already-published dotpromptz 0.1.x uses.
+# Remove it with python/handlebars/handlebarrz once those releases no longer
+# install this wheel through dotpromptz-handlebars>=0.1.8 with no upper bound.
+packages = ["dotpromptz_handlebars", "handlebarrz"]
 
 [dependency-groups]
 dev = ["pytest>=8.3.5"]
