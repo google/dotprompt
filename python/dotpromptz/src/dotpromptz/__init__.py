@@ -61,8 +61,10 @@ from dotpromptz._errors import (
     ResolverFailedError,
 )
 
-# Schema Utilities
+# Parsing & Schema Functions
+from dotpromptz._parse import parse_document
 from dotpromptz._picoschema import picoschema_to_json_schema
+from dotpromptz._picoschema_reverse import json_schema_to_picoschema
 
 # Storage Implementations & Protocols
 from dotpromptz._stores import (
@@ -71,7 +73,7 @@ from dotpromptz._stores import (
     DirStoreSync,
 )
 
-# Runtime Data & Models
+# Runtime Data, Models & Resolver Protocols
 from dotpromptz._typing import (
     DataArgument,
     DataPart,
@@ -82,6 +84,7 @@ from dotpromptz._typing import (
     Part,
     PartialData,
     PartialRef,
+    PartialResolver,
     PromptBundle,
     PromptData,
     PromptMetadata,
@@ -92,16 +95,22 @@ from dotpromptz._typing import (
     PromptStoreWritableSync,
     RenderedPrompt,
     Role,
+    SchemaResolver,
     TextPart,
     ToolArgument,
     ToolDefinition,
     ToolRequestPart,
+    ToolResolver,
     ToolResponsePart,
 )
 
+# Shorthand alias matching JS and Go conventions
+picoschema = picoschema_to_json_schema
+
 __all__ = [
-    # Engine
+    # Engine & Functional Parsing
     'Dotprompt',
+    'parse_document',
     # Runtime & Data Models
     'DataArgument',
     'Document',
@@ -122,9 +131,12 @@ __all__ = [
     'ToolDefinition',
     'ToolRequestPart',
     'ToolResponsePart',
-    # Partials
+    # Partials & Resolvers
     'PartialData',
     'PartialRef',
+    'PartialResolver',
+    'SchemaResolver',
+    'ToolResolver',
     # Storage
     'DirStore',
     'DirStoreOptions',
@@ -134,6 +146,8 @@ __all__ = [
     'PromptStoreWritable',
     'PromptStoreWritableSync',
     # Schema
+    'json_schema_to_picoschema',
+    'picoschema',
     'picoschema_to_json_schema',
     # Errors
     'DotpromptError',
