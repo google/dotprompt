@@ -220,6 +220,36 @@ func convertNamespacedEntryToNestedObject(
 	return obj
 }
 
+func schemaValue(value any) (Schema, bool) {
+	switch value := value.(type) {
+	case map[string]any:
+		return value, true
+	case string:
+		return value, true
+	default:
+		return nil, false
+	}
+}
+
+func parseToolDefinition(value any) (ToolDefinition, bool) {
+	tdMap, ok := value.(map[string]any)
+	if !ok {
+		return ToolDefinition{}, false
+	}
+
+	toolDef := ToolDefinition{
+		Name:        stringOrEmpty(tdMap["name"]),
+		Description: stringOrEmpty(tdMap["description"]),
+	}
+	if inputSchema, ok := schemaValue(tdMap["inputSchema"]); ok {
+		toolDef.InputSchema = inputSchema
+	}
+	if outputSchema, ok := schemaValue(tdMap["outputSchema"]); ok {
+		toolDef.OutputSchema = outputSchema
+	}
+	return toolDef, true
+}
+
 // extractFrontmatterAndBody extracts the frontmatter and body from a .prompt
 // file.
 func extractFrontmatterAndBody(source string) (string, string) {
@@ -308,17 +338,7 @@ func ParseDocument(source string) (ParsedPrompt, error) {
 					if toolDefsSlice, ok := value.([]any); ok {
 						toolDefs := make([]ToolDefinition, 0, len(toolDefsSlice))
 						for _, td := range toolDefsSlice {
-							if tdMap, ok := td.(map[string]any); ok {
-								toolDef := ToolDefinition{
-									Name:        stringOrEmpty(tdMap["name"]),
-									Description: stringOrEmpty(tdMap["description"]),
-								}
-								if inputSchema, ok := tdMap["inputSchema"].(map[string]any); ok {
-									toolDef.InputSchema = inputSchema
-								}
-								if outputSchema, ok := tdMap["outputSchema"].(map[string]any); ok {
-									toolDef.OutputSchema = outputSchema
-								}
+							if toolDef, ok := parseToolDefinition(td); ok {
 								toolDefs = append(toolDefs, toolDef)
 							}
 						}
@@ -329,11 +349,8 @@ func ParseDocument(source string) (ParsedPrompt, error) {
 						if defaultMap, ok := inputMap["default"].(map[string]any); ok {
 							pruned.Input.Default = defaultMap
 						}
-						if schemaMap, ok := inputMap["schema"].(map[string]any); ok {
-							pruned.Input.Schema = schemaMap
-						}
-						if schemaMap, ok := inputMap["schema"].(string); ok {
-							pruned.Input.Schema = schemaMap
+						if schema, ok := schemaValue(inputMap["schema"]); ok {
+							pruned.Input.Schema = schema
 						}
 					}
 				case "output":
@@ -341,11 +358,8 @@ func ParseDocument(source string) (ParsedPrompt, error) {
 						if formatMap, ok := outputMap["format"].(string); ok {
 							pruned.Output.Format = formatMap
 						}
-						if schemaMap, ok := outputMap["schema"].(map[string]any); ok {
-							pruned.Output.Schema = schemaMap
-						}
-						if schemaMap, ok := outputMap["schema"].(string); ok {
-							pruned.Output.Schema = schemaMap
+						if schema, ok := schemaValue(outputMap["schema"]); ok {
+							pruned.Output.Schema = schema
 						}
 					}
 				}
