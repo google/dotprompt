@@ -16,7 +16,7 @@
 
 """Compile a template and render it."""
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from typing import Any
 
 from dotpromptz_handlebars._render import compile_template, render_program
@@ -48,7 +48,6 @@ class Handlebars:
 
     escape_html: bool
     strict: bool
-    reserved_data_keys: set[str] | None
     max_depth: int
     _helpers: dict[str, HelperFn]
     _partials: dict[str, Any]
@@ -60,7 +59,6 @@ class Handlebars:
         escape_html: bool = True,
         strict: bool = False,
         escape_fn: EscapeFunction | str | None = None,
-        reserved_data_keys: Iterable[str] | None = None,
         max_depth: int = 100,
     ) -> None:
         """Creates a compiler instance.
@@ -72,15 +70,12 @@ class Handlebars:
                 A missing path passed to if, each, with, or a helper evaluates as empty.
             escape_fn: EscapeFunction.NO_ESCAPE leaves markup unescaped.
                 Overrides escape_html when specified.
-            reserved_data_keys: Optional set of `@data` keys (e.g. `{'root'}`) that
-                raise ValueError if read by the template when present in the user data dict.
             max_depth: Maximum template recursion/nesting depth (default 100).
         """
         if escape_fn is not None:
             escape_html = escape_fn not in (EscapeFunction.NO_ESCAPE, 'no_escape')
         self.escape_html = escape_html
         self.strict = strict
-        self.reserved_data_keys = set(reserved_data_keys) if reserved_data_keys else None
         self.max_depth = max_depth
         self._helpers = {}
         self._partials = {}
@@ -212,7 +207,6 @@ class Handlebars:
             partials=self._partials,
             escape_html=self.escape_html,
             strict=self.strict,
-            reserved_data_keys=self.reserved_data_keys,
             max_depth=self.max_depth,
         )
 

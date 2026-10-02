@@ -9,7 +9,6 @@
 ### Features
 
 * **python:** replace Rust `handlebarrz` extension with pure-Python `dotpromptz-handlebars` ([#620](https://github.com/google/dotprompt/pull/620))
-* **helpers:** `options.fn([context])` and `options.inverse([context])` accept an optional context argument to render block bodies with an explicit scope.
 * **helpers:** `HelperOptions.context` provides direct attribute access to the active scope, while maintaining `options.context()` callable compatibility for dictionary scopes.
 
 ## [0.1.6](https://github.com/google/dotprompt/compare/dotpromptz-0.1.5...dotpromptz-0.1.6) (2026-09-18)
