@@ -63,7 +63,7 @@ plugins:
         python:
           paths:
             - python/dotpromptz/src
-            - python/handlebarrz/src
+            - python/handlebars
           options:
             docstring_style: google
             docstring_options:
@@ -103,7 +103,7 @@ nav:
     - api/index.md
     - Python:
       - dotpromptz: api/python/dotpromptz.md
-      - handlebarrz: api/python/handlebarrz.md
+      - dotpromptz-handlebars: api/python/handlebars.md
     - TypeScript/JavaScript: api/typescript/index.md
     - Go: api/go/index.md
     - Rust: api/rust/index.md
@@ -114,7 +114,6 @@ nav:
     - Coding Guidelines: contributing/coding_guidelines.md
     - Git Workflow: contributing/git_workflow.md
     - Releases: contributing/releases.md
-    - Packaging Rust: contributing/packagin_rust.md
     - Troubleshooting: contributing/troubleshooting.md
   - Design:
     - Promptly: design/promptly.md

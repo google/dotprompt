@@ -65,7 +65,7 @@ from dotpromptz.typing import (
     VariablesT,
 )
 from dotpromptz.util import remove_undefined_fields
-from handlebarrz import Context, EscapeFunction, Handlebars, HelperFn, RuntimeOptions
+from dotpromptz_handlebars import Context, EscapeFunction, Handlebars, HelperFn, RuntimeOptions
 
 # Pre-compiled regex for finding partial references in handlebars templates
 
@@ -190,8 +190,8 @@ class RenderFunc(PromptFunction[ModelConfigT]):
         """
         self._dotprompt = dotprompt
         self._handlebars = handlebars
-
         self.prompt = prompt
+        self._render_string = self._handlebars.compile(self.prompt.template)
 
     async def __call__(
         self, data: DataArgument[VariablesT], options: PromptMetadata[ModelConfigT] | None = None
@@ -222,14 +222,11 @@ class RenderFunc(PromptFunction[ModelConfigT]):
 
         # Prepare runtime options.
         runtime_options: RuntimeOptions = {
-            'data': {
-                **(data.context or {}),
-            },
+            'data': data.context or {},
         }
 
         # Render the string.
-        render_string = self._handlebars.compile(self.prompt.template)
-        rendered_string = render_string(context, runtime_options)
+        rendered_string = self._render_string(context, runtime_options)
 
         # Parse the rendered string into messages.
         messages = to_messages(rendered_string, data)
@@ -272,7 +269,7 @@ class Dotprompt:
             partial_resolver: resolver for partial names to their content.
             escape_fn: escape function to use for the template.
         """
-        self._handlebars: Handlebars = Handlebars(escape_fn=escape_fn)
+        self._handlebars: Handlebars = Handlebars(escape_fn=escape_fn, reserved_data_keys={'root'})
 
         self._known_helpers: dict[str, bool] = {}
         self._default_model: str | None = default_model

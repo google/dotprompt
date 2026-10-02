@@ -18,7 +18,7 @@ follows the same specification and provides equivalent functionality.
 ### Python
 
 * [dotpromptz](python/dotpromptz.md) - Core Python library
-* [handlebarrz](python/handlebarrz.md) - Handlebars templating engine
+* [dotpromptz-handlebars](python/handlebars.md) - Handlebars templating engine
 
 ### TypeScript/JavaScript
 

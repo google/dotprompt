@@ -16,22 +16,25 @@
 
 name: Python checks
 
+permissions:
+  contents: read
+
 on:
   pull_request:
-    branches: [main]
-
+    
 jobs:
   check-paths:
     runs-on: ubuntu-latest
     outputs:
       any_changed: ${{ steps.changed-files.outputs.any_changed }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v45
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files: |
             python/**
@@ -46,7 +49,7 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           # Use the PR head ref to allow pushing back to the branch
           ref: ${{ github.head_ref }}
@@ -54,7 +57,7 @@ jobs:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
         with:
           enable-cache: true
 
@@ -108,11 +111,7 @@ jobs:
     if: needs.check-paths.outputs.any_changed == 'true'
     runs-on: ${{ matrix.os }}
     env:
-      PATH: ${{ github.workspace }}/go/bin:${{ github.workspace }}/.cargo/bin:${{ github.workspace }}/.local/share/pnpm:${{ github.workspace }}/.local/bin:/usr/local/bin:/usr/bin:/bin
-      PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
-      # Enable sccache for Rust builds
-      SCCACHE_GHA_ENABLED: "true"
-      RUSTC_WRAPPER: "sccache"
+      PATH: ${{ github.workspace }}/go/bin:${{ github.workspace }}/.local/share/pnpm:${{ github.workspace }}/.local/bin:/usr/local/bin:/usr/bin:/bin
     strategy:
       matrix:
         os:
@@ -124,28 +123,33 @@ jobs:
           - "3.12"
           - "3.13"
           - "3.14"
+        include:
+          # PyPy runs on x86 only.
+          - os: ubuntu-latest
+            python-version: "pypy3.11"
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: stable
 
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+      # uv has no PyPy 3.11 download for linux x86_64, and PyPy 8.0 has no
+      # pydantic-core wheels. Pin 7.3.23 (Python 3.11.15, pp73 ABI); uv finds
+      # it on PATH.
+      - name: Set up PyPy
+        if: ${{ startsWith(matrix.python-version, 'pypy') }}
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
-          components: rustfmt, clippy
-        env:
-          RUSTUP_MAX_RETRIES: 3
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+          python-version: pypy3.11-v7.3.23
 
       - name: Install uv and setup Python version
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
         with:
           enable-cache: true
           python-version: ${{ matrix.python-version }}
@@ -161,21 +165,6 @@ jobs:
 
       - name: Static type check (pyrefly)
         run: uv run --active --directory python pyrefly check
-
-      # TODO(#505): Move this to a rust workflow once we have one.
-      - name: Run rust lint
-        run: pushd python/handlebarrz && cargo clippy --all-targets --all-features -- -D warnings && popd
-
-      - name: Check licenses
-        run: ./scripts/check_license
-
-      - name: Run Rust checks for handlebarrz
-        run: ./scripts/run_handlebarrz_checks
-
-      - name: Build Rust extension for Python ${{ matrix.python-version }}
-        working-directory: ./python
-        run: |
-          uv run --python ${{ matrix.python-version }} --active --isolated --directory handlebarrz maturin develop
 
       - name: Install Handlebars 4.7.9
         run: |

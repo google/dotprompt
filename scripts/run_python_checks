@@ -59,11 +59,8 @@ PYTEST_ARGS=(
 )
 pushd "${PY_DIR}"
 for VERSION in "${PYTHON_VERSIONS[@]}"; do
-  # NOTE: Build the Rust extension for a specific Python version in an isolated
-  # virtual environment; otherwise we see weird missing import errors.
   echo "Creating virtual environment for ${VERSION}..."
   uv venv --allow-existing --python "${VERSION}"
-  uv run --python "${VERSION}" --active --isolated --directory handlebarrz maturin develop
   echo "Running tests with Python ${VERSION}..."
   uv run \
     --python "${VERSION}" \

@@ -261,3 +261,18 @@ def test_if_without_an_argument_raises():
 def test_input_function_raises():
     with pytest.raises(ValueError, match='register it as a helper'):
         render('{{name}}', {'name': lambda: 'called'})
+
+
+def test_field_named_raw_matches_handlebars():
+    assert render('{{raw}}', {'raw': 'X'}) == 'X'
+    assert render('{{#raw}}hello{{/raw}}', {'raw': True}) == 'hello'
+    assert render('{{#raw}}hello{{/raw}}', {'raw': False}) == ''
+
+
+def test_tuples_and_custom_sequences_mappings():
+    assert render('{{#each items}}{{this}}{{/each}}', {'items': (1, 2)}) == '12'
+    assert render('{{items}}', {'items': (1, 2)}) == '1,2'
+    assert render('{{items.[0]}}', {'items': (1, 2)}) == '1'
+    assert render('{{#items}}{{this}}{{/items}}', {'items': (1, 2)}) == '12'
+    assert render('{{#if items}}yes{{else}}no{{/if}}', {'items': ()}) == 'no'
+    assert render('{{#if items}}yes{{else}}no{{/if}}', {'items': (1,)}) == 'yes'

@@ -44,7 +44,7 @@ scopes:
   - js
   - py
   - py/dotpromptz
-  - py/handlebarrz
+  - py/handlebars
   - rs
   - rs/promptly
   - vscode
