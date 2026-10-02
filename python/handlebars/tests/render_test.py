@@ -622,3 +622,21 @@ def test_ast_node_dataclasses_and_tag_tokens():
 
     raw_nodes = compile_template('{{{{raw}}}}{{name}}{{{{/raw}}}}')
     assert raw_nodes == [Text(value='{{name}}')]
+
+
+def test_handlebarrz_compatibility_shim() -> None:
+    import handlebarrz
+
+    assert handlebarrz.Handlebars is not None
+    assert handlebarrz.Template is handlebarrz.Handlebars
+    assert handlebarrz.HelperOptions is not None
+    assert handlebarrz.package_name() == 'handlebarrz'
+    assert handlebarrz.no_escape('<b>') == '<b>'
+    assert handlebarrz.html_escape('<b>') == '&lt;b&gt;'
+
+    fn = lambda params, options: 'ok'
+    assert handlebarrz.create_helper(fn) is fn
+
+    t = handlebarrz.Template()
+    render = t.compile('Hello {{name}}!')
+    assert render({'name': 'World'}) == 'Hello World!'
