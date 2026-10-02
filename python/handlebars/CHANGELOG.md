@@ -4,7 +4,7 @@
 
 ### ⚠ BREAKING CHANGES
 
-* **package:** package name is now `dotpromptz-handlebars` (import as `dotpromptz_handlebars`), replacing the native `handlebarrz` extension.
+* **imports:** Python import module is now `dotpromptz_handlebars`, replacing `handlebarrz` (`import handlebarrz` -> `import dotpromptz_handlebars`).
 
 ### Features
 
