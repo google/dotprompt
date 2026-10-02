@@ -4,13 +4,13 @@
 
 ### ⚠ BREAKING CHANGES
 
-* **python:** replace Rust `handlebarrz` extension with pure-Python `dotpromptz-handlebars` package (imported as `dotpromptz_handlebars`).
-* **helpers:** `{{json ...}}` now raises `TypeError` instead of `ValueError` on non-serializable objects, aligning with Python `json.dumps()` semantics. Callers catching `ValueError` during render calls should catch `(TypeError, ValueError)`.
+* **package:** package name is now `dotpromptz-handlebars` (import as `dotpromptz_handlebars`), replacing the native `handlebarrz` extension.
+* **helpers:** `{{json ...}}` now raises `TypeError` instead of `ValueError` on non-serializable objects, aligning with Python `json.dumps()` semantics. Callers catching serialization errors during render should catch `(TypeError, ValueError)`.
 
 ### Features
 
-* **python:** rewrite Handlebars template engine in pure Python with zero native dependencies ([#620](https://github.com/google/dotprompt/pull/620))
-* **helpers:** `options.fn([context])` and `options.inverse([context])` accept an optional context argument to render block bodies with an explicit scope.
+* **engine:** rewrite Handlebars template engine in pure Python with zero native dependencies ([#620](https://github.com/google/dotprompt/pull/620)).
+* **helpers:** `options.fn([context])` and `options.inverse([context])` accept an optional context argument to render block bodies with explicit scope, matching Handlebars.js.
 * **helpers:** `HelperOptions.context` provides direct attribute access to the active scope, while maintaining `options.context()` callable compatibility for dictionary scopes.
 
 ## [0.1.9](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.8...dotpromptz-handlebars-0.1.9) (2026-09-18)
