@@ -80,7 +80,10 @@ input and `{{@name}}` for context:
 ```python
 from dotpromptz import DataArgument, Dotprompt
 
+# 1. Initialize compiler
 prompt = Dotprompt()
+
+# 2. Render prompt with isolated input and context
 result = await prompt.render(
     '{{name}} is signed in as {{@name}}',
     DataArgument(
@@ -88,4 +91,8 @@ result = await prompt.render(
         context={'name': 'admin'},
     ),
 )
+
+# 3. Access rendered output
+print(result.messages[0].content[0].text)
+# => Ada is signed in as admin
 ```
