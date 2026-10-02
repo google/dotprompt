@@ -17,25 +17,53 @@
 """A pure Python Handlebars template engine."""
 
 from dotpromptz_handlebars._compiler import (
-    Context,
     EscapeFunction,
     Handlebars,
     HelperFn,
-    HelperOptions,
     Options,
     RuntimeOptions,
-    SafeString,
 )
 from dotpromptz_handlebars._render import StrictModeError
+from dotpromptz_handlebars._types import (
+    Block,
+    BlockFn,
+    Context,
+    ContextDict,
+    ElseNode,
+    HelperOptions,
+    InlinePartial,
+    Mustache,
+    Node,
+    Partial,
+    PartialBlock,
+    Program,
+    SafeString,
+    TagToken,
+    TemplateRecursionError,
+    Text,
+)
 
 __all__ = [
+    'Block',
+    'BlockFn',
     'Context',
+    'ContextDict',
+    'ElseNode',
     'EscapeFunction',
     'Handlebars',
     'HelperFn',
     'HelperOptions',
+    'InlinePartial',
+    'Mustache',
+    'Node',
     'Options',
+    'Partial',
+    'PartialBlock',
+    'Program',
     'RuntimeOptions',
     'SafeString',
     'StrictModeError',
+    'TagToken',
+    'TemplateRecursionError',
+    'Text',
 ]

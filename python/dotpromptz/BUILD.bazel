@@ -24,7 +24,7 @@ py_library(
     srcs = glob(["src/**/*.py"]),
     imports = ["src"],
     deps = [
-        "//python/handlebarrz",
+        "//python/handlebars",
         requirement("aiofiles"),
         requirement("anyio"),
         requirement("pydantic"),
@@ -38,6 +38,16 @@ py_library(
 py_test(
     name = "dotprompt_test",
     srcs = ["tests/dotpromptz/dotprompt_test.py"],
+    imports = ["tests"],
+    deps = [
+        ":dotpromptz",
+        requirement("pytest"),
+    ],
+)
+
+py_test(
+    name = "engine_boundary_test",
+    srcs = ["tests/dotpromptz/engine_boundary_test.py"],
     imports = ["tests"],
     deps = [
         ":dotpromptz",

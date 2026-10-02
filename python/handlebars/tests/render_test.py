@@ -21,9 +21,17 @@ built-in block helpers (if, unless, each, with), partials, subexpressions,
 and helper registrations.
 """
 
+from typing import Any
+
 import pytest
 
-from dotpromptz_handlebars import Handlebars, SafeString, StrictModeError
+from dotpromptz_handlebars import (
+    Handlebars,
+    Options,
+    SafeString,
+    StrictModeError,
+    TemplateRecursionError,
+)
 
 
 def render(source, data=None, *, hb=None, data_hash=None):
@@ -200,8 +208,22 @@ def test_inline_partial():
 def test_recursive_partial_raises_recursion_error():
     hb = Handlebars()
     hb.register_partial('loop', '{{> loop}}')
-    with pytest.raises(RecursionError):
+    with pytest.raises(TemplateRecursionError, match=r'maximum template depth exceeded \(100\)'):
         hb.compile('{{> loop}}')({})
+
+
+def test_custom_max_depth_guard_raises():
+    hb = Handlebars(max_depth=5)
+    hb.register_partial('loop', '{{> loop}}')
+    with pytest.raises(TemplateRecursionError, match=r'maximum template depth exceeded \(5\)'):
+        hb.compile('{{> loop}}')({})
+
+
+def test_deeply_nested_blocks_exceeding_max_depth_raises():
+    nested = '{{#if true}}' * 150 + 'deep' + '{{/if}}' * 150
+    hb = Handlebars()
+    with pytest.raises(TemplateRecursionError, match=r'maximum template depth exceeded \(100\)'):
+        hb.compile(nested)({})
 
 
 # ==============================================================================
@@ -214,6 +236,12 @@ def test_comments_whitespace_and_literal_braces():
     assert render('Hello   {{~name}}!', {'name': 'World'}) == 'HelloWorld!'
     assert render(r'Show \{{name}} literally', {'name': 'World'}) == 'Show {{name}} literally'
     assert render(r'\\{{name}}', {'name': 'World'}) == '\\World'
+
+
+def test_tilde_triple_stash_trims_whitespace_and_preserves_raw():
+    assert render('Hello  {{~{name}~}}  World', {'name': '<b>Beautiful</b>'}) == 'Hello<b>Beautiful</b>World'
+    assert render('Hello   {{~{name}}} World', {'name': '<b>Beautiful</b>'}) == 'Hello<b>Beautiful</b> World'
+    assert render('Hello {{{name}~}}   World', {'name': '<b>Beautiful</b>'}) == 'Hello <b>Beautiful</b>World'
 
 
 def test_multibyte_utf8_identifiers_and_comments():
@@ -297,6 +325,13 @@ def test_custom_raw_block_helper():
     assert hb.compile('{{{{wrap}}}}{{name}}{{{{/wrap}}}}')({'name': 'World'}) == '[{{name}}]'
 
 
+def test_field_named_raw_renders_as_variable():
+    hb = Handlebars()
+    assert hb.compile('{{raw}}')({'raw': 'prompt_value'}) == 'prompt_value'
+    assert hb.compile('{{#raw}}yes{{/raw}}')({'raw': True}) == 'yes'
+    assert hb.compile('{{#raw}}yes{{/raw}}')({'raw': False}) == ''
+
+
 def test_unclosed_raw_block_raises():
     with pytest.raises(ValueError, match='unclosed raw block'):
         Handlebars().compile('{{{{raw}}}}{{name}}')
@@ -314,3 +349,113 @@ def test_strict_mode_names_the_missing_path():
     assert raised.value.path == 'user.name'
     assert 'is not defined' in str(raised.value)
     assert hb.compile('{{#if name}}yes{{else}}no{{/if}}')({'name': None}) == 'no'
+
+
+def test_reserved_data_keys_rejects_only_when_template_resolves_key():
+    hb = Handlebars(reserved_data_keys={'root'})
+    hb.register_helper('h', lambda args, opt: f'h:{args[0]}')
+    hb.register_helper('s', lambda args, opt: f's:{opt.hash.get("k")}')
+
+    # Allowed when data does not contain reserved key
+    assert hb.compile('{{@root.name}}')({'name': 'Ada'}, {'data': {}}) == 'Ada'
+
+    # Allowed when data contains reserved key but template does not access it
+    assert hb.compile('Hello {{name}}')({'name': 'Ada'}, {'data': {'root': 'custom'}}) == 'Hello Ada'
+
+    # Direct access to @root with reserved key in data raises ValueError
+    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
+        hb.compile('{{@root}}')({'name': 'Ada'}, {'data': {'root': 'custom'}})
+
+    # Nested access to @root.name with reserved key in data raises ValueError
+    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
+        hb.compile('{{@root.name}}')({'name': 'Ada'}, {'data': {'root': 'custom'}})
+
+    # Subexpression {{h (s k=@root)}} with reserved key in data raises ValueError
+    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
+        hb.compile('{{h (s k=@root)}}')({'name': 'Ada'}, {'data': {'root': 'custom'}})
+
+    # Parent path {{@../root}} with reserved key in data raises ValueError
+    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
+        hb.compile('{{#each list}}{{@../root}}{{/each}}')({'list': ['item']}, {'data': {'root': 'custom'}})
+
+
+def test_typed_helper_options_and_block_fn():
+    hb = Handlebars()
+
+    def custom_section(args: list[Any], options: Options) -> SafeString:
+        assert isinstance(options.hash, dict)
+        assert isinstance(options.data, dict)
+        assert options.is_block is True
+        prefix = options.hash_value('prefix')
+        body = options.fn(options.context)
+        return SafeString(f'{prefix}{body}')
+
+    hb.register_helper('customSection', custom_section)
+    result = hb.compile('{{#customSection prefix="-->"}}{{item}}{{/customSection}}')({'item': 'value'})
+    assert result == '-->value'
+
+
+def test_context_callable_backward_compat():
+    hb = Handlebars()
+
+    def legacy_helper(args: list[Any], options: Options) -> str:
+        # Legacy handlebarrz syntax called options.context() as a method
+        ctx = options.context()
+        assert isinstance(ctx, dict)
+        # Modern attribute access also works
+        assert options.context['user'] == 'Alice'
+        return f'Hello {ctx.get("user", "")}!'
+
+    hb.register_helper('legacy', legacy_helper)
+    assert hb.compile('{{legacy}}')({'user': 'Alice'}) == 'Hello Alice!'
+
+
+def test_ast_node_dataclasses_and_tag_tokens():
+    from dotpromptz_handlebars._render import compile_template
+    from dotpromptz_handlebars._types import Block, Mustache, TagToken, Text
+
+    nodes = compile_template('Hello {{name}}! {{#if active}}Active{{else}}Inactive{{/if}}')
+    assert len(nodes) == 4
+    assert isinstance(nodes[0], Text)
+    assert nodes[0].value == 'Hello '
+    assert isinstance(nodes[1], Mustache)
+    assert nodes[1].call['name'] == 'name'
+    assert isinstance(nodes[2], Text)
+    assert isinstance(nodes[3], Block)
+    assert nodes[3].call['name'] == 'if'
+    assert len(nodes[3].body) == 1
+    assert isinstance(nodes[3].body[0], Text)
+    assert nodes[3].body[0].value == 'Active'
+    assert len(nodes[3].inverse) == 1
+    assert isinstance(nodes[3].inverse[0], Text)
+    assert nodes[3].inverse[0].value == 'Inactive'
+
+    token = TagToken(body='name', triple=True, strip_before=True, strip_after=False, indent='  ')
+    assert token.body == 'name'
+    assert token.triple is True
+    assert token.strip_before is True
+    assert token.indent == '  '
+    assert token.raw_block is False
+
+    raw_nodes = compile_template('{{{{raw}}}}{{name}}{{{{/raw}}}}')
+    assert raw_nodes == [Text(value='{{name}}')]
+
+
+def test_tuples_and_custom_sequences_mappings():
+    hb = Handlebars()
+    # 1. Sequence iteration, printing, and indexing
+    assert hb.compile('{{#each items}}{{this}}{{/each}}')({'items': (1, 2)}) == '12'
+    assert hb.compile('{{items}}')({'items': (1, 2)}) == '1,2'
+    assert hb.compile('{{items.[0]}}')({'items': (1, 2)}) == '1'
+
+    # 2. Section repetition and empty sequence truthiness
+    assert hb.compile('{{#items}}{{this}}{{/items}}')({'items': (1, 2)}) == '12'
+    assert hb.compile('{{#if items}}yes{{else}}no{{/if}}')({'items': ()}) == 'no'
+    assert hb.compile('{{#if items}}yes{{else}}no{{/if}}')({'items': (1,)}) == 'yes'
+
+    # 3. Custom mappings and sequences
+    from collections import UserDict, deque
+
+    custom_data = UserDict({'title': 'Catalog', 'entries': deque(['A', 'B'])})
+    assert hb.compile('{{title}}: {{#each entries}}{{this}}{{/each}}')(custom_data) == 'Catalog: AB'
+    assert hb.compile('{{entries.[1]}}')(custom_data) == 'B'

@@ -2511,6 +2511,45 @@
     "text": "HelloBeautifulWorld"
   },
   {
+    "name": "tilde_triple_stash_both_sides",
+    "template": "Hello  {{~{name}~}}  World",
+    "context": {
+      "name": "<b>Beautiful</b>"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Hello<b>Beautiful</b>World"
+  },
+  {
+    "name": "tilde_triple_stash_left",
+    "template": "Hello   {{~{name}}} World",
+    "context": {
+      "name": "<b>Beautiful</b>"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Hello<b>Beautiful</b> World"
+  },
+  {
+    "name": "tilde_triple_stash_right",
+    "template": "Hello {{{name}~}}   World",
+    "context": {
+      "name": "<b>Beautiful</b>"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Hello <b>Beautiful</b>World"
+  },
+  {
     "name": "tilde_across_newlines",
     "template": "Line 1\n   {{~text~}}   \nLine 3",
     "context": {

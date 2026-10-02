@@ -16,64 +16,17 @@
 
 """Compile a template and render it."""
 
-from collections.abc import Callable
-from enum import Enum
-from typing import Any, TypedDict
+from collections.abc import Callable, Iterable
+from typing import Any
 
 from dotpromptz_handlebars._render import compile_template, render_program
-
-Context = dict[str, Any]
-
-
-class RuntimeOptions(TypedDict, total=False):
-    """The second argument to a compiled template."""
-
-    data: dict[str, Any] | None
-
-
-class EscapeFunction(str, Enum):
-    """How {{name}} treats characters like < and &."""
-
-    HTML_ESCAPE = 'html_escape'
-    NO_ESCAPE = 'no_escape'
-
-
-class SafeString(str):
-    """A helper return value that is inserted as-is."""
-
-
-class Options:
-    """What a helper receives besides its positional arguments."""
-
-    def __init__(self, *, hash, fn, inverse, data, context, is_block=False):
-        """Stores the hash args, block bodies, and the data frame.
-
-        Args:
-            hash: Named arguments from the helper call.
-            fn: Renders the block body.
-            inverse: Renders the else body.
-            data: The frame `{{@name}}` reads.
-            context: The current input scope.
-            is_block: True when the helper is the {{#name}} form, so it can
-                render fn or inverse. An inline call leaves this false.
-        """
-        self.hash = hash
-        self.fn = fn
-        self.inverse = inverse
-        self.data = data
-        self.context = context
-        self.is_block = is_block
-
-    def hash_value(self, key):
-        """Returns a named argument, or '' when the helper call omitted it."""
-        if key not in self.hash:
-            return ''
-        value = self.hash[key]
-        return '' if value is None else value
-
-
-HelperFn = Callable[[list[Any], Options], Any]
-HelperOptions = Options
+from dotpromptz_handlebars._types import (
+    EscapeFunction,
+    HelperFn,
+    Node,
+    Options,
+    RuntimeOptions,
+)
 
 
 class Handlebars:
@@ -93,7 +46,23 @@ class Handlebars:
         ```
     """
 
-    def __init__(self, *, escape_html=True, strict=False, escape_fn=None):
+    escape_html: bool
+    strict: bool
+    reserved_data_keys: set[str] | None
+    max_depth: int
+    _helpers: dict[str, HelperFn]
+    _partials: dict[str, Any]
+    _templates: dict[str, list[Node]]
+
+    def __init__(
+        self,
+        *,
+        escape_html: bool = True,
+        strict: bool = False,
+        escape_fn: EscapeFunction | str | None = None,
+        reserved_data_keys: Iterable[str] | None = None,
+        max_depth: int = 100,
+    ) -> None:
         """Creates a compiler instance.
 
         Args:
@@ -103,19 +72,23 @@ class Handlebars:
                 A missing path passed to if, each, with, or a helper evaluates as empty.
             escape_fn: EscapeFunction.NO_ESCAPE leaves markup unescaped.
                 Overrides escape_html when specified.
+            reserved_data_keys: Optional set of `@data` keys (e.g. `{'root'}`) that
+                raise ValueError if read by the template when present in the user data dict.
+            max_depth: Maximum template recursion/nesting depth (default 100).
         """
         if escape_fn is not None:
             escape_html = escape_fn not in (EscapeFunction.NO_ESCAPE, 'no_escape')
         self.escape_html = escape_html
         self.strict = strict
+        self.reserved_data_keys = set(reserved_data_keys) if reserved_data_keys else None
+        self.max_depth = max_depth
         self._helpers = {}
         self._partials = {}
         self._templates = {}
         self.register_helper('lookup', _lookup_helper)
         self.register_helper('log', _log_helper)
-        self.register_helper('raw', _raw_helper)
 
-    def register_helper(self, name, fn):
+    def register_helper(self, name: str, fn: HelperFn) -> None:
         """Registers a helper callable for template invocations.
 
         Args:
@@ -137,11 +110,11 @@ class Handlebars:
         """
         self._helpers[name] = fn
 
-    def unregister_helper(self, name):
+    def unregister_helper(self, name: str) -> None:
         """Removes a helper. Invocations like `{{name arg}}` then raise ValueError."""
         self._helpers.pop(name, None)
 
-    def register_partial(self, name, source):
+    def register_partial(self, name: str, source: str) -> None:
         """Registers a partial template for `{{> name}}` inclusions.
 
         Args:
@@ -150,19 +123,26 @@ class Handlebars:
         """
         self._partials[name] = source
 
-    def unregister_partial(self, name):
+    def unregister_partial(self, name: str) -> None:
         """Removes a partial. Subsequent `{{> name}}` calls will raise ValueError."""
         self._partials.pop(name, None)
 
-    def has_partial(self, name):
+    def has_partial(self, name: str) -> bool:
         """Returns whether a partial is registered under this name."""
         return name in self._partials
 
-    def register_template(self, name, source):
+    def register_template(self, name: str, source: str) -> None:
         """Compiles and stores a named template for later calls to `render(name, context)`."""
-        self._templates[name] = compile_template(source)
+        self._templates[name] = compile_template(source, max_depth=self.max_depth)
 
-    def render(self, name, context=None, options=None, *, data=None):
+    def render(
+        self,
+        name: str,
+        context: Any = None,
+        options: RuntimeOptions | dict[str, Any] | None = None,
+        *,
+        data: dict[str, Any] | None = None,
+    ) -> str:
         """Renders the template registered under name.
 
         Args:
@@ -182,7 +162,7 @@ class Handlebars:
             raise ValueError(f'unknown template {name}')
         return self._render_program(program, context, options, data=data)
 
-    def compile(self, source):
+    def compile(self, source: str) -> Callable[..., str]:
         """Compiles a template string into a reusable render function.
 
         Args:
@@ -202,14 +182,26 @@ class Handlebars:
             # => Hello World!
             ```
         """
-        program = compile_template(source)
+        program = compile_template(source, max_depth=self.max_depth)
 
-        def render(context=None, options=None, *, data=None):
+        def render(
+            context: Any = None,
+            options: RuntimeOptions | dict[str, Any] | None = None,
+            *,
+            data: dict[str, Any] | None = None,
+        ) -> str:
             return self._render_program(program, context, options, data=data)
 
         return render
 
-    def _render_program(self, program, context, options, *, data):
+    def _render_program(
+        self,
+        program: list[Node],
+        context: Any,
+        options: RuntimeOptions | dict[str, Any] | None,
+        *,
+        data: dict[str, Any] | None,
+    ) -> str:
         if data is None and isinstance(options, dict):
             data = options.get('data')
         return render_program(
@@ -220,10 +212,12 @@ class Handlebars:
             partials=self._partials,
             escape_html=self.escape_html,
             strict=self.strict,
+            reserved_data_keys=self.reserved_data_keys,
+            max_depth=self.max_depth,
         )
 
 
-def _lookup_helper(args, options):
+def _lookup_helper(args: list[Any], options: Options) -> Any:
     collection, key = (args + [None, None])[:2]
     if not collection and collection != 0:
         return collection
@@ -239,10 +233,6 @@ def _lookup_helper(args, options):
     return None
 
 
-def _log_helper(args, options):
+def _log_helper(args: list[Any], options: Options) -> str:
     print('[Handlebars]', *(args or ['']))
     return ''
-
-
-def _raw_helper(args, options):
-    return options.fn()

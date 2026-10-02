@@ -46,9 +46,6 @@
           "run": "scripts/run_rust_checks"
         },
         {
-          "run": "scripts/run_handlebarrz_checks"
-        },
-        {
           "run": "scripts/run_python_checks_with_nox -s tests"
         },
         {
@@ -99,9 +96,6 @@
         },
         {
           "run": "scripts/run_rust_checks"
-        },
-        {
-          "run": "scripts/run_handlebarrz_checks --verbose"
         },
         {
           "run": "scripts/run_python_checks_with_nox -s tests"
