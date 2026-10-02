@@ -35,11 +35,11 @@
     "typedoc": "^0.28.16",
     "typedoc-plugin-markdown": "^4.9.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.0"
   },
   "dependencies": {
-    "handlebars": "^4.7.8",
-    "yaml": "^2.8.2"
+    "handlebars": "^4.7.9",
+    "yaml": "^2.8.3"
   },
   "packageManager": "pnpm@10.2.0"
 }
