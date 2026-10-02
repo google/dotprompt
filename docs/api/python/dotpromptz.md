@@ -20,7 +20,7 @@ dp = Dotprompt()
 # 2. Parse and render a prompt
 source = '''
 ---
-model: gemini-pro
+model: googleai/gemini-2.5-pro
 input:
   schema:
     name: string
@@ -28,7 +28,11 @@ input:
 Hello, {{name}}!
 '''
 
-rendered = await dp.render(source, data=DataArgument(input={'name': 'World'}))
+rendered = await dp.render(source, data=DataArgument(input={'name': 'Ada'}))
+
+# 3. Access rendered message
+print(rendered.messages[0].content[0].text)
+# => Hello, Ada!
 ```
 
 ## Module Reference
