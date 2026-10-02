@@ -48,20 +48,6 @@ def tests(session: nox.Session) -> None:
         f'{session.python}',
         '--active',
         '--isolated',
-        '--directory',
-        'handlebarrz',
-        'maturin',
-        'develop',
-        env={'PYO3_USE_ABI3_FORWARD_COMPATIBILITY': '1'},
-    )
-
-    session.run(
-        'uv',
-        'run',
-        '--python',
-        f'{session.python}',
-        '--active',
-        '--isolated',
         'pytest',
         '-v',
         # '-vv',
