@@ -102,9 +102,6 @@ from dotpromptz._typing import (
     ToolResponsePart,
 )
 
-# Shorthand alias matching JS and Go conventions
-picoschema = picoschema_to_json_schema
-
 __all__ = [
     # Engine & Functional Parsing
     'Dotprompt',
@@ -145,7 +142,6 @@ __all__ = [
     'PromptStoreWritableSync',
     # Schema
     'json_schema_to_picoschema',
-    'picoschema',
     'picoschema_to_json_schema',
     # Errors
     'DotpromptError',
