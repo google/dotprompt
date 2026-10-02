@@ -21,6 +21,7 @@ built-in block helpers (if, unless, each, with), partials, subexpressions,
 and helper registrations.
 """
 
+from collections import UserDict, deque
 from typing import Any
 
 import pytest
@@ -32,6 +33,8 @@ from dotpromptz_handlebars import (
     StrictModeError,
     TemplateRecursionError,
 )
+from dotpromptz_handlebars._render import compile_template
+from dotpromptz_handlebars._types import Block, Mustache, TagToken, Text
 
 
 def render(source, data=None, *, hb=None, data_hash=None):
@@ -411,9 +414,6 @@ def test_context_callable_backward_compat():
 
 
 def test_ast_node_dataclasses_and_tag_tokens():
-    from dotpromptz_handlebars._render import compile_template
-    from dotpromptz_handlebars._types import Block, Mustache, TagToken, Text
-
     nodes = compile_template('Hello {{name}}! {{#if active}}Active{{else}}Inactive{{/if}}')
     assert len(nodes) == 4
     assert isinstance(nodes[0], Text)
@@ -454,8 +454,6 @@ def test_tuples_and_custom_sequences_mappings():
     assert hb.compile('{{#if items}}yes{{else}}no{{/if}}')({'items': (1,)}) == 'yes'
 
     # 3. Custom mappings and sequences
-    from collections import UserDict, deque
-
     custom_data = UserDict({'title': 'Catalog', 'entries': deque(['A', 'B'])})
     assert hb.compile('{{title}}: {{#each entries}}{{this}}{{/each}}')(custom_data) == 'Catalog: AB'
     assert hb.compile('{{entries.[1]}}')(custom_data) == 'B'
