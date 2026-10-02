@@ -67,11 +67,9 @@ from dotpromptz._picoschema import picoschema_to_json_schema
 from dotpromptz._picoschema_reverse import json_schema_to_picoschema
 
 # Storage Implementations & Protocols
-from dotpromptz._stores import (
-    DirStore,
-    DirStoreOptions,
-    DirStoreSync,
-)
+from dotpromptz._stores._dir_async import DirStore
+from dotpromptz._stores._dir_sync import DirStoreSync
+from dotpromptz._stores._typing import DirStoreOptions
 
 # Runtime Data, Models & Resolver Protocols
 from dotpromptz._typing import (

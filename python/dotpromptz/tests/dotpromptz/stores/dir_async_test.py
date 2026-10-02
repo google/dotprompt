@@ -45,7 +45,7 @@ import aiofiles
 import pytest
 import pytest_asyncio
 
-from dotpromptz._stores import DirStore, DirStoreOptions
+from dotpromptz import DirStore, DirStoreOptions
 from dotpromptz._stores._io import calculate_version
 from dotpromptz._typing import (
     DeletePromptOrPartialOptions,

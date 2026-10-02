@@ -41,7 +41,7 @@ from pathlib import Path
 
 import pytest
 
-from dotpromptz._stores import DirStoreOptions, DirStoreSync
+from dotpromptz import DirStoreOptions, DirStoreSync
 from dotpromptz._stores._io import calculate_version
 from dotpromptz._stores._testutils import (
     create_test_partial as create_test_partial_sync,

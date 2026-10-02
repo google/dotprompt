@@ -32,8 +32,7 @@ File Naming Conventions:
 
 Example Usage:
 ```python
-from dotpromptz._stores import DirStore, DirStoreOptions
-from dotpromptz._typing import PromptData
+from dotpromptz import DirStore, DirStoreOptions, PromptData
 
 # Create a store instance
 store = DirStore(DirStoreOptions(directory='/path/to/prompts'))
