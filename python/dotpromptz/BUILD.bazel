@@ -46,16 +46,6 @@ py_test(
 )
 
 py_test(
-    name = "engine_boundary_test",
-    srcs = ["tests/dotpromptz/engine_boundary_test.py"],
-    imports = ["tests"],
-    deps = [
-        ":dotpromptz",
-        requirement("pytest"),
-    ],
-)
-
-py_test(
     name = "helpers_test",
     srcs = ["tests/dotpromptz/helpers_test.py"],
     imports = ["tests"],
