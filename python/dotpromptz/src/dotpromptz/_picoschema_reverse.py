@@ -24,7 +24,7 @@ warning.
 
 Example::
 
-    from dotpromptz.picoschema_reverse import json_schema_to_picoschema
+    from dotpromptz._picoschema_reverse import json_schema_to_picoschema
 
     schema = {
         'type': 'object',
@@ -44,7 +44,7 @@ from typing import Any
 
 import structlog
 
-from dotpromptz.typing import JsonSchema
+from dotpromptz._typing import JsonSchema
 
 logger = structlog.get_logger(__name__)
 

@@ -16,22 +16,16 @@
 
 """Smoke tests for package structure."""
 
-# TODO(#503): Replace this with proper imports once we have a proper implementation.
-from dotpromptz import package_name as dotpromptz_package_name
+from dotpromptz import Dotprompt
 
 
 def square(n: int | float) -> int | float:
     return n * n
 
 
-def test_package_names() -> None:
-    assert dotpromptz_package_name() == 'dotpromptz'
-
-
-# TODO(#503): Failing test on purpose to be removed after we complete
-# this runtime and stop skipping all failures.
-# def test_skip_failures() -> None:
-#    assert dotpromptz_package_name() == 'skip.failures'
+def test_package_import() -> None:
+    dp = Dotprompt()
+    assert dp is not None
 
 
 def test_square() -> None:

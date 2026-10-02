@@ -18,8 +18,8 @@ from typing import Any
 
 import pytest
 
-from dotpromptz.dotprompt import Dotprompt
-from dotpromptz.typing import DataArgument, TextPart
+from dotpromptz._dotprompt import Dotprompt
+from dotpromptz._typing import DataArgument, TextPart
 from dotpromptz_handlebars import HelperOptions
 
 

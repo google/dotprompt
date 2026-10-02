@@ -78,8 +78,7 @@ Prompt input and runtime context are separate namespaces. Use `{{name}}` for
 input and `{{@name}}` for context:
 
 ```python
-from dotpromptz import Dotprompt
-from dotpromptz.typing import DataArgument
+from dotpromptz import DataArgument, Dotprompt
 
 prompt = Dotprompt()
 result = await prompt.render(

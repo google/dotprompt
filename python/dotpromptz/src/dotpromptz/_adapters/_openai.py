@@ -21,7 +21,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-from dotpromptz.typing import Role
+from dotpromptz._typing import Role
 
 
 class DetailKind(str, Enum):

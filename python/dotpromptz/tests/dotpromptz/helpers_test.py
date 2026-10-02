@@ -19,7 +19,7 @@
 import json
 import unittest
 
-from dotpromptz.helpers import (
+from dotpromptz._helpers import (
     history_helper,
     if_equals_helper,
     json_helper,

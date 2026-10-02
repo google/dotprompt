@@ -20,8 +20,8 @@ from __future__ import annotations
 
 import unittest
 
-from dotpromptz.picoschema import picoschema_to_json_schema
-from dotpromptz.picoschema_reverse import json_schema_to_picoschema
+from dotpromptz import picoschema_to_json_schema
+from dotpromptz._picoschema_reverse import json_schema_to_picoschema
 
 
 class TestJsonSchemaToPicoschema(unittest.TestCase):
