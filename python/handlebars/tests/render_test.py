@@ -14,11 +14,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Core functional unit tests for the Handlebars compiler and runtime.
+"""Comprehensive functional unit and edge-case tests for the Handlebars engine.
 
-Covers standard template syntax: variable interpolation, HTML escaping,
-built-in block helpers (if, unless, each, with), partials, subexpressions,
-and helper registrations.
+Covers syntax compilation, runtime evaluation, Handlebars 4.7.9 specification
+rules (truthiness matrix, number/object stringification, call-site indentation),
+built-in helpers, partials, strict mode contracts, and syntax error handling.
 """
 
 from collections import UserDict, deque
@@ -37,13 +37,13 @@ from dotpromptz_handlebars._render import compile_template
 from dotpromptz_handlebars._types import Block, Mustache, TagToken, Text
 
 
-def render(source, data=None, *, hb=None, data_hash=None):
-    hb = hb or Handlebars()
+def render(source, data=None, *, hb=None, data_hash=None, strict=False):
+    hb = hb or Handlebars(strict=strict)
     return hb.compile(source)(data if data is not None else {}, data=data_hash)
 
 
 # ==============================================================================
-# 1. Variables & Paths
+# 1. Variables, Paths & Stringification
 # ==============================================================================
 
 
@@ -55,16 +55,24 @@ def test_dot_notation_path():
     assert render('Hello {{user.name}}!', {'user': {'name': 'Alice'}}) == 'Hello Alice!'
 
 
-def test_missing_variable_returns_empty():
-    assert render('Hello {{name}}!', {}) == 'Hello !'
+def test_slash_path_notation():
+    assert render('{{user/name}}', {'user': {'name': 'Alice'}}) == 'Alice'
+
+
+def test_bracket_path_reads_a_key_that_has_a_space():
+    assert render('{{a.[b c]}}', {'a': {'b c': 'OK'}}) == 'OK'
 
 
 def test_this_context_with_dot():
     assert render('Value: {{.}}', 'hello') == 'Value: hello'
 
 
-def test_slash_path_notation():
-    assert render('{{user/name}}', {'user': {'name': 'Alice'}}) == 'Alice'
+def test_this_dot_reads_the_current_object():
+    assert render('{{this.name}}|{{./name}}', {'name': 'N'}) == 'N|N'
+
+
+def test_missing_variable_returns_empty():
+    assert render('Hello {{name}}!', {}) == 'Hello !'
 
 
 def test_boolean_values_render_as_lowercase():
@@ -72,8 +80,39 @@ def test_boolean_values_render_as_lowercase():
     assert render('{{val}}', {'val': False}) == 'false'
 
 
+def test_whole_number_prints_without_a_decimal():
+    assert render('{{n}}', {'n': 1.0}) == '1'
+    assert render('{{n}}', {'n': 1.5}) == '1.5'
+
+
+def test_list_prints_values_separated_by_commas():
+    assert render('{{items}}', {'items': [1, 2]}) == '1,2'
+
+
+def test_object_prints_as_object_object():
+    assert render('{{item}}', {'item': {'a': 1}}) == '[object Object]'
+
+
+def test_tuples_and_custom_sequences_mappings():
+    hb = Handlebars()
+    # 1. Sequence iteration, printing, and indexing
+    assert hb.compile('{{#each items}}{{this}}{{/each}}')({'items': (1, 2)}) == '12'
+    assert hb.compile('{{items}}')({'items': (1, 2)}) == '1,2'
+    assert hb.compile('{{items.[0]}}')({'items': (1, 2)}) == '1'
+
+    # 2. Section repetition and empty sequence truthiness
+    assert hb.compile('{{#items}}{{this}}{{/items}}')({'items': (1, 2)}) == '12'
+    assert hb.compile('{{#if items}}yes{{else}}no{{/if}}')({'items': ()}) == 'no'
+    assert hb.compile('{{#if items}}yes{{else}}no{{/if}}')({'items': (1,)}) == 'yes'
+
+    # 3. Custom mappings and sequences
+    custom_data = UserDict({'title': 'Catalog', 'entries': deque(['A', 'B'])})
+    assert hb.compile('{{title}}: {{#each entries}}{{this}}{{/each}}')(custom_data) == 'Catalog: AB'
+    assert hb.compile('{{entries.[1]}}')(custom_data) == 'B'
+
+
 # ==============================================================================
-# 2. HTML Escaping & Raw Outputs
+# 2. HTML Escaping, Delimiters & Raw Outputs
 # ==============================================================================
 
 
@@ -81,6 +120,10 @@ def test_escapes_html_by_default():
     assert render('{{content}}', {'content': "<script>alert('xss')</script>"}) == (
         '&lt;script&gt;alert(&#x27;xss&#x27;)&lt;/script&gt;'
     )
+
+
+def test_escape_includes_equals_and_backtick():
+    assert render('{{v}}', {'v': 'a=`b'}) == 'a&#x3D;&#x60;b'
 
 
 def test_triple_braces_disable_escaping():
@@ -96,8 +139,40 @@ def test_escape_html_off_leaves_markup():
     assert render('{{content}}', {'content': '<b>bold</b>'}, hb=hb) == '<b>bold</b>'
 
 
+def test_safe_string_skips_escaping():
+    hb = Handlebars()
+    hb.register_helper('bold', lambda args, options: SafeString(f'<b>{args[0]}</b>'))
+    assert render('{{bold name}}', {'name': 'test'}, hb=hb) == '<b>test</b>'
+
+
+def test_raw_block_outputs_content_literally():
+    hb = Handlebars()
+    assert hb.compile('Before {{{{raw}}}}{{name}} is literal{{{{/raw}}}} After')({'name': 'World'}) == (
+        'Before {{name}} is literal After'
+    )
+
+
+def test_raw_block_standalone_line_trimming():
+    hb = Handlebars()
+    source = 'Before\n{{{{raw}}}}\n{{name}}\n{{{{/raw}}}}\nAfter'
+    assert hb.compile(source)({'name': 'World'}) == 'Before\n{{name}}\nAfter'
+
+
+def test_custom_raw_block_helper():
+    hb = Handlebars()
+    hb.register_helper('wrap', lambda args, opt: f'[{opt.fn()}]')
+    assert hb.compile('{{{{wrap}}}}{{name}}{{{{/wrap}}}}')({'name': 'World'}) == '[{{name}}]'
+
+
+def test_field_named_raw_renders_as_variable():
+    hb = Handlebars()
+    assert hb.compile('{{raw}}')({'raw': 'prompt_value'}) == 'prompt_value'
+    assert hb.compile('{{#raw}}yes{{/raw}}')({'raw': True}) == 'yes'
+    assert hb.compile('{{#raw}}yes{{/raw}}')({'raw': False}) == ''
+
+
 # ==============================================================================
-# 3. Conditionals & Iteration
+# 3. Truthiness & Branching Matrix (if, unless, with, each, sections)
 # ==============================================================================
 
 
@@ -111,6 +186,29 @@ def test_if_else_and_falsy_values():
     assert render('{{#if items}}yes{{else}}no{{/if}}', {'items': [1]}) == 'yes'
 
 
+def test_zero_skips_if_and_enters_with():
+    assert render('{{#if z}}I{{else}}no{{/if}}', {'z': 0}) == 'no'
+    assert render('{{#with z}}[{{.}}]{{else}}no{{/with}}', {'z': 0}) == '[0]'
+
+
+def test_include_zero_makes_if_enter_on_zero():
+    assert render('{{#if z includeZero=true}}yes{{else}}no{{/if}}', {'z': 0}) == 'yes'
+
+
+def test_empty_string_skips_with():
+    assert render('{{#with s}}yes{{else}}no{{/with}}', {'s': ''}) == 'no'
+
+
+def test_empty_object_enters_if_and_with_and_each_takes_else():
+    assert render('{{#if o}}yes{{else}}no{{/if}}', {'o': {}}) == 'yes'
+    assert render('{{#with o}}yes{{else}}no{{/with}}', {'o': {}}) == 'yes'
+    assert render('{{#each o}}x{{else}}empty{{/each}}', {'o': {}}) == 'empty'
+
+
+def test_each_on_a_number_takes_the_else_branch():
+    assert render('{{#each n}}x{{else}}empty{{/each}}', {'n': 5}) == 'empty'
+
+
 def test_else_if_picks_the_matching_branch():
     source = '{{#if a}}A{{else if b}}B{{else}}C{{/if}}'
     assert render(source, {'a': True}) == 'A'
@@ -118,9 +216,35 @@ def test_else_if_picks_the_matching_branch():
     assert render(source, {'a': False, 'b': False}) == 'C'
 
 
+def test_else_unless_skips_the_branch_when_the_value_is_set():
+    source = '{{#if a}}A{{else unless b}}notB{{else}}B{{/if}}'
+    assert render(source, {'a': False, 'b': False}) == 'notB'
+    assert render(source, {'a': False, 'b': True}) == 'B'
+
+
 def test_unless_block():
     assert render('{{#unless hidden}}visible{{/unless}}', {'hidden': False}) == 'visible'
     assert render('{{#unless hidden}}visible{{/unless}}', {'hidden': True}) == ''
+
+
+def test_section_repeats_a_list_and_enters_an_object():
+    assert render('{{#items}}{{.}}{{/items}}', {'items': ['a', 'b']}) == 'ab'
+    assert render('{{#user}}{{name}}{{/user}}', {'user': {'name': 'A'}}) == 'A'
+
+
+def test_section_on_zero_enters_and_on_false_takes_else():
+    assert render('{{#z}}yes{{else}}no{{/z}}', {'z': 0}) == 'yes'
+    assert render('{{#z}}yes{{else}}no{{/z}}', {'z': False}) == 'no'
+
+
+def test_inverse_section_prints_when_the_list_is_empty():
+    assert render('{{^items}}none{{/items}}', {'items': []}) == 'none'
+    assert render('{{^items}}none{{/items}}', {'items': ['a']}) == ''
+
+
+# ==============================================================================
+# 4. Iteration, Block Params & Lexical Scopes
+# ==============================================================================
 
 
 def test_each_list_index_and_empty():
@@ -143,8 +267,18 @@ def test_block_params():
     assert render(obj_source, {'obj': {'x': 1, 'y': 2}}) == 'x=1;y=2;'
 
 
+def test_block_param_names_the_item_and_this_is_still_the_item():
+    source = '{{#each items as |it|}}{{name}}/{{it.name}}/{{../name}};{{/each}}'
+    assert render(source, {'name': 'OUTER', 'items': [{'name': 'I1'}]}) == 'I1/I1/OUTER;'
+
+
+def test_nested_each_parent_index():
+    source = '{{#each outer}}{{#each .}}{{@../index}}{{/each}}{{/each}}'
+    assert render(source, {'outer': [['a'], ['b', 'c']]}) == '011'
+
+
 # ==============================================================================
-# 4. Context Frames & @root Data
+# 5. Context Frames & @root / @data
 # ==============================================================================
 
 
@@ -181,8 +315,36 @@ def test_at_data_in_conditionals_and_helpers():
     assert render('{{upper @role}}', hb=hb, data_hash={'role': 'engineer'}) == 'ENGINEER'
 
 
+def test_reserved_data_keys_rejects_only_when_template_resolves_key():
+    hb = Handlebars(reserved_data_keys={'root'})
+    hb.register_helper('h', lambda args, opt: f'h:{args[0]}')
+    hb.register_helper('s', lambda args, opt: f's:{opt.hash.get("k")}')
+
+    # Allowed when data does not contain reserved key
+    assert hb.compile('{{@root.name}}')({'name': 'Ada'}, {'data': {}}) == 'Ada'
+
+    # Allowed when data contains reserved key but template does not access it
+    assert hb.compile('Hello {{name}}')({'name': 'Ada'}, {'data': {'root': 'custom'}}) == 'Hello Ada'
+
+    # Direct access to @root with reserved key in data raises ValueError
+    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
+        hb.compile('{{@root}}')({'name': 'Ada'}, {'data': {'root': 'custom'}})
+
+    # Nested access to @root.name with reserved key in data raises ValueError
+    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
+        hb.compile('{{@root.name}}')({'name': 'Ada'}, {'data': {'root': 'custom'}})
+
+    # Subexpression {{h (s k=@root)}} with reserved key in data raises ValueError
+    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
+        hb.compile('{{h (s k=@root)}}')({'name': 'Ada'}, {'data': {'root': 'custom'}})
+
+    # Parent path {{@../root}} with reserved key in data raises ValueError
+    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
+        hb.compile('{{#each list}}{{@../root}}{{/each}}')({'list': ['item']}, {'data': {'root': 'custom'}})
+
+
 # ==============================================================================
-# 5. Partials & Template Composition
+# 6. Partials, Blocks & Call-Site Indentation
 # ==============================================================================
 
 
@@ -203,9 +365,46 @@ def test_partial_block_falls_back_to_its_body():
     assert render('{{#> myPartial}}Default{{/myPartial}}', {}, hb=hb) == 'PARTIAL CONTENT'
 
 
+def test_partial_block_inserts_its_body_where_the_partial_asks():
+    hb = Handlebars()
+    hb.register_partial('wrap', 'X{{> @partial-block}}Y')
+    assert render('{{#> wrap}}IN{{/wrap}}', {}, hb=hb) == 'XINY'
+
+
 def test_inline_partial():
     source = '{{#*inline "myPartial"}}Hello {{name}}!{{/inline}}{{> myPartial}}'
     assert render(source, {'name': 'World'}).strip() == 'Hello World!'
+
+
+def test_partial_does_not_see_the_caller_parent():
+    hb = Handlebars()
+    hb.register_partial('card', '[{{../x}}{{y}}]')
+    assert render('{{#with o}}{{> card}}{{/with}}', {'x': 'PARENT', 'o': {'y': 'Y'}}, hb=hb) == '[Y]'
+
+
+def test_partial_keeps_the_each_index():
+    hb = Handlebars()
+    hb.register_partial('row', '[{{@index}}]')
+    assert render('{{#each xs}}{{> row}}{{/each}}', {'xs': ['a', 'b']}, hb=hb) == '[0][1]'
+
+
+def test_partial_indents_to_the_call_site():
+    hb = Handlebars()
+    hb.register_partial('card', 'a\nb\n')
+    assert render('  {{> card}}\n', {}, hb=hb) == '  a\n  b\n'
+
+
+def test_dynamic_partial_uses_the_helper_result_as_the_name():
+    hb = Handlebars()
+    hb.register_helper('which', lambda args, options: 'card')
+    hb.register_partial('card', 'DYN')
+    assert render('{{> (which)}}', {}, hb=hb) == 'DYN'
+
+
+def test_partial_hash_replaces_a_string_context():
+    hb = Handlebars()
+    hb.register_partial('card', '{{who}}|{{.}}')
+    assert render('{{> card "x" who="W"}}', {}, hb=hb) == 'W|[object Object]'
 
 
 def test_recursive_partial_raises_recursion_error():
@@ -230,7 +429,7 @@ def test_deeply_nested_blocks_exceeding_max_depth_raises():
 
 
 # ==============================================================================
-# 6. Whitespace Control & Comments
+# 7. Whitespace Control, Comments & String Literals
 # ==============================================================================
 
 
@@ -238,7 +437,37 @@ def test_comments_whitespace_and_literal_braces():
     assert render('Hello {{! this is a comment }}World', {}) == 'Hello World'
     assert render('Hello   {{~name}}!', {'name': 'World'}) == 'HelloWorld!'
     assert render(r'Show \{{name}} literally', {'name': 'World'}) == 'Show {{name}} literally'
-    assert render(r'\\{{name}}', {'name': 'World'}) == '\\World'
+    assert render(r'\\{{name}}', {'name': 'World'}) == r'\World'
+
+
+def test_three_backslashes_leave_two_and_render_the_variable():
+    assert render(r'\\\{{name}}', {'name': 'World'}) == r'\\World'
+
+
+def test_backslash_n_inside_a_string_stays_a_backslash():
+    hb = Handlebars()
+    seen = {}
+
+    def grab(args, options):
+        seen['value'] = args[0]
+        return ''
+
+    hb.register_helper('grab', grab)
+    render('{{grab "a\nb"}}', {}, hb=hb)
+    assert seen['value'] == 'a\nb'
+
+
+def test_escaped_quote_inside_a_string_is_a_quote():
+    hb = Handlebars()
+    seen = {}
+
+    def grab(args, options):
+        seen['value'] = args[0]
+        return ''
+
+    hb.register_helper('grab', grab)
+    render('{{grab "a"b"}}', {}, hb=hb)
+    assert seen['value'] == 'a"b'
 
 
 def test_tilde_triple_stash_trims_whitespace_and_preserves_raw():
@@ -254,7 +483,7 @@ def test_multibyte_utf8_identifiers_and_comments():
 
 
 # ==============================================================================
-# 7. Custom Helpers & Subexpressions
+# 8. Custom Helpers, Options & Subexpressions
 # ==============================================================================
 
 
@@ -298,90 +527,6 @@ def test_custom_block_helper():
     assert render(source, {'status': 'pending'}, hb=hb) == 'Inactive'
 
 
-def test_safe_string_skips_escaping():
-    hb = Handlebars()
-    hb.register_helper('bold', lambda args, options: SafeString(f'<b>{args[0]}</b>'))
-    assert render('{{bold name}}', {'name': 'test'}, hb=hb) == '<b>test</b>'
-
-
-# ==============================================================================
-# 8. Strict Mode & Error Handling
-# ==============================================================================
-
-
-def test_raw_block_outputs_content_literally():
-    hb = Handlebars()
-    assert hb.compile('Before {{{{raw}}}}{{name}} is literal{{{{/raw}}}} After')({'name': 'World'}) == (
-        'Before {{name}} is literal After'
-    )
-
-
-def test_raw_block_standalone_line_trimming():
-    hb = Handlebars()
-    source = 'Before\n{{{{raw}}}}\n{{name}}\n{{{{/raw}}}}\nAfter'
-    assert hb.compile(source)({'name': 'World'}) == 'Before\n{{name}}\nAfter'
-
-
-def test_custom_raw_block_helper():
-    hb = Handlebars()
-    hb.register_helper('wrap', lambda args, opt: f'[{opt.fn()}]')
-    assert hb.compile('{{{{wrap}}}}{{name}}{{{{/wrap}}}}')({'name': 'World'}) == '[{{name}}]'
-
-
-def test_field_named_raw_renders_as_variable():
-    hb = Handlebars()
-    assert hb.compile('{{raw}}')({'raw': 'prompt_value'}) == 'prompt_value'
-    assert hb.compile('{{#raw}}yes{{/raw}}')({'raw': True}) == 'yes'
-    assert hb.compile('{{#raw}}yes{{/raw}}')({'raw': False}) == ''
-
-
-def test_unclosed_raw_block_raises():
-    with pytest.raises(ValueError, match='unclosed raw block'):
-        Handlebars().compile('{{{{raw}}}}{{name}}')
-
-
-def test_unclosed_block_raises():
-    with pytest.raises(ValueError):
-        Handlebars().compile('{{#if show}}yes')
-
-
-def test_strict_mode_names_the_missing_path():
-    hb = Handlebars(strict=True)
-    with pytest.raises(StrictModeError) as raised:
-        hb.compile('{{user.name}}')({})
-    assert raised.value.path == 'user.name'
-    assert 'is not defined' in str(raised.value)
-    assert hb.compile('{{#if name}}yes{{else}}no{{/if}}')({'name': None}) == 'no'
-
-
-def test_reserved_data_keys_rejects_only_when_template_resolves_key():
-    hb = Handlebars(reserved_data_keys={'root'})
-    hb.register_helper('h', lambda args, opt: f'h:{args[0]}')
-    hb.register_helper('s', lambda args, opt: f's:{opt.hash.get("k")}')
-
-    # Allowed when data does not contain reserved key
-    assert hb.compile('{{@root.name}}')({'name': 'Ada'}, {'data': {}}) == 'Ada'
-
-    # Allowed when data contains reserved key but template does not access it
-    assert hb.compile('Hello {{name}}')({'name': 'Ada'}, {'data': {'root': 'custom'}}) == 'Hello Ada'
-
-    # Direct access to @root with reserved key in data raises ValueError
-    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
-        hb.compile('{{@root}}')({'name': 'Ada'}, {'data': {'root': 'custom'}})
-
-    # Nested access to @root.name with reserved key in data raises ValueError
-    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
-        hb.compile('{{@root.name}}')({'name': 'Ada'}, {'data': {'root': 'custom'}})
-
-    # Subexpression {{h (s k=@root)}} with reserved key in data raises ValueError
-    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
-        hb.compile('{{h (s k=@root)}}')({'name': 'Ada'}, {'data': {'root': 'custom'}})
-
-    # Parent path {{@../root}} with reserved key in data raises ValueError
-    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
-        hb.compile('{{#each list}}{{@../root}}{{/each}}')({'list': ['item']}, {'data': {'root': 'custom'}})
-
-
 def test_typed_helper_options_and_block_fn():
     hb = Handlebars()
 
@@ -413,6 +558,71 @@ def test_context_callable_backward_compat():
     assert hb.compile('{{legacy}}')({'user': 'Alice'}) == 'Hello Alice!'
 
 
+def test_missing_helper_raises():
+    with pytest.raises(ValueError, match='Missing helper: "nohelper"'):
+        render('{{nohelper name}}', {'name': 'x'})
+
+
+def test_input_function_raises():
+    with pytest.raises(ValueError, match='register it as a helper'):
+        render('{{name}}', {'name': lambda: 'called'})
+
+
+# ==============================================================================
+# 9. Strict Mode & Syntax Rejections
+# ==============================================================================
+
+
+def test_strict_mode_names_the_missing_path():
+    hb = Handlebars(strict=True)
+    with pytest.raises(StrictModeError) as raised:
+        hb.compile('{{user.name}}')({})
+    assert raised.value.path == 'user.name'
+    assert 'is not defined' in str(raised.value)
+    assert hb.compile('{{#if name}}yes{{else}}no{{/if}}')({'name': None}) == 'no'
+
+
+def test_strict_if_on_a_missing_name_takes_the_else_branch():
+    assert render('{{#if missing}}yes{{else}}no{{/if}}', {}, strict=True) == 'no'
+
+
+def test_strict_section_on_a_missing_name_raises():
+    with pytest.raises(StrictModeError) as raised:
+        render('{{#missing}}yes{{else}}no{{/missing}}', {}, strict=True)
+    assert raised.value.path == 'missing'
+
+
+def test_strict_helper_argument_may_be_missing():
+    hb = Handlebars(strict=True)
+    hb.register_helper('show', lambda args, options: 'yes' if args[0] is None else 'no')
+    assert render('{{show missing}}', {}, hb=hb) == 'yes'
+
+
+def test_unclosed_raw_block_raises():
+    with pytest.raises(ValueError, match='unclosed raw block'):
+        Handlebars().compile('{{{{raw}}}}{{name}}')
+
+
+def test_unclosed_block_raises():
+    with pytest.raises(ValueError):
+        Handlebars().compile('{{#if show}}yes')
+
+
+def test_leading_dot_number_raises():
+    with pytest.raises(ValueError, match='not a valid number'):
+        render('{{.5}}', {})
+
+
+def test_decorator_raises():
+    with pytest.raises(ValueError, match='decorators are not supported'):
+        Handlebars().compile('{{* foo}}x')
+
+
+def test_if_without_an_argument_raises():
+    with pytest.raises(ValueError, match='#if requires exactly one argument'):
+        render('{{#if}}x{{/if}}', {})
+
+
 def test_ast_node_dataclasses_and_tag_tokens():
     nodes = compile_template('Hello {{name}}! {{#if active}}Active{{else}}Inactive{{/if}}')
     assert len(nodes) == 4
@@ -439,21 +649,3 @@ def test_ast_node_dataclasses_and_tag_tokens():
 
     raw_nodes = compile_template('{{{{raw}}}}{{name}}{{{{/raw}}}}')
     assert raw_nodes == [Text(value='{{name}}')]
-
-
-def test_tuples_and_custom_sequences_mappings():
-    hb = Handlebars()
-    # 1. Sequence iteration, printing, and indexing
-    assert hb.compile('{{#each items}}{{this}}{{/each}}')({'items': (1, 2)}) == '12'
-    assert hb.compile('{{items}}')({'items': (1, 2)}) == '1,2'
-    assert hb.compile('{{items.[0]}}')({'items': (1, 2)}) == '1'
-
-    # 2. Section repetition and empty sequence truthiness
-    assert hb.compile('{{#items}}{{this}}{{/items}}')({'items': (1, 2)}) == '12'
-    assert hb.compile('{{#if items}}yes{{else}}no{{/if}}')({'items': ()}) == 'no'
-    assert hb.compile('{{#if items}}yes{{else}}no{{/if}}')({'items': (1,)}) == 'yes'
-
-    # 3. Custom mappings and sequences
-    custom_data = UserDict({'title': 'Catalog', 'entries': deque(['A', 'B'])})
-    assert hb.compile('{{title}}: {{#each entries}}{{this}}{{/each}}')(custom_data) == 'Catalog: AB'
-    assert hb.compile('{{entries.[1]}}')(custom_data) == 'B'
