@@ -24,12 +24,80 @@ Remove this shim in a future stable release (e.g. 1.0.0) after users have had
 sufficient time to upgrade to `dotpromptz>=0.2.0`.
 """
 
-from dotpromptz_handlebars import *  # noqa: F403
 from dotpromptz_handlebars import (
-    Context as Context,
-    EscapeFunction as EscapeFunction,
-    Handlebars as Handlebars,
-    HelperFn as HelperFn,
-    HelperOptions as HelperOptions,
-    RuntimeOptions as RuntimeOptions,
+    Block,
+    BlockFn,
+    Context,
+    ContextDict,
+    ElseNode,
+    EscapeFunction,
+    Handlebars,
+    HelperFn,
+    HelperOptions,
+    InlinePartial,
+    Mustache,
+    Node,
+    Partial,
+    PartialBlock,
+    Program,
+    RuntimeOptions,
+    SafeString,
+    StrictModeError,
+    TagToken,
+    TemplateRecursionError,
+    Text,
 )
+from dotpromptz_handlebars._render import _ESCAPE
+
+# Backward-compatibility aliases previously exported by native handlebarrz
+Template = Handlebars
+
+
+def html_escape(text: str) -> str:
+    """Escape HTML characters matching Handlebars.js escaping rules."""
+    return text.translate(_ESCAPE)
+
+
+def no_escape(text: str) -> str:
+    """Return text without escaping."""
+    return text
+
+
+def create_helper(fn: HelperFn) -> HelperFn:
+    """Identity wrapper for backward compatibility with Rust helper creator."""
+    return fn
+
+
+def package_name() -> str:
+    """Return the package name for smoke testing."""
+    return 'handlebarrz'
+
+
+__all__ = [
+    'Block',
+    'BlockFn',
+    'Context',
+    'ContextDict',
+    'ElseNode',
+    'EscapeFunction',
+    'Handlebars',
+    'HelperFn',
+    'HelperOptions',
+    'InlinePartial',
+    'Mustache',
+    'Node',
+    'Partial',
+    'PartialBlock',
+    'Program',
+    'RuntimeOptions',
+    'SafeString',
+    'StrictModeError',
+    'TagToken',
+    'Template',
+    'TemplateRecursionError',
+    'Text',
+    'create_helper',
+    'html_escape',
+    'no_escape',
+    'package_name',
+]
