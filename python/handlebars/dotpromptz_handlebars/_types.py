@@ -137,7 +137,7 @@ class ContextDict(dict[str, Any]):
         return self
 
 
-class Options:
+class HelperOptions:
     """What a helper receives besides its positional arguments."""
 
     hash: dict[str, Any]
@@ -183,5 +183,4 @@ class Options:
         return '' if value is None else value
 
 
-HelperFn = Callable[[list[Any], Options], Any]
-HelperOptions = Options
+HelperFn = Callable[[list[Any], HelperOptions], Any]

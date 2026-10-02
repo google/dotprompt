@@ -171,6 +171,41 @@ def _identify_partials(template: str) -> set[str]:
     return set(_PARTIAL_PATTERN.findall(template))
 
 
+_ROOT_TAG_PATTERN = re.compile(r'@(?:\.\./)*root\b')
+_STRING_LITERAL_PATTERN = re.compile(r'"[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\'')
+_COMMENT_PATTERN = re.compile(r'\{\{!--.*?--\}\}|\{\{!.*?\}\}', re.DOTALL)
+_RAW_BLOCK_PATTERN = re.compile(r'\{\{\{\{raw\}\}\}\}.*?\{\{\{\{/raw\}\}\}\}', re.DOTALL)
+_MUSTACHE_BODY_PATTERN = re.compile(r'\{\{(.*?)\}\}', re.DOTALL)
+
+
+def _reads_root(source: str) -> bool:
+    """Checks whether a template source contains references to @root in tags."""
+    cleaned = _COMMENT_PATTERN.sub('', source)
+    cleaned = _RAW_BLOCK_PATTERN.sub('', cleaned)
+    for match in _MUSTACHE_BODY_PATTERN.finditer(cleaned):
+        tag_body = _STRING_LITERAL_PATTERN.sub('', match.group(1))
+        if _ROOT_TAG_PATTERN.search(tag_body):
+            return True
+    return False
+
+
+def _template_reads_root(template: str, partials: dict[str, str]) -> bool:
+    """Checks whether a template or any reachable partial reads @root."""
+    visited: set[str] = set()
+    stack = [template]
+    while stack:
+        current = stack.pop()
+        if _reads_root(current):
+            return True
+        for name in _identify_partials(current):
+            if name not in visited and name in partials:
+                visited.add(name)
+                content = partials[name]
+                if content:
+                    stack.append(content)
+    return False
+
+
 class RenderFunc(PromptFunction[ModelConfigT]):
     """A compiled prompt function with the prompt as a property.
 
@@ -219,6 +254,10 @@ class RenderFunc(PromptFunction[ModelConfigT]):
             **metadata_defaults,
             **(data.input if data.input is not None else {}),
         }
+
+        if data.context and 'root' in data.context:
+            if _template_reads_root(self.prompt.template, self._dotprompt._partials):
+                raise ValueError("runtime data key 'root' is reserved")
 
         # Prepare runtime options.
         runtime_options: RuntimeOptions = {
@@ -269,7 +308,7 @@ class Dotprompt:
             partial_resolver: resolver for partial names to their content.
             escape_fn: escape function to use for the template.
         """
-        self._handlebars: Handlebars = Handlebars(escape_fn=escape_fn, reserved_data_keys={'root'})
+        self._handlebars: Handlebars = Handlebars(escape_fn=escape_fn)
 
         self._known_helpers: dict[str, bool] = {}
         self._default_model: str | None = default_model

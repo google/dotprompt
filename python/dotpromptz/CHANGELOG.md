@@ -4,13 +4,13 @@
 
 ### ⚠ BREAKING CHANGES
 
-* **helpers:** `{{json ...}}` now raises `TypeError` instead of `ValueError` when passed non-serializable objects, matching Python `json.dumps()` semantics. Callers catching `ValueError` during render calls should catch `(TypeError, ValueError)`.
-* **helpers:** `HelperOptions.context` is now an attribute holding the current scope rather than a method. Calling `options.context()` remains supported for backward compatibility when context is a dict, but callers should migrate to `options.context`.
-* **helpers:** `options.fn([context])` and `options.inverse([context])` now accept an optional context argument to render the block with an explicit scope (matching Handlebars.js).
+* **helpers:** `{{json ...}}` in prompt templates now raises `TypeError` (standard Python `json.dumps()` behavior) instead of `ValueError` when passed non-serializable objects.
 
 ### Features
 
-* **python:** replace Rust `handlebarrz` extension with pure-Python `dotpromptz-handlebars` ([#620](https://github.com/google/dotprompt/pull/620))
+* **dependencies:** upgrade to pure-Python `dotpromptz-handlebars>=0.2.0`, removing all native C/Rust compiler and platform wheel requirements ([#620](https://github.com/google/dotprompt/pull/620)).
+* **performance:** pre-compile prompt templates during initialization so repeated prompt executions reuse the compiled template without recompilation overhead.
+* **helpers:** custom helper functions registered on `Dotprompt` receive `HelperOptions` with direct attribute access to `options.context`.
 
 ## [0.1.6](https://github.com/google/dotprompt/compare/dotpromptz-0.1.5...dotpromptz-0.1.6) (2026-09-18)
 
