@@ -32,24 +32,15 @@
         }
       ]
     },
-    "python/handlebarrz": {
+    "python/handlebars": {
       "release-type": "python",
       "package-name": "dotpromptz-handlebars",
       "component": "dotpromptz-handlebars",
+      "release-as": "0.2.0",
       "extra-files": [
         {
           "type": "toml",
           "path": "pyproject.toml",
-          "jsonpath": "$.project.version"
-        },
-        {
-          "type": "toml",
-          "path": "Cargo.toml",
-          "jsonpath": "$.package.version"
-        },
-        {
-          "type": "toml",
-          "path": "smoke_tests/pyproject.toml",
           "jsonpath": "$.project.version"
         }
       ]

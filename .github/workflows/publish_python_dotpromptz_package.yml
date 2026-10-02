@@ -34,8 +34,7 @@ on:
         default: 'https://test.pypi.org/legacy/'
 
 permissions:
-  contents: write
-  id-token: write
+  contents: read
 
 jobs:
   check_and_build:
@@ -55,48 +54,56 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: ${{ matrix.python-version }}
 
-      # Dependency Check of handlebars
-      - name: Install Dependencies for Check
-        run: pip install requests
-
-      - name: Smoke Test - Check handlebarrz Dependency on PyPI
-        id: check_dependency
+      # Preflight floor check: Replaces the legacy unpinned handlebarrz existence check.
+      #
+      # dotpromptz depends on dotpromptz-handlebars>=X.Y.Z (configured in pyproject.toml).
+      # Because PyPI releases are immutable and downstream pip installs resolve
+      # dependencies immediately, publishing dotpromptz before its required floor version
+      # is live on PyPI leaves dotpromptz in a broken, uninstallable state.
+      #
+      # Rather than checking unversioned package existence with `requests`, this step:
+      # 1. Dynamically reads the dependency floor from pyproject.toml via stdlib `tomllib`.
+      # 2. Queries PyPI's per-version JSON endpoint via stdlib `urllib` to ensure the exact
+      #    minimum required release is available before building or uploading.
+      - name: Check dotpromptz-handlebars floor is on PyPI
         run: |
-          IS_FOUND=$(python -c '
-          import requests
-          url = "https://pypi.org/project/dotpromptz-handlebars/json"
-          response = requests.get(url)
+          python - <<'EOF'
+          import re
+          import sys
+          import tomllib
+          import urllib.error
+          import urllib.request
 
-          if response.status_code == 200:
-            print("true")
-          else:
-            print("false")
-          ')
+          # 1. Extract the minimum required version of dotpromptz-handlebars
+          with open('python/dotpromptz/pyproject.toml', 'rb') as f:
+              deps = tomllib.load(f)['project']['dependencies']
+          spec = next((d for d in deps if d.startswith('dotpromptz-handlebars')), None)
+          m = re.fullmatch(r'dotpromptz-handlebars\s*>=\s*([0-9][0-9A-Za-z.]*)', spec or '')
+          if not m:
+              print(f'::error::Expected dotpromptz-handlebars>=X.Y.Z, got {spec!r}.')
+              sys.exit(1)
+          floor = m.group(1)
 
-                  echo "Dependency 'handlebarrz' checked. Status: $IS_FOUND"
+          # 2. Verify that this exact floor version exists and is live on PyPI
+          url = f'https://pypi.org/pypi/dotpromptz-handlebars/{floor}/json'
+          try:
+              urllib.request.urlopen(url, timeout=30)
+          except urllib.error.HTTPError as e:
+              print(f'::error::dotpromptz-handlebars {floor} not on PyPI ({e.code}). Release it first.')
+              sys.exit(1)
+          print(f'dotpromptz-handlebars {floor} is on PyPI.')
+          EOF
 
-                  if [ "$IS_FOUND" = "true" ]; then
-                  echo "BUILD_SUCCESS=true" >> "$GITHUB_OUTPUT"
-                  else
-                  echo "BUILD_SUCCESS=false" >> "$GITHUB_OUTPUT"
-                  fi
-
-      - name: Dependency Check Failed - Exit
-        if: steps.check_dependency.outputs.BUILD_SUCCESS == 'false'
-        run: |
-          echo "::error::Dependency 'handlebarrz' not found on PyPI. Aborting publish."
-          exit 1
-
-      # BUILD dotpromptz (Only if handlebarrz check passed)
+      # BUILD dotpromptz (only if the dependency check passed)
       - name: Set up uv and Create VENV
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
         with:
           activate-environment: true
           python-version: ${{ matrix.python-version }}
@@ -114,7 +121,7 @@ jobs:
           twine check dist/*
 
       - name: Upload dotpromptz Distributions for Python
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: dist-dotpromptz
           path: python/dotpromptz/dist/
@@ -132,12 +139,12 @@ jobs:
 
     steps:
       - name: Checkout code at tag
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           ref: ${{ github.event.inputs.tag_name || github.event.release.tag_name }}
 
       - name: Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: dist-dotpromptz
           path: dist/
@@ -162,10 +169,10 @@ jobs:
           - "3.13"
           - "3.14"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: ${{ matrix.python-version }}
 
