@@ -95,7 +95,7 @@ class Handlebars:
             name: Helper name used in tags like `{{name arg}}` or `{{#name}}`.
             fn: Callable receiving `(args, options)`:
                 - `args`: List of positional argument values evaluated from the template.
-                - `options`: Helper Options containing `hash`, `fn`, `inverse`, `data`,
+                - `options`: `HelperOptions` containing `hash`, `fn`, `inverse`, `data`,
                   and `context`.
 
         Example:

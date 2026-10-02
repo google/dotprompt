@@ -184,4 +184,3 @@ class HelperOptions:
 
 
 HelperFn = Callable[[list[Any], HelperOptions], Any]
-Options = HelperOptions

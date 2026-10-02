@@ -29,7 +29,6 @@ import pytest
 from dotpromptz_handlebars import (
     Handlebars,
     HelperOptions,
-    Options,
     SafeString,
     StrictModeError,
     TemplateRecursionError,
@@ -484,7 +483,7 @@ def test_multibyte_utf8_identifiers_and_comments():
 
 
 # ==============================================================================
-# 8. Custom Helpers, Options & Subexpressions
+# 8. Custom Helpers, HelperOptions & Subexpressions
 # ==============================================================================
 
 
@@ -529,7 +528,6 @@ def test_custom_block_helper():
 
 
 def test_typed_helper_options_and_block_fn():
-    assert Options is HelperOptions
     hb = Handlebars()
 
     def custom_section(args: list[Any], options: HelperOptions) -> SafeString:
@@ -549,7 +547,7 @@ def test_typed_helper_options_and_block_fn():
 def test_context_callable_backward_compat():
     hb = Handlebars()
 
-    def legacy_helper(args: list[Any], options: Options) -> str:
+    def legacy_helper(args: list[Any], options: HelperOptions) -> str:
         # Legacy handlebarrz syntax called options.context() as a method
         ctx = options.context()
         assert isinstance(ctx, dict)
