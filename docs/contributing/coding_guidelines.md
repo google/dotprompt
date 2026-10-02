@@ -76,7 +76,7 @@ Both type checkers are configured in `python/pyproject.toml`.
 
 **pyrefly** (`[tool.pyrefly]`):
 
-* `project_includes`: Specifies which directories to check (`dotpromptz`, `handlebarrz`, `tests`)
+* `project_includes`: Specifies which directories to check (`dotpromptz`, `handlebars`, `tests`)
 * `untyped_def_behavior = "check-and-infer-return-type"`: Check untyped functions
   and infer return types
 * `python_version = "3.10"`: Matches ruff.target-version
@@ -529,7 +529,7 @@ names in `.release-please-config.json` and are used to generate release PRs.
 |-------|-------------------|-------------|
 | `dotprompt` | `js/` | JavaScript/TypeScript library |
 | `dotpromptz` | `python/dotpromptz/` | Python dotpromptz package |
-| `dotpromptz-handlebars` | `python/handlebarrz/` | Python Handlebars bindings (PyPI: dotpromptz-handlebars) |
+| `dotpromptz-handlebars` | `python/handlebars/` | Pure-Python Handlebars engine (PyPI: dotpromptz-handlebars) |
 | `dotprompt-go` | `go/` | Go implementation |
 | `dotprompt-rs` | `rs/` | Rust implementation |
 | `dotprompt-dart` | `dart/dotprompt/` | Dart implementation |
@@ -550,7 +550,7 @@ names in `.release-please-config.json` and are used to generate release PRs.
 # Feature in Python dotpromptz package
 feat(dotpromptz): add support for custom helpers
 
-# Bug fix in handlebarrz (Python Handlebars bindings)
+# Bug fix in the Python Handlebars engine
 fix(dotpromptz-handlebars): correct template escaping behavior
 
 # Documentation for Go implementation

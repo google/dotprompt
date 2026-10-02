@@ -4,7 +4,6 @@
     # via
     #   dotprompt-workspace
     #   dotpromptz
-    # via dotprompt-workspace
 aiofiles==25.1.0 \
     --hash=sha256:a8d728f0a29de45dc521f18f07297428d56992a742f0cd2701ba86e44d23d5b2 \
     --hash=sha256:abe311e527c862958650f9438e859c1fa7568a141b22abcd015e120e86a85695
@@ -1233,7 +1232,7 @@ pyrefly==1.2.0 \
     --hash=sha256:90efe75e17491ef5d636e10469e9278d7d0256b3b4c5e1f4750069bf3ae0f5d1 \
     --hash=sha256:d52d5da7bc65fb7675fbaa80eda879d4f8787c494f04cac21603330d3abbdbbe \
     --hash=sha256:e3465812ce5ef4781fb592edbf2724547296f0a3124be115d73c7e8b2401862d
-pysentry-rs==0.3.16 \
+pysentry-rs==0.3.16 ; implementation_name != 'pypy' \
     --hash=sha256:0286b2045d509f9f77f2ea3955706f8c1c1a10ddc5e424f6b0dcff0b799caf4c \
     --hash=sha256:1799b1bb6b980468d97a4a17c2f192eca8ea85a200d36b438cb68b2993a90db3 \
     --hash=sha256:1b1a998887eb9f1959dfff7f4bb34eb672f9be13bff8cecee067a7d85363f409 \
@@ -1764,9 +1763,7 @@ stack-data==0.6.3 \
 structlog==26.1.0 \
     --hash=sha256:e081a26d6c373e6d201eca24eede26d8ffab07f88f477822e679183428d3d91e \
     --hash=sha256:f63a716cbd1b1291cf7661de7794b455acfa4c43c5bcf1630e6ad5ddc1adb3b7
-    # via
-    #   dotpromptz
-    #   dotpromptz-handlebars
+    # via dotpromptz
 terminado==0.18.1 \
     --hash=sha256:a4468e1b37bb318f8a86514f65814e1afc977cf29b3992a4500d9dd305dcceb0 \
     --hash=sha256:de09f2c4b85de4765f7714688fff57d3e75bad1f909b589fde880460c753fd2e

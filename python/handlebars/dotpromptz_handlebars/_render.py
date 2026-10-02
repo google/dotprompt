@@ -97,7 +97,7 @@ def compile_template(source):
     return _parse(_tokens(source))
 
 
-def render_program(program, context, *, data, helpers, partials, escape_html, strict):
+def render_program(program, context, *, data, helpers, partials, escape_html, strict, reserved_data_keys=None):
     """Renders parsed nodes. data is the dict {{@name}} reads.
 
     @root is the input. A data dict that already contains root replaces it.
@@ -112,6 +112,8 @@ def render_program(program, context, *, data, helpers, partials, escape_html, st
         partials=dict(partials),
         escape_html=escape_html,
         strict=strict,
+        reserved_data_keys=set(reserved_data_keys) if reserved_data_keys else None,
+        raw_data=data or {},
     )
 
 
@@ -351,7 +353,7 @@ def _until(parts, index, stop):
             inverse, index = _until(parts, index, stop)
             if body.startswith('else if ') or body.startswith('else unless '):
                 cond = body[len('else ') :]
-                nested_body, nested_else = _pop_trailing_else(inverse)
+                nested_body, nested_else = _split_else(inverse)
                 inverse = [Block(_call(cond), nested_body, nested_else)]
             nodes.append(('else', inverse))
             return nodes, index
@@ -396,10 +398,6 @@ def _split_else(nodes):
 def _without_else(nodes):
     body, _ = _split_else(nodes)
     return body
-
-
-def _pop_trailing_else(nodes):
-    return _split_else(nodes)
 
 
 def _call(header):
@@ -469,7 +467,9 @@ def _unquote(token):
     return token
 
 
-def _render(nodes, *, scopes, blocks, frames, helpers, partials, escape_html, strict):
+def _render(
+    nodes, *, scopes, blocks, frames, helpers, partials, escape_html, strict, reserved_data_keys=None, raw_data=None
+):
     out = []
     for node in nodes:
         if isinstance(node, InlinePartial):
@@ -486,6 +486,8 @@ def _render(nodes, *, scopes, blocks, frames, helpers, partials, escape_html, st
                 partials=partials,
                 escape_html=escape_html,
                 strict=strict,
+                reserved_data_keys=reserved_data_keys,
+                raw_data=raw_data,
             )
         )
     return ''.join(out)
@@ -770,6 +772,8 @@ def _context_path(path, *, original, **env):
 
 def _data_path(path, *, original, **env):
     strict = env['strict']
+    reserved_keys = env.get('reserved_data_keys')
+    raw_data = env.get('raw_data', {})
     parts = _parts(path)
     frames = env['frames']
     current = frames[-1]
@@ -782,6 +786,8 @@ def _data_path(path, *, original, **env):
                     raise StrictModeError(original)
                 return None
             continue
+        if reserved_keys and part in reserved_keys and part in raw_data:
+            raise ValueError(f'runtime data key {part!r} is reserved')
         current = _step(current, part, strict=strict, original=original)
     return current
 
@@ -971,6 +977,8 @@ def _render_partial(name, context_path, fallback, hashed_tokens, indent, **env):
         partials=env['partials'],
         escape_html=env['escape_html'],
         strict=env['strict'],
+        reserved_data_keys=env.get('reserved_data_keys'),
+        raw_data=env.get('raw_data'),
     )
     return _apply_indent(text, indent)
 

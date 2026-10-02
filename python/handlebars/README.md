@@ -1,4 +1,4 @@
-# handlebars-dotprompt
+# dotpromptz-handlebars
 
 A pure-Python Handlebars implementation, owned by the Genkit team. It implements the subset of Handlebars that [Dotprompt](https://github.com/google/dotprompt) templates use, not the full language.
 
@@ -7,7 +7,7 @@ Dotprompt is language-agnostic. A `.prompt` file should render the same way in e
 No Rust or Node at runtime.
 
 ```
-uv add handlebars-dotprompt
+uv add dotpromptz-handlebars
 ```
 
 ## Quick start
@@ -65,6 +65,8 @@ hb.register_helper('loud', loud)
 print(hb.compile('{{#loud}}chef says {{dish}}{{/loud}}')({'dish': 'tartine'}))
 # => CHEF SAYS TARTINE
 ```
+
+`options.context` holds the current scope. For backward compatibility with `handlebarrz`, calling `options.context()` returns the dictionary.
 
 Helper output gets escaped like any other value. Return a `SafeString` to insert markup as written. Escaping is then up to you.
 

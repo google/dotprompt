@@ -62,7 +62,6 @@ features.
 | Java | [![Java](https://github.com/google/dotprompt/actions/workflows/java.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/java.yml) | Java library tests |
 | Rust | [![Rust](https://github.com/google/dotprompt/actions/workflows/rust.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/rust.yml) | Rust library tests |
 | Bazel | [![Bazel](https://github.com/google/dotprompt/actions/workflows/bazel.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/bazel.yml) | Bazel build & test |
-| Handlebarrz | [![Handlebarrz](https://github.com/google/dotprompt/actions/workflows/handlebarrz-tests.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/handlebarrz-tests.yml) | Python Handlebars tests |
 | **IDE & Editor Plugins** |||
 | VS Code | [![VS Code](https://github.com/google/dotprompt/actions/workflows/vscode_extension.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/vscode_extension.yml) | VS Code extension |
 | IDE Plugins | [![IDE Plugins](https://github.com/google/dotprompt/actions/workflows/ide_plugins.yml/badge.svg)](https://github.com/google/dotprompt/actions/workflows/ide_plugins.yml) | Vim, Emacs, JetBrains |
@@ -222,7 +221,7 @@ docs(dotprompt-java): update API documentation
 |-------|---------|
 | `dotprompt` | JavaScript/TypeScript (`js/`) |
 | `dotpromptz` | Python dotpromptz (`python/dotpromptz/`) |
-| `dotpromptz-handlebars` | Python Handlebars (`python/handlebarrz/`) |
+| `dotpromptz-handlebars` | Python Handlebars (`python/handlebars/`) |
 | `dotprompt-go` | Go (`go/`) |
 | `dotprompt-rs` | Rust (`rs/`) |
 | `dotprompt-java` | Java (`java/`) |

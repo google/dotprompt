@@ -26,7 +26,6 @@ fi
 TOP_DIR=$(git rev-parse --show-toplevel)
 
 PY_DIR="${TOP_DIR}/python"
-HANDLEBARRZ_DIR="${TOP_DIR}/python/handlebarrz"
 GO_DIR="${TOP_DIR}/go"
 JS_DIR="${TOP_DIR}"
 
@@ -37,10 +36,6 @@ popd
 pushd "${GO_DIR}"
 go get -u ./...
 go mod tidy
-popd
-
-pushd "${HANDLEBARRZ_DIR}"
-cargo update
 popd
 
 pushd "${PY_DIR}"

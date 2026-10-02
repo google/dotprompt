@@ -39,7 +39,7 @@ uv run --directory "${PY_DIR}" pyrefly check
 "${TOP_DIR}/scripts/run_python_security_checks"
 
 echo "Running Dart checks..."
-for pkg in dotprompt handlebarrz; do
+for pkg in dotprompt handlebars_dart; do
   echo "Checking dart/$pkg..."
   (cd "${TOP_DIR}/dart/$pkg" && dart analyze --fatal-infos --fatal-warnings)
 done

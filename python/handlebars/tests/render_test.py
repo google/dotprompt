@@ -21,9 +21,11 @@ built-in block helpers (if, unless, each, with), partials, subexpressions,
 and helper registrations.
 """
 
+from typing import Any
+
 import pytest
 
-from dotpromptz_handlebars import Handlebars, SafeString, StrictModeError
+from dotpromptz_handlebars import Handlebars, Options, SafeString, StrictModeError
 
 
 def render(source, data=None, *, hb=None, data_hash=None):
@@ -314,3 +316,62 @@ def test_strict_mode_names_the_missing_path():
     assert raised.value.path == 'user.name'
     assert 'is not defined' in str(raised.value)
     assert hb.compile('{{#if name}}yes{{else}}no{{/if}}')({'name': None}) == 'no'
+
+
+def test_reserved_data_keys_rejects_only_when_template_resolves_key():
+    hb = Handlebars(reserved_data_keys={'root'})
+    hb.register_helper('h', lambda args, opt: f'h:{args[0]}')
+    hb.register_helper('s', lambda args, opt: f's:{opt.hash.get("k")}')
+
+    # Allowed when data does not contain reserved key
+    assert hb.compile('{{@root.name}}')({'name': 'Ada'}, {'data': {}}) == 'Ada'
+
+    # Allowed when data contains reserved key but template does not access it
+    assert hb.compile('Hello {{name}}')({'name': 'Ada'}, {'data': {'root': 'custom'}}) == 'Hello Ada'
+
+    # Direct access to @root with reserved key in data raises ValueError
+    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
+        hb.compile('{{@root}}')({'name': 'Ada'}, {'data': {'root': 'custom'}})
+
+    # Nested access to @root.name with reserved key in data raises ValueError
+    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
+        hb.compile('{{@root.name}}')({'name': 'Ada'}, {'data': {'root': 'custom'}})
+
+    # Subexpression {{h (s k=@root)}} with reserved key in data raises ValueError
+    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
+        hb.compile('{{h (s k=@root)}}')({'name': 'Ada'}, {'data': {'root': 'custom'}})
+
+    # Parent path {{@../root}} with reserved key in data raises ValueError
+    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
+        hb.compile('{{#each list}}{{@../root}}{{/each}}')({'list': ['item']}, {'data': {'root': 'custom'}})
+
+
+def test_typed_helper_options_and_block_fn():
+    hb = Handlebars()
+
+    def custom_section(args: list[Any], options: Options) -> SafeString:
+        assert isinstance(options.hash, dict)
+        assert isinstance(options.data, dict)
+        assert options.is_block is True
+        prefix = options.hash_value('prefix')
+        body = options.fn(options.context)
+        return SafeString(f'{prefix}{body}')
+
+    hb.register_helper('customSection', custom_section)
+    result = hb.compile('{{#customSection prefix="-->"}}{{item}}{{/customSection}}')({'item': 'value'})
+    assert result == '-->value'
+
+
+def test_context_callable_backward_compat():
+    hb = Handlebars()
+
+    def legacy_helper(args: list[Any], options: Options) -> str:
+        # Legacy handlebarrz syntax called options.context() as a method
+        ctx = options.context()
+        assert isinstance(ctx, dict)
+        # Modern attribute access also works
+        assert options.context['user'] == 'Alice'
+        return f'Hello {ctx.get("user", "")}!'
+
+    hb.register_helper('legacy', legacy_helper)
+    assert hb.compile('{{legacy}}')({'user': 'Alice'}) == 'Hello Alice!'

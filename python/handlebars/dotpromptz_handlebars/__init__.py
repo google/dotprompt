@@ -17,7 +17,9 @@
 """A pure Python Handlebars template engine."""
 
 from dotpromptz_handlebars._compiler import (
+    BlockFn,
     Context,
+    ContextDict,
     EscapeFunction,
     Handlebars,
     HelperFn,
@@ -29,7 +31,9 @@ from dotpromptz_handlebars._compiler import (
 from dotpromptz_handlebars._render import StrictModeError
 
 __all__ = [
+    'BlockFn',
     'Context',
+    'ContextDict',
     'EscapeFunction',
     'Handlebars',
     'HelperFn',

@@ -18,7 +18,7 @@
 
 from collections.abc import Callable
 from enum import Enum
-from typing import Any, TypedDict
+from typing import Any, Protocol, TypedDict
 
 from dotpromptz_handlebars._render import compile_template, render_program
 
@@ -42,10 +42,42 @@ class SafeString(str):
     """A helper return value that is inserted as-is."""
 
 
+class BlockFn(Protocol):
+    """Callable for rendering a block body or inverse body."""
+
+    def __call__(self, context: Any | None = None) -> SafeString:
+        """Render the block body with the given context."""
+        ...
+
+
+class ContextDict(dict[str, Any]):
+    """Context dictionary supporting backward-compatible __call__ for legacy helpers."""
+
+    def __call__(self) -> dict[str, Any]:
+        """Return self for backward compatibility with handlebarrz options.context()."""
+        return self
+
+
 class Options:
     """What a helper receives besides its positional arguments."""
 
-    def __init__(self, *, hash, fn, inverse, data, context, is_block=False):
+    hash: dict[str, Any]
+    fn: BlockFn
+    inverse: BlockFn
+    data: dict[str, Any]
+    context: Any
+    is_block: bool
+
+    def __init__(
+        self,
+        *,
+        hash: dict[str, Any],
+        fn: BlockFn,
+        inverse: BlockFn,
+        data: dict[str, Any],
+        context: Any,
+        is_block: bool = False,
+    ) -> None:
         """Stores the hash args, block bodies, and the data frame.
 
         Args:
@@ -61,10 +93,10 @@ class Options:
         self.fn = fn
         self.inverse = inverse
         self.data = data
-        self.context = context
+        self.context = ContextDict(context) if isinstance(context, dict) else context
         self.is_block = is_block
 
-    def hash_value(self, key):
+    def hash_value(self, key: str) -> Any:
         """Returns a named argument, or '' when the helper call omitted it."""
         if key not in self.hash:
             return ''
@@ -93,7 +125,7 @@ class Handlebars:
         ```
     """
 
-    def __init__(self, *, escape_html=True, strict=False, escape_fn=None):
+    def __init__(self, *, escape_html=True, strict=False, escape_fn=None, reserved_data_keys=None):
         """Creates a compiler instance.
 
         Args:
@@ -103,11 +135,14 @@ class Handlebars:
                 A missing path passed to if, each, with, or a helper evaluates as empty.
             escape_fn: EscapeFunction.NO_ESCAPE leaves markup unescaped.
                 Overrides escape_html when specified.
+            reserved_data_keys: Optional set of `@data` keys (e.g. `{'root'}`) that
+                raise ValueError if read by the template when present in the user data dict.
         """
         if escape_fn is not None:
             escape_html = escape_fn not in (EscapeFunction.NO_ESCAPE, 'no_escape')
         self.escape_html = escape_html
         self.strict = strict
+        self.reserved_data_keys = set(reserved_data_keys) if reserved_data_keys else None
         self._helpers = {}
         self._partials = {}
         self._templates = {}
@@ -220,6 +255,7 @@ class Handlebars:
             partials=self._partials,
             escape_html=self.escape_html,
             strict=self.strict,
+            reserved_data_keys=self.reserved_data_keys,
         )
 
 

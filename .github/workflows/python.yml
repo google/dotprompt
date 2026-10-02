@@ -18,8 +18,7 @@ name: Python checks
 
 on:
   pull_request:
-    branches: [main]
-
+    
 jobs:
   check-paths:
     runs-on: ubuntu-latest
@@ -108,11 +107,7 @@ jobs:
     if: needs.check-paths.outputs.any_changed == 'true'
     runs-on: ${{ matrix.os }}
     env:
-      PATH: ${{ github.workspace }}/go/bin:${{ github.workspace }}/.cargo/bin:${{ github.workspace }}/.local/share/pnpm:${{ github.workspace }}/.local/bin:/usr/local/bin:/usr/bin:/bin
-      PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
-      # Enable sccache for Rust builds
-      SCCACHE_GHA_ENABLED: "true"
-      RUSTC_WRAPPER: "sccache"
+      PATH: ${{ github.workspace }}/go/bin:${{ github.workspace }}/.local/share/pnpm:${{ github.workspace }}/.local/bin:/usr/local/bin:/usr/bin:/bin
     strategy:
       matrix:
         os:
@@ -124,6 +119,10 @@ jobs:
           - "3.12"
           - "3.13"
           - "3.14"
+        include:
+          # PyPy runs on x86 only.
+          - os: ubuntu-latest
+            python-version: "pypy3.11"
       fail-fast: false
 
     steps:
@@ -134,15 +133,14 @@ jobs:
         with:
           go-version: stable
 
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+      # uv has no PyPy 3.11 download for linux x86_64, and PyPy 8.0 has no
+      # pydantic-core wheels. Pin 7.3.23 (Python 3.11.15, pp73 ABI); uv finds
+      # it on PATH.
+      - name: Set up PyPy
+        if: ${{ startsWith(matrix.python-version, 'pypy') }}
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
-          components: rustfmt, clippy
-        env:
-          RUSTUP_MAX_RETRIES: 3
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+          python-version: pypy3.11-v7.3.23
 
       - name: Install uv and setup Python version
         uses: astral-sh/setup-uv@v5
@@ -161,21 +159,6 @@ jobs:
 
       - name: Static type check (pyrefly)
         run: uv run --active --directory python pyrefly check
-
-      # TODO(#505): Move this to a rust workflow once we have one.
-      - name: Run rust lint
-        run: pushd python/handlebarrz && cargo clippy --all-targets --all-features -- -D warnings && popd
-
-      - name: Check licenses
-        run: ./scripts/check_license
-
-      - name: Run Rust checks for handlebarrz
-        run: ./scripts/run_handlebarrz_checks
-
-      - name: Build Rust extension for Python ${{ matrix.python-version }}
-        working-directory: ./python
-        run: |
-          uv run --python ${{ matrix.python-version }} --active --isolated --directory handlebarrz maturin develop
 
       - name: Install Handlebars 4.7.9
         run: |
