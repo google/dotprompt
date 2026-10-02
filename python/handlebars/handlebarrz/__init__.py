@@ -14,11 +14,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Import name already-published dotpromptz 0.1.x uses.
+"""Compatibility shim for already-published dotpromptz 0.1.x releases.
 
-`pip install dotpromptz==0.1.6` does `from handlebarrz import Handlebars`.
-Remove this package once those releases no longer install this wheel
-through `dotpromptz-handlebars>=0.1.8` with no upper bound.
+`dotpromptz==0.1.6` on PyPI depends on `dotpromptz-handlebars>=0.1.8` without
+an upper bound and imports `from handlebarrz import Handlebars`. This shim keeps
+those legacy installations working.
+
+Remove this shim in a future stable release (e.g. 1.0.0) after users have had
+sufficient time to upgrade to `dotpromptz>=0.2.0`.
 """
 
 from dotpromptz_handlebars import *  # noqa: F403
