@@ -22,7 +22,7 @@ Draft 2020-12 compliant validation.
 
 Example::
 
-    from dotpromptz.validate import validate_output
+    from dotpromptz._validate import validate_output
 
     schema = {
         'type': 'object',
@@ -40,7 +40,7 @@ from typing import Any
 import jsonschema
 import structlog
 
-from dotpromptz.typing import JsonSchema
+from dotpromptz._typing import JsonSchema
 
 logger = structlog.get_logger(__name__)
 

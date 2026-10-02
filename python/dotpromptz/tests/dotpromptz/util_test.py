@@ -18,7 +18,7 @@
 
 import unittest
 
-from dotpromptz.util import (
+from dotpromptz._util import (
     remove_undefined_fields,
     unquote,
     validate_prompt_name,

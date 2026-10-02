@@ -44,12 +44,12 @@ from typing import Any
 
 import anyio
 
-from dotpromptz.errors import PartialCycleError
-from dotpromptz.helpers import BUILTIN_HELPERS
-from dotpromptz.parse import parse_document, to_messages
-from dotpromptz.picoschema import picoschema_to_json_schema
-from dotpromptz.resolvers import resolve_json_schema, resolve_partial, resolve_tool
-from dotpromptz.typing import (
+from dotpromptz._errors import PartialCycleError
+from dotpromptz._helpers import BUILTIN_HELPERS
+from dotpromptz._parse import parse_document, to_messages
+from dotpromptz._picoschema import picoschema_to_json_schema
+from dotpromptz._resolvers import resolve_json_schema, resolve_partial, resolve_tool
+from dotpromptz._typing import (
     DataArgument,
     JsonSchema,
     ModelConfigT,
@@ -64,7 +64,7 @@ from dotpromptz.typing import (
     ToolResolver,
     VariablesT,
 )
-from dotpromptz.util import remove_undefined_fields
+from dotpromptz._util import remove_undefined_fields
 from dotpromptz_handlebars import Context, EscapeFunction, Handlebars, HelperFn, RuntimeOptions
 
 # Pre-compiled regex for finding partial references in handlebars templates

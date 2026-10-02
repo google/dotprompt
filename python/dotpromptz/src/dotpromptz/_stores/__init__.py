@@ -35,13 +35,13 @@ Directory-based stores organize prompts using the following conventions:
 Usage Example:
 ```python
 # Using the async store
-from dotpromptz.stores import DirStore, DirStoreOptions
+from dotpromptz._stores import DirStore, DirStoreOptions
 
 store = DirStore(DirStoreOptions(directory='/path/to/prompts'))
 prompts = await store.list()
 
 # Using the sync store
-from dotpromptz.stores import DirStoreSync, DirStoreOptions
+from dotpromptz._stores import DirStoreSync, DirStoreOptions
 
 sync_store = DirStoreSync(DirStoreOptions(directory='/path/to/prompts'))
 prompts = sync_store.list()
@@ -51,9 +51,3 @@ prompts = sync_store.list()
 from ._dir_async import DirStore as DirStore
 from ._dir_sync import DirStoreSync
 from ._typing import DirStoreOptions
-
-__all__ = [
-    'DirStore',
-    'DirStoreOptions',
-    'DirStoreSync',
-]

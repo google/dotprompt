@@ -6,19 +6,18 @@ format—an executable prompt template format for Generative AI.
 ## Installation
 
 ```bash
-pip install dotpromptz
+uv add dotpromptz
 ```
 
 ## Quick Start
 
 ```python
-from dotpromptz import Dotprompt
-from dotpromptz.typing import DataArgument
+from dotpromptz import DataArgument, Dotprompt
 
-# Create a Dotprompt instance
+# 1. Create a Dotprompt instance
 dp = Dotprompt()
 
-# Parse and render a prompt
+# 2. Parse and render a prompt
 source = '''
 ---
 model: gemini-pro
@@ -32,94 +31,47 @@ Hello, {{name}}!
 rendered = await dp.render(source, data=DataArgument(input={'name': 'World'}))
 ```
 
-## Core Classes
+## Module Reference
 
-### Dotprompt
+::: dotpromptz.Dotprompt
+    options:
+      show_root_heading: true
+      members_order: source
+      heading_level: 3
 
-::: dotpromptz.dotprompt.Dotprompt
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false
+::: dotpromptz.DataArgument
+    options:
+      show_root_heading: true
+      members_order: source
+      heading_level: 3
 
-## Parsing
+::: dotpromptz.RenderedPrompt
+    options:
+      show_root_heading: true
+      members_order: source
+      heading_level: 3
 
-::: dotpromptz.parse
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false
+::: dotpromptz.Message
+    options:
+      show_root_heading: true
+      members_order: source
+      heading_level: 3
 
-## Picoschema
+::: dotpromptz.Role
+    options:
+      show_root_heading: true
+      members_order: source
+      heading_level: 3
 
-::: dotpromptz.picoschema
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false
+::: dotpromptz.DirStore
+    options:
+      show_root_heading: true
+      members_order: source
+      heading_level: 3
 
-## Helpers
+::: dotpromptz.DotpromptError
+    options:
+      show_root_heading: true
+      members_order: source
+      heading_level: 3
 
-::: dotpromptz.helpers
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false
-
-## Resolvers
-
-::: dotpromptz.resolvers
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false
-
-## Types
-
-::: dotpromptz.typing
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false
-
-## Stores
-
-::: dotpromptz.stores
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false
-
-## Errors
-
-::: dotpromptz.errors
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false
-
-## Utilities
-
-::: dotpromptz.util
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false
