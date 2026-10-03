@@ -23,21 +23,23 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
       prs_created: ${{ steps.release.outputs.prs_created }}
       prs: ${{ steps.release.outputs.prs }}
       dotpromptz_release_created: ${{ steps.release.outputs['dotpromptz--release_created'] }}
-      handlebarrz_release_created: ${{ steps.release.outputs['dotpromptz-handlebars--release_created'] }}
+      handlebars_release_created: ${{ steps.release.outputs['dotpromptz-handlebars--release_created'] }}
       pr: ${{ steps.release.outputs.pr }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4
         id: release
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
@@ -53,6 +55,8 @@ jobs:
 
   update-lockfiles:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     needs: release-please
     # Only run if release-please created/updated PRs
     if: needs.release-please.outputs.prs != '' && needs.release-please.outputs.prs != '[]'
@@ -62,13 +66,13 @@ jobs:
         pr: ${{ fromJson(needs.release-please.outputs.prs) }}
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           ref: ${{ matrix.pr.headBranchName }}
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
 
       - name: Setup Bazel
-        uses: bazel-contrib/setup-bazel@0.18.0
+        uses: bazel-contrib/setup-bazel@083175551ceeceebc757ebee2127fde78840ca77 # 0.18.0
         with:
           bazelisk-cache: true
           disk-cache: ${{ github.workflow }}-lockfiles
@@ -76,25 +80,25 @@ jobs:
           cache-save: true
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
         with:
           version: "latest"
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: "1.24.x"
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 20
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # master
         env:
           RUSTUP_MAX_RETRIES: 3
 
@@ -105,11 +109,6 @@ jobs:
       - name: Update Cargo.lock (root)
         run: |
           cargo update --workspace || echo "Root Cargo.lock update skipped"
-
-      - name: Update Cargo.lock (handlebarrz)
-        working-directory: python/handlebarrz
-        run: |
-          cargo update || echo "handlebarrz Cargo.lock update skipped"
 
       - name: Update Go lockfile
         run: |
