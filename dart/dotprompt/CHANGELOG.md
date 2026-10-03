@@ -30,6 +30,9 @@ All notable changes to dotprompt-dart will be documented in this file.
     `wild(*)`;
   - non-standard types (`string[]`, `a | b`, aliases like `int`/`str`);
   - unknown named schemas. Previously these became `{"$ref": name}`.
+- `DotpromptOptions.schemas` and `defineSchema` are documented as taking JSON
+  Schema (as in the other runtimes), not Picoschema. Registered schemas are
+  inserted as-is; convert Picoschema with `Picoschema.toJsonSchema` first.
 
 ### Added
 

@@ -45,7 +45,7 @@ import "parsed_prompt.dart";
 ///
 /// ```yaml
 /// ---
-/// model: gemini-pro
+/// model: googleai/gemini-flash-latest
 /// config:
 ///   temperature: 0.7
 ///   maxOutputTokens: 1024

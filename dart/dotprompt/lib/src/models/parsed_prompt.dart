@@ -34,7 +34,7 @@ import "prompt_metadata.dart";
 /// ```dart
 /// final source = '''
 /// ---
-/// model: gemini-pro
+/// model: googleai/gemini-flash-latest
 /// config:
 ///   temperature: 0.7
 /// ---
@@ -43,7 +43,7 @@ import "prompt_metadata.dart";
 ///
 /// final parsed = Parser.parseDocument(source);
 /// print(parsed.template);  // "Hello {{name}}!"
-/// print(parsed.model);     // "gemini-pro"
+/// print(parsed.model);     // "googleai/gemini-flash-latest"
 /// ```
 @immutable
 class ParsedPrompt {

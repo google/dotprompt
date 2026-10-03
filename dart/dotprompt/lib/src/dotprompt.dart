@@ -36,7 +36,7 @@
 /// // Parse a template
 /// final parsed = dotprompt.parse('''
 /// ---
-/// model: gemini-pro
+/// model: googleai/gemini-flash-latest
 /// ---
 /// Hello {{name}}!
 /// ''');
@@ -98,7 +98,10 @@ class DotpromptOptions {
   /// Pre-registered tool definitions.
   final Map<String, ToolDefinition>? tools;
 
-  /// Pre-registered schemas (Picoschema or JSON Schema).
+  /// Pre-registered JSON Schemas, referenced by name from Picoschema.
+  ///
+  /// Values must already be JSON Schema; they are inserted as-is (same as the
+  /// other runtimes). Convert Picoschema first with [Picoschema.toJsonSchema].
   final Map<String, Map<String, dynamic>>? schemas;
 
   /// Resolver for loading partial templates dynamically.
@@ -155,7 +158,14 @@ class Dotprompt {
     _tools[definition.name] = definition;
   }
 
-  /// Defines a schema (Picoschema or JSON Schema).
+  /// Registers a named JSON Schema that Picoschema can reference by name.
+  ///
+  /// [schema] must already be JSON Schema; it is inserted as-is. To register a
+  /// schema written in Picoschema, convert it first:
+  ///
+  /// ```dart
+  /// dotprompt.defineSchema('Address', Picoschema.toJsonSchema({'street': 'string', 'zip': 'integer'}));
+  /// ```
   void defineSchema(String name, Map<String, dynamic> schema) {
     _schemas[name] = schema;
   }

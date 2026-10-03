@@ -84,7 +84,8 @@ class Picoschema {
   /// Converts [picoschema] to JSON Schema synchronously.
   ///
   /// Named schema references are looked up in [schemas] only. Use [parse] to
-  /// also consult an async [SchemaResolver].
+  /// also consult an async [SchemaResolver]. Registered schemas must already
+  /// be JSON Schema; they are inserted as-is, matching the other runtimes.
   ///
   /// Values that are already JSON Schema (see [isPicoschema]) are returned
   /// unchanged. A `null` input yields `{"type": "object"}`.
@@ -102,7 +103,7 @@ class Picoschema {
 
   /// Converts [picoschema] to JSON Schema, resolving named schemas from
   /// [schemas] first and then [schemaResolver] (same order as the JS
-  /// implementation).
+  /// implementation). Both must provide JSON Schema; it is inserted as-is.
   ///
   /// ```dart
   /// final schema = await Picoschema.parse(

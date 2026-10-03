@@ -35,7 +35,7 @@ import "../types.dart";
 /// final dotprompt = Dotprompt();
 /// final result = dotprompt.render(template, data);
 ///
-/// print(result.config['model']);  // "gemini-pro"
+/// print(result.config['model']);  // "googleai/gemini-flash-latest"
 /// for (final message in result.messages) {
 ///   print('${message.role}: ${message.content}');
 /// }

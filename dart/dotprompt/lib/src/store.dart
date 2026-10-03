@@ -155,5 +155,6 @@ typedef DotpromptPartialResolver = Future<String?> Function(String name);
 /// Function type for resolving tool definitions.
 typedef ToolResolver = Future<Map<String, dynamic>?> Function(String name);
 
-/// Function type for resolving schemas.
+/// Function type for resolving named schemas. Returns JSON Schema, or null if
+/// the name is unknown.
 typedef SchemaResolver = Future<Map<String, dynamic>?> Function(String name);
