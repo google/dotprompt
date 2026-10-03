@@ -34,7 +34,7 @@ void main() async {
   // Parse and render a prompt
   final result = await dotprompt.render('''
 ---
-model: gemini-pro
+model: googleai/gemini-flash-latest
 config:
   temperature: 0.7
 ---
@@ -55,18 +55,18 @@ Hello {{name}}! You are a {{role}}.
 ```dart
 final parsed = dotprompt.parse('''
 ---
-model: gemini-pro
+model: googleai/gemini-flash-latest
 input:
   schema:
     name: string
-    age: integer?
+    age?: integer
   default:
     name: User
 ---
 Hello {{name}}!
 ''');
 
-print(parsed.model);  // "gemini-pro"
+print(parsed.model);  // "googleai/gemini-flash-latest"
 print(parsed.input?.schema);  // Schema definition
 ```
 
@@ -145,9 +145,9 @@ Please analyze this image:
 
 ```dart
 final dotprompt = Dotprompt(DotpromptOptions(
-  defaultModel: 'gemini-pro',
+  defaultModel: 'googleai/gemini-flash-latest',
   modelConfigs: {
-    'gemini-pro': {'temperature': 0.7},
+    'googleai/gemini-flash-latest': {'temperature': 0.7},
   },
   partials: {'...': '...'},
   tools: {'...': ToolDefinition(...)},

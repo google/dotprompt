@@ -2,10 +2,39 @@
 
 All notable changes to dotprompt-dart will be documented in this file.
 
-## [Unreleased]
+## [1.1.0]
+
+### Fixed
+
+- Picoschema now follows the spec and the JavaScript reference implementation
+  ([genkit-dart#562](https://github.com/genkit-ai/genkit-dart/issues/562)):
+  - `field(array[, desc]): type`, `field(object[, desc]):` and
+    `field(enum[, desc]): [...]` produce arrays, objects and enums. Previously
+    the parenthesized qualifier was treated as a description.
+  - `(*)` wildcards and every Picoschema form are always converted. Previously
+    some schemas skipped conversion and were passed through raw.
+  - Top-level JSON Schema (`type: string`, a bare `properties` map) is passed
+    through instead of being parsed as Picoschema.
+  - Named schemas are resolved via `DotpromptOptions.schemaResolver` as well as
+    `schemas`/`defineSchema`.
+- The spec test runner now checks `output` and named `schemas`, so
+  `spec/picoschema.yaml` is actually enforced.
+
+### Changed
+
+- Picoschema is strict, like the other runtimes. These now throw
+  `PicoschemaException`:
+  - free-text parentheses such as `email(the email): string` (use
+    `email: string, the email`);
+  - parenthetical types other than `array`, `object` and `enum`, e.g.
+    `wild(*)`;
+  - non-standard types (`string[]`, `a | b`, aliases like `int`/`str`);
+  - unknown named schemas. Previously these became `{"$ref": name}`.
 
 ### Added
 
+- `Picoschema.parse(schema, {schemas, schemaResolver})`, an async variant of
+  `toJsonSchema` that resolves named schemas through a `SchemaResolver`.
 - `renderMetadata` and `compile` now accept an optional `additionalMetadata`
   argument that is merged on top of the prompt's parsed frontmatter (scalar
   fields override, `config` map is shallow-merged with additional winning on
