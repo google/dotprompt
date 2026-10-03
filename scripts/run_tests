@@ -36,12 +36,6 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-"${TOP_DIR}/scripts/run_handlebarrz_checks"
-if [ $? -ne 0 ]; then
-  echo "Handlebarrz tests failed."
-  exit 1
-fi
-
 "${TOP_DIR}/scripts/run_python_checks"
 if [ $? -ne 0 ]; then
   echo "Python tests failed."

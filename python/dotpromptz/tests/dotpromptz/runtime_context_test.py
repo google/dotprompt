@@ -20,7 +20,7 @@ import pytest
 
 from dotpromptz.dotprompt import Dotprompt
 from dotpromptz.typing import DataArgument, TextPart
-from handlebarrz import HelperOptions
+from dotpromptz_handlebars import HelperOptions
 
 
 @pytest.mark.asyncio
@@ -139,3 +139,21 @@ async def test_compiled_dotprompt_rejects_context_root_and_remains_reusable() ->
     )
 
     assert result.messages[0].content == [TextPart(text='input/r1')]
+
+
+@pytest.mark.asyncio
+async def test_dotprompt_rejects_subexpression_and_parent_path_context_root() -> None:
+    dotprompt = Dotprompt(
+        helpers={
+            'h': lambda args, opt: f'h:{args[0]}',
+            's': lambda args, opt: f's:{opt.hash.get("k")}',
+        }
+    )
+
+    data = DataArgument(input={'name': 'input', 'items': [1]}, context={'root': 'custom'})
+
+    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
+        await dotprompt.render('{{h (s k=@root)}}', data)
+
+    with pytest.raises(ValueError, match="runtime data key 'root' is reserved"):
+        await dotprompt.render('{{#each items}}{{@../root}}{{/each}}', data)

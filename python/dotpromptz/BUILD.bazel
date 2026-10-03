@@ -24,7 +24,7 @@ py_library(
     srcs = glob(["src/**/*.py"]),
     imports = ["src"],
     deps = [
-        "//python/handlebarrz",
+        "//python/handlebars",
         requirement("aiofiles"),
         requirement("anyio"),
         requirement("pydantic"),

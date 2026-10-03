@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-# Copyright 2025 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,29 +14,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-set -x
-set -euo pipefail
+load("@rules_python//python:defs.bzl", "py_library")
 
-if ((EUID == 0)); then
-  echo "Please do not run as root"
-  exit 1
-fi
+package(default_visibility = ["//visibility:public"])
 
-TOP_DIR=$(git rev-parse --show-toplevel)
-
-PY_DIR="${TOP_DIR}/python"
-GO_DIR="${TOP_DIR}/go"
-JS_DIR="${TOP_DIR}"
-
-pushd "${JS_DIR}"
-pnpm update -L -r
-popd
-
-pushd "${GO_DIR}"
-go get -u ./...
-go mod tidy
-popd
-
-pushd "${PY_DIR}"
-uv lock --upgrade
-popd
+py_library(
+    name = "handlebars",
+    srcs = glob(["dotpromptz_handlebars/**/*.py"]),
+    imports = ["."],
+)

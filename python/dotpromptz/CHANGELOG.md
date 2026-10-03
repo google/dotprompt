@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### ⚠ BREAKING CHANGES
+
+* **helpers:** `{{json ...}}` in prompt templates now raises `TypeError` (standard Python `json.dumps()` behavior) instead of `ValueError` when passed non-serializable objects.
+
+### Features
+
+* **dependencies:** upgrade to pure-Python `dotpromptz-handlebars>=0.2.0`, removing all native C/Rust compiler and platform wheel requirements ([#620](https://github.com/google/dotprompt/pull/620)).
+* **performance:** pre-compile prompt templates during initialization so repeated prompt executions reuse the compiled template without recompilation overhead.
+* **helpers:** custom helper functions registered on `Dotprompt` receive `HelperOptions` with direct attribute access to `options.context`.
+
 ## [0.1.6](https://github.com/google/dotprompt/compare/dotpromptz-0.1.5...dotpromptz-0.1.6) (2026-09-18)
 
 

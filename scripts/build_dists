@@ -26,7 +26,7 @@ TOP_DIR=$(git rev-parse --show-toplevel)
 
 # NOTE: Order matters.
 PROJECT_DIRS=(
-  "python/handlebarrz"
+  "python/handlebars"
   "python/dotpromptz"
 )
 

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import unittest
 
+from dotpromptz.picoschema import picoschema_to_json_schema
 from dotpromptz.picoschema_reverse import json_schema_to_picoschema
 
 
@@ -183,8 +184,6 @@ class TestRoundTrip(unittest.IsolatedAsyncioTestCase):
     """Test round-trip: Picoschema -> JSON Schema -> Picoschema."""
 
     async def test_simple_roundtrip(self) -> None:
-        from dotpromptz.picoschema import picoschema_to_json_schema
-
         pico_input = {
             'name': 'string, User name',
             'age': 'integer',
@@ -195,8 +194,6 @@ class TestRoundTrip(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(pico_output, {'name': 'string, User name', 'age': 'integer'})
 
     async def test_array_roundtrip(self) -> None:
-        from dotpromptz.picoschema import picoschema_to_json_schema
-
         pico_input = {
             'tags(array)': 'string',
         }
@@ -206,8 +203,6 @@ class TestRoundTrip(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(pico_output, {'tags(array)': 'string'})
 
     async def test_enum_roundtrip(self) -> None:
-        from dotpromptz.picoschema import picoschema_to_json_schema
-
         pico_input = {
             'status(enum)': ['PENDING', 'APPROVED', 'REJECTED'],
         }
