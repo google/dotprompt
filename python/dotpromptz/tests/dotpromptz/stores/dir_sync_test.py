@@ -41,13 +41,13 @@ from pathlib import Path
 
 import pytest
 
-from dotpromptz.stores import DirStoreOptions, DirStoreSync
-from dotpromptz.stores._io import calculate_version
-from dotpromptz.stores._testutils import (
+from dotpromptz import DirStoreOptions, DirStoreSync
+from dotpromptz._stores._io import calculate_version
+from dotpromptz._stores._testutils import (
     create_test_partial as create_test_partial_sync,
     create_test_prompt as create_test_prompt_sync,
 )
-from dotpromptz.typing import (
+from dotpromptz._typing import (
     DeletePromptOrPartialOptions,
     LoadPartialOptions,
     LoadPromptOptions,

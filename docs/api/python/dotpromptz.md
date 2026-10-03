@@ -6,22 +6,21 @@ format—an executable prompt template format for Generative AI.
 ## Installation
 
 ```bash
-pip install dotpromptz
+uv add dotpromptz
 ```
 
 ## Quick Start
 
 ```python
-from dotpromptz import Dotprompt
-from dotpromptz.typing import DataArgument
+from dotpromptz import DataArgument, Dotprompt
 
-# Create a Dotprompt instance
+# 1. Create a Dotprompt instance
 dp = Dotprompt()
 
-# Parse and render a prompt
+# 2. Parse and render a prompt
 source = '''
 ---
-model: gemini-pro
+model: googleai/gemini-flash-latest
 input:
   schema:
     name: string
@@ -29,97 +28,18 @@ input:
 Hello, {{name}}!
 '''
 
-rendered = await dp.render(source, data=DataArgument(input={'name': 'World'}))
+rendered = await dp.render(source, data=DataArgument(input={'name': 'Ada'}))
+
+# 3. Access rendered message
+print(rendered.messages[0].content[0].text)
+# => Hello, Ada!
 ```
 
-## Core Classes
+## API Reference
 
-### Dotprompt
+::: dotpromptz
+    options:
+      show_root_heading: false
+      members_order: source
+      heading_level: 3
 
-::: dotpromptz.dotprompt.Dotprompt
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false
-
-## Parsing
-
-::: dotpromptz.parse
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false
-
-## Picoschema
-
-::: dotpromptz.picoschema
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false
-
-## Helpers
-
-::: dotpromptz.helpers
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false
-
-## Resolvers
-
-::: dotpromptz.resolvers
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false
-
-## Types
-
-::: dotpromptz.typing
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false
-
-## Stores
-
-::: dotpromptz.stores
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false
-
-## Errors
-
-::: dotpromptz.errors
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false
-
-## Utilities
-
-::: dotpromptz.util
-options:
-show\_root\_heading: false
-show\_source: true
-members\_order: source
-show\_docstring\_description: true
-show\_docstring\_examples: false

@@ -44,8 +44,8 @@ See Also:
 import re
 from typing import Any, cast
 
-from dotpromptz.resolvers import resolve_json_schema
-from dotpromptz.typing import JsonSchema, SchemaResolver
+from dotpromptz._resolvers import resolve_json_schema
+from dotpromptz._typing import JsonSchema, SchemaResolver
 
 JSON_SCHEMA_SCALAR_TYPES = [
     'any',

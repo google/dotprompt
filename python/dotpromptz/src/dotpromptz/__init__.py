@@ -16,143 +16,146 @@
 
 """Dotpromptz: Executable prompt templates for Python.
 
-Dotpromptz is the Python implementation of the Dotprompt file format—an executable
-prompt template format for Generative AI. It provides a structured way to define,
-manage, and render prompts with metadata, schemas, tools, and templating.
+Dotprompt combines YAML frontmatter metadata with Handlebars templating to define
+self-contained, executable prompt templates for Generative AI applications.
 
-## What is Dotprompt?
+Example:
+    ```python
+    from dotpromptz import DataArgument, Dotprompt
 
-Dotprompt files (`.prompt`) combine YAML frontmatter metadata with Handlebars
-templates to create self-contained, executable prompt definitions:
+    # 1. Initialize compiler
+    prompt = Dotprompt()
 
-```
-+---------------------------+
-|     YAML Frontmatter      |  <- Model config, schemas, tools
-|---------------------------|
-|                           |
-|   Handlebars Template     |  <- Dynamic prompt with variables
-|                           |
-+---------------------------+
-```
+    # 2. Render prompt source with input data
+    rendered = await prompt.render(
+        '''---
+        model: googleai/gemini-flash-latest
+        input:
+          schema:
+            customer: string
+            dish: string
+        ---
+        {{role "system"}}
+        You are a restaurant server confirming an order.
 
-## Key Concepts
+        {{role "user"}}
+        Please confirm order for {{customer}}: {{dish}}.
+        ''',
+        DataArgument(input={'customer': 'Ada', 'dish': 'Smoked Salmon Tartine'}),
+    )
 
-| Concept          | Description                                                      |
-|------------------|------------------------------------------------------------------|
-| **Frontmatter**  | YAML metadata block at the top of `.prompt` files (model,        |
-|                  | schemas, tools, config)                                          |
-| **Template**     | Handlebars template body with variables, helpers, and partials   |
-| **Picoschema**   | Compact schema format that compiles to JSON Schema               |
-| **Partials**     | Reusable template fragments (prefixed with `_` in filenames)     |
-| **Helpers**      | Custom Handlebars functions (`{{role}}`, `{{media}}`, etc.)      |
-| **Resolvers**    | Functions to dynamically resolve tools, schemas, and partials    |
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Dotprompt                               │
-│  (Main entry point - compiles and renders prompt templates)     │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │    parse     │  │  picoschema  │  │      resolvers       │  │
-│  │  (YAML +     │  │  (Schema     │  │  (Tools, schemas,    │  │
-│  │   template)  │  │   compiler)  │  │   partials lookup)   │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-│                                                                 │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │   helpers    │  │    stores    │  │      handlebars      │  │
-│  │  (Built-in   │  │  (Prompt     │  │  (Handlebars engine  │  │
-│  │   functions) │  │   storage)   │  │   for templates)     │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-## Quick Start
-
-```python
-from dotpromptz import Dotprompt
-from dotpromptz.typing import DataArgument
-
-# Create a Dotprompt instance
-dp = Dotprompt()
-
-# Parse and render a prompt
-source = '''
----
-model: gemini-pro
-input:
-  schema:
-    name: string
----
-Hello, {{name}}! How can I help you today?
-'''
-
-rendered = await dp.render(source, data=DataArgument(input={'name': 'Alice'}))
-
-# Access rendered messages
-for message in rendered.messages:
-    print(f'{message.role}: {message.content}')
-```
-
-## Example `.prompt` File
-
-```handlebars
----
-model: googleai/gemini-2.5-pro
-input:
-  schema:
-    topic: string, The topic to explain
-    level: string, Expertise level (beginner, intermediate, advanced)
-output:
-  format: json
-  schema:
-    explanation: string, Clear explanation of the topic
-    examples(array): string, Illustrative examples
----
-
-{{role "system"}}
-You are an expert educator who adapts explanations to the learner's level.
-
-{{role "user"}}
-Please explain {{topic}} for someone at the {{level}} level.
-Provide clear examples to illustrate key points.
-```
-
-## Module Structure
-
-| Module          | Purpose                                              |
-|-----------------|------------------------------------------------------|
-| `dotprompt`     | Main `Dotprompt` class for compiling/rendering       |
-| `parse`         | YAML frontmatter extraction and message parsing      |
-| `picoschema`    | Picoschema to JSON Schema compilation                |
-| `helpers`       | Built-in Handlebars helpers (`role`, `media`, etc.)  |
-| `resolvers`     | Async resolution of tools, schemas, and partials     |
-| `stores`        | Filesystem-based prompt storage (`DirStore`)         |
-| `typing`        | Pydantic models and type definitions                 |
-| `errors`        | Custom exception classes                             |
-
-## See Also
-
-- Dotprompt specification: https://github.com/google/dotprompt
-- Handlebars templating: https://handlebarsjs.com
-- JSON Schema: https://json-schema.org
+    # 3. Inspect structured messages
+    print(rendered.messages[1].content[0].text)
+    # => Please confirm order for Ada: Smoked Salmon Tartine.
+    ```
 """
 
-from .dotprompt import Dotprompt
+# Primary Engine
+from dotpromptz._dotprompt import Dotprompt
 
+# Exceptions
+from dotpromptz._errors import (
+    DotpromptError,
+    FrontmatterError,
+    PartialCycleError,
+    ResolverFailedError,
+)
 
-def package_name() -> str:
-    """Return the package name for smoke testing.
+# Parsing & Schema Functions
+from dotpromptz._parse import parse_document
+from dotpromptz._picoschema import picoschema_to_json_schema
+from dotpromptz._picoschema_reverse import json_schema_to_picoschema
 
-    Returns:
-        The string 'dotpromptz'.
-    """
-    return 'dotpromptz'
+# Storage Implementations & Protocols
+from dotpromptz._stores._dir_async import DirStore
+from dotpromptz._stores._dir_sync import DirStoreSync
+from dotpromptz._stores._typing import DirStoreOptions
 
+# Runtime Data, Models & Resolver Protocols
+from dotpromptz._typing import (
+    DataArgument,
+    DataPart,
+    Document,
+    JsonSchema,
+    MediaPart,
+    Message,
+    ParsedPrompt,
+    Part,
+    PartialData,
+    PartialRef,
+    PartialResolver,
+    PromptBundle,
+    PromptData,
+    PromptFunction,
+    PromptInputConfig,
+    PromptMetadata,
+    PromptRef,
+    PromptStore,
+    PromptStoreSync,
+    PromptStoreWritable,
+    PromptStoreWritableSync,
+    RenderedPrompt,
+    Role,
+    SchemaResolver,
+    TextPart,
+    ToolArgument,
+    ToolDefinition,
+    ToolRequestPart,
+    ToolResolver,
+    ToolResponsePart,
+)
+from dotpromptz_handlebars import EscapeFunction, HelperFn
 
 __all__ = [
-    Dotprompt.__name__,
+    # Engine & Functional Parsing
+    'Dotprompt',
+    'parse_document',
+    # Runtime & Data Models
+    'DataArgument',
+    'Document',
+    'ParsedPrompt',
+    'PromptBundle',
+    'JsonSchema',
+    'PromptData',
+    'PromptFunction',
+    'PromptInputConfig',
+    'PromptMetadata',
+    'PromptRef',
+    'RenderedPrompt',
+    # Messages & Parts
+    'DataPart',
+    'MediaPart',
+    'Message',
+    'Part',
+    'Role',
+    'TextPart',
+    'ToolArgument',
+    'ToolDefinition',
+    'ToolRequestPart',
+    'ToolResponsePart',
+    # Partials & Resolvers
+    'PartialData',
+    'PartialRef',
+    'PartialResolver',
+    'SchemaResolver',
+    'ToolResolver',
+    # Storage
+    'DirStore',
+    'DirStoreOptions',
+    'DirStoreSync',
+    'PromptStore',
+    'PromptStoreSync',
+    'PromptStoreWritable',
+    'PromptStoreWritableSync',
+    # Engine types used in Dotprompt's public signatures
+    'EscapeFunction',
+    'HelperFn',
+    # Schema
+    'json_schema_to_picoschema',
+    'picoschema_to_json_schema',
+    # Errors
+    'DotpromptError',
+    'FrontmatterError',
+    'PartialCycleError',
+    'ResolverFailedError',
 ]

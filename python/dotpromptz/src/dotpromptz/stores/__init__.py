@@ -1,4 +1,4 @@
-# Copyright 2025 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,46 +14,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Stores for prompt templates and partials.
+"""Deprecated import path.
 
-This module provides implementations of prompt stores for managing, retrieving,
-and persisting prompt templates and partials. A prompt store is responsible for
-storing and retrieving prompt templates and their associated metadata.
+`genkit<=0.12.0` on PyPI depends on `dotpromptz>=0.1.5` without an upper bound
+and imports `from dotpromptz.stores import ...`. This shim keeps those legacy
+installations working.
 
-Available Store Implementations:
-- DirStore: Asynchronous filesystem-based store
-- DirStoreSync: Synchronous filesystem-based store
-- DirStoreOptions: Configuration options for directory-based stores
-
-Directory-based stores organize prompts using the following conventions:
-- Prompts are stored as files with extension `.prompt`
-- Regular prompts: `[name][.variant].prompt`
-- Partial prompts: `_[name][.variant].prompt`
-- Directory structure forms part of the prompt/partial name
-- Versions are calculated based on content hashing
-
-Usage Example:
-```python
-# Using the async store
-from dotpromptz.stores import DirStore, DirStoreOptions
-
-store = DirStore(DirStoreOptions(directory='/path/to/prompts'))
-prompts = await store.list()
-
-# Using the sync store
-from dotpromptz.stores import DirStoreSync, DirStoreOptions
-
-sync_store = DirStoreSync(DirStoreOptions(directory='/path/to/prompts'))
-prompts = sync_store.list()
-```
+Remove this shim in `dotpromptz>=0.3.0` after `genkit<=0.12.0` has aged out
+and users have upgraded.
 """
 
-from ._dir_async import DirStore as DirStore
-from ._dir_sync import DirStoreSync
-from ._typing import DirStoreOptions
+from dotpromptz._stores._dir_async import DirStore
+from dotpromptz._stores._dir_sync import DirStoreSync
+from dotpromptz._stores._typing import DirStoreOptions
 
-__all__ = [
-    'DirStore',
-    'DirStoreOptions',
-    'DirStoreSync',
-]
+__all__ = ['DirStore', 'DirStoreOptions', 'DirStoreSync']

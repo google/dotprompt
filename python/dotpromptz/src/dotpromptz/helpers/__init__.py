@@ -1,4 +1,4 @@
-# Copyright 2025 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,21 +14,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Smoke tests for package structure."""
+"""Deprecated import path.
 
-from dotpromptz import Dotprompt
+`genkit<=0.12.0` on PyPI depends on `dotpromptz>=0.1.5` without an upper bound
+and imports `from dotpromptz.helpers import ...`. This shim keeps those legacy
+installations working.
 
+Remove this shim in `dotpromptz>=0.3.0` after `genkit<=0.12.0` has aged out
+and users have upgraded.
+"""
 
-def square(n: int | float) -> int | float:
-    return n * n
-
-
-def test_package_import() -> None:
-    dp = Dotprompt()
-    assert dp is not None
-
-
-def test_square() -> None:
-    assert square(2) == 4
-    assert square(3) == 9
-    assert square(4) == 16
+from dotpromptz._helpers import *  # noqa: F403

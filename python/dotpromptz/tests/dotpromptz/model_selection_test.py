@@ -18,7 +18,7 @@
 
 from typing import Any
 
-from dotpromptz.dotprompt import _drop_blank_model, _pick_model
+from dotpromptz._dotprompt import _drop_blank_model, _pick_model
 
 
 def test_pick_model_returns_the_first_named_layer() -> None:

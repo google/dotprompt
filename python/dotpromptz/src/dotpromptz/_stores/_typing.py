@@ -47,7 +47,7 @@ class DirStoreOptions:
     Example:
         ```python
         from pathlib import Path
-        from dotpromptz.stores import DirStore, DirStoreOptions
+        from dotpromptz import DirStore, DirStoreOptions
 
         options = DirStoreOptions(directory=Path('/path/to/prompts'))
         store = DirStore(options)

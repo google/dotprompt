@@ -29,7 +29,7 @@ messages and structured error information for debugging and error handling.
 ## Usage Example
 
 ```python
-from dotpromptz.errors import ResolverFailedError
+from dotpromptz._errors import ResolverFailedError
 
 try:
     tool = await resolve_tool('my_tool', resolver)

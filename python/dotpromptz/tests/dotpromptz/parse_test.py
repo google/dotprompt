@@ -21,8 +21,8 @@ import unittest
 
 import pytest
 
-from dotpromptz.errors import DotpromptError, FrontmatterError
-from dotpromptz.parse import (
+from dotpromptz._errors import DotpromptError, FrontmatterError
+from dotpromptz._parse import (
     FRONTMATTER_AND_BODY_REGEX,
     MEDIA_AND_SECTION_MARKER_REGEX,
     ROLE_AND_HISTORY_MARKER_REGEX,
@@ -43,7 +43,7 @@ from dotpromptz.parse import (
     split_by_role_and_history_markers,
     transform_messages_to_history,
 )
-from dotpromptz.typing import (
+from dotpromptz._typing import (
     MediaContent,
     MediaPart,
     Message,

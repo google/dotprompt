@@ -44,8 +44,8 @@ from typing import Any, TypeVar, cast
 
 from anyio.to_thread import run_sync
 
-from dotpromptz.errors import ResolverFailedError
-from dotpromptz.typing import (
+from dotpromptz._errors import ResolverFailedError
+from dotpromptz._typing import (
     JsonSchema,
     PartialResolver,
     SchemaResolver,

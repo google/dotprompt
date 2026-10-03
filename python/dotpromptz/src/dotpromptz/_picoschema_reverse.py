@@ -24,7 +24,7 @@ warning.
 
 Example::
 
-    from dotpromptz.picoschema_reverse import json_schema_to_picoschema
+    from dotpromptz._picoschema_reverse import json_schema_to_picoschema
 
     schema = {
         'type': 'object',
@@ -44,7 +44,7 @@ from typing import Any
 
 import structlog
 
-from dotpromptz.typing import JsonSchema
+from dotpromptz._typing import JsonSchema
 
 logger = structlog.get_logger(__name__)
 
@@ -82,10 +82,8 @@ def _convert_node(node: dict[str, Any], required: bool = True) -> Any:
     description = node.get('description')
 
     # Handle nullable types: {"type": ["string", "null"]} -> optional string
-    is_nullable = False
     if isinstance(schema_type, list):
         non_null = [t for t in schema_type if t != 'null']
-        is_nullable = 'null' in schema_type
         schema_type = non_null[0] if len(non_null) == 1 else None
 
     # Enum
@@ -146,11 +144,9 @@ def _convert_object(node: dict[str, Any]) -> dict[str, Any]:
         prop_type = prop_schema.get('type')
         description = prop_schema.get('description')
 
-        # Detect nullable from type list
-        is_nullable = False
+        # Strip null from type list to get the underlying scalar type
         if isinstance(prop_type, list):
             non_null = [t for t in prop_type if t != 'null']
-            is_nullable = 'null' in prop_type
             prop_type = non_null[0] if len(non_null) == 1 else None
 
         # Build the key: add ? suffix for optional fields

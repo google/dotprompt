@@ -38,9 +38,9 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from dotpromptz.dotprompt import Dotprompt, _identify_partials
-from dotpromptz.errors import FrontmatterError, PartialCycleError
-from dotpromptz.typing import (
+from dotpromptz._dotprompt import Dotprompt, _identify_partials
+from dotpromptz._errors import FrontmatterError, PartialCycleError
+from dotpromptz._typing import (
     DataArgument,
     ModelConfigT,
     ParsedPrompt,
@@ -54,7 +54,7 @@ from dotpromptz_handlebars import HelperFn, HelperOptions
 @pytest.fixture
 def mock_handlebars() -> Generator[Mock, None, None]:
     """Create a mock Handlebars instance."""
-    with patch('dotpromptz.dotprompt.Handlebars') as mock_handlebars_class:
+    with patch('dotpromptz._dotprompt.Handlebars') as mock_handlebars_class:
         mock_instance = Mock()
         mock_handlebars_class.return_value = mock_instance
         yield mock_instance
@@ -202,7 +202,7 @@ Hello, {{name}}!"""
         assert result == 'hello foo (bar, a@b.c)'
 
 
-@patch('dotpromptz.dotprompt.parse_document')
+@patch('dotpromptz._dotprompt.parse_document')
 def test_parse(mock_parse_document: Mock, mock_handlebars: Mock) -> None:
     """Test parsing a prompt."""
     mock_parse_document.return_value = ParsedPrompt(template='Hello {{name}}', tool_defs=None)
@@ -240,7 +240,7 @@ async def test_frontmatter_error_object_propagates_through_every_public_entry_po
     )
     dotprompt = Dotprompt()
 
-    with patch('dotpromptz.dotprompt.parse_document', side_effect=error):
+    with patch('dotpromptz._dotprompt.parse_document', side_effect=error):
         with pytest.raises(FrontmatterError) as parse_exc:
             dotprompt.parse('source')
     assert parse_exc.value is error
@@ -486,7 +486,7 @@ class TestRenderPicoSchema(IsolatedAsyncioTestCase):
     """Test the render_picoschema method."""
 
     @patch(
-        'dotpromptz.dotprompt.picoschema_to_json_schema',
+        'dotpromptz._dotprompt.picoschema_to_json_schema',
         return_value={'type': 'object', 'properties': {'expanded': True}},
     )
     async def test_process_valid_picoschema_definition(self, _: Mock) -> None:
