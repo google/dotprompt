@@ -640,4 +640,3 @@ def test_handlebarrz_compatibility_shim() -> None:
     t = handlebarrz.Template()
     render = t.compile('Hello {{name}}!')
     assert render({'name': 'World'}) == 'Hello World!'
-
