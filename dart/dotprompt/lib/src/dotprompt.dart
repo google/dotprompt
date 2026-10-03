@@ -302,27 +302,22 @@ class Dotprompt {
       }
     }
 
-    // Process schemas (convert Picoschema to JSON Schema)
+    // Convert Picoschema to JSON Schema. JSON Schema input is passed through by
+    // the converter itself.
     var input = effectiveInput;
     var output = effectiveOutput;
 
-    if (input?.schema != null && Picoschema.isPicoschema(input!.schema!)) {
-      final jsonSchema = Picoschema.toJsonSchema(
-        input.schema,
-        schemas: _schemas,
-      );
+    final inputSchema = input?.schema;
+    if (input != null && inputSchema != null) {
       input = InputConfig(
-        schema: jsonSchema,
+        schema: await _resolveSchema(inputSchema),
         defaultValues: input.defaultValues,
       );
     }
 
-    if (output?.schema != null && Picoschema.isPicoschema(output!.schema!)) {
-      final jsonSchema = Picoschema.toJsonSchema(
-        output.schema,
-        schemas: _schemas,
-      );
-      output = OutputConfig(format: output.format, schema: jsonSchema);
+    final outputSchema = output?.schema;
+    if (output != null && outputSchema != null) {
+      output = OutputConfig(format: output.format, schema: await _resolveSchema(outputSchema));
     }
 
     return PromptMetadata(
@@ -336,6 +331,15 @@ class Dotprompt {
       raw: effectiveRaw,
     );
   }
+
+  /// Converts a frontmatter schema to JSON Schema, resolving named schemas from
+  /// [defineSchema]/[DotpromptOptions.schemas] first and then
+  /// [DotpromptOptions.schemaResolver].
+  Future<Map<String, dynamic>> _resolveSchema(Map<String, dynamic> schema) => Picoschema.parse(
+        schema,
+        schemas: _schemas,
+        schemaResolver: _options.schemaResolver,
+      );
 
   /// Renders a template with the given data.
   Future<RenderedPrompt> _renderInternal(

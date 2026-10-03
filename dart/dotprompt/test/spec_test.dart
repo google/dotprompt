@@ -95,6 +95,9 @@ void main() {
       final tests = specMap["tests"] as List?;
       final partials = specMap["partials"] as Map<String, dynamic>?;
       final resolverPartials = specMap["resolverPartials"] as Map<String, dynamic>?;
+      final schemas = (specMap["schemas"] as Map<String, dynamic>?)?.map(
+        (name, schema) => MapEntry(name, schema as Map<String, dynamic>),
+      );
 
       if (tests == null) continue;
 
@@ -116,6 +119,7 @@ void main() {
             final dotpromptOptions = DotpromptOptions(
               partials: {...?partials?.cast<String, String>()},
               partialResolver: resolverPartials != null ? (name) async => resolverPartials[name] as String? : null,
+              schemas: schemas,
             );
 
             final dotprompt = Dotprompt(dotpromptOptions);
@@ -247,6 +251,19 @@ void main() {
                   _deepEquals(actualInput![entry.key], entry.value),
                   isTrue,
                   reason: "Input key '${entry.key}' mismatch",
+                );
+              }
+            }
+
+            if (expected.containsKey("output")) {
+              final expectedOutput = expected["output"] as Map<String, dynamic>;
+              final actualOutput = result.output;
+              expect(actualOutput, isNotNull);
+              for (final entry in expectedOutput.entries) {
+                expect(
+                  _deepEquals(actualOutput![entry.key], entry.value),
+                  isTrue,
+                  reason: "Output key '${entry.key}' mismatch: got ${actualOutput[entry.key]}",
                 );
               }
             }
