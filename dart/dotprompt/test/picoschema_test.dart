@@ -261,155 +261,51 @@ void main() {
         );
       });
 
-      test("does not inspect values other than a top-level scalar type's siblings", () {
-        // Type-name strings below the top level, or next to a non-scalar
-        // `type`, are ordinary JSON Schema values.
-        final schemas = <Map<String, dynamic>>[
-          {
-            "type": "object",
-            "description": "string, the user",
-            "properties": {
-              "name": {"type": "string"},
-            },
+      test("passes through JSON Schema with keywords outside the core vocabulary", () {
+        // OpenAPI and vendor keywords must not cause a fallback to Picoschema.
+        final schema = {
+          "type": "object",
+          "properties": {
+            "kind": {"type": "string"},
           },
-          {
-            "type": "object",
-            "properties": {
-              "a": {"type": "string", "description": "string", "default": "number"},
-            },
-          },
-          {
-            "type": "array",
-            "title": "string",
-            "items": {"type": "string", "title": "integer"},
-          },
-          {r"$ref": "#/defs/A", "description": "string"},
-        ];
-        for (final schema in schemas) {
-          expect(Picoschema.toJsonSchema(schema), equals(schema), reason: "$schema");
-        }
+          "discriminator": {"propertyName": "kind"},
+          "externalDocs": {"url": "https://example.com"},
+        };
+        expect(Picoschema.toJsonSchema(schema), equals(schema));
       });
 
-      test(r"never reads $- and x- keys as Picoschema fields", () {
-        for (final schema in <Map<String, dynamic>>[
-          {"type": "string", r"$comment": "string"},
-          {"type": "string", "x-kind": "string"},
-        ]) {
-          expect(Picoschema.toJsonSchema(schema), equals(schema), reason: "$schema");
-        }
-      });
-
-      test("rejects Picoschema nested inside JSON Schema instead of passing it through", () {
-        final schemas = <Map<String, dynamic>>[
-          {
-            "type": "object",
-            "properties": {"a": "string"},
-          },
-          {
-            "type": "object",
-            "properties": {
-              "a": {
-                "type": "object",
-                "properties": {"b": "string"},
-              },
-            },
-          },
-          {
-            "type": "array",
-            "items": {"sku": "string"},
-          },
-        ];
-        for (final schema in schemas) {
-          expect(
-            () => Picoschema.toJsonSchema(schema),
-            _throwsPicoschema("not recognized as JSON Schema"),
-            reason: "$schema",
-          );
-        }
-      });
-
-      test("hints at JSON Schema when a schema of only JSON Schema keywords fails to parse", () {
-        // No `type`, so these are Picoschema objects with fields named
-        // `description`/`format`, whose values are not valid types.
-        for (final schema in <Map<String, dynamic>>[
-          {"description": "free form"},
-          {"format": "date-time"},
-        ]) {
-          expect(
-            () => Picoschema.toJsonSchema(schema),
-            _throwsPicoschema("not recognized as JSON Schema"),
-            reason: "$schema",
-          );
-        }
-      });
-
-      test("does not add the JSON Schema hint for Picoschema fields", () {
-        expect(
-          () => Picoschema.toJsonSchema({"type": "object", "name": "string"}),
-          throwsA(
-            isA<PicoschemaException>().having((e) => e.message, "message", isNot(contains("JSON Schema"))),
-          ),
-        );
+      test("does not inspect anything below the top level", () {
+        // Same as JS/Python: once the top level looks like JSON Schema, the
+        // whole map is passed through as-is.
+        final schema = {
+          "type": "object",
+          "properties": {"a": "string"},
+        };
+        expect(Picoschema.toJsonSchema(schema), equals(schema));
       });
     });
 
-    // Picoschema fields whose names coincide with JSON Schema keywords must be
-    // converted, never passed through raw.
     group("fields named like JSON Schema keywords", () {
-      test("treats a scalar-valued type field as Picoschema", () {
-        for (final schema in <Map<String, dynamic>>[
-          {"type": "string", "payload": "string"},
-          {"type": "string", "title": "string"},
-          {"type": "string", "description": "string, the description"},
-        ]) {
-          final result = Picoschema.toJsonSchema(schema);
-          expect(result["type"], equals("object"), reason: "$schema");
-          expect(_props(result).keys, equals(schema.keys), reason: "$schema");
-          expect(_props(result)["type"], isA<Map<String, dynamic>>(), reason: "$schema");
-        }
+      test("treats a top-level type with a JSON Schema type value as JSON Schema", () {
+        // Ambiguous with a Picoschema field named `type`; resolved the same way
+        // as in JS/Python.
+        final schema = {"type": "string", "title": "string"};
+        expect(Picoschema.toJsonSchema(schema), equals(schema));
       });
 
-      test("fails loudly instead of passing through a non-scalar type field", () {
-        // `object` is not a Picoschema scalar, so this is invalid Picoschema
-        // rather than JSON Schema with a stray `name` keyword.
+      test("parses a type field without a JSON Schema type value as Picoschema", () {
         expect(
-          () => Picoschema.toJsonSchema({"type": "object", "name": "string"}),
-          _throwsPicoschema("unsupported scalar type 'object'"),
-        );
-      });
-
-      test("treats Picoschema key syntax next to type as Picoschema", () {
-        expect(
-          Picoschema.toJsonSchema({"type": "string", "tags(array)": "string", "note?": "string"}),
+          Picoschema.toJsonSchema({"type": "string, event kind", "name": "string"}),
           equals({
             "type": "object",
             "properties": {
-              "type": {"type": "string"},
-              "tags": {
-                "type": "array",
-                "items": {"type": "string"},
-              },
-              "note": {
-                "type": ["string", "null"],
-              },
+              "type": {"type": "string", "description": "event kind"},
+              "name": {"type": "string"},
             },
             "additionalProperties": false,
-            "required": ["type", "tags"],
+            "required": ["type", "name"],
           }),
         );
-      });
-
-      test("treats a properties field with Picoschema values as Picoschema", () {
-        for (final properties in <Map<String, dynamic>>[
-          {"color": "string"},
-          {
-            "address": {"street": "string"},
-          },
-        ]) {
-          final result = Picoschema.toJsonSchema({"properties": properties, "name": "string"});
-          expect(_props(result).keys, equals(["properties", "name"]), reason: "$properties");
-          expect(_props(result)["properties"], containsPair("type", "object"), reason: "$properties");
-        }
       });
 
       test(r"treats a $type field next to other fields as a Picoschema field", () async {
@@ -426,38 +322,6 @@ hi
 """);
         expect(_props(metadata.output!.schema!).keys, equals([r"$type", "name"]));
         expect(Picoschema.isPicoschema({r"$type": "string", "name": "string"}), isTrue);
-      });
-
-      test("converts type and properties fields from frontmatter", () async {
-        final metadata = await Dotprompt().renderMetadata("""
----
-output:
-  schema:
-    type: string, event kind
-    properties:
-      color: string
----
-hi
-""");
-        expect(
-          metadata.output?.schema,
-          equals({
-            "type": "object",
-            "properties": {
-              "type": {"type": "string", "description": "event kind"},
-              "properties": {
-                "type": "object",
-                "properties": {
-                  "color": {"type": "string"},
-                },
-                "additionalProperties": false,
-                "required": ["color"],
-              },
-            },
-            "additionalProperties": false,
-            "required": ["type", "properties"],
-          }),
-        );
       });
     });
 
@@ -804,13 +668,6 @@ hi
 
     test("throws for unknown types without any schema source", () async {
       await expectLater(Picoschema.parse("Missing"), _throwsPicoschema("unsupported scalar type"));
-    });
-
-    test("adds the JSON Schema hint for unresolved names", () async {
-      await expectLater(
-        Picoschema.parse({"description": "Foo"}, schemaResolver: (_) async => null),
-        _throwsPicoschema("not recognized as JSON Schema"),
-      );
     });
   });
 

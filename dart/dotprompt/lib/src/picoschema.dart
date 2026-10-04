@@ -127,158 +127,37 @@ class Picoschema {
       } on _UnresolvedSchema catch (e) {
         final schema = await schemaResolver?.call(e.name);
         if (schema == null) {
-          throw _withJsonSchemaHint(
-            picoschema,
-            _unknownSchema(e.name, hasSchemaSource: schemas != null || schemaResolver != null),
-          );
+          throw _unknownSchema(e.name, hasSchemaSource: schemas != null || schemaResolver != null);
         }
         resolved[e.name] = schema;
       }
     }
   }
 
-  /// Whether [schema] should be converted as Picoschema.
+  /// Whether [schema] should be converted as Picoschema, i.e. it is not
+  /// already JSON Schema. [toJsonSchema] and [parse] apply the same check, so
+  /// calling this first is optional.
   ///
-  /// Returns false when [schema] is already JSON Schema, i.e. it has a
-  /// `type`, a `properties` map, a list-valued `anyOf`/`oneOf`/`allOf`/`enum`,
-  /// or a `$schema`/`$ref` key, and is structurally JSON Schema all the way
-  /// down: every key is a JSON Schema keyword, `type` is a JSON Schema type,
-  /// and subschemas (`properties` values, `items`, `anyOf`, ...) are JSON
-  /// Schema too.
-  ///
-  /// One ambiguity is resolved towards Picoschema: with a top-level scalar
-  /// `type`, any other non-`$`/`x-` key whose value is a scalar type string
-  /// (`{type: string, title: string}`) makes it a Picoschema object.
-  ///
-  /// Keys using Picoschema syntax (`name?`, `name(array)`, `(*)`) always mean
-  /// Picoschema. [toJsonSchema] and [parse] apply the same check, so calling
-  /// this first is optional.
+  /// JSON Schema is detected like in the JS and Python runtimes: a top-level
+  /// `type` naming a JSON Schema type, or a `properties` map. A list-valued
+  /// `type` or `anyOf`/`oneOf`/`allOf`/`enum`, `$schema` and `$ref` also count,
+  /// so JSON Schema without a single `type` string is not misparsed.
   static bool isPicoschema(Map<String, dynamic> schema) => _wrappedTypeString(schema) != null || !_isJsonSchema(schema);
 
-  /// Top-level keywords whose value is a list in JSON Schema.
   static const Set<String> _jsonSchemaListKeywords = {"anyOf", "oneOf", "allOf", "enum"};
 
-  /// Keywords whose value is a single subschema (`items` may also be a list).
-  static const Set<String> _subschemaKeywords = {
-    "items",
-    "not",
-    "if",
-    "then",
-    "else",
-    "contains",
-    "additionalProperties",
-    "unevaluatedProperties",
-    "unevaluatedItems",
-    "propertyNames",
-    "additionalItems",
-    "contentSchema",
-  };
-
-  /// Keywords whose value is a list of subschemas.
-  static const Set<String> _subschemaListKeywords = {"allOf", "anyOf", "oneOf", "prefixItems"};
-
-  /// Keywords whose value maps names to subschemas.
-  static const Set<String> _subschemaMapKeywords = {
-    "properties",
-    "patternProperties",
-    r"$defs",
-    "definitions",
-    "dependentSchemas",
-  };
-
-  /// JSON Schema (2020-12 plus common legacy/OpenAPI) keywords. `$`- and
-  /// `x-`-prefixed keys are accepted separately.
-  static const Set<String> _jsonSchemaKeywords = {
-    // Applicators.
-    "allOf", "anyOf", "oneOf", "not", "if", "then", "else", "dependentSchemas", "prefixItems", "items",
-    "contains", "properties", "patternProperties", "additionalProperties", "propertyNames",
-    "unevaluatedItems", "unevaluatedProperties",
-    // Validation.
-    "type", "enum", "const", "multipleOf", "maximum", "exclusiveMaximum", "minimum", "exclusiveMinimum",
-    "maxLength", "minLength", "pattern", "maxItems", "minItems", "uniqueItems", "maxContains", "minContains",
-    "maxProperties", "minProperties", "required", "dependentRequired",
-    // Annotations, format and content.
-    "title", "description", "default", "deprecated", "readOnly", "writeOnly", "examples", "format",
-    "contentEncoding", "contentMediaType", "contentSchema",
-    // Legacy drafts and OpenAPI/Gemini extensions.
-    "definitions", "dependencies", "additionalItems", "nullable", "example", "propertyOrdering",
-  };
-
-  // Broader and stricter than JS, which only checks `type` and `properties`.
-  // The goal is that Picoschema is never passed through raw:
-  //  - Picoschema key syntax always means Picoschema.
-  //  - Structure is checked recursively: every key must be a JSON Schema
-  //    keyword, `type` must be a JSON Schema type, and subschemas (`properties`
-  //    values, `items`, `anyOf`, ...) must be JSON Schema too. So Picoschema
-  //    nested in JSON Schema (`{type: object, properties: {a: string}}`) is
-  //    rejected instead of passed through.
-  //  - Only a top-level scalar `type` is ambiguous: `{type: string, title:
-  //    string}` is also a Picoschema object with fields `type` and `title`, and
-  //    is read that way. The cost is that a JSON Schema whose title/default is
-  //    literally a type name (`default: string`) is parsed as Picoschema; the
-  //    error then carries a hint (see [_withJsonSchemaHint]). `type: object`
-  //    is never a valid Picoschema field, and `$`/`x-` keys are never read as
-  //    Picoschema fields.
-  //  - Map-valued keywords like `items` or `$defs` are not markers, because
-  //    `items: {sku: string}` is a normal Picoschema nested object.
+  // Deliberately shallow, like JS/Python: nothing below the top level is
+  // inspected. So `{type: object, properties: {a: string}}` is passed through
+  // as-is, and a Picoschema field named `type` with a JSON Schema type value
+  // (`{type: string, name: string}`) makes the whole map JSON Schema.
   static bool _isJsonSchema(Map<String, dynamic> schema) {
-    if (schema.keys.any(_hasPicoschemaKeySyntax) || !_hasJsonSchemaMarker(schema) || !_isSubschema(schema)) {
-      return false;
-    }
     final type = schema["type"];
-    if (type is String && _scalarTypes.contains(type)) {
-      return !schema.entries.any(
-        (e) =>
-            e.key != "type" && !_isExtensionKey(e.key) && e.value is String && _isScalarTypeString(e.value as String),
-      );
-    }
-    return true;
-  }
-
-  static bool _hasJsonSchemaMarker(Map<String, dynamic> schema) =>
-      schema.containsKey("type") ||
-      schema["properties"] is Map ||
-      _jsonSchemaListKeywords.any((k) => schema[k] is List) ||
-      schema.containsKey(r"$schema") ||
-      schema.containsKey(r"$ref");
-
-  static bool _hasPicoschemaKeySyntax(String key) => key.endsWith("?") || key.contains("(") || key.contains(")");
-
-  static bool _isExtensionKey(String key) => key.startsWith(r"$") || key.startsWith("x-");
-
-  static bool _isJsonSchemaKeyword(Object? key) =>
-      key is String && (_jsonSchemaKeywords.contains(key) || _isExtensionKey(key));
-
-  /// Whether [value] is `type[, description]` with a Picoschema scalar type.
-  static bool _isScalarTypeString(String value) => _scalarTypes.contains(_extractDescription(value).$1);
-
-  /// Whether [value] is structurally a JSON Schema: a boolean, or a map (`{}`
-  /// included) whose entries all pass [_isJsonSchemaEntry]. Rejects Picoschema
-  /// like `{color: string}` or `{address: {street: string}}`.
-  static bool _isSubschema(Object? value) =>
-      value is bool || (value is Map && value.entries.every((e) => _isJsonSchemaEntry(e.key, e.value)));
-
-  /// Whether a single schema entry is structurally JSON Schema: a JSON Schema
-  /// keyword, a valid `type`, and JSON Schema subschemas. Other values (titles,
-  /// defaults, ...) are not inspected.
-  static bool _isJsonSchemaEntry(Object? key, Object? value) {
-    if (!_isJsonSchemaKeyword(key)) {
-      return false;
-    }
-    if (key == "type") {
-      return (value is String && _jsonSchemaTypes.contains(value)) ||
-          (value is List && value.isNotEmpty && value.every(_jsonSchemaTypes.contains));
-    }
-    if (_subschemaKeywords.contains(key)) {
-      return _isSubschema(value) || (key == "items" && value is List && value.every(_isSubschema));
-    }
-    if (_subschemaListKeywords.contains(key)) {
-      return value is List && value.every(_isSubschema);
-    }
-    if (_subschemaMapKeywords.contains(key)) {
-      return value is Map && value.values.every(_isSubschema);
-    }
-    return true;
+    return (type is String && _jsonSchemaTypes.contains(type)) ||
+        (type is List && type.isNotEmpty && type.every(_jsonSchemaTypes.contains)) ||
+        schema["properties"] is Map ||
+        _jsonSchemaListKeywords.any((k) => schema[k] is List) ||
+        schema.containsKey(r"$schema") ||
+        schema.containsKey(r"$ref");
   }
 
   /// The type string of frontmatter like `schema: string`, which
@@ -299,23 +178,6 @@ class Picoschema {
         _ => value,
       };
 
-  /// Appends a hint when [schema] uses only JSON Schema keywords but failed to
-  /// parse as Picoschema, e.g. `{description: free form}` (no `type`) or
-  /// `{type: object, properties: {a: string}}` (Picoschema inside JSON Schema).
-  static PicoschemaException _withJsonSchemaHint(Object? schema, PicoschemaException e) {
-    if (schema is! Map ||
-        schema.isEmpty ||
-        _wrappedTypeString(schema) != null ||
-        !schema.keys.every(_isJsonSchemaKeyword)) {
-      return e;
-    }
-    return PicoschemaException(
-      "${e.message} (the schema was parsed as Picoschema because it is not recognized as JSON Schema; "
-      "see Picoschema.isPicoschema)",
-      e,
-    );
-  }
-
   static Map<String, dynamic> _convert(Object? schema, _SchemaLookup lookup) {
     if (schema == null) {
       return {"type": "object"};
@@ -334,11 +196,7 @@ class Picoschema {
         // the input. A bare `properties` map implies an object type.
         return {..._deepCopy(map), if (map["type"] == null && map["properties"] is Map) "type": "object"};
       }
-      try {
-        return _parseObject(map, lookup);
-      } on PicoschemaException catch (e) {
-        throw _withJsonSchemaHint(map, e);
-      }
+      return _parseObject(map, lookup);
     }
     throw PicoschemaException("Picoschema: only consists of objects and strings. Got: $schema");
   }

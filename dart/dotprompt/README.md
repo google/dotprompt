@@ -162,8 +162,21 @@ final jsonSchema = await Picoschema.parse(
 );
 ```
 
+A schema that is already JSON Schema is passed through as-is. As in the other
+runtimes, that means a top-level `type` naming a JSON Schema type or a
+`properties` map (plus `anyOf`/`oneOf`/`allOf`/`enum` lists, `$schema` and
+`$ref`):
+
+```yaml
+output:
+  schema:
+    type: object
+    properties:
+      title: {type: string}
+```
+
 Upgrading from 1.x? Picoschema is now strict (`string[]`, `a | b` and
-free-text parentheses throw). See the [CHANGELOG](CHANGELOG.md#200---2026-10-03).
+free-text parentheses throw). See the [CHANGELOG](CHANGELOG.md#200---2026-10-05).
 
 ## API Reference
 

@@ -30,9 +30,11 @@ need updating.
   `renderMetadata` resolves it.
 - `Picoschema.toJsonSchema`'s `schemas` parameter is now
   `Map<String, Map<String, dynamic>>?` (was `Map<String, dynamic>?`).
-- `Picoschema.isPicoschema` returns true for anything that is not recognized
-  as JSON Schema (it used to require a bare scalar value). Calling it before
-  `toJsonSchema` is no longer needed.
+- `Picoschema.isPicoschema` returns true for anything that is not JSON Schema
+  (it used to require a bare scalar value). JSON Schema is detected as in the
+  other runtimes: a top-level `type` naming a JSON Schema type or a
+  `properties` map, plus list-valued `type`/`anyOf`/`oneOf`/`allOf`/`enum`,
+  `$schema` and `$ref`. Calling it before `toJsonSchema` is no longer needed.
 - `DotpromptOptions.schemas` and `defineSchema` take JSON Schema (as in the
   other runtimes), not Picoschema. Registered schemas are inserted as-is;
   convert Picoschema with `Picoschema.toJsonSchema` first.
@@ -49,16 +51,6 @@ need updating.
   - Top-level JSON Schema (`type: string`, a bare `properties` map, `anyOf`,
     `enum`, `type: [string, "null"]`, etc.) is passed through instead of being
     parsed as Picoschema.
-  - Picoschema fields named like JSON Schema keywords (`type: string`,
-    `properties:`, `items:`) are converted instead of being mistaken for JSON
-    Schema and passed through raw.
-  - JSON Schema detection checks structure recursively, so Picoschema nested
-    in JSON Schema (`{type: object, properties: {a: string}}`) throws instead
-    of being passed through raw. Only a top-level scalar `type` is ambiguous
-    (`{type: string, title: string}` is a Picoschema object); values below the
-    top level and `$`/`x-` keys are never read as Picoschema fields. Errors for
-    schemas that look like JSON Schema but are parsed as Picoschema (e.g.
-    `{description: ...}` with no `type`) say so.
   - Passed-through JSON Schema and resolved named schemas are deep copies, so
     editing the result never changes the input or registered schemas.
   - A frontmatter schema with a `$type` field next to other fields is parsed
