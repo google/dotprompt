@@ -20,7 +20,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  dotprompt: ^1.0.0
+  dotprompt: ^2.0.0
 ```
 
 ## Quick Start
@@ -174,6 +174,9 @@ output:
     properties:
       title: {type: string}
 ```
+
+Upgrading from 1.x? Picoschema is now strict (`string[]`, `a | b` and
+free-text parentheses throw). See the [CHANGELOG](CHANGELOG.md#200---2026-10-04).
 
 ## API Reference
 

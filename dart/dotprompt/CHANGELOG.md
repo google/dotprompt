@@ -4,6 +4,8 @@ All notable changes to dotprompt-dart will be documented in this file.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-04
+
 Picoschema now follows the spec and behaves like the other runtimes. Schemas
 that relied on the old Dart-only syntax, or on unknown names becoming `$ref`,
 need updating.
