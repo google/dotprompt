@@ -36,7 +36,7 @@
 ///   final dotprompt = Dotprompt();
 ///   final template = '''
 /// ---
-/// model: gemini-pro
+/// model: googleai/gemini-flash-latest
 /// ---
 /// Hello {{name}}!
 /// ''';

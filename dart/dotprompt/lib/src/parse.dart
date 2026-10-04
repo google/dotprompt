@@ -26,7 +26,7 @@
 ///
 /// ```
 /// ---
-/// model: gemini-pro
+/// model: googleai/gemini-flash-latest
 /// config:
 ///   temperature: 0.7
 /// ---
@@ -60,13 +60,13 @@ final RegExp _frontmatterPattern = RegExp(
 /// ```dart
 /// final source = '''
 /// ---
-/// model: gemini-pro
+/// model: googleai/gemini-flash-latest
 /// ---
 /// Hello {{name}}!
 /// ''';
 ///
 /// final parsed = Parser.parseDocument(source);
-/// print(parsed.model);     // "gemini-pro"
+/// print(parsed.model);     // "googleai/gemini-flash-latest"
 /// print(parsed.template);  // "Hello {{name}}!"
 /// ```
 class Parser {

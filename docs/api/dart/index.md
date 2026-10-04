@@ -8,7 +8,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  dotprompt: ^0.0.1
+  dotprompt: ^1.0.0
 ```
 
 ## Quick Start
@@ -21,7 +21,7 @@ void main() async {
 
   final result = await dotprompt.render('''
 ---
-model: gemini-pro
+model: googleai/gemini-flash-latest
 input:
   schema:
     name: string
@@ -250,17 +250,29 @@ abstract interface class PromptStore {
 
 ## Picoschema
 
-Convert Picoschema to JSON Schema.
+Convert Picoschema to JSON Schema. `Dotprompt` does this automatically for
+`input.schema` and `output.schema`; see the
+[Picoschema reference](../../extending/picoschema.md) for the syntax.
 
 ```dart
-import 'package:dotprompt/src/picoschema.dart';
+import 'package:dotprompt/dotprompt.dart';
 
 final schema = {
   'name': 'string',
-  'age?': 'integer, The person\'s age',
+  'age?': 'integer, the person\'s age',
+  'tags(array, relevant tags)': 'string',
+  'status(enum)': ['ACTIVE', 'INACTIVE'],
+  'address': 'Address',
 };
 
-final jsonSchema = Picoschema.toJsonSchema(schema);
+// Sync: named schemas come from the `schemas` map.
+final jsonSchema = Picoschema.toJsonSchema(schema, schemas: {'Address': addressSchema});
+
+// Async: `schemas` first, then `schemaResolver`.
+final resolved = await Picoschema.parse(
+  schema,
+  schemaResolver: (name) async => lookupSchema(name),
+);
 ```
 
 ## Built-in Helpers

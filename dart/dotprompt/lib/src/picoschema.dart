@@ -16,371 +16,329 @@
 
 /// Picoschema to JSON Schema converter.
 ///
-/// Picoschema is a compact, human-readable schema format that compiles to
-/// standard JSON Schema. It's designed to be easy to write in YAML frontmatter.
-///
-/// ## Picoschema Syntax
+/// Picoschema is a compact, YAML-friendly schema format that compiles to JSON
+/// Schema. This implementation follows the JavaScript reference
+/// implementation and the spec in `spec/picoschema.yaml`. See
+/// https://google.github.io/dotprompt/reference/picoschema/.
 ///
 /// ```yaml
-/// # Simple types
-/// name: string
-/// age: integer
-/// score: number
-/// active: boolean
-///
-/// # Arrays
-/// tags: string[]
-///
-/// # Optional fields (with ?)
-/// nickname?: string
-///
-/// # Descriptions (in parentheses)
-/// email(User's email address): string
-///
-/// # Nested objects
-/// address:
-///   street: string
-///   city: string
-///   zip: string
-///
-/// # Enums
-/// status: approved | pending | rejected
+/// title: string, the article title       # scalar with description
+/// subtitle?: string                      # optional (and nullable)
+/// status?(enum, approval status): [PENDING, APPROVED]
+/// tags(array, relevant tags): string     # array of scalars
+/// authors(array):                        # array of objects
+///   name: string
+///   email?: string
+/// metadata?(object, extra info):         # nested object
+///   updatedAt?: string, ISO timestamp of last update
+/// labels(object):
+///   (*): string                          # wildcard -> additionalProperties
+/// address: Address                       # named schema reference
 /// ```
 ///
-/// ## Compiled JSON Schema
-///
-/// The above compiles to:
-/// ```json
-/// {
-///   "type": "object",
-///   "properties": {
-///     "name": {"type": "string"},
-///     "age": {"type": "integer"},
-///     "score": {"type": "number"},
-///     "active": {"type": "boolean"},
-///     "tags": {"type": "array", "items": {"type": "string"}},
-///     "nickname": {"type": "string"},
-///     "email": {"type": "string", "description": "User's email address"},
-///     "address": {
-///       "type": "object",
-///       "properties": {...},
-///       "required": ["street", "city", "zip"]
-///     },
-///     "status": {"type": "string", "enum": ["approved", "pending", "rejected"]}
-///   },
-///   "required": ["name", "age", "score", "active", "tags", "email", "address", "status"]
-/// }
-/// ```
+/// Scalar types are `string`, `number`, `integer`, `boolean`, `null` and
+/// `any`. Any other type name is looked up as a named schema. The only
+/// parenthetical types are `array`, `object` and `enum`; anything else in
+/// parentheses is an error.
 library;
 
 import "error.dart";
+import "store.dart" show SchemaResolver;
 
-/// Converts a Picoschema definition to JSON Schema.
-///
-/// Picoschema is a compact schema format designed for ease of use in YAML.
-///
-/// ## Example
+/// Looks up a named schema, throwing if it is unknown.
+typedef _SchemaLookup = Map<String, dynamic> Function(String name);
+
+/// Converts Picoschema definitions to JSON Schema.
 ///
 /// ```dart
-/// final picoschema = {
-///   'name': 'string',
-///   'age': 'integer',
-///   'tags': 'string[]',
-/// };
-///
-/// final jsonSchema = Picoschema.toJsonSchema(picoschema);
-/// // Returns:
+/// final schema = Picoschema.toJsonSchema({
+///   'name': 'string, the name',
+///   'steps(array)': {'number': 'integer', 'instruction': 'string'},
+/// });
 /// // {
 /// //   "type": "object",
 /// //   "properties": {
-/// //     "name": {"type": "string"},
-/// //     "age": {"type": "integer"},
-/// //     "tags": {"type": "array", "items": {"type": "string"}}
+/// //     "name": {"type": "string", "description": "the name"},
+/// //     "steps": {
+/// //       "type": "array",
+/// //       "items": {"type": "object", "properties": {...}, ...}
+/// //     }
 /// //   },
-/// //   "required": ["name", "age", "tags"]
+/// //   "additionalProperties": false,
+/// //   "required": ["name", "steps"]
 /// // }
 /// ```
 class Picoschema {
-  /// Private constructor to prevent instantiation.
   Picoschema._();
 
-  /// Primitive type mappings from Picoschema to JSON Schema.
-  static const Map<String, String> _primitiveTypes = {
-    "string": "string",
-    "str": "string",
-    "number": "number",
-    "num": "number",
-    "float": "number",
-    "double": "number",
-    "integer": "integer",
-    "int": "integer",
-    "boolean": "boolean",
-    "bool": "boolean",
-    "null": "null",
-    "any": "object",
-    "object": "object",
-  };
+  static const Set<String> _scalarTypes = {"any", "boolean", "integer", "null", "number", "string"};
 
-  /// Regex for parsing field names with optional description and optionality.
-  /// Matches: fieldName(description)? or fieldName?(description)?
-  static final RegExp _fieldPattern = RegExp(
-    r"^([a-zA-Z_][a-zA-Z0-9_]*)(\?)?(?:\(([^)]+)\))?$",
-  );
+  /// Top-level `type` values that mark a schema as already being JSON Schema.
+  static const Set<String> _jsonSchemaTypes = {..._scalarTypes, "object", "array"};
 
-  /// Regex for parsing array types (e.g., "string[]").
-  static final RegExp _arrayPattern = RegExp(r"^(.+)\[\]$");
+  static const String _wildcardKey = "(*)";
 
-  /// Regex for parsing enum types (e.g., "foo | bar | baz").
-  static final RegExp _enumPattern = RegExp(r"^([^|]+(?:\s*\|\s*[^|]+)+)$");
+  /// Splits `name?(type, description)` into `name?` and the parenthetical contents.
+  static final RegExp _parentheticalKey = RegExp(r"^([^()]*)\((.*)\)$");
 
-  /// Converts a Picoschema definition to JSON Schema.
+  /// Converts [picoschema] to JSON Schema synchronously.
   ///
-  /// The input can be:
-  /// - A string (primitive type, array type, or enum)
-  /// - A map (object schema)
+  /// Named schema references are looked up in [schemas] only. Use [parse] to
+  /// also consult an async [SchemaResolver]. Registered schemas must already
+  /// be JSON Schema; they are inserted as-is, matching the other runtimes.
   ///
-  /// The optional [schemas] parameter provides a map of named schemas that
-  /// can be referenced by type strings (e.g., `Foo` to reference a `Foo` schema).
+  /// Values that are already JSON Schema (see [isPicoschema]) are returned
+  /// unchanged. A `null` input yields `{"type": "object"}`.
   ///
-  /// Returns a JSON Schema object.
-  ///
-  /// Throws [PicoschemaException] if the schema is invalid.
+  /// Throws [PicoschemaException] if the schema is invalid or references an
+  /// unknown named schema.
   static Map<String, dynamic> toJsonSchema(
-    dynamic picoschema, {
-    Map<String, dynamic>? schemas,
-  }) {
-    if (picoschema == null) {
+    Object? picoschema, {
+    Map<String, Map<String, dynamic>>? schemas,
+  }) =>
+      _convert(
+        picoschema,
+        (name) => schemas?[name] ?? (throw _unknownSchema(name, hasSchemaSource: schemas != null)),
+      );
+
+  /// Converts [picoschema] to JSON Schema, resolving named schemas from
+  /// [schemas] first and then [schemaResolver] (same order as the JS
+  /// implementation). Both must provide JSON Schema; it is inserted as-is.
+  ///
+  /// ```dart
+  /// final schema = await Picoschema.parse(
+  ///   {'address': 'Address, where to ship'},
+  ///   schemaResolver: (name) async => lookupSchema(name),
+  /// );
+  /// ```
+  static Future<Map<String, dynamic>> parse(
+    Object? picoschema, {
+    Map<String, Map<String, dynamic>>? schemas,
+    SchemaResolver? schemaResolver,
+  }) async {
+    final resolved = <String, Map<String, dynamic>>{...?schemas};
+    // The converter is sync, so names needing the async resolver are discovered
+    // by converting, catching the first miss, resolving it and retrying. Each
+    // retry resolves one more distinct name and Picoschema documents are small,
+    // so this is cheaper to maintain than a separate reference-collecting walk.
+    while (true) {
+      try {
+        return _convert(picoschema, (name) => resolved[name] ?? (throw _UnresolvedSchema(name)));
+      } on _UnresolvedSchema catch (e) {
+        final schema = await schemaResolver?.call(e.name);
+        if (schema == null) {
+          throw _unknownSchema(e.name, hasSchemaSource: schemas != null || schemaResolver != null);
+        }
+        resolved[e.name] = schema;
+      }
+    }
+  }
+
+  /// Whether [schema] should be converted as Picoschema, i.e. it is not
+  /// already JSON Schema. [toJsonSchema] and [parse] apply the same check, so
+  /// calling this first is optional.
+  ///
+  /// JSON Schema is detected like in the JS and Python runtimes: a top-level
+  /// `type` naming a JSON Schema type, or a `properties` map. A list-valued
+  /// `type` or `anyOf`/`oneOf`/`allOf`/`enum`, `$schema` and `$ref` also count,
+  /// so JSON Schema without a single `type` string is not misparsed.
+  static bool isPicoschema(Map<String, dynamic> schema) => _wrappedTypeString(schema) != null || !_isJsonSchema(schema);
+
+  static const Set<String> _jsonSchemaListKeywords = {"anyOf", "oneOf", "allOf", "enum"};
+
+  // Deliberately shallow, like JS/Python: nothing below the top level is
+  // inspected. So `{type: object, properties: {a: string}}` is passed through
+  // as-is, and a Picoschema field named `type` with a JSON Schema type value
+  // (`{type: string, name: string}`) makes the whole map JSON Schema.
+  static bool _isJsonSchema(Map<String, dynamic> schema) {
+    final type = schema["type"];
+    return (type is String && _jsonSchemaTypes.contains(type)) ||
+        (type is List && type.isNotEmpty && type.every(_jsonSchemaTypes.contains)) ||
+        schema["properties"] is Map ||
+        _jsonSchemaListKeywords.any((k) => schema[k] is List) ||
+        schema.containsKey(r"$schema") ||
+        schema.containsKey(r"$ref");
+  }
+
+  /// The type string of frontmatter like `schema: string`, which
+  /// InputConfig/OutputConfig wrap as `{$type: "string"}`. Only a map whose
+  /// sole key is `$type` counts, so a Picoschema object that happens to have a
+  /// `$type` field is still parsed as an object.
+  static String? _wrappedTypeString(Map<Object?, Object?> schema) {
+    final wrapped = schema[r"$type"];
+    return schema.length == 1 && wrapped is String ? wrapped : null;
+  }
+
+  static Map<String, dynamic> _deepCopy(Map<String, dynamic> map) =>
+      map.map((key, value) => MapEntry(key, _deepCopyValue(value)));
+
+  static Object? _deepCopyValue(Object? value) => switch (value) {
+        final Map<Object?, Object?> m => _deepCopy(m.cast<String, dynamic>()),
+        final List<Object?> l => [for (final e in l) _deepCopyValue(e)],
+        _ => value,
+      };
+
+  static Map<String, dynamic> _convert(Object? schema, _SchemaLookup lookup) {
+    if (schema == null) {
       return {"type": "object"};
     }
-
-    if (picoschema is String) {
-      return _parseTypeString(picoschema, schemas: schemas);
+    if (schema is String) {
+      return _parseTypeString(schema, lookup);
     }
-
-    if (picoschema is Map) {
-      final schemaMap = picoschema.cast<String, dynamic>();
-      // Handle synthetic $type key (string schema wrapped in a map)
-      if (schemaMap.containsKey(r"$type")) {
-        return _parseTypeString(
-          schemaMap[r"$type"] as String,
-          schemas: schemas,
-        );
+    if (schema is Map) {
+      final map = schema.cast<String, dynamic>();
+      final wrapped = _wrappedTypeString(map);
+      if (wrapped != null) {
+        return _parseTypeString(wrapped, lookup);
       }
-      return _parseObjectSchema(schemaMap, schemas: schemas);
+      if (_isJsonSchema(map)) {
+        // Copied like named schemas, so callers never share nested maps with
+        // the input. A bare `properties` map implies an object type.
+        return {..._deepCopy(map), if (map["type"] == null && map["properties"] is Map) "type": "object"};
+      }
+      return _parseObject(map, lookup);
     }
-
-    throw PicoschemaException(
-      "Invalid picoschema type: ${picoschema.runtimeType}",
-    );
+    throw PicoschemaException("Picoschema: only consists of objects and strings. Got: $schema");
   }
 
-  /// Parses a type string into a JSON Schema.
-  ///
-  /// Handles formats like:
-  /// - `string` - simple type
-  /// - `string, the description` - type with description
-  /// - `string[]` - array type
-  /// - `foo | bar | baz` - enum type
-  static Map<String, dynamic> _parseTypeString(
-    String typeStr, {
-    Map<String, dynamic>? schemas,
-  }) {
-    final trimmed = typeStr.trim();
-
-    // Check for type with description (type, description)
-    final commaIndex = trimmed.indexOf(",");
-    if (commaIndex > 0) {
-      final typePart = trimmed.substring(0, commaIndex).trim();
-      final descPart = trimmed.substring(commaIndex + 1).trim();
-      final typeSchema = _parseTypeString(typePart, schemas: schemas);
-      if (descPart.isNotEmpty) {
-        typeSchema["description"] = descPart;
-      }
-      return typeSchema;
+  /// Parses `type[, description]`, where `type` is a scalar or a named schema.
+  static Map<String, dynamic> _parseTypeString(String input, _SchemaLookup lookup) {
+    final (type, description) = _extractDescription(input);
+    final schema = switch (type) {
+      // JS returns `{type: "any"}` for a top-level `any`, which is not valid
+      // JSON Schema; `{}` (what JS returns for nested fields) is used everywhere.
+      "any" => <String, dynamic>{},
+      _ when _scalarTypes.contains(type) => <String, dynamic>{"type": type},
+      // Deep copy so neither this converter nor callers editing the result can
+      // change registered schemas.
+      _ => _deepCopy(lookup(type)),
+    };
+    if (description != null) {
+      schema["description"] = description;
     }
-
-    // Check for array type
-    final arrayMatch = _arrayPattern.firstMatch(trimmed);
-    if (arrayMatch != null) {
-      final itemType = arrayMatch.group(1)!.trim();
-      return {
-        "type": "array",
-        "items": _parseTypeString(itemType, schemas: schemas),
-      };
-    }
-
-    // Check for enum type
-    final enumMatch = _enumPattern.firstMatch(trimmed);
-    if (enumMatch != null) {
-      final values = trimmed.split("|").map((s) => s.trim()).toList();
-      return {"type": "string", "enum": values};
-    }
-
-    // Check for primitive type
-    final normalizedType = trimmed.toLowerCase();
-    if (normalizedType == "any") {
-      // 'any' type returns empty schema (allows any value)
-      return <String, dynamic>{};
-    }
-    if (_primitiveTypes.containsKey(normalizedType)) {
-      return {"type": _primitiveTypes[normalizedType]};
-    }
-
-    // Check for named schema reference
-    if (schemas != null && schemas.containsKey(trimmed)) {
-      return Map<String, dynamic>.from(schemas[trimmed] as Map);
-    }
-
-    // Unknown type - treat as a named schema reference (return it for later resolution)
-    return {r"$ref": trimmed};
+    return schema;
   }
 
-  /// Parses an object schema definition.
-  ///
-  /// Handles:
-  /// - Regular fields: `fieldName: type`
-  /// - Optional fields: `fieldName?: type` (adds null to type union)
-  /// - Descriptions: `fieldName(description): type`
-  /// - Wildcard: `(*): type` (becomes additionalProperties)
-  static Map<String, dynamic> _parseObjectSchema(
-    Map<String, dynamic> schema, {
-    Map<String, dynamic>? schemas,
-  }) {
+  /// Parses the value side of an object field.
+  static Map<String, dynamic> _parseValue(Object? value, String key, _SchemaLookup lookup) {
+    if (value is String) {
+      return _parseTypeString(value, lookup);
+    }
+    if (value is Map) {
+      return _parseObject(value.cast<String, dynamic>(), lookup);
+    }
+    // `field:` with no value is an empty object, as in JS.
+    if (value == null) {
+      return _parseObject(const {}, lookup);
+    }
+    throw PicoschemaException("Picoschema: only consists of objects and strings. Got: $value (in '$key')");
+  }
+
+  static Map<String, dynamic> _parseObject(Map<String, dynamic> obj, _SchemaLookup lookup) {
     final properties = <String, dynamic>{};
     final required = <String>[];
-    Map<String, dynamic>? additionalProperties;
+    Object additionalProperties = false;
 
-    // Extended field pattern that also matches (*)
-    final wildcardPattern = RegExp(r"^\(\*\)(?:\(([^)]+)\))?$");
-
-    for (final entry in schema.entries) {
-      // Check for wildcard field (*)
-      final wildcardMatch = wildcardPattern.firstMatch(entry.key);
-      if (wildcardMatch != null) {
-        final description = wildcardMatch.group(1);
-        Map<String, dynamic> wildcardSchema;
-        if (entry.value is String) {
-          wildcardSchema = _parseTypeString(
-            entry.value as String,
-            schemas: schemas,
-          );
-        } else if (entry.value is Map) {
-          wildcardSchema = _parseObjectSchema(
-            (entry.value as Map).cast<String, dynamic>(),
-            schemas: schemas,
-          );
-        } else {
-          wildcardSchema = <String, dynamic>{};
-        }
-        if (description != null) {
-          wildcardSchema["description"] = description;
-        }
-        additionalProperties = wildcardSchema;
+    for (final MapEntry(:key, :value) in obj.entries) {
+      if (key == _wildcardKey) {
+        additionalProperties = _parseValue(value, key, lookup);
         continue;
       }
 
-      final fieldMatch = _fieldPattern.firstMatch(entry.key);
-      if (fieldMatch == null) {
-        throw PicoschemaException("Invalid field name: ${entry.key}");
+      final match = _parentheticalKey.firstMatch(key);
+      if (match == null && (key.contains("(") || key.contains(")"))) {
+        throw PicoschemaException("Picoschema: invalid property name '$key'");
       }
-
-      final fieldName = fieldMatch.group(1)!;
-      final isOptional = fieldMatch.group(2) == "?";
-      final description = fieldMatch.group(3);
-
-      // Parse the field value
-      Map<String, dynamic> fieldSchema;
-      if (entry.value is String) {
-        fieldSchema = _parseTypeString(entry.value as String, schemas: schemas);
-      } else if (entry.value is Map) {
-        fieldSchema = _parseObjectSchema(
-          (entry.value as Map).cast<String, dynamic>(),
-          schemas: schemas,
-        );
-      } else if (entry.value is List) {
-        // Enum as list of values
-        fieldSchema = {"enum": entry.value};
-      } else if (entry.value == null) {
-        fieldSchema = {"type": "object"};
-      } else {
-        throw PicoschemaException(
-          "Invalid field value for '$fieldName': ${entry.value.runtimeType}",
-        );
+      final name = (match?.group(1) ?? key).trim();
+      final isOptional = name.endsWith("?");
+      // Trimmed again so `a ?` is `a`, not `a ` (JS keeps the space).
+      final propertyName = (isOptional ? name.substring(0, name.length - 1) : name).trim();
+      if (propertyName.isEmpty) {
+        throw PicoschemaException("Picoschema: invalid property name '$key'");
       }
-
-      // Add description if present in field name
-      if (description != null) {
-        fieldSchema["description"] = description;
+      // `a` and `a?` (or `a(array)`) map to the same property. JS lets the last
+      // key win and leaves `required` inconsistent; reject it instead.
+      if (properties.containsKey(propertyName)) {
+        throw PicoschemaException("Picoschema: duplicate property '$propertyName' (in '$key')");
       }
-
-      // Handle optional fields - add null to type union
-      if (isOptional) {
-        final existingType = fieldSchema["type"];
-        final existingEnum = fieldSchema["enum"];
-        if (existingType != null) {
-          if (existingType is String) {
-            fieldSchema["type"] = [existingType, "null"];
-          } else if (existingType is List && !existingType.contains("null")) {
-            fieldSchema["type"] = [...existingType, "null"];
-          }
-        } else if (existingEnum != null && existingEnum is List) {
-          if (!existingEnum.contains(null)) {
-            fieldSchema["enum"] = [...existingEnum, null];
-          }
-        }
-      }
-
-      properties[fieldName] = fieldSchema;
-
-      // Track required fields (non-optional)
       if (!isOptional) {
-        required.add(fieldName);
+        required.add(propertyName);
       }
+
+      final parenthetical = match?.group(2);
+      if (parenthetical == null) {
+        final prop = _parseValue(value, key, lookup);
+        properties[propertyName] = isOptional ? _nullable(prop) : prop;
+        continue;
+      }
+
+      final (type, description) = _extractDescription(parenthetical);
+      final prop = switch (type) {
+        "array" => <String, dynamic>{
+            "type": isOptional ? ["array", "null"] : "array",
+            "items": _parseValue(value, key, lookup),
+          },
+        "object" when isOptional => _nullable(_parseValue(value, key, lookup)),
+        "object" => _parseValue(value, key, lookup),
+        "enum" => _enumSchema(value, key, isOptional: isOptional),
+        _ => throw PicoschemaException(
+            "Picoschema: parenthetical types must be 'object', 'array' or 'enum', got: '$type' (in '$key')",
+          ),
+      };
+      if (description != null) {
+        prop["description"] = description;
+      }
+      properties[propertyName] = prop;
     }
 
-    final result = <String, dynamic>{
+    return {
       "type": "object",
       "properties": properties,
-      "additionalProperties": additionalProperties ?? false,
+      "additionalProperties": additionalProperties,
+      if (required.isNotEmpty) "required": required,
     };
-
-    if (required.isNotEmpty) {
-      result["required"] = required;
-    }
-
-    return result;
   }
 
-  /// Checks if the given schema appears to be a Picoschema (vs. JSON Schema).
-  ///
-  /// Returns true if the schema looks like Picoschema and should be converted.
-  static bool isPicoschema(Map<String, dynamic> schema) {
-    // JSON Schema typically has "$schema" or "$ref" at the top level
-    if (schema.containsKey(r"$schema") || schema.containsKey(r"$ref")) {
-      return false;
+  static Map<String, dynamic> _enumSchema(Object? value, String key, {required bool isOptional}) {
+    if (value is! List) {
+      throw PicoschemaException("Picoschema: enum values must be a list (in '$key')");
     }
-
-    // Check for our synthetic $type key (string schema wrapped in a map)
-    if (schema.containsKey(r"$type")) {
-      return true;
-    }
-
-    // If it has type=object with properties, it's likely already JSON Schema
-    if (schema["type"] == "object" && schema.containsKey("properties")) {
-      return false;
-    }
-
-    // If any value is a simple type string, it's Picoschema
-    for (final value in schema.values) {
-      if (value is String) {
-        final normalized = value.toLowerCase();
-        if (_primitiveTypes.containsKey(normalized) || _arrayPattern.hasMatch(value) || _enumPattern.hasMatch(value)) {
-          return true;
-        }
-      }
-    }
-
-    // Default: assume it's JSON Schema to avoid corrupting valid schemas
-    return false;
+    return {
+      "enum": [...value, if (isOptional && !value.contains(null)) null],
+    };
   }
+
+  /// Optional fields are also nullable. Only a single string `type` is widened,
+  /// matching the other runtimes.
+  static Map<String, dynamic> _nullable(Map<String, dynamic> schema) {
+    final type = schema["type"];
+    if (type is String && type != "null") {
+      schema["type"] = [type, "null"];
+    }
+    return schema;
+  }
+
+  /// Splits `type, description` on the first comma. The description is null
+  /// when there is no comma or nothing after it.
+  static (String, String?) _extractDescription(String input) {
+    final comma = input.indexOf(",");
+    if (comma < 0) {
+      return (input.trim(), null);
+    }
+    final description = input.substring(comma + 1).trim();
+    return (input.substring(0, comma).trim(), description.isEmpty ? null : description);
+  }
+
+  static PicoschemaException _unknownSchema(String name, {required bool hasSchemaSource}) => PicoschemaException(
+        hasSchemaSource
+            ? "Picoschema: could not find schema with name '$name'"
+            : "Picoschema: unsupported scalar type '$name'.",
+      );
+}
+
+/// Signals a named schema that [Picoschema.parse] still has to resolve.
+class _UnresolvedSchema implements Exception {
+  const _UnresolvedSchema(this.name);
+
+  final String name;
 }

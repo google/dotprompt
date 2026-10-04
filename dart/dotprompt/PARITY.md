@@ -124,11 +124,13 @@ This document tracks feature parity between the Dart and JavaScript (canonical) 
 | Type scalars (string, integer, etc.) | ✅ | ✅ | |
 | Optional fields (`?` suffix) | ✅ | ✅ | |
 | Descriptions (`, description`) | ✅ | ✅ | |
-| Nested objects | ✅ | ✅ | |
-| Array types (`type[]` suffix) | ✅ | ✅ | |
-| Enum types | ✅ | ✅ | |
+| Nested objects (plain and `(object[, desc])`) | ✅ | ✅ | |
+| Arrays (`(array[, desc])`) | ✅ | ✅ | |
+| Enums (`(enum[, desc])`) | ✅ | ✅ | |
+| Wildcards (`(*)`) | ✅ | ✅ | |
+| JSON Schema passthrough | ✅ | ✅ | |
 | Named schema references | ✅ | ✅ | |
-| Async schema resolution | ✅ | ✅ | |
+| Async schema resolution | ✅ | ✅ | `Picoschema.parse` / `DotpromptOptions.schemaResolver` |
 
 ## Templating Engine
 

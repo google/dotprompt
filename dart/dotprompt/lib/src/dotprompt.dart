@@ -36,7 +36,7 @@
 /// // Parse a template
 /// final parsed = dotprompt.parse('''
 /// ---
-/// model: gemini-pro
+/// model: googleai/gemini-flash-latest
 /// ---
 /// Hello {{name}}!
 /// ''');
@@ -98,7 +98,10 @@ class DotpromptOptions {
   /// Pre-registered tool definitions.
   final Map<String, ToolDefinition>? tools;
 
-  /// Pre-registered schemas (Picoschema or JSON Schema).
+  /// Pre-registered JSON Schemas, referenced by name from Picoschema.
+  ///
+  /// Values must already be JSON Schema; they are inserted as-is (same as the
+  /// other runtimes). Convert Picoschema first with [Picoschema.toJsonSchema].
   final Map<String, Map<String, dynamic>>? schemas;
 
   /// Resolver for loading partial templates dynamically.
@@ -155,7 +158,14 @@ class Dotprompt {
     _tools[definition.name] = definition;
   }
 
-  /// Defines a schema (Picoschema or JSON Schema).
+  /// Registers a named JSON Schema that Picoschema can reference by name.
+  ///
+  /// [schema] must already be JSON Schema; it is inserted as-is. To register a
+  /// schema written in Picoschema, convert it first:
+  ///
+  /// ```dart
+  /// dotprompt.defineSchema('Address', Picoschema.toJsonSchema({'street': 'string', 'zip': 'integer'}));
+  /// ```
   void defineSchema(String name, Map<String, dynamic> schema) {
     _schemas[name] = schema;
   }
@@ -302,27 +312,22 @@ class Dotprompt {
       }
     }
 
-    // Process schemas (convert Picoschema to JSON Schema)
+    // Convert Picoschema to JSON Schema. JSON Schema input is passed through by
+    // the converter itself.
     var input = effectiveInput;
     var output = effectiveOutput;
 
-    if (input?.schema != null && Picoschema.isPicoschema(input!.schema!)) {
-      final jsonSchema = Picoschema.toJsonSchema(
-        input.schema,
-        schemas: _schemas,
-      );
+    final inputSchema = input?.schema;
+    if (input != null && inputSchema != null) {
       input = InputConfig(
-        schema: jsonSchema,
+        schema: await _resolveSchema(inputSchema),
         defaultValues: input.defaultValues,
       );
     }
 
-    if (output?.schema != null && Picoschema.isPicoschema(output!.schema!)) {
-      final jsonSchema = Picoschema.toJsonSchema(
-        output.schema,
-        schemas: _schemas,
-      );
-      output = OutputConfig(format: output.format, schema: jsonSchema);
+    final outputSchema = output?.schema;
+    if (output != null && outputSchema != null) {
+      output = OutputConfig(format: output.format, schema: await _resolveSchema(outputSchema));
     }
 
     return PromptMetadata(
@@ -336,6 +341,15 @@ class Dotprompt {
       raw: effectiveRaw,
     );
   }
+
+  /// Converts a frontmatter schema to JSON Schema, resolving named schemas from
+  /// [defineSchema]/[DotpromptOptions.schemas] first and then
+  /// [DotpromptOptions.schemaResolver].
+  Future<Map<String, dynamic>> _resolveSchema(Map<String, dynamic> schema) => Picoschema.parse(
+        schema,
+        schemas: _schemas,
+        schemaResolver: _options.schemaResolver,
+      );
 
   /// Renders a template with the given data.
   Future<RenderedPrompt> _renderInternal(

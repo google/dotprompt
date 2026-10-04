@@ -34,7 +34,7 @@ void main() async {
   // Parse and render a prompt
   final result = await dotprompt.render('''
 ---
-model: gemini-pro
+model: googleai/gemini-flash-latest
 config:
   temperature: 0.7
 ---
@@ -55,18 +55,18 @@ Hello {{name}}! You are a {{role}}.
 ```dart
 final parsed = dotprompt.parse('''
 ---
-model: gemini-pro
+model: googleai/gemini-flash-latest
 input:
   schema:
     name: string
-    age: integer?
+    age?: integer
   default:
     name: User
 ---
 Hello {{name}}!
 ''');
 
-print(parsed.model);  // "gemini-pro"
+print(parsed.model);  // "googleai/gemini-flash-latest"
 print(parsed.input?.schema);  // Schema definition
 ```
 
@@ -129,6 +129,52 @@ Please analyze this image:
 ''', DataArgument());
 ```
 
+### Picoschema
+
+`input.schema` and `output.schema` accept
+[Picoschema](https://google.github.io/dotprompt/reference/picoschema/) and are
+converted to JSON Schema by `renderMetadata`/`render`:
+
+```yaml
+output:
+  schema:
+    title: string, the article title
+    subtitle?: string
+    tags(array, relevant tags): string
+    status(enum): [DRAFT, PUBLISHED]
+    author: Author        # named schema
+    labels(object):
+      (*): string         # additionalProperties
+```
+
+Named schemas are JSON Schema, registered up front or resolved on demand:
+
+```dart
+final dotprompt = Dotprompt(DotpromptOptions(
+  schemas: {'Author': authorJsonSchema},
+  schemaResolver: (name) async => lookupJsonSchema(name),
+));
+
+// Or convert directly.
+final jsonSchema = await Picoschema.parse(
+  {'author': 'Author', 'tags(array)': 'string'},
+  schemaResolver: (name) async => lookupJsonSchema(name),
+);
+```
+
+A schema that is already JSON Schema is passed through as-is. As in the other
+runtimes, that means a top-level `type` naming a JSON Schema type or a
+`properties` map (plus `anyOf`/`oneOf`/`allOf`/`enum` lists, `$schema` and
+`$ref`):
+
+```yaml
+output:
+  schema:
+    type: object
+    properties:
+      title: {type: string}
+```
+
 ## API Reference
 
 ### Core Classes
@@ -145,9 +191,9 @@ Please analyze this image:
 
 ```dart
 final dotprompt = Dotprompt(DotpromptOptions(
-  defaultModel: 'gemini-pro',
+  defaultModel: 'googleai/gemini-flash-latest',
   modelConfigs: {
-    'gemini-pro': {'temperature': 0.7},
+    'googleai/gemini-flash-latest': {'temperature': 0.7},
   },
   partials: {'...': '...'},
   tools: {'...': ToolDefinition(...)},
