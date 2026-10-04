@@ -101,6 +101,61 @@ void main() {
           }),
         );
       });
+
+      test("returns schemas without a single type string unchanged", () {
+        final schemas = <Map<String, dynamic>>[
+          {
+            "anyOf": [
+              {"type": "string"},
+              {"type": "null"},
+            ],
+          },
+          {
+            "oneOf": [
+              {"type": "string"},
+              {"type": "integer"},
+            ],
+          },
+          {
+            "allOf": [
+              {"type": "object"},
+            ],
+          },
+          {
+            "enum": ["a", "b"],
+          },
+          {
+            "type": ["string", "null"],
+          },
+          {
+            "items": {"type": "string"},
+          },
+          {
+            r"$defs": {
+              "A": {"type": "string"},
+            },
+            r"$ref": r"#/$defs/A",
+          },
+        ];
+        for (final schema in schemas) {
+          expect(Picoschema.toJsonSchema(schema), equals(schema), reason: "$schema");
+        }
+      });
+
+      test("still parses Picoschema fields named like JSON Schema keywords", () {
+        expect(
+          Picoschema.toJsonSchema({"items": "string", "enum": "integer"}),
+          equals({
+            "type": "object",
+            "properties": {
+              "items": {"type": "string"},
+              "enum": {"type": "integer"},
+            },
+            "additionalProperties": false,
+            "required": ["items", "enum"],
+          }),
+        );
+      });
     });
 
     group("objects", () {
@@ -431,11 +486,30 @@ void main() {
       );
       expect(Picoschema.isPicoschema({r"$schema": "http://json-schema.org/draft-07/schema#"}), isFalse);
       expect(Picoschema.isPicoschema({r"$ref": "#/defs/Foo"}), isFalse);
+      expect(
+        Picoschema.isPicoschema({
+          "anyOf": [
+            {"type": "string"},
+          ],
+        }),
+        isFalse,
+      );
+    });
+
+    test("passes JSON Schema from additionalMetadata through Dotprompt", () async {
+      final schema = {
+        "anyOf": [
+          {"type": "string"},
+          {"type": "integer"},
+        ],
+      };
+      final metadata = await Dotprompt().renderMetadata("hi", PromptMetadata(output: OutputConfig(schema: schema)));
+      expect(metadata.output!.schema, equals(schema));
     });
   });
 
   // https://github.com/genkit-ai/genkit-dart/issues/562
-  group("issue #562: parenthetical qualifiers via Dotprompt", () {
+  group("genkit-dart#562: parenthetical qualifiers via Dotprompt", () {
     test("renders (array), (object), (enum) and (*) per spec", () async {
       final metadata = await Dotprompt().renderMetadata("""
 ---

@@ -137,15 +137,30 @@ class Picoschema {
   /// Whether [schema] should be converted as Picoschema.
   ///
   /// Returns false when [schema] is already JSON Schema: it has a top-level
-  /// `type` that is a JSON Schema type, a `properties` map, or a `$schema` or
-  /// `$ref` key. [toJsonSchema] and [parse] apply the same check, so calling
-  /// this first is optional.
+  /// `type` that is a JSON Schema type (or a list of them), a `properties`
+  /// map, or a structural keyword such as `$ref`, `items`, `anyOf` or `enum`.
+  /// [toJsonSchema] and [parse] apply the same check, so calling this first is
+  /// optional.
   static bool isPicoschema(Map<String, dynamic> schema) => schema.containsKey(r"$type") || !_isJsonSchema(schema);
 
+  /// Top-level keywords whose value is a list in JSON Schema.
+  static const Set<String> _jsonSchemaListKeywords = {"anyOf", "oneOf", "allOf", "enum"};
+
+  // Broader than JS, which only checks `type` and `properties` and misparses
+  // the rest. Keywords are matched by value shape, not just key, because
+  // `items: string` or `enum: string` are valid Picoschema fields. A
+  // Picoschema field value is never a list (only `(enum)` keys take lists),
+  // so list-valued keywords are unambiguous.
   static bool _isJsonSchema(Map<String, dynamic> schema) {
     final type = schema["type"];
+    final items = schema["items"];
     return (type is String && _jsonSchemaTypes.contains(type)) ||
+        (type is List && type.isNotEmpty && type.every(_jsonSchemaTypes.contains)) ||
         schema["properties"] is Map ||
+        items is Map ||
+        items is List ||
+        schema[r"$defs"] is Map ||
+        _jsonSchemaListKeywords.any((k) => schema[k] is List) ||
         schema.containsKey(r"$schema") ||
         schema.containsKey(r"$ref");
   }

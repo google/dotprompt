@@ -2,7 +2,7 @@
 
 All notable changes to dotprompt-dart will be documented in this file.
 
-## [1.1.0]
+## [1.1.0] - 2026-10-03
 
 ### Fixed
 
@@ -13,8 +13,9 @@ All notable changes to dotprompt-dart will be documented in this file.
     the parenthesized qualifier was treated as a description.
   - `(*)` wildcards and every Picoschema form are always converted. Previously
     some schemas skipped conversion and were passed through raw.
-  - Top-level JSON Schema (`type: string`, a bare `properties` map) is passed
-    through instead of being parsed as Picoschema.
+  - Top-level JSON Schema (`type: string`, a bare `properties` map, `anyOf`,
+    `enum`, `type: [string, "null"]`, etc.) is passed through instead of being
+    parsed as Picoschema.
   - Named schemas are resolved via `DotpromptOptions.schemaResolver` as well as
     `schemas`/`defineSchema`.
 - The spec test runner now checks `output` and named `schemas`, so
