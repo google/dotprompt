@@ -17,11 +17,141 @@
 package dotprompt
 
 import (
+	"math"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
+
+func TestDirStorePagination(t *testing.T) {
+	for _, partials := range []bool{false, true} {
+		name := "prompts"
+		if partials {
+			name = "partials"
+		}
+		t.Run(name, func(t *testing.T) {
+			root := t.TempDir()
+			store, err := NewDirStore(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, name := range []string{"b.v1", "a.v2", "nested/c", "a", "a.v1"} {
+				if partials {
+					name = filepath.Join(filepath.Dir(name), "_"+filepath.Base(name))
+				}
+				path := filepath.Join(root, name+".prompt")
+				if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(path, []byte("content"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			list := func(cursor string, limit int, variant string) ([]string, string, error) {
+				var names []string
+				if partials {
+					result, err := store.ListPartials(ListPartialsOptions{Cursor: cursor, Limit: limit, Variant: variant})
+					for _, item := range result.Items {
+						name := item.Name
+						if item.Variant != "" {
+							name += "." + item.Variant
+						}
+						names = append(names, name)
+					}
+					return names, result.Cursor, err
+				}
+				result, err := store.List(ListPromptsOptions{Cursor: cursor, Limit: limit, Variant: variant})
+				for _, item := range result.Items {
+					name := item.Name
+					if item.Variant != "" {
+						name += "." + item.Variant
+					}
+					names = append(names, name)
+				}
+				return names, result.Cursor, err
+			}
+
+			for _, tc := range []struct {
+				name    string
+				limit   int
+				variant string
+				pages   [][]string
+			}{
+				{"single", 1, "", [][]string{{"a"}, {"a.v1"}, {"a.v2"}, {"b.v1"}, {"nested/c"}}},
+				{"uneven", 2, "", [][]string{{"a", "a.v1"}, {"a.v2", "b.v1"}, {"nested/c"}}},
+				{"exact", 5, "", [][]string{{"a", "a.v1", "a.v2", "b.v1", "nested/c"}}},
+				{"larger", 10, "", [][]string{{"a", "a.v1", "a.v2", "b.v1", "nested/c"}}},
+				{"unlimited", 0, "", [][]string{{"a", "a.v1", "a.v2", "b.v1", "nested/c"}}},
+				{"negative limit", -1, "", [][]string{{"a", "a.v1", "a.v2", "b.v1", "nested/c"}}},
+				{"variant filter", 1, "v1", [][]string{{"a.v1"}, {"b.v1"}}},
+				{"no matches", 1, "missing", [][]string{{}}},
+			} {
+				t.Run(tc.name, func(t *testing.T) {
+					cursor := ""
+					for i, want := range tc.pages {
+						got, next, err := list(cursor, tc.limit, tc.variant)
+						if err != nil {
+							t.Fatal(err)
+						}
+						if !slices.Equal(got, want) {
+							t.Fatalf("page %d = %v, want %v", i, got, want)
+						}
+						if (next == "") != (i == len(tc.pages)-1) {
+							t.Fatalf("page %d cursor = %q", i, next)
+						}
+						cursor = next
+					}
+				})
+			}
+
+			t.Run("remaining items", func(t *testing.T) {
+				_, cursor, err := list("", 1, "")
+				if err != nil {
+					t.Fatal(err)
+				}
+				for _, limit := range []int{0, -1, math.MaxInt} {
+					got, next, err := list(cursor, limit, "")
+					if err != nil {
+						t.Fatal(err)
+					}
+					if want := []string{"a.v1", "a.v2", "b.v1", "nested/c"}; !slices.Equal(got, want) || next != "" {
+						t.Errorf("limit %d: items = %v, cursor = %q; want %v and no cursor", limit, got, next, want)
+					}
+				}
+			})
+
+			t.Run("invalid cursor", func(t *testing.T) {
+				for _, cursor := range []string{"invalid", "-1", "999999999999999999999999999999999"} {
+					if _, _, err := list(cursor, 1, ""); err == nil {
+						t.Errorf("cursor %q: expected an error", cursor)
+					}
+				}
+			})
+
+			t.Run("listing shrinks", func(t *testing.T) {
+				_, cursor, err := list("", 4, "")
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := os.RemoveAll(root); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Mkdir(root, 0755); err != nil {
+					t.Fatal(err)
+				}
+				for _, cursor := range []string{cursor, ""} {
+					got, next, err := list(cursor, 1, "")
+					if err != nil || len(got) != 0 || next != "" {
+						t.Errorf("cursor %q: items = %v, cursor = %q, error = %v; want an empty page", cursor, got, next, err)
+					}
+				}
+			})
+		})
+	}
+}
 
 func TestDirStore(t *testing.T) {
 	tmpDir := t.TempDir()
