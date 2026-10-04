@@ -8,7 +8,7 @@
   "bazel/rules_dart": "0.1.0",
   "bazel/rules_flutter": "0.1.0",
   "rs": "0.1.0",
-  "packages/vscode": "0.0.1",
+  "packages/vscode": "0.0.2",
   "packages/vim": "0.1.0",
   "packages/emacs": "0.1.0",
   "packages/monaco": "0.1.0",
