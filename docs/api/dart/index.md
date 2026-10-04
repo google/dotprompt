@@ -8,7 +8,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  dotprompt: ^2.0.0
+  dotprompt: ^1.0.0
 ```
 
 ## Quick Start
