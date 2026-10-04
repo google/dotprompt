@@ -52,7 +52,19 @@ need updating.
   - Picoschema fields named like JSON Schema keywords (`type: string`,
     `properties:`, `items:`) are converted instead of being mistaken for JSON
     Schema and passed through raw.
+  - JSON Schema detection checks structure recursively, so Picoschema nested
+    in JSON Schema (`{type: object, properties: {a: string}}`) throws instead
+    of being passed through raw. Only a top-level scalar `type` is ambiguous
+    (`{type: string, title: string}` is a Picoschema object); values below the
+    top level and `$`/`x-` keys are never read as Picoschema fields. Errors for
+    schemas that look like JSON Schema but are parsed as Picoschema (e.g.
+    `{description: ...}` with no `type`) say so.
+  - Passed-through JSON Schema and resolved named schemas are deep copies, so
+    editing the result never changes the input or registered schemas.
+  - A frontmatter schema with a `$type` field next to other fields is parsed
+    as a Picoschema object instead of being collapsed to the `$type` value.
   - `x?: null` produces `{type: null}` instead of `{type: [null, null]}`.
+  - `a ?: string` produces a property named `a`, not `a `.
   - Named schemas are resolved via `DotpromptOptions.schemaResolver` as well as
     `schemas`/`defineSchema`.
   - The `input: Name` / `output: Name` shorthand resolves the named schema.
