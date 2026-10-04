@@ -2,7 +2,40 @@
 
 All notable changes to dotprompt-dart will be documented in this file.
 
-## [1.1.0] - 2026-10-03
+## [2.0.0] - 2026-10-05
+
+Picoschema now follows the spec and behaves like the other runtimes. Schemas
+that relied on the old Dart-only syntax, or on unknown names becoming `$ref`,
+need updating.
+
+### Breaking changes
+
+- Picoschema is strict. These now throw `PicoschemaException`:
+
+  | Before (1.x)                       | Now                                   |
+  | ---------------------------------- | ------------------------------------- |
+  | `email(the email): string`         | `email: string, the email`            |
+  | `tags: string[]`                   | `tags(array): string`                 |
+  | `status: a \| b`                   | `status(enum): [a, b]`                |
+  | `wild(*): string`                  | `(*): string`                         |
+  | `n: int` (also `str`, `bool`, ...) | `n: integer`                          |
+  | `a` and `a?` in the same object    | pick one                              |
+
+- Unknown named schemas throw instead of becoming `{"$ref": name}`. Names are
+  looked up in `schemas`/`defineSchema`, then `DotpromptOptions.schemaResolver`
+  (`Dotprompt` and `Picoschema.parse` only; `toJsonSchema` is sync and only
+  sees `schemas`). Register schemas before converting prompts that use them.
+- The `input: Name` / `output: Name` shorthand is parsed as
+  `{"$type": Name}` (same as `schema: Name`) instead of `{"$ref": Name}`, so
+  `renderMetadata` resolves it.
+- `Picoschema.toJsonSchema`'s `schemas` parameter is now
+  `Map<String, Map<String, dynamic>>?` (was `Map<String, dynamic>?`).
+- `Picoschema.isPicoschema` returns true for anything that is not recognized
+  as JSON Schema (it used to require a bare scalar value). Calling it before
+  `toJsonSchema` is no longer needed.
+- `DotpromptOptions.schemas` and `defineSchema` take JSON Schema (as in the
+  other runtimes), not Picoschema. Registered schemas are inserted as-is;
+  convert Picoschema with `Picoschema.toJsonSchema` first.
 
 ### Fixed
 
@@ -27,25 +60,15 @@ All notable changes to dotprompt-dart will be documented in this file.
 - The spec test runner now checks `output` and named `schemas`, so
   `spec/picoschema.yaml` is actually enforced.
 
-### Changed
-
-- Picoschema is strict, like the other runtimes. These now throw
-  `PicoschemaException`:
-  - free-text parentheses such as `email(the email): string` (use
-    `email: string, the email`);
-  - parenthetical types other than `array`, `object` and `enum`, e.g.
-    `wild(*)`;
-  - non-standard types (`string[]`, `a | b`, aliases like `int`/`str`);
-  - unknown named schemas. Previously these became `{"$ref": name}`;
-  - duplicate property names such as `a` and `a?` in the same object.
-- `DotpromptOptions.schemas` and `defineSchema` are documented as taking JSON
-  Schema (as in the other runtimes), not Picoschema. Registered schemas are
-  inserted as-is; convert Picoschema with `Picoschema.toJsonSchema` first.
-
 ### Added
 
 - `Picoschema.parse(schema, {schemas, schemaResolver})`, an async variant of
   `toJsonSchema` that resolves named schemas through a `SchemaResolver`.
+
+## [1.0.0] - 2026-08-25
+
+### Added
+
 - `renderMetadata` and `compile` now accept an optional `additionalMetadata`
   argument that is merged on top of the prompt's parsed frontmatter (scalar
   fields override, `config` map is shallow-merged with additional winning on

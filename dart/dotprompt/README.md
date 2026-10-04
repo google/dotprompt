@@ -20,7 +20,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  dotprompt: ^1.1.0
+  dotprompt: ^2.0.0
 ```
 
 ## Quick Start
@@ -128,6 +128,42 @@ Please analyze this image:
 {{media url="https://example.com/image.png" contentType="image/png"}}
 ''', DataArgument());
 ```
+
+### Picoschema
+
+`input.schema` and `output.schema` accept
+[Picoschema](https://google.github.io/dotprompt/reference/picoschema/) and are
+converted to JSON Schema by `renderMetadata`/`render`:
+
+```yaml
+output:
+  schema:
+    title: string, the article title
+    subtitle?: string
+    tags(array, relevant tags): string
+    status(enum): [DRAFT, PUBLISHED]
+    author: Author        # named schema
+    labels(object):
+      (*): string         # additionalProperties
+```
+
+Named schemas are JSON Schema, registered up front or resolved on demand:
+
+```dart
+final dotprompt = Dotprompt(DotpromptOptions(
+  schemas: {'Author': authorJsonSchema},
+  schemaResolver: (name) async => lookupJsonSchema(name),
+));
+
+// Or convert directly.
+final jsonSchema = await Picoschema.parse(
+  {'author': 'Author', 'tags(array)': 'string'},
+  schemaResolver: (name) async => lookupJsonSchema(name),
+);
+```
+
+Upgrading from 1.x? Picoschema is now strict (`string[]`, `a | b` and
+free-text parentheses throw). See the [CHANGELOG](CHANGELOG.md#200---2026-10-03).
 
 ## API Reference
 
