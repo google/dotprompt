@@ -16,8 +16,14 @@ All notable changes to dotprompt-dart will be documented in this file.
   - Top-level JSON Schema (`type: string`, a bare `properties` map, `anyOf`,
     `enum`, `type: [string, "null"]`, etc.) is passed through instead of being
     parsed as Picoschema.
+  - Picoschema fields named like JSON Schema keywords (`type: string`,
+    `properties:`, `items:`) are converted instead of being mistaken for JSON
+    Schema and passed through raw.
+  - `x?: null` produces `{type: null}` instead of `{type: [null, null]}`.
   - Named schemas are resolved via `DotpromptOptions.schemaResolver` as well as
     `schemas`/`defineSchema`.
+  - The `input: Name` / `output: Name` shorthand resolves the named schema.
+    Previously it became a raw `{"$ref": name}`.
 - The spec test runner now checks `output` and named `schemas`, so
   `spec/picoschema.yaml` is actually enforced.
 
@@ -30,7 +36,8 @@ All notable changes to dotprompt-dart will be documented in this file.
   - parenthetical types other than `array`, `object` and `enum`, e.g.
     `wild(*)`;
   - non-standard types (`string[]`, `a | b`, aliases like `int`/`str`);
-  - unknown named schemas. Previously these became `{"$ref": name}`.
+  - unknown named schemas. Previously these became `{"$ref": name}`;
+  - duplicate property names such as `a` and `a?` in the same object.
 - `DotpromptOptions.schemas` and `defineSchema` are documented as taking JSON
   Schema (as in the other runtimes), not Picoschema. Registered schemas are
   inserted as-is; convert Picoschema with `Picoschema.toJsonSchema` first.

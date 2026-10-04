@@ -128,9 +128,6 @@ void main() {
             "type": ["string", "null"],
           },
           {
-            "items": {"type": "string"},
-          },
-          {
             r"$defs": {
               "A": {"type": "string"},
             },
@@ -153,6 +150,149 @@ void main() {
             },
             "additionalProperties": false,
             "required": ["items", "enum"],
+          }),
+        );
+      });
+
+      test("parses map-valued fields named like JSON Schema keywords as nested objects", () {
+        final expected = {
+          "type": "object",
+          "properties": {
+            "sku": {"type": "string"},
+            "qty": {"type": "integer"},
+          },
+          "additionalProperties": false,
+          "required": ["sku", "qty"],
+        };
+        for (final key in ["items", r"$defs"]) {
+          expect(
+            Picoschema.toJsonSchema({
+              key: {"sku": "string", "qty": "integer"},
+            }),
+            equals({
+              "type": "object",
+              "properties": {key: expected},
+              "additionalProperties": false,
+              "required": [key],
+            }),
+            reason: key,
+          );
+        }
+      });
+
+      test("passes through JSON Schema with annotations and extension keys", () {
+        final schemas = <Map<String, dynamic>>[
+          {
+            "type": "object",
+            "title": "Person",
+            "description": "a person",
+            "properties": {
+              "name": {"type": "string", "x-order": 1},
+              "extra": <String, dynamic>{},
+              "anything": true,
+            },
+            "required": ["name"],
+            "examples": [
+              {"name": "Ann"},
+            ],
+            "x-internal": true,
+          },
+          {"type": "string", "format": "email", "minLength": 3, "nullable": true},
+          {"type": "string", "description": "a person, really"},
+        ];
+        for (final schema in schemas) {
+          expect(Picoschema.toJsonSchema(schema), equals(schema), reason: "$schema");
+        }
+      });
+    });
+
+    // Picoschema fields whose names coincide with JSON Schema keywords must be
+    // converted, never passed through raw.
+    group("fields named like JSON Schema keywords", () {
+      test("treats a scalar-valued type field as Picoschema", () {
+        for (final schema in <Map<String, dynamic>>[
+          {"type": "string", "payload": "string"},
+          {"type": "string", "title": "string"},
+          {"type": "string", "description": "string, the description"},
+        ]) {
+          final result = Picoschema.toJsonSchema(schema);
+          expect(result["type"], equals("object"), reason: "$schema");
+          expect(_props(result).keys, equals(schema.keys), reason: "$schema");
+          expect(_props(result)["type"], isA<Map<String, dynamic>>(), reason: "$schema");
+        }
+      });
+
+      test("fails loudly instead of passing through a non-scalar type field", () {
+        // `object` is not a Picoschema scalar, so this is invalid Picoschema
+        // rather than JSON Schema with a stray `name` keyword.
+        expect(
+          () => Picoschema.toJsonSchema({"type": "object", "name": "string"}),
+          _throwsPicoschema("unsupported scalar type 'object'"),
+        );
+      });
+
+      test("treats Picoschema key syntax next to type as Picoschema", () {
+        expect(
+          Picoschema.toJsonSchema({"type": "string", "tags(array)": "string", "note?": "string"}),
+          equals({
+            "type": "object",
+            "properties": {
+              "type": {"type": "string"},
+              "tags": {
+                "type": "array",
+                "items": {"type": "string"},
+              },
+              "note": {
+                "type": ["string", "null"],
+              },
+            },
+            "additionalProperties": false,
+            "required": ["type", "tags"],
+          }),
+        );
+      });
+
+      test("treats a properties field with Picoschema values as Picoschema", () {
+        for (final properties in <Map<String, dynamic>>[
+          {"color": "string"},
+          {
+            "address": {"street": "string"},
+          },
+        ]) {
+          final result = Picoschema.toJsonSchema({"properties": properties, "name": "string"});
+          expect(_props(result).keys, equals(["properties", "name"]), reason: "$properties");
+          expect(_props(result)["properties"], containsPair("type", "object"), reason: "$properties");
+        }
+      });
+
+      test("converts type and properties fields from frontmatter", () async {
+        final metadata = await Dotprompt().renderMetadata("""
+---
+output:
+  schema:
+    type: string, event kind
+    properties:
+      color: string
+---
+hi
+""");
+        expect(
+          metadata.output?.schema,
+          equals({
+            "type": "object",
+            "properties": {
+              "type": {"type": "string", "description": "event kind"},
+              "properties": {
+                "type": "object",
+                "properties": {
+                  "color": {"type": "string"},
+                },
+                "additionalProperties": false,
+                "required": ["color"],
+              },
+            },
+            "additionalProperties": false,
+            "required": ["type", "properties"],
           }),
         );
       });
@@ -187,6 +327,23 @@ void main() {
 
       test("omits required when every field is optional", () {
         expect(Picoschema.toJsonSchema({"a?": "string"}).containsKey("required"), isFalse);
+      });
+
+      test("does not duplicate null for optional null fields", () {
+        expect(_props(Picoschema.toJsonSchema({"x?": "null"}))["x"], equals({"type": "null"}));
+      });
+
+      test("rejects duplicate property names", () {
+        for (final schema in <Map<String, dynamic>>[
+          {"a": "string", "a?": "number"},
+          {"a": "string", "a(array)": "number"},
+          {
+            "a?(enum)": ["X"],
+            "a": "string",
+          },
+        ]) {
+          expect(() => Picoschema.toJsonSchema(schema), _throwsPicoschema("duplicate property 'a'"), reason: "$schema");
+        }
       });
 
       test("converts nested objects without a qualifier", () {
@@ -571,6 +728,38 @@ hi
       );
     });
 
+    test("converts a top-level field named items instead of passing it through", () async {
+      final metadata = await Dotprompt().renderMetadata("""
+---
+output:
+  schema:
+    items:
+      sku: string
+      qty: integer
+---
+hi
+""");
+      expect(
+        metadata.output?.schema,
+        equals({
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "object",
+              "properties": {
+                "sku": {"type": "string"},
+                "qty": {"type": "integer"},
+              },
+              "additionalProperties": false,
+              "required": ["sku", "qty"],
+            },
+          },
+          "additionalProperties": false,
+          "required": ["items"],
+        }),
+      );
+    });
+
     test("resolves named schemas through DotpromptOptions.schemaResolver", () async {
       final dotprompt = Dotprompt(
         DotpromptOptions(
@@ -588,6 +777,25 @@ hi
       expect(
         _props(metadata.input!.schema!)["shipTo"],
         equals({"type": "object", "description": "an address"}),
+      );
+    });
+
+    test("resolves the input: Name / output: Name shorthand", () async {
+      final metadata = await Dotprompt(
+        const DotpromptOptions(
+          schemas: {
+            "Person": {"type": "object", "description": "a person"},
+          },
+        ),
+      ).renderMetadata("---\ninput: Person\noutput: Person\n---\nhi");
+      expect(metadata.input?.schema, equals({"type": "object", "description": "a person"}));
+      expect(metadata.output?.schema, equals({"type": "object", "description": "a person"}));
+    });
+
+    test("rejects an unknown name in the output: Name shorthand", () async {
+      await expectLater(
+        Dotprompt().renderMetadata("---\noutput: Missing\n---\nhi"),
+        _throwsPicoschema("could not find schema with name 'Missing'"),
       );
     });
 

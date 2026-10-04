@@ -200,11 +200,13 @@ class InputConfig {
 
   /// Creates an [InputConfig] from a value that can be a String or Map.
   ///
-  /// If the value is a String, it's treated as a schema name reference.
+  /// If the value is a String (`input: MySchema`), it's treated as a Picoschema
+  /// type string, so named schemas are resolved during metadata resolution.
   factory InputConfig.fromValue(dynamic value) {
     if (value is String) {
-      // String value is a schema name reference
-      return InputConfig(schema: {r"$ref": value});
+      // Same wrapping as `schema: MySchema` in fromJson, so the name is
+      // resolved (or rejected) instead of passing through as a raw `$ref`.
+      return InputConfig(schema: {r"$type": value});
     } else if (value is Map<String, dynamic>) {
       return InputConfig.fromJson(value);
     }
@@ -259,11 +261,14 @@ class OutputConfig {
 
   /// Creates an [OutputConfig] from a value that can be a String or Map.
   ///
-  /// If the value is a String, it's treated as a schema name reference.
+  /// If the value is a String (`output: MySchema`), it's treated as a
+  /// Picoschema type string, so named schemas are resolved during metadata
+  /// resolution.
   factory OutputConfig.fromValue(dynamic value) {
     if (value is String) {
-      // String value is a schema name reference
-      return OutputConfig(schema: {r"$ref": value});
+      // Same wrapping as `schema: MySchema` in fromJson, so the name is
+      // resolved (or rejected) instead of passing through as a raw `$ref`.
+      return OutputConfig(schema: {r"$type": value});
     } else if (value is Map<String, dynamic>) {
       return OutputConfig.fromJson(value);
     }
