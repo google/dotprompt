@@ -1,4 +1,4 @@
-# Copyright 2025 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,12 +18,8 @@
 authors = [{ name = "Google" }]
 classifiers = [
   "Development Status :: 3 - Alpha",
-  "Environment :: Console",
-  "Environment :: Web Environment",
-  "Intended Audience :: Developers",
   "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
-
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -31,43 +27,28 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: 3 :: Only",
-  "Topic :: Scientific/Engineering :: Artificial Intelligence",
-  "Topic :: Software Development :: Libraries",
+  "Topic :: Text Processing :: Markup",
 ]
-dependencies = [
-  "aiofiles>=24.1.0",
-  "anyio>=4.9.0",
-  "dotpromptz-handlebars>=0.2.0",
-  "pydantic[email]>=2.10.6",
-  "pyyaml>=6.0.2",
-  "jsonschema>=4.23.0",
-  "structlog>=25.2.0",
-  "types-aiofiles>=24.1.0.20250326",
-  "types-pyyaml>=6.0.12.20241230",
-]
-description = "Dotpromptz is a language-neutral executable prompt template file format for Generative AI."
+description = "A pure Python implementation of the Handlebars template engine."
 license = "Apache-2.0"
-name = "dotpromptz"
+name = "dotpromptz-handlebars"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "0.1.6"
+version = "0.2.0"
 
 [build-system]
 build-backend = "hatchling.build"
-requires      = ["hatchling"]
+requires = ["hatchling"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/dotpromptz"]
+# handlebarrz is the import name already-published dotpromptz 0.1.x uses.
+# Remove it with python/handlebars/handlebarrz once those releases no longer
+# install this wheel through dotpromptz-handlebars>=0.1.8 with no upper bound.
+packages = ["dotpromptz_handlebars", "handlebarrz"]
 
 [dependency-groups]
-dev = [
-  "pytest>=8.3.5",
-  "pytest-asyncio>=0.25.3",
-  "pytest-cov>=6.0.0",
-]
+dev = ["pytest>=8.3.5"]
 
 [tool.pytest.ini_options]
-log_cli             = true
-log_cli_date_format = "%Y-%m-%d %H:%M:%S"
-log_cli_format      = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
-log_cli_level       = "DEBUG"
+python_files = ["*_test.py"]
+testpaths = ["tests"]

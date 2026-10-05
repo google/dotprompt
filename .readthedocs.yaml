@@ -28,6 +28,6 @@ python:
     - method: pip
       path: python/dotpromptz
     - method: pip
-      path: python/handlebarrz
+      path: python/handlebars
     # Install documentation dependencies
     - requirements: docs/requirements.txt

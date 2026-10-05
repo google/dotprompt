@@ -13,7 +13,7 @@ packages:
 
 * `js/` - JavaScript implementation of dotprompt
 * `python/dotpromptz/` - Python implementation of dotprompt
-* `python/handlebarrz/` - Python implementation of handlebarrz
+* `python/handlebars/` - Pure-Python Handlebars engine (`dotpromptz-handlebars`)
 * `go/` - Go implementation of dotprompt
 * `java/` - Java implementation of dotprompt
 
@@ -61,7 +61,7 @@ To target specific packages, use these scopes:
 * `js`: For changes to the JavaScript implementation
 * `py`: For changes affecting all Python packages
 * `py/dotpromptz`: For changes to the Python dotpromptz package
-* `py/handlebarrz`: For changes to the Python handlebarrz package
+* `py/handlebars`: For changes to the Python Handlebars engine
 * `go`: For changes to the Go implementation
 * `java`: For changes to the Java implementation
 * `deps`: For dependency updates
@@ -75,7 +75,7 @@ fix(py/dotpromptz): resolve issue with template parsing
 
 docs(go): update API documentation
 
-build(py/handlebarrz): update build configuration
+build(py/handlebars): update build configuration
 ```
 
 ## Breaking Changes
