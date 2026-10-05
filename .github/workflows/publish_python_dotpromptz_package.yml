@@ -34,8 +34,7 @@ on:
         default: 'https://test.pypi.org/legacy/'
 
 permissions:
-  contents: write
-  id-token: write
+  contents: read
 
 jobs:
   check_and_build:
@@ -46,61 +45,78 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'dotpromptz-') && !startsWith(github.event.release.tag_name, 'dotpromptz-handlebars-'))
     permissions:
       contents: write
-      actions: write
-    strategy:
-      matrix:
-        python-version:
-          - "3.12"
-
-      fail-fast: false
+    outputs:
+      version: ${{ steps.version.outputs.version }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ inputs.tag_name || github.event.release.tag_name }}
+          persist-credentials: false
+
+      - name: Read version from tag
+        id: version
+        env:
+          TAG: ${{ inputs.tag_name || github.event.release.tag_name }}
+        run: |
+          case "$TAG" in
+            dotpromptz-*) ;;
+            *) echo "::error::Tag '$TAG' is not a dotpromptz release tag."; exit 1 ;;
+          esac
+          echo "version=${TAG#dotpromptz-}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.12"
 
-      # Dependency Check of handlebars
-      - name: Install Dependencies for Check
-        run: pip install requests
-
-      - name: Smoke Test - Check handlebarrz Dependency on PyPI
-        id: check_dependency
+      # Preflight floor check: Replaces the legacy unpinned handlebarrz existence check.
+      #
+      # dotpromptz depends on dotpromptz-handlebars>=X.Y.Z (configured in pyproject.toml).
+      # Because PyPI releases are immutable and downstream pip installs resolve
+      # dependencies immediately, publishing dotpromptz before its required floor version
+      # is live on PyPI leaves dotpromptz in a broken, uninstallable state.
+      #
+      # Rather than checking unversioned package existence with `requests`, this step:
+      # 1. Dynamically reads the dependency floor from pyproject.toml via stdlib `tomllib`.
+      # 2. Queries PyPI's per-version JSON endpoint via stdlib `urllib` to ensure the exact
+      #    minimum required release is available before building or uploading.
+      - name: Check dotpromptz-handlebars floor is on PyPI
         run: |
-          IS_FOUND=$(python -c '
-          import requests
-          url = "https://pypi.org/project/dotpromptz-handlebars/json"
-          response = requests.get(url)
+          python - <<'EOF'
+          import re
+          import sys
+          import tomllib
+          import urllib.error
+          import urllib.request
 
-          if response.status_code == 200:
-            print("true")
-          else:
-            print("false")
-          ')
+          # 1. Extract the minimum required version of dotpromptz-handlebars
+          with open('python/dotpromptz/pyproject.toml', 'rb') as f:
+              deps = tomllib.load(f)['project']['dependencies']
+          spec = next((d for d in deps if d.startswith('dotpromptz-handlebars')), None)
+          m = re.fullmatch(r'dotpromptz-handlebars\s*>=\s*([0-9][0-9A-Za-z.]*)', spec or '')
+          if not m:
+              print(f'::error::Expected dotpromptz-handlebars>=X.Y.Z, got {spec!r}.')
+              sys.exit(1)
+          floor = m.group(1)
 
-                  echo "Dependency 'handlebarrz' checked. Status: $IS_FOUND"
+          # 2. Verify that this exact floor version exists and is live on PyPI
+          url = f'https://pypi.org/pypi/dotpromptz-handlebars/{floor}/json'
+          try:
+              urllib.request.urlopen(url, timeout=30)
+          except urllib.error.HTTPError as e:
+              print(f'::error::dotpromptz-handlebars {floor} not on PyPI ({e.code}). Release it first.')
+              sys.exit(1)
+          print(f'dotpromptz-handlebars {floor} is on PyPI.')
+          EOF
 
-                  if [ "$IS_FOUND" = "true" ]; then
-                  echo "BUILD_SUCCESS=true" >> "$GITHUB_OUTPUT"
-                  else
-                  echo "BUILD_SUCCESS=false" >> "$GITHUB_OUTPUT"
-                  fi
-
-      - name: Dependency Check Failed - Exit
-        if: steps.check_dependency.outputs.BUILD_SUCCESS == 'false'
-        run: |
-          echo "::error::Dependency 'handlebarrz' not found on PyPI. Aborting publish."
-          exit 1
-
-      # BUILD dotpromptz (Only if handlebarrz check passed)
+      # BUILD dotpromptz (only if the dependency check passed)
       - name: Set up uv and Create VENV
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
         with:
           activate-environment: true
-          python-version: ${{ matrix.python-version }}
-          enable-cache: true
+          python-version: "3.12"
+          enable-cache: false
 
       - name: Install Build Tools
         run: |
@@ -114,7 +130,7 @@ jobs:
           twine check dist/*
 
       - name: Upload dotpromptz Distributions for Python
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: dist-dotpromptz
           path: python/dotpromptz/dist/
@@ -127,17 +143,16 @@ jobs:
       name: pypi_github_publishing
     permissions:
       id-token: write
-    env:
-      PYPI_REPOSITORY_URL: ${{ inputs.repository_url || 'https://upload.pypi.org/legacy/' }}
 
     steps:
       - name: Checkout code at tag
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           ref: ${{ github.event.inputs.tag_name || github.event.release.tag_name }}
+          persist-credentials: false
 
       - name: Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: dist-dotpromptz
           path: dist/
@@ -147,13 +162,14 @@ jobs:
         with:
           verbose: true
           packages-dir: dist/
-          repository-url: ${{ inputs.repository_url }}
+          repository-url: ${{ github.event_name == 'release' && 'https://upload.pypi.org/legacy/' || inputs.repository_url || 'https://upload.pypi.org/legacy/' }}
 
   smoke_test_pypi_package:
-    name: Verify Package Usability
-    needs: [pypi_publish]
+    name: Verify Package Usability on Python ${{ matrix.python-version }}
+    needs: [check_and_build, pypi_publish]
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version:
           - "3.10"
@@ -162,32 +178,41 @@ jobs:
           - "3.13"
           - "3.14"
     steps:
-      - uses: actions/checkout@v6
-
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dotpromptz from PyPI
+        env:
+          VERSION: ${{ needs.check_and_build.outputs.version }}
+          INDEX_URL: ${{ (github.event_name != 'release' && inputs.repository_url == 'https://test.pypi.org/legacy/') && 'https://test.pypi.org/simple/' || 'https://pypi.org/simple/' }}
         run: |
-          pip install dotpromptz
+          # A new upload can take a few minutes to reach the index.
+          for attempt in $(seq 1 20); do
+            if python -m pip install --no-cache-dir --index-url "$INDEX_URL" "dotpromptz==${VERSION}"; then
+              exit 0
+            fi
+            echo "dotpromptz ${VERSION} not installable yet (attempt ${attempt}/20)"
+            sleep 30
+          done
+          echo "::error::dotpromptz ${VERSION} never became installable from ${INDEX_URL}"
+          exit 1
 
-      - name: Run Smoke Test Script
+      - name: Import and render
         run: |
-          python -c "
-          import importlib.metadata
-          import sys
-
+          python - <<'PY'
+          import asyncio
+          from dotpromptz import Dotprompt
           try:
-              importlib.metadata.version('dotpromptz')
-              print('Smoke test successful: Package found and imported.')
+              from dotpromptz import DataArgument
+          except ImportError:
+              from dotpromptz.typing import DataArgument
 
-          except importlib.metadata.PackageNotFoundError:
-              print('Smoke test FAILED: Package not found in environment.')
-              sys.exit(1)
-
-          except Exception as e:
-              print(f'Smoke test FAILED due to unexpected error: {e}')
-              sys.exit(1)
-              "
+          res = asyncio.run(
+              Dotprompt().render('Hi {{name}}', DataArgument(input={'name': 'Ada'}))
+          )
+          text = res.messages[0].content[0].text
+          assert text == 'Hi Ada', res
+          print(text)
+          PY
