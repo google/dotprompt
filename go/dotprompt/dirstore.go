@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -71,6 +72,29 @@ const (
 	promptExtension = ".prompt"
 	partialPrefix   = "_"
 )
+
+func paginateItems[T any](items []T, cursor string, limit int) ([]T, string, error) {
+	start := 0
+	if cursor != "" {
+		var err error
+		start, err = strconv.Atoi(cursor)
+		if err != nil || start < 0 {
+			return nil, "", fmt.Errorf("invalid pagination cursor: %q", cursor)
+		}
+	}
+	if start >= len(items) {
+		return items[len(items):], "", nil
+	}
+	end := len(items)
+	if limit > 0 && limit < len(items)-start {
+		end = start + limit
+	}
+	next := ""
+	if end < len(items) {
+		next = strconv.Itoa(end)
+	}
+	return items[start:end], next, nil
+}
 
 // List enumerates all prompts in the store that match the given options.
 // It traverses the directory structure recursively.
@@ -131,7 +155,6 @@ func (ds *DirStore) List(options ListPromptsOptions) (ListPromptsResult[PromptRe
 		return ListPromptsResult[PromptRef]{}, err
 	}
 
-	// Simple pagination
 	sort.Slice(prompts, func(i, j int) bool {
 		if prompts[i].Name == prompts[j].Name {
 			return prompts[i].Variant < prompts[j].Variant
@@ -139,18 +162,11 @@ func (ds *DirStore) List(options ListPromptsOptions) (ListPromptsResult[PromptRe
 		return prompts[i].Name < prompts[j].Name
 	})
 
-	result := ListPromptsResult[PromptRef]{
-		Items: prompts,
+	items, cursor, err := paginateItems(prompts, options.Cursor, options.Limit)
+	if err != nil {
+		return ListPromptsResult[PromptRef]{}, err
 	}
-	// TODO(#500): meaningful cursor/limit implementation
-	// For now returns all as simple implementation
-
-	if options.Limit > 0 && len(result.Items) > options.Limit {
-		result.Cursor = "more" // Dummy cursor for now
-		result.Items = result.Items[:options.Limit]
-	}
-
-	return result, nil
+	return ListPromptsResult[PromptRef]{Items: items, Cursor: cursor}, nil
 }
 
 // ListPartials enumerates all partials in the store that match the given options.
@@ -225,17 +241,11 @@ func (ds *DirStore) ListPartials(options ListPartialsOptions) (ListPartialsResul
 		return partials[i].Name < partials[j].Name
 	})
 
-	result := ListPartialsResult[PartialRef]{
-		Items: partials,
+	items, cursor, err := paginateItems(partials, options.Cursor, options.Limit)
+	if err != nil {
+		return ListPartialsResult[PartialRef]{}, err
 	}
-
-	if options.Limit > 0 && len(result.Items) > options.Limit {
-		result.Cursor = "more"
-		result.Items = result.Items[:options.Limit]
-	}
-
-	return result, nil
-
+	return ListPartialsResult[PartialRef]{Items: items, Cursor: cursor}, nil
 }
 
 // Load retrieves a prompt by name from the store.

@@ -58,6 +58,18 @@ Hello, {{name}}!`
 }
 ```
 
+## Listing prompts and partials
+
+`DirStore.List` and `DirStore.ListPartials` return entries sorted by name and
+variant. Set `Limit` to a positive value to request a page, then pass the returned
+`Cursor` unchanged in the next call with the same variant filter. An empty cursor
+in the result means there are no more entries. A zero or negative limit returns
+all remaining entries.
+
+Cursors represent offsets in the sorted, filtered listing; they do not preserve
+a snapshot if files are added or removed between calls. Invalid cursors return
+an error, and cursors beyond the current listing return an empty page.
+
 ## Building
 
 ```bash
