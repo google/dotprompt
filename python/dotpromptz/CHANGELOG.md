@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.2.0](https://github.com/google/dotprompt/compare/dotpromptz-0.1.6...dotpromptz-0.2.0) (2026-10-05)
 
 ### ⚠ BREAKING CHANGES
 
