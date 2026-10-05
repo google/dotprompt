@@ -11,7 +11,7 @@
   },
   "scripts": {
     "compile": "tsup-node src/index.ts --dts --format esm,cjs",
-    "build": "pnpm run compile && tsc -p ./tsconfig.build.json --noEmit",
+    "build": "pnpm run compile && tsc -p ./tsconfig.build.json --noEmit && tsc -p ./tsconfig.public-types.json --noEmit",
     "build:native": "pnpm run compile && tsgo -p ./tsconfig.build.json --noEmit",
     "watch": "pnpm run compile -- --watch",
     "test": "vitest run --coverage",
