@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.2.0](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.9...dotpromptz-handlebars-0.2.0) (unreleased)
+## [0.2.0](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.10...dotpromptz-handlebars-0.2.0) (2026-10-05)
 
 ### ⚠ BREAKING CHANGES
 
