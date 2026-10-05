@@ -19,8 +19,8 @@
 import unittest
 from unittest import IsolatedAsyncioTestCase
 
-from dotpromptz import picoschema
-from dotpromptz.typing import JsonSchema
+from dotpromptz import _picoschema as picoschema
+from dotpromptz._typing import JsonSchema
 
 
 class TestPicoschemaParser(IsolatedAsyncioTestCase):

@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import unittest
 
-from dotpromptz.validate import SchemaValidationError, validate_output
+from dotpromptz._validate import SchemaValidationError, validate_output
 
 
 class TestValidateOutput(unittest.TestCase):

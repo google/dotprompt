@@ -23,7 +23,7 @@ from typing import Any
 import pytest
 
 from dotpromptz import Dotprompt
-from dotpromptz.typing import DataArgument, Role, TextPart
+from dotpromptz._typing import DataArgument, Role, TextPart
 from dotpromptz_handlebars import HelperOptions
 
 

@@ -45,8 +45,8 @@ from yaml.composer import ComposerError
 from yaml.events import AliasEvent, NodeEvent
 from yaml.nodes import MappingNode, Node, ScalarNode, SequenceNode
 
-from dotpromptz.errors import FrontmatterError
-from dotpromptz.typing import (
+from dotpromptz._errors import FrontmatterError
+from dotpromptz._typing import (
     DataArgument,
     MediaContent,
     MediaPart,

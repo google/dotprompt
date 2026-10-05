@@ -5,6 +5,10 @@
 ### ⚠ BREAKING CHANGES
 
 * **helpers:** `{{json ...}}` in prompt templates now raises `TypeError` (standard Python `json.dumps()` behavior) instead of `ValueError` when passed non-serializable objects.
+* **api:** implementation modules moved behind private `_`-prefixed names; import from the `dotpromptz` root instead ([#626](https://github.com/google/dotprompt/pull/626)). `dotprompt`, `typing`, `stores`, `errors`, `helpers`, `parse`, `picoschema`, `resolvers`, and `util` remain as compatibility re-exports and will be removed in a future release. These 0.1.6 import paths no longer resolve:
+  * `dotpromptz.picoschema_reverse`: use `from dotpromptz import json_schema_to_picoschema`.
+  * `dotpromptz.adapters`, `dotpromptz.models`, `dotpromptz.validate`: removed with no public replacement.
+  * `dotpromptz.package_name()`: removed.
 
 ### Features
 

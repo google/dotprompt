@@ -20,7 +20,7 @@ import unittest
 
 from pydantic import BaseModel
 
-from dotpromptz.models import dump_models
+from dotpromptz._models import dump_models
 
 
 class ModelForTesting(BaseModel):

@@ -44,7 +44,7 @@ Here's an example of a Dotprompt file that extracts structured data from provide
 
 ```handlebars
 ---
-model: googleai/gemini-2.5-pro
+model: googleai/gemini-flash-latest
 input:
   schema:
     text: string
@@ -62,7 +62,7 @@ present, omit that field from the output. Text:
 
 This Dotprompt file:
 
-1. Specifies the use of the `googleai/gemini-2.5-pro` model.
+1. Specifies the use of the `googleai/gemini-flash-latest` model.
 2. Defines an input schema expecting a `text` string.
 3. Specifies that the output should be in JSON format.
 4. Provides a schema for the expected output, including fields for name, age, and occupation.
@@ -78,10 +78,12 @@ Prompt input and runtime context are separate namespaces. Use `{{name}}` for
 input and `{{@name}}` for context:
 
 ```python
-from dotpromptz import Dotprompt
-from dotpromptz.typing import DataArgument
+from dotpromptz import DataArgument, Dotprompt
 
+# 1. Initialize compiler
 prompt = Dotprompt()
+
+# 2. Render prompt with isolated input and context
 result = await prompt.render(
     '{{name}} is signed in as {{@name}}',
     DataArgument(
@@ -89,4 +91,8 @@ result = await prompt.render(
         context={'name': 'admin'},
     ),
 )
+
+# 3. Access rendered output
+print(result.messages[0].content[0].text)
+# => Ada is signed in as admin
 ```

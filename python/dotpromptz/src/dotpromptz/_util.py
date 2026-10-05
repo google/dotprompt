@@ -86,7 +86,7 @@ Input: "foo/../bar"
 ## Usage Example
 
 ```python
-from dotpromptz.util import remove_undefined_fields, validate_prompt_name
+from dotpromptz._util import remove_undefined_fields, validate_prompt_name
 
 # Clean up a metadata dict
 metadata = {'name': 'test', 'version': None, 'config': {'key': None}}

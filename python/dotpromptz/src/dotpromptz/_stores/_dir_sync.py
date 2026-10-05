@@ -32,8 +32,7 @@ File Naming Conventions:
 
 Example Usage:
 ```python
-from dotpromptz.stores import DirStoreSync, DirStoreOptions
-from dotpromptz.typing import PromptData
+from dotpromptz import DirStoreOptions, DirStoreSync, PromptData
 
 # Create a store instance
 store = DirStoreSync(DirStoreOptions(directory='/path/to/prompts'))
@@ -59,7 +58,7 @@ from pathlib import Path
 
 import structlog
 
-from dotpromptz.typing import (
+from dotpromptz._typing import (
     DeletePromptOrPartialOptions,
     ListPartialsOptions,
     ListPromptsOptions,
@@ -73,7 +72,7 @@ from dotpromptz.typing import (
     PromptRef,
     PromptStoreWritableSync,
 )
-from dotpromptz.util import validate_prompt_name
+from dotpromptz._util import validate_prompt_name
 
 from ._io import (
     calculate_version,

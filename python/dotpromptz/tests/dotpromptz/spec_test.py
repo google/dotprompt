@@ -109,8 +109,8 @@ import structlog
 import yaml
 from pydantic import BaseModel, Field
 
-from dotpromptz.dotprompt import Dotprompt
-from dotpromptz.typing import (
+from dotpromptz._dotprompt import Dotprompt
+from dotpromptz._typing import (
     DataArgument,
     JsonSchema,
     Message,

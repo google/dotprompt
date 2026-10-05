@@ -41,9 +41,9 @@ import unittest
 from collections.abc import Awaitable
 from typing import Any
 
-from dotpromptz.errors import ResolverFailedError
-from dotpromptz.resolvers import resolve, resolve_json_schema, resolve_partial, resolve_tool
-from dotpromptz.typing import JsonSchema, ToolDefinition
+from dotpromptz._errors import ResolverFailedError
+from dotpromptz._resolvers import resolve, resolve_json_schema, resolve_partial, resolve_tool
+from dotpromptz._typing import JsonSchema, ToolDefinition
 
 
 class MockSyncResolver:

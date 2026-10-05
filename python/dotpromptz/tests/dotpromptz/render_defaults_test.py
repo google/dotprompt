@@ -18,8 +18,8 @@ from typing import Any, cast
 
 import pytest
 
-from dotpromptz.dotprompt import Dotprompt
-from dotpromptz.typing import DataArgument, PromptInputConfig, PromptMetadata, TextPart
+from dotpromptz._dotprompt import Dotprompt
+from dotpromptz._typing import DataArgument, PromptInputConfig, PromptMetadata, TextPart
 
 
 def rendered_text(result: Any) -> str:
