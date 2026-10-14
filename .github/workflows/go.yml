@@ -51,6 +51,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v6
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.head_ref }}
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
 
