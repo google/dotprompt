@@ -40,6 +40,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ github.head_ref }}
           token: ${{ startsWith(github.head_ref, 'release-please--') && secrets.RELEASE_PLEASE_TOKEN || github.token }}
 
