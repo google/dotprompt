@@ -147,7 +147,7 @@ jobs:
           go-version: ${{ matrix.go-version }}
 
       - name: Install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+        run: GOTOOLCHAIN=auto go install golang.org/x/vuln/cmd/govulncheck@latest
 
       - name: Check build
         run: go build -C go -v ./...
