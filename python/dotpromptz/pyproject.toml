@@ -38,12 +38,10 @@ dependencies = [
   "aiofiles>=24.1.0",
   "anyio>=4.9.0",
   "dotpromptz-handlebars>=0.2.0",
-  "pydantic[email]>=2.10.6",
+  "pydantic>=2.10.6",
   "pyyaml>=6.0.2",
   "jsonschema>=4.23.0",
   "structlog>=25.2.0",
-  "types-aiofiles>=24.1.0.20250326",
-  "types-pyyaml>=6.0.12.20241230",
 ]
 description = "Dotpromptz is a language-neutral executable prompt template file format for Generative AI."
 license = "Apache-2.0"
