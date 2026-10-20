@@ -201,10 +201,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "dotprompt_marker"
-        },
-        {
-          "type": "SYMBOL",
           "name": "text"
         }
       ]
@@ -546,31 +542,9 @@
         }
       ]
     },
-    "dotprompt_marker": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "<<<dotprompt:"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "PATTERN",
-            "value": "[^>]+"
-          },
-          "named": true,
-          "value": "marker_content"
-        },
-        {
-          "type": "STRING",
-          "value": ">>>"
-        }
-      ]
-    },
     "text": {
       "type": "PATTERN",
-      "value": "[^{<#]+|\\{|<|#"
+      "value": "[^{#]+|\\{|#"
     }
   },
   "extras": [

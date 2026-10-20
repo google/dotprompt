@@ -25,7 +25,7 @@ export const LANGUAGE_ID = 'dotprompt';
 
 /**
  * Monarch tokenizer for Dotprompt syntax highlighting.
- * Handles YAML frontmatter, Handlebars templates, and Dotprompt markers.
+ * Handles YAML frontmatter and Handlebars templates.
  */
 export const monarchLanguage: monaco.languages.IMonarchLanguage = {
   defaultToken: '',
@@ -78,9 +78,6 @@ export const monarchLanguage: monaco.languages.IMonarchLanguage = {
 
       // Frontmatter delimiter
       [/^---\s*$/, { token: 'delimiter.frontmatter', next: '@frontmatter' }],
-
-      // Dotprompt markers <<<dotprompt:...>>>
-      [/<<<dotprompt:[^>]+>>>/, 'keyword.marker'],
 
       // Include template tokens
       { include: '@template' },
@@ -287,7 +284,7 @@ export const languageConfiguration: monaco.languages.LanguageConfiguration = {
     },
   },
   indentationRules: {
-    increaseIndentPattern: /^\s*\{\{#(if|unless|each|with|role|section)/,
-    decreaseIndentPattern: /^\s*\{\{\/(if|unless|each|with|role|section)/,
+    increaseIndentPattern: /^\s*\{\{#(if|unless|each|with|ifEquals|unlessEquals)/,
+    decreaseIndentPattern: /^\s*\{\{\/(if|unless|each|with|ifEquals|unlessEquals)/,
   },
 };

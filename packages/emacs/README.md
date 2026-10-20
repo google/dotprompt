@@ -4,7 +4,7 @@ Provides a major mode for editing Dotprompt (`.prompt`) files with syntax highli
 
 ## Features
 
-- **Syntax Highlighting**: Handlebars helpers, partials, Dotprompt markers
+- **Syntax Highlighting**: Handlebars helpers, partials
 - **LSP Integration**: Diagnostics, formatting, hover via eglot or lsp-mode
 - **Format Buffer**: `C-c C-f` or `M-x dotprompt-format-buffer`
 - **Format on Save**: Optional automatic formatting

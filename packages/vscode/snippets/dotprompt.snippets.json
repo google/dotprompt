@@ -17,25 +17,25 @@
     ],
     "description": "Insert YAML frontmatter template"
   },
-  "Role Block": {
-    "prefix": ["role", "#role"],
-    "body": ["{{#role \"${1|system,user,model|}\"}}", "$0", "{{/role}}"],
-    "description": "Insert a role block (system, user, or model)"
+  "Role Marker": {
+    "prefix": ["role"],
+    "body": ["{{role \"${1|system,user,model|}\"}}", "$0"],
+    "description": "Insert a role marker (system, user, or model)"
   },
   "System Role": {
     "prefix": ["system", "sysrole"],
-    "body": ["{{#role \"system\"}}", "$0", "{{/role}}"],
-    "description": "Insert a system role block"
+    "body": ["{{role \"system\"}}", "$0"],
+    "description": "Insert a system role marker"
   },
   "User Role": {
     "prefix": ["user", "userrole"],
-    "body": ["{{#role \"user\"}}", "$0", "{{/role}}"],
-    "description": "Insert a user role block"
+    "body": ["{{role \"user\"}}", "$0"],
+    "description": "Insert a user role marker"
   },
   "Model Role": {
     "prefix": ["model", "modelrole"],
-    "body": ["{{#role \"model\"}}", "$0", "{{/role}}"],
-    "description": "Insert a model role block"
+    "body": ["{{role \"model\"}}", "$0"],
+    "description": "Insert a model role marker"
   },
   "If Block": {
     "prefix": ["if", "#if"],
@@ -99,10 +99,10 @@
     "body": ["{{> ${1:partialName} ${2:contextVar}}}"],
     "description": "Insert a partial with context"
   },
-  "Section": {
-    "prefix": ["section", "#section"],
-    "body": ["{{#section \"${1:sectionName}\"}}", "$0", "{{/section}}"],
-    "description": "Insert a section block"
+  "Section Marker": {
+    "prefix": ["section"],
+    "body": ["{{section \"${1:sectionName}\"}}", "$0"],
+    "description": "Insert a section marker"
   },
   "History": {
     "prefix": ["history"],
@@ -133,13 +133,6 @@
     ],
     "description": "Insert unlessEquals helper"
   },
-  "Dotprompt Marker": {
-    "prefix": ["marker", "<<<"],
-    "body": [
-      "<<<dotprompt:${1|role:system,role:user,role:model,section:preamble|}>>>"
-    ],
-    "description": "Insert a Dotprompt marker"
-  },
   "Complete Prompt Template": {
     "prefix": ["prompt", "newprompt"],
     "body": [
@@ -154,13 +147,11 @@
       "  format: ${4|text,json|}",
       "---",
       "",
-      "{{#role \"system\"}}",
+      "{{role \"system\"}}",
       "${5:You are a helpful assistant.}",
-      "{{/role}}",
       "",
-      "{{#role \"user\"}}",
+      "{{role \"user\"}}",
       "${6:{{query}}}",
-      "{{/role}}",
       ""
     ],
     "description": "Insert a complete prompt template"

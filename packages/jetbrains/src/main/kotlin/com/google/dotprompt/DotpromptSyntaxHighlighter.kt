@@ -53,9 +53,6 @@ class DotpromptSyntaxHighlighter : SyntaxHighlighterBase() {
             DotpromptTokenTypes.YAML_VALUE -> YAML_VALUE_KEYS
             DotpromptTokenTypes.HANDLEBARS_OPEN -> HANDLEBARS_BRACE_KEYS
             DotpromptTokenTypes.HANDLEBARS_CLOSE -> HANDLEBARS_BRACE_KEYS
-            DotpromptTokenTypes.HANDLEBARS_HELPER -> HANDLEBARS_HELPER_KEYS
-            DotpromptTokenTypes.HANDLEBARS_VARIABLE -> HANDLEBARS_VARIABLE_KEYS
-            DotpromptTokenTypes.MARKER -> MARKER_KEYS
             DotpromptTokenTypes.COMMENT -> COMMENT_KEYS
             DotpromptTokenTypes.HEADER_COMMENT -> COMMENT_KEYS
             else -> EMPTY_KEYS
@@ -81,18 +78,6 @@ class DotpromptSyntaxHighlighter : SyntaxHighlighterBase() {
             "DOTPROMPT_HANDLEBARS_BRACE",
             DefaultLanguageHighlighterColors.BRACES
         )
-        private val HANDLEBARS_HELPER = TextAttributesKey.createTextAttributesKey(
-            "DOTPROMPT_HANDLEBARS_HELPER",
-            DefaultLanguageHighlighterColors.FUNCTION_CALL
-        )
-        private val HANDLEBARS_VARIABLE = TextAttributesKey.createTextAttributesKey(
-            "DOTPROMPT_HANDLEBARS_VARIABLE",
-            DefaultLanguageHighlighterColors.IDENTIFIER
-        )
-        private val MARKER = TextAttributesKey.createTextAttributesKey(
-            "DOTPROMPT_MARKER",
-            DefaultLanguageHighlighterColors.METADATA
-        )
         private val COMMENT = TextAttributesKey.createTextAttributesKey(
             "DOTPROMPT_COMMENT",
             DefaultLanguageHighlighterColors.LINE_COMMENT
@@ -102,9 +87,6 @@ class DotpromptSyntaxHighlighter : SyntaxHighlighterBase() {
         private val YAML_KEY_KEYS = arrayOf(YAML_KEY)
         private val YAML_VALUE_KEYS = arrayOf(YAML_VALUE)
         private val HANDLEBARS_BRACE_KEYS = arrayOf(HANDLEBARS_BRACE)
-        private val HANDLEBARS_HELPER_KEYS = arrayOf(HANDLEBARS_HELPER)
-        private val HANDLEBARS_VARIABLE_KEYS = arrayOf(HANDLEBARS_VARIABLE)
-        private val MARKER_KEYS = arrayOf(MARKER)
         private val COMMENT_KEYS = arrayOf(COMMENT)
     }
 }
