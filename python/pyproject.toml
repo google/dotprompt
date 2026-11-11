@@ -27,17 +27,17 @@ version         = "0.1.0"
 dev = [
   "bpython>=0.25",
   "ipython>=8.31.0",
-  "jupyter>=1.1.1",
+  "jupyter>=1.1.1; python_version >= '3.11'",
   "pytest-asyncio>=0.25.2",
   "pytest>=8.3.4",
   "pytest-cov>=6.0.0",
   "pytest-watcher>=0.4.3",
   "types-aiofiles>=24.1.0.20250326",
   "types-pyyaml>=6.0.12.20241230",
-  "tox>=4.25.0",
-  "tox-uv>=1.25.0",
-  "nox>=2025.2.9",
-  "nox-uv>=0.2.1",
+  "tox>=4.25.0; python_version >= '3.11'",
+  "tox-uv>=1.25.0; python_version >= '3.11'",
+  "nox>=2025.2.9; python_version >= '3.11'",
+  "nox-uv>=0.2.1; python_version >= '3.11'",
   "pyrefly>=0.16.1",
   "ty>=0.0.5",
   # 0.4 can't load our current .pysentry.toml, so keep the scanner on 0.3.
@@ -208,7 +208,7 @@ untyped_def_behavior = "check-and-infer-return-type"
 # which has external dependencies not installed in the workspace.
 # This lets ty check all code while tolerating missing third-party stubs.
 [[tool.ty.overrides]]
-include = ["samples/**"]
+include = ["samples/**", "noxfile.py"]
 
 [tool.ty.overrides.rules]
 unresolved-import = "ignore"
