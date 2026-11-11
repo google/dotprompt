@@ -500,6 +500,22 @@
     "text": "Signed by Genkit"
   },
   {
+    "name": "each_open_space_then_item_keeps_the_space_in_ingredient_list",
+    "template": "Ingredients:\n{{#each items}} {{this}}{{/each}}",
+    "context": {
+      "items": [
+        "flour",
+        "eggs"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "prompts",
+    "text": "Ingredients:\n flour eggs"
+  },
+  {
     "name": "if_missing_key_falsy_prints_else",
     "template": "{{#if missing}}IF{{else}}ELSE{{/if}}",
     "context": {},
@@ -3019,6 +3035,102 @@
     "strict": false,
     "layer": "whitespace",
     "text": "Null: "
+  },
+  {
+    "name": "each_open_followed_by_space_and_tag_keeps_the_space",
+    "template": "{{#each items}} {{this}}{{/each}}",
+    "context": {
+      "items": [
+        "a",
+        "b"
+      ]
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": " a b"
+  },
+  {
+    "name": "if_open_followed_by_space_and_tag_keeps_the_space",
+    "template": "{{#if name}} {{name}}{{/if}}",
+    "context": {
+      "name": "Ada"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": " Ada"
+  },
+  {
+    "name": "else_at_line_start_followed_by_space_and_tag_keeps_the_space",
+    "template": "{{#if missing}}\nyes\n{{else}} {{name}}{{/if}}",
+    "context": {
+      "name": "Ada"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": " Ada"
+  },
+  {
+    "name": "close_at_line_start_followed_by_space_and_tag_keeps_the_space",
+    "template": "{{#if name}}hi\n{{/if}} {{name}}",
+    "context": {
+      "name": "Ada"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "hi\n Ada"
+  },
+  {
+    "name": "partial_followed_by_space_and_tag_keeps_the_space",
+    "template": "{{> greet}} {{name}}",
+    "context": {
+      "name": "Ada"
+    },
+    "data": null,
+    "partials": {
+      "greet": "Hello"
+    },
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Hello Ada"
+  },
+  {
+    "name": "comment_followed_by_space_and_tag_keeps_the_space",
+    "template": "{{! note}} {{name}}",
+    "context": {
+      "name": "Ada"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": " Ada"
+  },
+  {
+    "name": "close_alone_on_last_line_with_trailing_spaces_is_still_dropped",
+    "template": "{{#if name}}\n{{name}}\n{{/if}}   ",
+    "context": {
+      "name": "Ada"
+    },
+    "data": null,
+    "partials": {},
+    "helpers": [],
+    "strict": false,
+    "layer": "whitespace",
+    "text": "Ada\n"
   },
   {
     "name": "path_list_index_in_brackets",
