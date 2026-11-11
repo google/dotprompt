@@ -30,8 +30,6 @@ py_library(
         requirement("pydantic"),
         requirement("pyyaml"),
         requirement("structlog"),
-        requirement("types-aiofiles"),
-        requirement("types-pyyaml"),
     ],
 )
 
