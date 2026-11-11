@@ -295,7 +295,7 @@ def _line_ending_after(parts: list[TagToken | str], index: int) -> int | None:
     nxt = parts[index + 1]
     if not isinstance(nxt, str):
         return None
-    line_end = _standalone_line_end(nxt)
+    line_end = _standalone_line_end(nxt, ends_template=index + 2 == len(parts))
     if line_end is None:
         return None
     return len(line_end)
@@ -313,13 +313,17 @@ def _trim_indent_before(parts: list[TagToken | str], index: int) -> None:
         parts[cursor] = ''
 
 
-def _standalone_line_end(text: str) -> str | None:
-    """The spaces and newline after a tag that sits at the end of its line."""
+def _standalone_line_end(text: str, *, ends_template: bool) -> str | None:
+    """The spaces and newline after a tag that sits at the end of its line.
+
+    Spaces that run into another tag aren't a line end. In `{{#each xs}} {{this}}`
+    that space is part of what the prompt prints.
+    """
     index = 0
     while index < len(text) and text[index] in ' \t':
         index += 1
     if index == len(text):
-        return text
+        return text if ends_template else None
     if text.startswith('\r\n', index):
         return text[: index + 2]
     if text.startswith('\n', index):
