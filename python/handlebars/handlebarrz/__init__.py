@@ -32,27 +32,17 @@ Deprecation & Removal lifecycle:
 """
 
 from dotpromptz_handlebars import (
-    Block,
     BlockFn,
     Context,
     ContextDict,
-    ElseNode,
     EscapeFunction,
     Handlebars,
     HelperFn,
     HelperOptions,
-    InlinePartial,
-    Mustache,
-    Node,
-    Partial,
-    PartialBlock,
-    Program,
     RuntimeOptions,
     SafeString,
     StrictModeError,
-    TagToken,
     TemplateRecursionError,
-    Text,
 )
 from dotpromptz_handlebars._render import _ESCAPE
 
@@ -81,28 +71,18 @@ def package_name() -> str:
 
 
 __all__ = [
-    'Block',
     'BlockFn',
     'Context',
     'ContextDict',
-    'ElseNode',
     'EscapeFunction',
     'Handlebars',
     'HelperFn',
     'HelperOptions',
-    'InlinePartial',
-    'Mustache',
-    'Node',
-    'Partial',
-    'PartialBlock',
-    'Program',
     'RuntimeOptions',
     'SafeString',
     'StrictModeError',
-    'TagToken',
     'Template',
     'TemplateRecursionError',
-    'Text',
     'create_helper',
     'html_escape',
     'no_escape',
