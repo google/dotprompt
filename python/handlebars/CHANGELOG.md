@@ -1,6 +1,20 @@
 # Changelog
 
-## [0.2.0](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.9...dotpromptz-handlebars-0.2.0) (unreleased)
+## [1.0.0](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.2.0...dotpromptz-handlebars-1.0.0) (2026-11-11)
+
+### ⚠ BREAKING CHANGES
+
+* **imports:** `Block`, `ElseNode`, `InlinePartial`, `Mustache`, `Node`, `Partial`, `PartialBlock`, `Program`, `TagToken`, and `Text` are no longer importable from `dotpromptz_handlebars` or `handlebarrz`. They describe a parsed template, and no public method accepts or returns them.
+
+### Bug Fixes
+
+* **whitespace:** a block, partial, or comment tag at the start of a line keeps the spaces between it and the next tag on that line. `{{#each items}} {{this}}{{/each}}` renders ` a b`, not `ab`.
+
+### Compatibility
+
+* The `handlebarrz` import path stays for all of 1.x, since already-published `dotpromptz<=0.1.6` releases install the newest `dotpromptz-handlebars`.
+
+## [0.2.0](https://github.com/google/dotprompt/compare/dotpromptz-handlebars-0.1.10...dotpromptz-handlebars-0.2.0) (2026-10-05)
 
 ### ⚠ BREAKING CHANGES
 

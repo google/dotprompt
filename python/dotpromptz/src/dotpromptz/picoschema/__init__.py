@@ -20,8 +20,8 @@
 and imports `from dotpromptz.picoschema import ...`. This shim keeps those legacy
 installations working.
 
-Remove this shim in `dotpromptz>=0.3.0` after `genkit<=0.12.0` has aged out
-and users have upgraded.
+Those installs pick up every new dotpromptz release, so this path stays for
+all of dotpromptz 1.x.
 """
 
 from dotpromptz._picoschema import *  # noqa: F403

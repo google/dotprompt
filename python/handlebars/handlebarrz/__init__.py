@@ -16,19 +16,11 @@
 
 """Backward-compatibility shim for already-published dotpromptz<=0.1.6 and genkit<=0.12.0.
 
-Why this shim exists:
-1. `genkit<=0.12.0` on PyPI depends on `dotpromptz>=0.1.6,<0.2.0`.
-2. `dotpromptz==0.1.6` on PyPI depends on `dotpromptz-handlebars>=0.1.8` without an
-   upper bound, and internally runs `from handlebarrz import Handlebars`.
-3. When `dotpromptz-handlebars 0.2.0` is released, any fresh install of `genkit<=0.12.0`
-   will resolve to `dotpromptz-handlebars 0.2.0`. Without this `handlebarrz` alias module,
-   all existing `genkit<=0.12.0` installations crash with `ModuleNotFoundError: No module named 'handlebarrz'`.
-
-Deprecation & Removal lifecycle:
-- In Genkit 0.13.0, Genkit will update its dependency to `dotpromptz>=0.2.0,<0.3.0`
-  (which imports from `dotpromptz_handlebars`).
-- Once Genkit 0.13.0 has soaked in production and users have migrated off `genkit<=0.12.0`,
-  this `handlebarrz` alias package can be safely deleted in `dotpromptz-handlebars>=0.3.0`.
+`dotpromptz<=0.1.6` runs `from handlebarrz import Handlebars` and depends on
+`dotpromptz-handlebars>=0.1.8` with no upper bound, so a fresh install of one of
+those releases gets the newest dotpromptz-handlebars. Without this module it
+crashes with `ModuleNotFoundError: No module named 'handlebarrz'`. Those
+releases never stop pulling the newest wheel, so this stays for all of 1.x.
 """
 
 from dotpromptz_handlebars import (
