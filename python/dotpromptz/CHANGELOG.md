@@ -1,6 +1,17 @@
 # Changelog
 
-## [Unreleased]
+## [1.0.0](https://github.com/google/dotprompt/compare/dotpromptz-0.2.0...dotpromptz-1.0.0) (2026-11-11)
+
+### Dependencies
+
+* **dependencies:** requires `dotpromptz-handlebars>=1.0.0,<2`, so a future engine major version can't change how installed dotpromptz 1.x prompts render.
+* **dependencies:** drops unused `pydantic[email]` extra and moves `types-aiofiles` and `types-pyyaml` to workspace dev dependencies, so `email-validator`, `dnspython`, `types-aiofiles`, and `types-pyyaml` are no longer installed ([#635](https://github.com/google/dotprompt/pull/635)).
+
+### Compatibility
+
+* The `dotprompt`, `typing`, `stores`, `errors`, `helpers`, `parse`, `picoschema`, `resolvers`, and `util` import paths stay for all of 1.x. New code should import from the `dotpromptz` root.
+
+## [0.2.0](https://github.com/google/dotprompt/compare/dotpromptz-0.1.6...dotpromptz-0.2.0) (2026-10-05)
 
 ### ⚠ BREAKING CHANGES
 
