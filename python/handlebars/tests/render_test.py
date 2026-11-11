@@ -640,3 +640,53 @@ def test_handlebarrz_compatibility_shim() -> None:
     t = handlebarrz.Template()
     render = t.compile('Hello {{name}}!')
     assert render({'name': 'World'}) == 'Hello World!'
+
+
+def test_package_exports_the_engine_helper_types_and_errors() -> None:
+    """`from dotpromptz_handlebars import *` gives the engine, helper types, and errors, nothing else."""
+    import dotpromptz_handlebars
+
+    assert sorted(dotpromptz_handlebars.__all__) == [
+        'BlockFn',
+        'Context',
+        'ContextDict',
+        'EscapeFunction',
+        'Handlebars',
+        'HelperFn',
+        'HelperOptions',
+        'RuntimeOptions',
+        'SafeString',
+        'StrictModeError',
+        'TemplateRecursionError',
+    ]
+
+
+@pytest.mark.parametrize('module', ['dotpromptz_handlebars', 'handlebarrz'])
+@pytest.mark.parametrize(
+    'name',
+    [
+        'Block',
+        'ElseNode',
+        'InlinePartial',
+        'Mustache',
+        'Node',
+        'Partial',
+        'PartialBlock',
+        'Program',
+        'TagToken',
+        'Text',
+    ],
+)
+def test_template_syntax_classes_are_not_importable(module: str, name: str) -> None:
+    """Importing a parsed-template class like `Mustache` from the package raises ImportError."""
+    with pytest.raises(ImportError):
+        exec(f'from {module} import {name}')
+
+
+@pytest.mark.parametrize('module', ['dotpromptz_handlebars', 'handlebarrz'])
+@pytest.mark.parametrize(
+    'name', ['Context', 'EscapeFunction', 'Handlebars', 'HelperFn', 'HelperOptions', 'RuntimeOptions', 'SafeString']
+)
+def test_names_published_dotpromptz_imports_still_resolve(module: str, name: str) -> None:
+    """Every name dotpromptz 0.1.6 and 0.2.0 import from the engine still resolves."""
+    exec(f'from {module} import {name}')
