@@ -20,9 +20,10 @@
 //! functionality like role markers, media references, and JSON serialization.
 //!
 //! The marker helpers (`role`, `history`, `section`, `media`) emit nonce-bearing
-//! markers (see [`crate::markers`]). The nonce changes on every render, so they
-//! are bound per render as local helpers on the [`RenderContext`] by
-//! [`register_marker_helpers`], which [`Dotprompt`](crate::Dotprompt) calls.
+//! markers (see the crate-private `markers` module). The nonce changes on every
+//! render, so they are bound per render as local helpers on the
+//! [`RenderContext`] by the crate-private `register_marker_helpers`, which
+//! [`Dotprompt`](crate::Dotprompt) calls.
 //! Local helpers take precedence over registry helpers and are visible inside
 //! blocks (`#each`, `#with`, ...) and partials, which share the render context.
 //!
@@ -44,8 +45,8 @@ use handlebars::{
 /// Registers all built-in helpers with a Handlebars instance.
 ///
 /// The marker helpers registered here are unbound: they fail when called, so a
-/// template rendered without [`register_marker_helpers`] errors instead of
-/// emitting markers the parser would not trust.
+/// template must be rendered through [`Dotprompt`](crate::Dotprompt), which
+/// binds them to a per-render nonce, to emit markers the parser will trust.
 ///
 /// # Arguments
 ///
@@ -69,30 +70,9 @@ pub fn register_builtin_helpers(handlebars: &mut Handlebars) {
 /// from [`register_builtin_helpers`]. Pair this with
 /// [`to_messages`](crate::parse::to_messages) using the same nonce.
 ///
-/// # Examples
-///
-/// ```
-/// use dotprompt::helpers::{register_builtin_helpers, register_marker_helpers};
-/// use dotprompt::markers::{MarkerNonce, format_marker};
-/// use handlebars::{Context, Handlebars, RenderContext, Renderable, Template};
-///
-/// # fn example() -> Result<(), Box<dyn std::error::Error>> {
-/// let mut hbs = Handlebars::new();
-/// register_builtin_helpers(&mut hbs);
-///
-/// let nonce = MarkerNonce::generate()?;
-/// let template = Template::compile(r#"{{role "system"}}"#)?;
-/// let ctx = Context::null();
-/// let mut rc = RenderContext::new(None);
-/// register_marker_helpers(&mut rc, &nonce);
-///
-/// let rendered = template.renders(&hbs, &ctx, &mut rc)?;
-/// assert_eq!(rendered, format_marker(&nonce, "role:system"));
-/// # Ok(())
-/// # }
-/// # example().unwrap();
-/// ```
-pub fn register_marker_helpers(rc: &mut RenderContext<'_, '_>, nonce: &MarkerNonce) {
+/// Crate-private because callers would otherwise have to manage nonces and
+/// the marker format themselves; see the unit tests for usage.
+pub(crate) fn register_marker_helpers(rc: &mut RenderContext<'_, '_>, nonce: &MarkerNonce) {
     for kind in MarkerKind::ALL {
         let helper = MarkerHelper {
             kind,

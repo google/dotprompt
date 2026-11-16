@@ -20,7 +20,9 @@
 //! and converting rendered templates into Message arrays.
 //!
 //! Only markers carrying the render's nonce are honored when splitting the
-//! rendered string; see [`crate::markers`].
+//! rendered string; see the crate-private `markers` module. Converting a
+//! rendered string into messages (`to_messages`) is therefore crate-private
+//! too and only reachable through [`Dotprompt::render`](crate::Dotprompt::render).
 
 use crate::error::{DotpromptError, Result};
 use crate::markers::{
@@ -140,12 +142,15 @@ fn parse_part(piece: MarkerPiece<'_>) -> Part {
 }
 
 /// Parses a media marker body (`media:url URL [CONTENT_TYPE]`) into a `MediaPart`.
+///
+/// Fields are separated by single spaces (as the `media` helper writes them),
+/// not arbitrary whitespace, so a URL containing a newline survives intact.
 fn parse_media_part(body: &str) -> Part {
     let content = body.strip_prefix(MEDIA_MARKER_BODY_PREFIX).unwrap_or(body);
-    let parts: Vec<&str> = content.split_whitespace().collect();
+    let mut parts = content.split(' ').filter(|s| !s.is_empty());
 
-    let url = parts.first().unwrap_or(&"").to_string();
-    let content_type = parts.get(1).map(std::string::ToString::to_string);
+    let url = parts.next().unwrap_or_default().to_string();
+    let content_type = parts.next().map(str::to_string);
 
     Part::Media(MediaPart {
         media: MediaContent { url, content_type },
@@ -296,27 +301,8 @@ fn message_sources_to_messages(sources: Vec<MessageSource>, re: &Regex) -> Vec<M
 /// # Returns
 ///
 /// Returns a vector of `Message` objects.
-///
-/// # Examples
-///
-/// ```
-/// use dotprompt::markers::{MarkerNonce, format_marker};
-/// use dotprompt::parse::to_messages;
-/// use dotprompt::Role;
-///
-/// # fn example() -> dotprompt::Result<()> {
-/// let nonce = MarkerNonce::generate()?;
-/// let system = format_marker(&nonce, "role:system");
-/// let rendered = format!("{system}Be safe.<<<dotprompt:role:user>>>");
-/// let messages = to_messages::<serde_json::Value>(&rendered, &nonce, None);
-/// assert_eq!(messages.len(), 1);
-/// assert_eq!(messages[0].role, Role::System);
-/// # Ok(())
-/// # }
-/// # example().unwrap();
-/// ```
 #[must_use]
-pub fn to_messages<V>(
+pub(crate) fn to_messages<V>(
     rendered_string: &str,
     nonce: &MarkerNonce,
     data: Option<&DataArgument<V>>,
@@ -477,6 +463,27 @@ mod tests {
                 "content": [
                     {"text": "Hi "},
                     {"metadata": {"purpose": "output", "pending": true}}
+                ]
+            }])
+        );
+    }
+
+    #[test]
+    fn test_to_messages_keeps_newlines_in_media_url_and_section_name() {
+        let rendered = format!(
+            "Hi {}{}",
+            m("media:url https://example.com/a\nb.png image/png"),
+            m("section a\nb")
+        );
+        let messages = to_messages::<serde_json::Value>(&rendered, &nonce(), None);
+        assert_eq!(
+            to_json(&messages),
+            json!([{
+                "role": "user",
+                "content": [
+                    {"text": "Hi "},
+                    {"media": {"url": "https://example.com/a\nb.png", "contentType": "image/png"}},
+                    {"metadata": {"purpose": "a\nb", "pending": true}}
                 ]
             }])
         );

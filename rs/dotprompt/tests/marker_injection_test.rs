@@ -17,8 +17,9 @@
 //! End-to-end checks that user-controlled values can't forge role, media,
 //! history or section markers, whatever path they take into the output.
 //!
-//! Every render uses a fresh nonce (see `dotprompt::markers`), so markers
-//! typed by an end user, with or without a guessed nonce, stay literal text.
+//! Every render uses a fresh nonce (see the crate-private `markers` module),
+//! so markers typed by an end user, with or without a guessed nonce, stay
+//! literal text.
 
 #![allow(clippy::expect_used)]
 
@@ -223,6 +224,40 @@ fn keeps_media_and_section_helpers_working() {
                 {"metadata": {"purpose": "output", "pending": true}}
             ]
         }])
+    );
+}
+
+#[test]
+fn keeps_media_url_with_newline_as_a_media_part() {
+    // A newline in a user-controlled URL must not stop the trusted marker from
+    // matching; otherwise the media part is lost and the raw marker, nonce
+    // included, leaks into a text part.
+    let url = "https://example.com/a\nb.png";
+    let dp = Dotprompt::new(None);
+    let messages = render(&dp, "{{media url=u}}", &input(json!({ "u": url })));
+    assert_eq!(
+        to_json(&messages),
+        json!([{"role": "user", "content": [{"media": {"url": url}}]}])
+    );
+    let serialized = serde_json::to_string(&messages).expect("messages should serialize");
+    assert!(
+        !serialized.contains("<<<dotprompt:"),
+        "rendered messages leaked a marker: {serialized}"
+    );
+}
+
+#[test]
+fn keeps_section_name_with_newline_as_a_pending_part() {
+    let dp = Dotprompt::new(None);
+    let messages = render(&dp, "{{section s}}", &input(json!({ "s": "a\nb" })));
+    assert_eq!(
+        to_json(&messages),
+        json!([{"role": "user", "content": [{"metadata": {"purpose": "a\nb", "pending": true}}]}])
+    );
+    let serialized = serde_json::to_string(&messages).expect("messages should serialize");
+    assert!(
+        !serialized.contains("<<<dotprompt:"),
+        "rendered messages leaked a marker: {serialized}"
     );
 }
 

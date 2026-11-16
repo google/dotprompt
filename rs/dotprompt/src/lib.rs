@@ -54,7 +54,13 @@
 pub mod dotprompt;
 pub mod error;
 pub mod helpers;
-pub mod markers;
+// Crate-private: the nonce and marker format are an implementation detail of
+// `Dotprompt::render`, and exposing them would invite callers to build or
+// parse trusted markers themselves. Items inside are spelled `pub(crate)` so
+// the intent survives if the module is ever re-exported (`unreachable_pub`
+// rejects bare `pub` here, which `redundant_pub_crate` would prefer).
+#[allow(clippy::redundant_pub_crate)]
+mod markers;
 pub mod parse;
 pub mod picoschema;
 pub mod store;

@@ -44,6 +44,10 @@
 //! The helpers receive the nonce per render via
 //! [`register_marker_helpers`](crate::helpers::register_marker_helpers), not
 //! through the template data, so nothing in the input or context can set it.
+//!
+//! This module is crate-private: only [`Dotprompt`](crate::Dotprompt) mints
+//! nonces and pairs the helpers with the parser. Examples live in the unit
+//! tests below rather than doctests, which can't reach private items.
 
 use crate::error::{DotpromptError, Result};
 use regex::Regex;
@@ -54,25 +58,10 @@ const NONCE_BYTES: usize = 16;
 /// A validated marker nonce: exactly 32 lowercase hex characters.
 ///
 /// The nonce is interpolated into a regex, so the only ways to obtain one are
-/// [`MarkerNonce::generate`] and [`MarkerNonce::parse`], both of which
-/// guarantee the format.
-///
-/// # Examples
-///
-/// ```
-/// use dotprompt::markers::MarkerNonce;
-///
-/// # fn example() -> dotprompt::Result<()> {
-/// let nonce = MarkerNonce::generate()?;
-/// assert_eq!(nonce.as_str().len(), 32);
-/// assert!(MarkerNonce::parse(nonce.as_str()).is_ok());
-/// assert!(MarkerNonce::parse(".*").is_err());
-/// # Ok(())
-/// # }
-/// # example().unwrap();
-/// ```
+/// [`MarkerNonce::generate`] and (in tests) `MarkerNonce::parse`, both of
+/// which guarantee the format.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct MarkerNonce(String);
+pub(crate) struct MarkerNonce(String);
 
 impl MarkerNonce {
     /// Generates a fresh nonce from the operating system CSPRNG. Call once per
@@ -81,7 +70,7 @@ impl MarkerNonce {
     /// # Errors
     ///
     /// Returns [`DotpromptError::RenderError`] if the OS random source fails.
-    pub fn generate() -> Result<Self> {
+    pub(crate) fn generate() -> Result<Self> {
         let mut bytes = [0u8; NONCE_BYTES];
         getrandom::fill(&mut bytes).map_err(|e| {
             DotpromptError::RenderError(format!("failed to generate marker nonce: {e}"))
@@ -92,11 +81,15 @@ impl MarkerNonce {
 
     /// Parses and validates an existing nonce string.
     ///
+    /// Test-only: production code always uses [`MarkerNonce::generate`], and
+    /// tests need fixed nonces to assert on exact marker strings.
+    ///
     /// # Errors
     ///
     /// Returns [`DotpromptError::InvalidFormat`] unless `s` is exactly 32
     /// lowercase hex characters.
-    pub fn parse(s: &str) -> Result<Self> {
+    #[cfg(test)]
+    pub(crate) fn parse(s: &str) -> Result<Self> {
         let valid =
             s.len() == NONCE_BYTES * 2 && s.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'));
         if valid {
@@ -110,30 +103,15 @@ impl MarkerNonce {
 
     /// Returns the nonce as a string slice.
     #[must_use]
-    pub fn as_str(&self) -> &str {
+    pub(crate) fn as_str(&self) -> &str {
         &self.0
     }
 }
 
-/// Formats a marker with the given nonce and body.
-///
-/// # Examples
-///
-/// ```
-/// use dotprompt::markers::{MarkerNonce, format_marker};
-///
-/// # fn example() -> dotprompt::Result<()> {
-/// let nonce = MarkerNonce::parse("0123456789abcdef0123456789abcdef")?;
-/// assert_eq!(
-///     format_marker(&nonce, "role:user"),
-///     "<<<dotprompt:0123456789abcdef0123456789abcdef:role:user>>>"
-/// );
-/// # Ok(())
-/// # }
-/// # example().unwrap();
-/// ```
+/// Formats a marker with the given nonce and body, e.g.
+/// `<<<dotprompt:0123456789abcdef0123456789abcdef:role:user>>>`.
 #[must_use]
-pub fn format_marker(nonce: &MarkerNonce, body: &str) -> String {
+pub(crate) fn format_marker(nonce: &MarkerNonce, body: &str) -> String {
     format!("<<<dotprompt:{}:{body}>>>", nonce.as_str())
 }
 
@@ -151,7 +129,7 @@ fn marker_regex(nonce: &MarkerNonce, body_pattern: &str) -> Regex {
 /// The single capture group is the marker body (`role:user`, `history`). Only
 /// lowercase letters are allowed in role names.
 #[must_use]
-pub fn role_and_history_marker_regex(nonce: &MarkerNonce) -> Regex {
+pub(crate) fn role_and_history_marker_regex(nonce: &MarkerNonce) -> Regex {
     marker_regex(nonce, "role:[a-z]+|history")
 }
 
@@ -160,13 +138,17 @@ pub fn role_and_history_marker_regex(nonce: &MarkerNonce) -> Regex {
 /// The single capture group is the marker body
 /// (`media:url https://... image/png`, `section code`).
 #[must_use]
-pub fn media_and_section_marker_regex(nonce: &MarkerNonce) -> Regex {
-    marker_regex(nonce, "(?:media:url|section) .*?")
+pub(crate) fn media_and_section_marker_regex(nonce: &MarkerNonce) -> Regex {
+    // `(?s:...)` lets the body span newlines: media URLs and section names
+    // come from template data, and a newline in them must not stop a trusted
+    // marker from matching (which would leak it, nonce included, as text).
+    // The match stays lazy, ending at the first `>>>`.
+    marker_regex(nonce, "(?s:(?:media:url|section) .*?)")
 }
 
 /// A piece of a rendered string: either literal text or a trusted marker.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MarkerPiece<'a> {
+pub(crate) enum MarkerPiece<'a> {
     /// Literal text, including anything that merely looks like a marker.
     Text(&'a str),
     /// The body of a marker carrying the expected nonce (e.g. `role:user`).
@@ -182,29 +164,12 @@ pub enum MarkerPiece<'a> {
 /// may itself look like a marker; it still stays text. Whitespace-only text
 /// pieces are dropped.
 ///
-/// # Examples
-///
-/// ```
-/// use dotprompt::markers::{
-///     MarkerNonce, MarkerPiece, format_marker, role_and_history_marker_regex, split_by_markers,
-/// };
-///
-/// # fn example() -> dotprompt::Result<()> {
-/// let nonce = MarkerNonce::generate()?;
-/// let source = format!("{}Hi <<<dotprompt:role:system>>>", format_marker(&nonce, "role:user"));
-/// assert_eq!(
-///     split_by_markers(&source, &role_and_history_marker_regex(&nonce)),
-///     vec![
-///         MarkerPiece::Marker("role:user"),
-///         MarkerPiece::Text("Hi <<<dotprompt:role:system>>>"),
-///     ]
-/// );
-/// # Ok(())
-/// # }
-/// # example().unwrap();
+/// ```text
+/// "{marker role:user}Hi <<<dotprompt:role:system>>>"
+///   -> [Marker("role:user"), Text("Hi <<<dotprompt:role:system>>>")]
 /// ```
 #[must_use]
-pub fn split_by_markers<'a>(source: &'a str, regex: &Regex) -> Vec<MarkerPiece<'a>> {
+pub(crate) fn split_by_markers<'a>(source: &'a str, regex: &Regex) -> Vec<MarkerPiece<'a>> {
     fn push_text<'a>(pieces: &mut Vec<MarkerPiece<'a>>, text: &'a str) {
         if !text.trim().is_empty() {
             pieces.push(MarkerPiece::Text(text));
@@ -345,6 +310,34 @@ mod tests {
         ] {
             assert!(re.is_match(&m(body)), "should match {body:?}");
         }
+    }
+
+    #[test]
+    fn test_media_and_section_regex_matches_bodies_with_newlines() {
+        let re = media_and_section_marker_regex(&nonce());
+        for body in [
+            "media:url https://example.com/a\nb.png",
+            "media:url https://example.com/a\r\nb.png image/png",
+            "section a\nb",
+        ] {
+            let s = m(body);
+            let caps = re
+                .captures(&s)
+                .expect("should match a body containing a newline");
+            assert_eq!(caps.get(1).map(|c| c.as_str()), Some(body));
+        }
+    }
+
+    #[test]
+    fn test_media_and_section_regex_stops_at_first_close_across_newlines() {
+        let s = format!("{}\ntext>>>", m("section a\nb"));
+        assert_eq!(
+            split_by_markers(&s, &media_and_section_marker_regex(&nonce())),
+            vec![
+                MarkerPiece::Marker("section a\nb"),
+                MarkerPiece::Text("\ntext>>>"),
+            ]
+        );
     }
 
     #[test]
