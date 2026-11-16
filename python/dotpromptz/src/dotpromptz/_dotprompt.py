@@ -46,6 +46,7 @@ import anyio
 
 from dotpromptz._errors import PartialCycleError
 from dotpromptz._helpers import BUILTIN_HELPERS
+from dotpromptz._markers import MARKER_NONCE_DATA_KEY, generate_marker_nonce
 from dotpromptz._parse import parse_document, to_messages
 from dotpromptz._picoschema import picoschema_to_json_schema
 from dotpromptz._resolvers import resolve_json_schema, resolve_partial, resolve_tool
@@ -259,16 +260,21 @@ class RenderFunc(PromptFunction[ModelConfigT]):
             if _template_reads_root(self.prompt.template, self._dotprompt._partials):
                 raise ValueError("runtime data key 'root' is reserved")
 
-        # Prepare runtime options.
+        # Fresh per render so user-supplied values can't forge role/media/etc.
+        # markers in the rendered string. See dotpromptz._markers.
+        nonce = generate_marker_nonce()
+
+        # Prepare runtime options. The nonce goes after `data.context` so the
+        # caller can't override it.
         runtime_options: RuntimeOptions = {
-            'data': data.context or {},
+            'data': {**(data.context or {}), MARKER_NONCE_DATA_KEY: nonce},
         }
 
         # Render the string.
         rendered_string = self._render_string(context, runtime_options)
 
         # Parse the rendered string into messages.
-        messages = to_messages(rendered_string, data)
+        messages = to_messages(rendered_string, nonce, data)
 
         # Construct and return the final RenderedPrompt.
         return RenderedPrompt[ModelConfigT](

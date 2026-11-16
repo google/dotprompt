@@ -31,6 +31,9 @@ Key functionalities include:
 - Converting message sources into structured messages, processing media and
   section markers within the content.
 - Handling the insertion of historical messages into the conversation flow.
+
+Only markers carrying the per-render nonce are honored; see
+`dotpromptz._markers` for the marker format and why the nonce is needed.
 """
 
 import re
@@ -46,6 +49,14 @@ from yaml.events import AliasEvent, NodeEvent
 from yaml.nodes import MappingNode, Node, ScalarNode, SequenceNode
 
 from dotpromptz._errors import FrontmatterError
+from dotpromptz._markers import (
+    MarkerPiece,
+    Piece,
+    TextPiece,
+    media_and_section_marker_regex,
+    role_and_history_marker_regex,
+    split_by_markers,
+)
 from dotpromptz._typing import (
     DataArgument,
     MediaContent,
@@ -72,17 +83,12 @@ class MessageSource:
     metadata: dict[str, Any] | None = field(default_factory=dict)
 
 
-# Prefixes for the role markers in the template.
-ROLE_MARKER_PREFIX = '<<<dotprompt:role:'
-
-# Prefixes for the history markers in the template.
-HISTORY_MARKER_PREFIX = '<<<dotprompt:history'
-
-# Prefixes for the media markers in the template.
-MEDIA_MARKER_PREFIX = '<<<dotprompt:media:'
-
-# Prefixes for the section markers in the template.
-SECTION_MARKER_PREFIX = '<<<dotprompt:section'
+# Marker bodies and body prefixes; see `dotpromptz._markers` for the full
+# marker format.
+_ROLE_MARKER_BODY_PREFIX = 'role:'
+_HISTORY_MARKER_BODY = 'history'
+_MEDIA_MARKER_BODY_PREFIX = 'media:url '
+_SECTION_MARKER_BODY_PREFIX = 'section '
 
 # Regular expression to match YAML frontmatter delineated by `---` markers.
 # Allows blank lines and license headers (lines starting with #) before the first ---.
@@ -91,25 +97,6 @@ FRONTMATTER_AND_BODY_REGEX = re.compile(
 )
 DELIMITER_REGEX = re.compile(r'^---[ \t]*$')
 LINE_BREAK_REGEX = re.compile(r'\r\n|\r|\n')
-
-# Regular expression to match <<<dotprompt:role:xxx>>> and
-# <<<dotprompt:history>>> markers in the template.
-#
-# Examples of matching patterns:
-# - <<<dotprompt:role:user>>>
-# - <<<dotprompt:role:system>>>
-# - <<<dotprompt:history>>>
-#
-# Note: Only lowercase letters are allowed after 'role:'.
-ROLE_AND_HISTORY_MARKER_REGEX = re.compile(r'(<<<dotprompt:(?:role:[a-z]+|history))>>>')
-
-# Regular expression to match <<<dotprompt:media:url>>> and
-# <<<dotprompt:section>>> markers in the template.
-#
-# Examples of matching patterns:
-# - <<<dotprompt:media:url>>>
-# - <<<dotprompt:section>>>
-MEDIA_AND_SECTION_MARKER_REGEX = re.compile(r'(<<<dotprompt:(?:media:url|section).*?)>>>')
 
 # List of reserved keywords that are handled specially in the metadata of a
 # .prompt file. These keys are processed differently from extension metadata.
@@ -185,51 +172,6 @@ class RestrictedFrontmatterLoader(yaml.SafeLoader):
                 raise ComposerError(None, None, _FrontmatterReason.DUPLICATE_KEYS.value, key_node.start_mark)
             result[key] = self.construct_object(value_node, deep=deep)
         return result
-
-
-def split_by_regex(source: str, regex: re.Pattern[str]) -> list[str]:
-    """Splits string by regexp while filtering out empty/whitespace-only pieces.
-
-    Args:
-        source: The source string to split into parts.
-        regex: The regular expression to use for splitting.
-
-    Returns:
-        An array of non-empty string pieces.
-    """
-
-    def filter_empty(s: str) -> bool:
-        return bool(s.strip())
-
-    return list(filter(filter_empty, regex.split(source)))
-
-
-def split_by_role_and_history_markers(rendered_string: str) -> list[str]:
-    """Splits a rendered string into pieces based on role and history markers.
-
-    Empty/whitespace-only pieces are filtered out.
-
-    Args:
-        rendered_string: The template string to split.
-
-    Returns:
-        Array of non-empty string pieces.
-    """
-    return split_by_regex(rendered_string, ROLE_AND_HISTORY_MARKER_REGEX)
-
-
-def split_by_media_and_section_markers(source: str) -> list[str]:
-    """Split the source into pieces based on media and section markers.
-
-    Empty/whitespace-only pieces are filtered out.
-
-    Args:
-        source: The source string to split into parts
-
-    Returns:
-        An array of string parts
-    """
-    return split_by_regex(source, MEDIA_AND_SECTION_MARKER_REGEX)
 
 
 def convert_namespaced_entry_to_nested_object(
@@ -486,26 +428,43 @@ def parse_document(source: str, *, source_name: str | None = None) -> ParsedProm
 
 def to_messages(
     rendered_string: str,
+    nonce: str,
     data: DataArgument[Any] | None = None,
 ) -> list[Message]:
     """Converts a rendered template string into an array of messages.
 
     Processes role markers and history placeholders to structure the
-    conversation.
+    conversation. Only markers carrying `nonce` are honored; anything else
+    that looks like a marker stays text.
 
     Args:
         rendered_string: The rendered template string to convert
+        nonce: The marker nonce used when rendering the template
         data: Optional data containing message history
 
     Returns:
         List of structured messages
+
+    Raises:
+        ValueError: If the nonce is malformed.
+
+    Examples:
+        ```python
+        nonce = generate_marker_nonce()
+        rendered = format_marker(nonce, 'role:system') + 'Be safe.'
+        to_messages(rendered, nonce)
+        # => [Message(role=Role.SYSTEM, content=[TextPart(text='Be safe.')])]
+        ```
     """
     current_message = MessageSource(role=Role.USER, source='')
     message_sources = [current_message]
 
-    for piece in split_by_role_and_history_markers(rendered_string):
-        if piece.startswith(ROLE_MARKER_PREFIX):
-            role = piece[len(ROLE_MARKER_PREFIX) :]
+    for piece in split_by_markers(rendered_string, role_and_history_marker_regex(nonce)):
+        if isinstance(piece, TextPiece):
+            current_message.source = (current_message.source or '') + piece.text
+
+        elif piece.body.startswith(_ROLE_MARKER_BODY_PREFIX):
+            role = piece.body[len(_ROLE_MARKER_BODY_PREFIX) :]
 
             if current_message.source and current_message.source.strip():
                 # If the current message has content, create a new message
@@ -515,7 +474,7 @@ def to_messages(
                 # Otherwise, update the role of the current message
                 current_message.role = Role(role)
 
-        elif piece.startswith(HISTORY_MARKER_PREFIX):
+        elif piece.body == _HISTORY_MARKER_BODY:
             # Add the history messages to the message sources
             msgs: list[Message] = []
             if data and data.messages:
@@ -535,21 +494,19 @@ def to_messages(
             current_message = MessageSource(role=Role.MODEL, source='')
             message_sources.append(current_message)
 
-        else:
-            # Otherwise, add the piece to the current message source
-            current_message.source = (current_message.source or '') + piece
-
-    messages = message_sources_to_messages(message_sources)
+    messages = message_sources_to_messages(message_sources, nonce)
     return insert_history(messages, data.messages if data else None)
 
 
 def message_sources_to_messages(
     message_sources: list[MessageSource],
+    nonce: str,
 ) -> list[Message]:
     """Processes an array of message sources into an array of messages.
 
     Args:
         message_sources: List of message sources
+        nonce: The marker nonce used when rendering the sources
 
     Returns:
         List of structured messages
@@ -559,7 +516,7 @@ def message_sources_to_messages(
         if m.content or m.source:
             message = Message(
                 role=m.role,
-                content=(m.content if m.content is not None else to_parts(m.source or '')),
+                content=(m.content if m.content is not None else to_parts(m.source or '', nonce)),
             )
 
             if m.metadata:
@@ -644,53 +601,57 @@ def insert_history(
     return messages
 
 
-def to_parts(source: str) -> list[Part]:
+def to_parts(source: str, nonce: str) -> list[Part]:
     """Converts a source string into an array of parts.
 
-    Also processes media and section markers.
+    Also processes media and section markers carrying `nonce`.
 
     Args:
         source: The source string to convert into parts
+        nonce: The marker nonce used when rendering the source
 
     Returns:
         Array of structured parts (text, media, or metadata)
+
+    Raises:
+        ValueError: If the nonce is malformed.
     """
-    return [parse_part(piece) for piece in split_by_media_and_section_markers(source)]
+    return [parse_part(piece) for piece in split_by_markers(source, media_and_section_marker_regex(nonce))]
 
 
-def parse_part(piece: str) -> Part:
-    """Parses a part from a piece of rendered template.
+def parse_part(piece: Piece) -> Part:
+    """Parses a part from a split piece of rendered template.
 
     Args:
-        piece: The piece to parse
+        piece: The piece to parse; text pieces become text parts and marker
+            pieces become media or pending (section) parts.
 
     Returns:
         Part, PendingPart, TextPart, or MediaPart
     """
-    if piece.startswith(MEDIA_MARKER_PREFIX):
-        return parse_media_part(piece)
-    elif piece.startswith(SECTION_MARKER_PREFIX):
-        return parse_section_part(piece)
-    else:
-        return parse_text_part(piece)
+    if isinstance(piece, MarkerPiece):
+        if piece.body.startswith(_MEDIA_MARKER_BODY_PREFIX):
+            return parse_media_part(piece.body)
+        return parse_section_part(piece.body)
+    return parse_text_part(piece.text)
 
 
-def parse_media_part(piece: str) -> MediaPart:
-    """Parses a media part from a piece of rendered template.
+def parse_media_part(body: str) -> MediaPart:
+    """Parses a media part from a marker body.
 
     Args:
-        piece: The piece to parse
+        body: The marker body, `media:url <url> [<contentType>]`
 
     Returns:
         Media part
 
     Raises:
-        ValueError: If the media piece is invalid
+        ValueError: If the media body is invalid
     """
-    if not piece.startswith(MEDIA_MARKER_PREFIX):
-        raise ValueError(f'Invalid media piece: {piece}; expected prefix {MEDIA_MARKER_PREFIX}')
+    if not body.startswith(_MEDIA_MARKER_BODY_PREFIX):
+        raise ValueError(f'Invalid media piece: {body}; expected prefix {_MEDIA_MARKER_BODY_PREFIX!r}')
 
-    fields = piece.split(' ')
+    fields = body.split(' ')
     n = len(fields)
     if n == 3:
         _, url, content_type = fields
@@ -698,7 +659,7 @@ def parse_media_part(piece: str) -> MediaPart:
         _, url = fields
         content_type = None
     else:
-        raise ValueError(f'Invalid media piece: {piece}; expected 2 or 3 fields, found {n}')
+        raise ValueError(f'Invalid media piece: {body}; expected 2 or 3 fields, found {n}')
 
     media_content = MediaContent(
         url=url,
@@ -707,26 +668,26 @@ def parse_media_part(piece: str) -> MediaPart:
     return MediaPart(media=media_content)
 
 
-def parse_section_part(piece: str) -> PendingPart:
-    """Parses a section part from a piece of rendered template.
+def parse_section_part(body: str) -> PendingPart:
+    """Parses a section part from a marker body.
 
     Args:
-        piece: The piece to parse
+        body: The marker body, `section <name>`
 
     Returns:
         Section part
 
     Raises:
-        ValueError: If the section piece is invalid
+        ValueError: If the section body is invalid
     """
-    if not piece.startswith(SECTION_MARKER_PREFIX):
-        raise ValueError(f'Invalid section piece: {piece}; expected prefix {SECTION_MARKER_PREFIX}')
+    if not body.startswith(_SECTION_MARKER_BODY_PREFIX):
+        raise ValueError(f'Invalid section piece: {body}; expected prefix {_SECTION_MARKER_BODY_PREFIX!r}')
 
-    fields = piece.split(' ')
+    fields = body.split(' ')
     if len(fields) == 2:
         section_type = fields[1]
     else:
-        raise ValueError(f'Invalid section piece: {piece}; expected 2 fields, found {len(fields)}')
+        raise ValueError(f'Invalid section piece: {body}; expected 2 fields, found {len(fields)}')
 
     # Use the helper method to set purpose
     pending_metadata = PendingMetadata.with_purpose(section_type)
