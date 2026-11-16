@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.util.Separators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Options;
+import com.google.dotprompt.parser.Markers;
 import java.io.IOException;
 
 /**
@@ -39,10 +40,33 @@ import java.io.IOException;
  *   <li>Section delineation ({@code section})
  *   <li>Equality checks ({@code ifEquals}, {@code unlessEquals})
  * </ul>
+ *
+ * <p>The marker helpers ({@code media}, {@code role}, {@code history}, {@code section}) embed the
+ * per-render nonce from the Handlebars data frame (key {@link Markers#MARKER_NONCE_DATA_KEY}) in
+ * every marker, so they only work when rendered via {@code Dotprompt}, which sets it. See {@link
+ * Markers} for the marker format.
  */
 public class Helpers {
 
   private static final ObjectMapper mapper = new ObjectMapper();
+
+  /**
+   * Reads the per-render marker nonce from the Handlebars data frame. jknack shares the data frame
+   * with blocks ({@code #each}, {@code #if}, {@code #with}, ...) and partials, so this only fails
+   * if the helper runs outside {@code Dotprompt} rendering.
+   *
+   * @param options The Handlebars options.
+   * @return The nonce.
+   * @throws IllegalStateException If no nonce is set.
+   */
+  private static String markerNonce(Options options) {
+    Object nonce = options.data(Markers.MARKER_NONCE_DATA_KEY);
+    if (nonce instanceof String s) {
+      return s;
+    }
+    throw new IllegalStateException(
+        "dotprompt: marker helpers (role, history, section, media) must be rendered via Dotprompt");
+  }
 
   /**
    * Registers all standard Dotprompt helpers with the given Handlebars instance.
@@ -112,13 +136,8 @@ public class Helpers {
       return "";
     }
 
-    StringBuilder sb = new StringBuilder("<<<dotprompt:media:url ");
-    sb.append(url);
-    if (!contentType.isEmpty()) {
-      sb.append(" ").append(contentType);
-    }
-    sb.append(">>>");
-    return sb.toString();
+    String body = "media:url " + url + (contentType.isEmpty() ? "" : " " + contentType);
+    return Markers.formatMarker(markerNonce(options), body);
   }
 
   /**
@@ -132,10 +151,10 @@ public class Helpers {
    */
   public static Object role(Object context, Options options) {
     if (options.params.length > 0) {
-      return "<<<dotprompt:role:" + options.param(0) + ">>>";
+      return Markers.formatMarker(markerNonce(options), "role:" + options.param(0));
     }
     if (context instanceof String) {
-      return "<<<dotprompt:role:" + context + ">>>";
+      return Markers.formatMarker(markerNonce(options), "role:" + context);
     }
     return "";
   }
@@ -150,7 +169,7 @@ public class Helpers {
    * @return A dotprompt history marker string.
    */
   public static Object history(Object context, Options options) {
-    return "<<<dotprompt:history>>>";
+    return Markers.formatMarker(markerNonce(options), "history");
   }
 
   /**
@@ -164,10 +183,10 @@ public class Helpers {
    */
   public static Object section(Object context, Options options) {
     if (options.params.length > 0) {
-      return "<<<dotprompt:section " + options.param(0) + ">>>";
+      return Markers.formatMarker(markerNonce(options), "section " + options.param(0));
     }
     if (context instanceof String) {
-      return "<<<dotprompt:section " + context + ">>>";
+      return Markers.formatMarker(markerNonce(options), "section " + context);
     }
     return "";
   }

@@ -53,20 +53,15 @@ import java.util.stream.Collectors;
  *   <li>Processing role, history, media, and section markers
  *   <li>Handling chat history insertion
  * </ul>
+ *
+ * <p>Marker processing only honors markers carrying the per-render nonce; see {@link Markers}.
  */
 public class Parser {
 
-  /** Prefix for role markers in the template. */
-  public static final String ROLE_MARKER_PREFIX = "<<<dotprompt:role:";
-
-  /** Prefix for history markers in the template. */
-  public static final String HISTORY_MARKER_PREFIX = "<<<dotprompt:history";
-
-  /** Prefix for media markers in the template. */
-  public static final String MEDIA_MARKER_PREFIX = "<<<dotprompt:media:";
-
-  /** Prefix for section markers in the template. */
-  public static final String SECTION_MARKER_PREFIX = "<<<dotprompt:section";
+  // Marker body prefixes; see Markers for the full marker format.
+  private static final String ROLE_MARKER_BODY_PREFIX = "role:";
+  private static final String MEDIA_MARKER_BODY_PREFIX = "media:url ";
+  private static final String SECTION_MARKER_BODY_PREFIX = "section ";
 
   /**
    * Pattern to match YAML frontmatter in the input string.
@@ -78,22 +73,6 @@ public class Parser {
   private static final Pattern FRONTMATTER_PATTERN =
       Pattern.compile(
           "(?ms)^(?:(?:#[^\\n]*|[ \\t]*)\\n)*---[ \\t]*[\\r\\n]+(.*?)^[ \\t]*---[ \\t]*[\\r\\n]+");
-
-  /**
-   * Pattern to match role and history markers.
-   *
-   * <p>Examples: {@code <<<dotprompt:role:user>>>}, {@code <<<dotprompt:history>>>}
-   */
-  public static final Pattern ROLE_AND_HISTORY_MARKER_PATTERN =
-      Pattern.compile("(<<<dotprompt:(?:role:[a-z]+|history))>>>");
-
-  /**
-   * Pattern to match media and section markers.
-   *
-   * <p>Examples: {@code <<<dotprompt:media:url>>>}, {@code <<<dotprompt:section>>>}
-   */
-  public static final Pattern MEDIA_AND_SECTION_MARKER_PATTERN =
-      Pattern.compile("(<<<dotprompt:(?:media:url|section).*?)>>>");
 
   /** ObjectMapper for parsing YAML frontmatter. */
   private static final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
@@ -162,87 +141,46 @@ public class Parser {
   }
 
   /**
-   * Splits a string by a regex pattern while filtering out empty/whitespace-only pieces.
-   *
-   * @param source The source string to split.
-   * @param pattern The pattern to use for splitting.
-   * @return A list of non-empty string pieces.
-   */
-  public static List<String> splitByRegex(String source, Pattern pattern) {
-    if (source == null || source.isEmpty()) {
-      return List.of();
-    }
-
-    List<String> result = new ArrayList<>();
-    Matcher matcher = pattern.matcher(source);
-    int lastEnd = 0;
-
-    while (matcher.find()) {
-      // Add text before the match
-      if (matcher.start() > lastEnd) {
-        String beforeMatch = source.substring(lastEnd, matcher.start());
-        if (!beforeMatch.trim().isEmpty()) {
-          result.add(beforeMatch);
-        }
-      }
-      // Add the captured group (without the closing >>>)
-      String captured = matcher.group(1);
-      if (captured != null && !captured.trim().isEmpty()) {
-        result.add(captured);
-      }
-      lastEnd = matcher.end();
-    }
-
-    // Add remaining text after last match
-    if (lastEnd < source.length()) {
-      String remaining = source.substring(lastEnd);
-      if (!remaining.trim().isEmpty()) {
-        result.add(remaining);
-      }
-    }
-
-    return result;
-  }
-
-  /**
-   * Splits a rendered template string by role and history markers.
-   *
-   * @param renderedString The template string to split.
-   * @return List of non-empty string pieces.
-   */
-  public static List<String> splitByRoleAndHistoryMarkers(String renderedString) {
-    return splitByRegex(renderedString, ROLE_AND_HISTORY_MARKER_PATTERN);
-  }
-
-  /**
-   * Splits a source string by media and section markers.
-   *
-   * @param source The source string to split.
-   * @return List of non-empty string pieces.
-   */
-  public static List<String> splitByMediaAndSectionMarkers(String source) {
-    return splitByRegex(source, MEDIA_AND_SECTION_MARKER_PATTERN);
-  }
-
-  /**
    * Converts a rendered template string into a list of messages.
    *
-   * <p>Processes role markers and history placeholders to structure the conversation.
+   * <p>Processes role markers and history placeholders to structure the conversation. Only markers
+   * carrying {@code nonce} are honored; anything else that looks like a marker stays text.
    *
    * @param renderedString The rendered template string to convert.
+   * @param nonce The marker nonce used when rendering the template.
    * @param data Optional data containing message history.
    * @return List of structured messages.
+   * @throws IllegalArgumentException If the nonce is not 32 lowercase hex chars.
    */
-  public static List<Message> toMessages(String renderedString, DataArgument data) {
+  public static List<Message> toMessages(String renderedString, String nonce, DataArgument data) {
     MessageSource currentMessage = new MessageSource(Role.USER, "");
     List<MessageSource> messageSources = new ArrayList<>();
     messageSources.add(currentMessage);
 
-    for (String piece : splitByRoleAndHistoryMarkers(renderedString)) {
-      if (piece.startsWith(ROLE_MARKER_PREFIX)) {
-        String roleName = piece.substring(ROLE_MARKER_PREFIX.length());
-        Role role = Role.fromString(roleName);
+    List<MarkerPiece> pieces =
+        Markers.splitByMarkers(renderedString, Markers.roleAndHistoryMarkerPattern(nonce));
+    for (MarkerPiece piece : pieces) {
+      if (piece instanceof MarkerPiece.Text text) {
+        // Add the text to the current message source
+        currentMessage.source =
+            (currentMessage.source != null ? currentMessage.source : "") + text.text();
+      } else if (piece instanceof MarkerPiece.Marker marker) {
+        if (marker.body().equals("history")) {
+          // Add the history messages to the message sources
+          List<Message> historyMessages =
+              transformMessagesToHistory(data != null ? data.messages() : List.of());
+          for (Message msg : historyMessages) {
+            messageSources.add(new MessageSource(msg.role(), msg.content(), msg.metadata()));
+          }
 
+          // Add a new message source for the model
+          currentMessage = new MessageSource(Role.MODEL, "");
+          messageSources.add(currentMessage);
+          continue;
+        }
+
+        // The pattern guarantees the body is "role:<name>" here.
+        Role role = Role.fromString(marker.body().substring(ROLE_MARKER_BODY_PREFIX.length()));
         if (currentMessage.source != null && !currentMessage.source.trim().isEmpty()) {
           // Current message has content, create a new message
           currentMessage = new MessageSource(role, "");
@@ -251,25 +189,10 @@ public class Parser {
           // Update the role of the current empty message
           currentMessage.role = role;
         }
-      } else if (piece.startsWith(HISTORY_MARKER_PREFIX)) {
-        // Add the history messages to the message sources
-        List<Message> historyMessages =
-            transformMessagesToHistory(data != null ? data.messages() : List.of());
-        for (Message msg : historyMessages) {
-          messageSources.add(new MessageSource(msg.role(), msg.content(), msg.metadata()));
-        }
-
-        // Add a new message source for the model
-        currentMessage = new MessageSource(Role.MODEL, "");
-        messageSources.add(currentMessage);
-      } else {
-        // Add the piece to the current message source
-        currentMessage.source =
-            (currentMessage.source != null ? currentMessage.source : "") + piece;
       }
     }
 
-    List<Message> messages = messageSourcesToMessages(messageSources);
+    List<Message> messages = messageSourcesToMessages(messageSources, nonce);
     return insertHistory(messages, data != null ? data.messages() : null);
   }
 
@@ -277,10 +200,12 @@ public class Parser {
    * Converts a rendered template string into a list of messages with no data context.
    *
    * @param renderedString The rendered template string to convert.
+   * @param nonce The marker nonce used when rendering the template.
    * @return List of structured messages.
+   * @throws IllegalArgumentException If the nonce is not 32 lowercase hex chars.
    */
-  public static List<Message> toMessages(String renderedString) {
-    return toMessages(renderedString, null);
+  public static List<Message> toMessages(String renderedString, String nonce) {
+    return toMessages(renderedString, nonce, null);
   }
 
   /**
@@ -361,48 +286,53 @@ public class Parser {
   }
 
   /**
-   * Converts a source string into a list of parts, processing media and section markers.
+   * Converts a source string into a list of parts, processing media and section markers carrying
+   * {@code nonce}.
    *
    * @param source The source string to convert into parts.
+   * @param nonce The marker nonce used when rendering the source.
    * @return List of structured parts (text, media, or metadata).
+   * @throws IllegalArgumentException If the nonce is not 32 lowercase hex chars.
    */
-  public static List<Part> toParts(String source) {
-    if (source == null || source.isEmpty()) {
-      return List.of();
-    }
-    return splitByMediaAndSectionMarkers(source).stream()
+  public static List<Part> toParts(String source, String nonce) {
+    return Markers.splitByMarkers(source, Markers.mediaAndSectionMarkerPattern(nonce)).stream()
         .map(Parser::parsePart)
         .collect(Collectors.toList());
   }
 
   /**
-   * Parses a part from a string.
+   * Parses a part from a split piece.
    *
    * @param piece The piece to parse.
    * @return Parsed part (TextPart, MediaPart, or PendingPart).
    */
-  public static Part parsePart(String piece) {
-    if (piece.startsWith(MEDIA_MARKER_PREFIX)) {
-      return parseMediaPart(piece);
+  public static Part parsePart(MarkerPiece piece) {
+    if (piece instanceof MarkerPiece.Marker marker) {
+      // The pattern guarantees the body is a media or section body here.
+      String body = marker.body();
+      return body.startsWith(MEDIA_MARKER_BODY_PREFIX)
+          ? parseMediaPart(body)
+          : parseSectionPart(body);
     }
-    if (piece.startsWith(SECTION_MARKER_PREFIX)) {
-      return parseSectionPart(piece);
+    if (piece instanceof MarkerPiece.Text text) {
+      return parseTextPart(text.text());
     }
-    return parseTextPart(piece);
+    // Unreachable: MarkerPiece is sealed to Text and Marker (no pattern-matching switch on JDK 17).
+    throw new IllegalArgumentException("Unknown marker piece: " + piece);
   }
 
   /**
-   * Parses a media part from a string.
+   * Parses a media part from a marker body ({@code media:url <url> [<contentType>]}).
    *
-   * @param piece The piece to parse.
+   * @param body The marker body to parse.
    * @return Parsed media part.
-   * @throws IllegalArgumentException If the piece is not a valid media marker.
+   * @throws IllegalArgumentException If the body is not a media marker body.
    */
-  public static MediaPart parseMediaPart(String piece) {
-    if (!piece.startsWith(MEDIA_MARKER_PREFIX)) {
-      throw new IllegalArgumentException("Invalid media piece: " + piece);
+  public static MediaPart parseMediaPart(String body) {
+    if (!body.startsWith(MEDIA_MARKER_BODY_PREFIX)) {
+      throw new IllegalArgumentException("Invalid media piece: " + body);
     }
-    String[] parts = piece.split(" ");
+    String[] parts = body.split(" ");
     String url = parts.length > 1 ? parts[1] : "";
     String contentType = parts.length > 2 ? parts[2] : null;
 
@@ -414,17 +344,17 @@ public class Parser {
   }
 
   /**
-   * Parses a section part from a string.
+   * Parses a section part from a marker body ({@code section <name>}).
    *
-   * @param piece The piece to parse.
+   * @param body The marker body to parse.
    * @return Parsed pending part with section metadata.
-   * @throws IllegalArgumentException If the piece is not a valid section marker.
+   * @throws IllegalArgumentException If the body is not a section marker body.
    */
-  public static PendingPart parseSectionPart(String piece) {
-    if (!piece.startsWith(SECTION_MARKER_PREFIX)) {
-      throw new IllegalArgumentException("Invalid section piece: " + piece);
+  public static PendingPart parseSectionPart(String body) {
+    if (!body.startsWith(SECTION_MARKER_BODY_PREFIX)) {
+      throw new IllegalArgumentException("Invalid section piece: " + body);
     }
-    String[] parts = piece.split(" ");
+    String[] parts = body.split(" ");
     String sectionType = parts.length > 1 ? parts[1] : "";
     Map<String, Object> metadata = new HashMap<>();
     metadata.put("purpose", sectionType);
@@ -446,13 +376,16 @@ public class Parser {
    * Processes an array of message sources into an array of messages.
    *
    * @param messageSources List of message sources.
+   * @param nonce The marker nonce used when rendering the sources.
    * @return List of structured messages.
+   * @throws IllegalArgumentException If the nonce is not 32 lowercase hex chars.
    */
-  public static List<Message> messageSourcesToMessages(List<MessageSource> messageSources) {
+  public static List<Message> messageSourcesToMessages(
+      List<MessageSource> messageSources, String nonce) {
     List<Message> messages = new ArrayList<>();
     for (MessageSource m : messageSources) {
       if (m.content != null || (m.source != null && !m.source.isEmpty())) {
-        List<Part> content = m.content != null ? m.content : toParts(m.source);
+        List<Part> content = m.content != null ? m.content : toParts(m.source, nonce);
         Message message = new Message(m.role, content, m.metadata);
         messages.add(message);
       }

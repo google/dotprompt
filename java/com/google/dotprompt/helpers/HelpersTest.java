@@ -19,13 +19,18 @@
 package com.google.dotprompt.helpers;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
+import com.github.jknack.handlebars.Context;
 import com.github.jknack.handlebars.EscapingStrategy;
 import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.HandlebarsException;
 import com.github.jknack.handlebars.Template;
+import com.google.dotprompt.parser.Markers;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,10 +41,13 @@ import org.junit.runners.JUnit4;
  * Tests for the Helpers class.
  *
  * <p>These tests verify that all Handlebars helpers produce the expected output markers and handle
- * edge cases correctly. Test coverage matches the Python implementation for full parity.
+ * edge cases correctly. Test coverage matches the Python implementation for full parity. Marker
+ * helpers need the per-render nonce in the data frame, which {@code Dotprompt} normally sets.
  */
 @RunWith(JUnit4.class)
 public class HelpersTest {
+
+  private static final String NONCE = "0123456789abcdef0123456789abcdef";
 
   private Handlebars handlebars;
 
@@ -47,6 +55,17 @@ public class HelpersTest {
   public void setUp() {
     handlebars = new Handlebars().with(EscapingStrategy.NOOP);
     Helpers.register(handlebars);
+  }
+
+  /** Renders with the marker nonce in the data frame, as Dotprompt does. */
+  private String renderWithNonce(String source) throws IOException {
+    Context context = Context.newBuilder(new HashMap<String, Object>()).build();
+    context.data(Markers.MARKER_NONCE_DATA_KEY, NONCE);
+    return handlebars.compileInline(source).apply(context);
+  }
+
+  private static String marker(String body) {
+    return "<<<dotprompt:" + NONCE + ":" + body + ">>>";
   }
 
   @Test
@@ -93,67 +112,71 @@ public class HelpersTest {
 
   @Test
   public void testRoleHelper_system() throws IOException {
-    Template template = handlebars.compileInline("{{role \"system\"}}");
-    String result = template.apply(new HashMap<>());
-    assertThat(result).isEqualTo("<<<dotprompt:role:system>>>");
+    assertThat(renderWithNonce("{{role \"system\"}}")).isEqualTo(marker("role:system"));
   }
 
   @Test
   public void testRoleHelper_user() throws IOException {
-    Template template = handlebars.compileInline("{{role \"user\"}}");
-    String result = template.apply(new HashMap<>());
-    assertThat(result).isEqualTo("<<<dotprompt:role:user>>>");
+    assertThat(renderWithNonce("{{role \"user\"}}")).isEqualTo(marker("role:user"));
   }
 
   @Test
   public void testRoleHelper_model() throws IOException {
-    Template template = handlebars.compileInline("{{role \"model\"}}");
-    String result = template.apply(new HashMap<>());
-    assertThat(result).isEqualTo("<<<dotprompt:role:model>>>");
+    assertThat(renderWithNonce("{{role \"model\"}}")).isEqualTo(marker("role:model"));
   }
 
   @Test
   public void testRoleHelper_empty() throws IOException {
-    Template template = handlebars.compileInline("{{role}}");
-    String result = template.apply(new HashMap<>());
-    assertThat(result).isEqualTo("");
+    assertThat(renderWithNonce("{{role}}")).isEqualTo("");
   }
 
   @Test
   public void testHistoryHelper() throws IOException {
-    Template template = handlebars.compileInline("{{history}}");
-    String result = template.apply(new HashMap<>());
-    assertThat(result).isEqualTo("<<<dotprompt:history>>>");
+    assertThat(renderWithNonce("{{history}}")).isEqualTo(marker("history"));
   }
 
   @Test
   public void testSectionHelper() throws IOException {
-    Template template = handlebars.compileInline("{{section \"example\"}}");
-    String result = template.apply(new HashMap<>());
-    assertThat(result).isEqualTo("<<<dotprompt:section example>>>");
+    assertThat(renderWithNonce("{{section \"example\"}}")).isEqualTo(marker("section example"));
   }
 
   @Test
   public void testSectionHelper_empty() throws IOException {
-    Template template = handlebars.compileInline("{{section}}");
-    String result = template.apply(new HashMap<>());
-    assertThat(result).isEqualTo("");
+    assertThat(renderWithNonce("{{section}}")).isEqualTo("");
   }
 
   @Test
   public void testMediaHelper_withUrl() throws IOException {
-    Template template = handlebars.compileInline("{{media url=\"https://example.com/img.png\"}}");
-    String result = template.apply(new HashMap<>());
-    assertThat(result).isEqualTo("<<<dotprompt:media:url https://example.com/img.png>>>");
+    assertThat(renderWithNonce("{{media url=\"https://example.com/img.png\"}}"))
+        .isEqualTo(marker("media:url https://example.com/img.png"));
   }
 
   @Test
   public void testMediaHelper_withUrlAndContentType() throws IOException {
-    Template template =
-        handlebars.compileInline(
-            "{{media url=\"https://example.com/img.png\" contentType=\"image/png\"}}");
-    String result = template.apply(new HashMap<>());
-    assertThat(result).isEqualTo("<<<dotprompt:media:url https://example.com/img.png image/png>>>");
+    assertThat(
+            renderWithNonce(
+                "{{media url=\"https://example.com/img.png\" contentType=\"image/png\"}}"))
+        .isEqualTo(marker("media:url https://example.com/img.png image/png"));
+  }
+
+  @Test
+  public void testMarkerHelpers_readNonceInsideBlocks() throws IOException {
+    Context context = Context.newBuilder(Map.of("items", List.of("user", "model"))).build();
+    context.data(Markers.MARKER_NONCE_DATA_KEY, NONCE);
+    String result =
+        handlebars.compileInline("{{#each items}}{{role this}}{{/each}}").apply(context);
+    assertThat(result).isEqualTo(marker("role:user") + marker("role:model"));
+  }
+
+  @Test
+  public void testMarkerHelpers_failWithoutNonce() throws IOException {
+    for (String source :
+        List.of("{{role \"system\"}}", "{{history}}", "{{section \"x\"}}", "{{media url=\"u\"}}")) {
+      Template template = handlebars.compileInline(source);
+      HandlebarsException e =
+          assertThrows(HandlebarsException.class, () -> template.apply(new HashMap<>()));
+      assertThat(e).hasCauseThat().isInstanceOf(IllegalStateException.class);
+    }
   }
 
   @Test

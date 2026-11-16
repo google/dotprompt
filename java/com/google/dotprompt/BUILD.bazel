@@ -66,6 +66,19 @@ java_test(
 )
 
 java_test(
+    name = "MarkerInjectionTest",
+    srcs = ["MarkerInjectionTest.java"],
+    test_class = "com.google.dotprompt.MarkerInjectionTest",
+    deps = [
+        ":dotprompt",
+        "//java/com/google/dotprompt/models",
+        "//java/com/google/dotprompt/parser",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_test(
     name = "DotpromptOptionsTest",
     srcs = ["DotpromptOptionsTest.java"],
     test_class = "com.google.dotprompt.DotpromptOptionsTest",

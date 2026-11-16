@@ -63,7 +63,7 @@
  * <ul>
  *   <li>{@code parse(source)} - Parse a prompt source into a {@link
  *       com.google.dotprompt.models.Prompt}
- *   <li>{@code toMessages(rendered, data)} - Convert rendered template to messages
+ *   <li>{@code toMessages(rendered, nonce, data)} - Convert rendered template to messages
  *   <li>{@code transformMessagesToHistory(messages)} - Add history metadata to messages
  * </ul>
  *
@@ -87,17 +87,19 @@
  *
  * <h3>Marker Processing</h3>
  *
- * <p>Helpers emit special marker strings that the parser processes:
+ * <p>Helpers emit marker strings of the form {@code <<<dotprompt:{nonce}:{body}>>>} that the parser
+ * processes. The nonce is generated per render ({@link com.google.dotprompt.parser.Markers}) and
+ * only markers carrying it are honored, so user-supplied values that look like markers stay text.
  *
  * <pre>
- *  ┌───────────────────────────┬────────────────────────────────────┐
- *  │ Marker                    │ Effect                             │
- *  ├───────────────────────────┼────────────────────────────────────┤
- *  │ &lt;&lt;&lt;dotprompt:role:X&gt;&gt;&gt;   │ Start new message with role X      │
- *  │ &lt;&lt;&lt;dotprompt:history&gt;&gt;&gt;  │ Insert history messages            │
- *  │ &lt;&lt;&lt;dotprompt:media:url X&gt;&gt;&gt; │ Insert media part                │
- *  │ &lt;&lt;&lt;dotprompt:section X&gt;&gt;&gt;│ Create named section               │
- *  └───────────────────────────┴────────────────────────────────────┘
+ *  ┌─────────────────┬───────────────────────────────┐
+ *  │ Marker body     │ Effect                        │
+ *  ├─────────────────┼───────────────────────────────┤
+ *  │ role:X          │ Start new message with role X │
+ *  │ history         │ Insert history messages       │
+ *  │ media:url X [T] │ Insert media part             │
+ *  │ section X       │ Create named section          │
+ *  └─────────────────┴───────────────────────────────┘
  * </pre>
  *
  * <h2>Usage Example</h2>
