@@ -18,7 +18,27 @@
 
 import handlebars from 'handlebars/dist/cjs/handlebars.js';
 
+import { formatMarker, MARKER_NONCE_DATA_KEY } from './markers';
+
 const { SafeString } = handlebars;
+
+// NOTE: every export of this module is registered as a template helper.
+
+/**
+ * Reads the per-render marker nonce from the Handlebars data frame. Data frames
+ * are inherited by blocks (`#each`, `#if`, ...) and partials, so this only
+ * fails if the helper runs outside `Dotprompt` rendering or a custom block
+ * helper replaces `data` wholesale instead of using `createFrame`.
+ */
+function markerNonce(options: Handlebars.HelperOptions): string {
+  const nonce: unknown = options.data?.[MARKER_NONCE_DATA_KEY];
+  if (typeof nonce !== 'string') {
+    throw new Error(
+      'dotprompt: marker helpers (role, history, section, media) must be rendered via Dotprompt'
+    );
+  }
+  return nonce;
+}
 
 export function json(
   serializable: any,
@@ -29,23 +49,25 @@ export function json(
   );
 }
 
-export function role(role: string) {
-  return new SafeString(`<<<dotprompt:role:${role}>>>`);
+export function role(role: string, options: Handlebars.HelperOptions) {
+  return new SafeString(formatMarker(markerNonce(options), `role:${role}`));
 }
 
-export function history() {
-  return new SafeString('<<<dotprompt:history>>>');
+export function history(options: Handlebars.HelperOptions) {
+  return new SafeString(formatMarker(markerNonce(options), 'history'));
 }
 
-export function section(name: string) {
-  return new SafeString(`<<<dotprompt:section ${name}>>>`);
+export function section(name: string, options: Handlebars.HelperOptions) {
+  return new SafeString(formatMarker(markerNonce(options), `section ${name}`));
 }
 
 export function media(options: Handlebars.HelperOptions) {
+  const { url, contentType } = options.hash;
   return new SafeString(
-    `<<<dotprompt:media:url ${options.hash.url}${
-      options.hash.contentType ? ` ${options.hash.contentType}` : ''
-    }>>>`
+    formatMarker(
+      markerNonce(options),
+      `media:url ${url}${contentType ? ` ${contentType}` : ''}`
+    )
   );
 }
 

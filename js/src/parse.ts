@@ -17,6 +17,12 @@
  */
 
 import { parse } from 'yaml';
+import {
+  type MarkerPiece,
+  mediaAndSectionMarkerRegex,
+  roleAndHistoryMarkerRegex,
+  splitByMarkers,
+} from './markers';
 import type {
   DataArgument,
   MediaPart,
@@ -41,56 +47,11 @@ export type MessageSource = {
 };
 
 /**
- * Prefixes for the role markers in the template.
- */
-export const ROLE_MARKER_PREFIX = '<<<dotprompt:role:';
-
-/**
- * Prefixes for the history markers in the template.
- */
-export const HISTORY_MARKER_PREFIX = '<<<dotprompt:history';
-
-/**
- * Prefixes for the media markers in the template.
- */
-export const MEDIA_MARKER_PREFIX = '<<<dotprompt:media:';
-
-/**
- * Prefixes for the section markers in the template.
- */
-export const SECTION_MARKER_PREFIX = '<<<dotprompt:section';
-
-/**
  * Regular expression to match YAML frontmatter delineated by `---` markers.
  * Allows blank lines and license headers (lines starting with #) before the first ---.
  */
 export const FRONTMATTER_AND_BODY_REGEX =
   /^(?:(?:#[^\n]*|[ \t]*)\n)*---\s*(?:\r\n|\r|\n)([\s\S]*?)(?:\r\n|\r|\n)---\s*(?:\r\n|\r|\n)([\s\S]*)$/;
-
-/**
- * Regular expression to match <<<dotprompt:role:xxx>>> and
- * <<<dotprompt:history>>> markers in the template.
- *
- * Examples of matching patterns:
- * - <<<dotprompt:role:user>>>
- * - <<<dotprompt:role:system>>>
- * - <<<dotprompt:history>>>
- *
- * Note: Only lowercase letters are allowed after 'role:'.
- */
-export const ROLE_AND_HISTORY_MARKER_REGEX =
-  /(<<<dotprompt:(?:role:[a-z]+|history))>>>/g;
-
-/**
- * Regular expression to match <<<dotprompt:media:url>>> and
- * <<<dotprompt:section>>> markers in the template.
- *
- * Examples of matching patterns:
- * - <<<dotprompt:media:url>>>
- * - <<<dotprompt:section>>>
- */
-export const MEDIA_AND_SECTION_MARKER_REGEX =
-  /(<<<dotprompt:(?:media:url|section).*?)>>>/g;
 
 /**
  * List of reserved keywords that are handled specially in the metadata.
@@ -120,40 +81,6 @@ const BASE_METADATA: PromptMetadata<any> = {
   metadata: {},
   config: {},
 };
-
-/**
- * Splits a string by a regular expression while filtering out
- * empty/whitespace-only pieces.
- *
- * @param source The source string to split into parts.
- * @param regex The regular expression to use for splitting.
- * @return An array of non-empty string pieces.
- */
-export function splitByRegex(source: string, regex: RegExp): string[] {
-  return source.split(regex).filter((s) => s.trim() !== '');
-}
-
-/**
- * Splits a rendered template string into pieces based on role and history
- * markers while filtering out empty/whitespace-only pieces.
- *
- * @param renderedString The template string to split.
- * @return Array of non-empty string pieces.
- */
-export function splitByRoleAndHistoryMarkers(renderedString: string): string[] {
-  return splitByRegex(renderedString, ROLE_AND_HISTORY_MARKER_REGEX);
-}
-
-/**
- * Split the source into pieces based on media and section markers while
- * filtering out empty/whitespace-only pieces.
- *
- * @param source The source string to split into parts
- * @return An array of string parts
- */
-export function splitByMediaAndSectionMarkers(source: string): string[] {
-  return splitByRegex(source, MEDIA_AND_SECTION_MARKER_REGEX);
-}
 
 /**
  * Processes a namespaced key-value pair into a nested object structure.
@@ -237,21 +164,28 @@ export function parseDocument<ModelConfig = Record<string, any>>(
   return { ...BASE_METADATA, template: source };
 }
 
+// Marker body prefixes; see markers.ts for the full marker format.
+const ROLE_MARKER_BODY_PREFIX = 'role:';
+const MEDIA_MARKER_BODY_PREFIX = 'media:url ';
+const SECTION_MARKER_BODY_PREFIX = 'section ';
+
 /**
  * Processes an array of message sources into an array of messages.
  *
  * @param messageSources Array of message sources
+ * @param nonce The marker nonce used when rendering the sources
  * @returns Array of structured messages
  */
 export function messageSourcesToMessages(
-  messageSources: MessageSource[]
+  messageSources: MessageSource[],
+  nonce: string
 ): Message[] {
   return messageSources
     .filter((ms) => ms.content || ms.source)
     .map((m) => {
       const out: Message = {
         role: m.role as Role,
-        content: m.content || toParts(m.source || ''),
+        content: m.content || toParts(m.source || '', nonce),
       };
       if (m.metadata) {
         out.metadata = m.metadata;
@@ -279,21 +213,39 @@ export function transformMessagesToHistory(
  * Converts a rendered template string into an array of messages.  Processes
  * role markers and history placeholders to structure the conversation.
  *
+ * Only markers carrying `nonce` are honored; see `markers.ts`.
+ *
  * @template ModelConfig Type for model-specific configuration
  * @param renderedString The rendered template string to convert
+ * @param nonce The marker nonce used when rendering the template
  * @param data Optional data containing message history
  * @return Array of structured messages
  */
 export function toMessages<ModelConfig = Record<string, unknown>>(
   renderedString: string,
+  nonce: string,
   data?: DataArgument
 ): Message[] {
   let currentMessage: MessageSource = { role: 'user', source: '' };
   const messageSources: MessageSource[] = [currentMessage];
 
-  for (const piece of splitByRoleAndHistoryMarkers(renderedString)) {
-    if (piece.startsWith(ROLE_MARKER_PREFIX)) {
-      const role = piece.substring(ROLE_MARKER_PREFIX.length) as Role;
+  const pieces = splitByMarkers(
+    renderedString,
+    roleAndHistoryMarkerRegex(nonce)
+  );
+  for (const piece of pieces) {
+    if (piece.type === 'text') {
+      currentMessage.source += piece.text;
+    } else if (piece.body === 'history') {
+      // Add the history messages to the message sources.
+      messageSources.push(...transformMessagesToHistory(data?.messages ?? []));
+
+      // Add a new message source for the model.
+      currentMessage = { role: 'model', source: '' };
+      messageSources.push(currentMessage);
+    } else {
+      // The regex guarantees the body is `role:<name>` here.
+      const role = piece.body.substring(ROLE_MARKER_BODY_PREFIX.length) as Role;
 
       if (currentMessage.source?.trim()) {
         // If the current message has a source, reset it.
@@ -303,23 +255,10 @@ export function toMessages<ModelConfig = Record<string, unknown>>(
         // Otherwise, update the role of the current message.
         currentMessage.role = role;
       }
-    } else if (piece.startsWith(HISTORY_MARKER_PREFIX)) {
-      // Add the history messages to the message sources.
-      const historyMessages = transformMessagesToHistory(data?.messages ?? []);
-      if (historyMessages) {
-        messageSources.push(...historyMessages);
-      }
-
-      // Add a new message source for the model.
-      currentMessage = { role: 'model', source: '' };
-      messageSources.push(currentMessage);
-    } else {
-      // Otherwise, add the piece to the current message source.
-      currentMessage.source += piece;
     }
   }
 
-  const messages: Message[] = messageSourcesToMessages(messageSources);
+  const messages: Message[] = messageSourcesToMessages(messageSources, nonce);
   return insertHistory(messages, data?.messages);
 }
 
@@ -376,42 +315,45 @@ export function insertHistory(
 
 /**
  * Converts a source string into an array of parts, processing media and section
- * markers.
+ * markers carrying `nonce`.
  *
  * @param source The source string to convert into parts
+ * @param nonce The marker nonce used when rendering the source
  * @return Array of structured parts (text, media, or metadata)
  */
-export function toParts(source: string): Part[] {
-  return splitByMediaAndSectionMarkers(source).map(parsePart);
+export function toParts(source: string, nonce: string): Part[] {
+  return splitByMarkers(source, mediaAndSectionMarkerRegex(nonce)).map(
+    parsePart
+  );
 }
 
 /**
- * Parses a part from a string.
+ * Parses a part from a split piece.
  *
  * @param piece The piece to parse
  * @return Parsed part
  */
-export function parsePart(piece: string): Part {
-  if (piece.startsWith(MEDIA_MARKER_PREFIX)) {
-    return parseMediaPart(piece);
+export function parsePart(piece: MarkerPiece): Part {
+  if (piece.type === 'text') {
+    return parseTextPart(piece.text);
   }
-  if (piece.startsWith(SECTION_MARKER_PREFIX)) {
-    return parseSectionPart(piece);
+  if (piece.body.startsWith(MEDIA_MARKER_BODY_PREFIX)) {
+    return parseMediaPart(piece.body);
   }
-  return parseTextPart(piece);
+  return parseSectionPart(piece.body);
 }
 
 /**
- * Parses a media part from a string.
+ * Parses a media part from a marker body (`media:url <url> [<contentType>]`).
  *
- * @param piece The piece to parse
+ * @param body The marker body to parse
  * @return Parsed media part
  */
-export function parseMediaPart(piece: string): MediaPart {
-  if (!piece.startsWith(MEDIA_MARKER_PREFIX)) {
+export function parseMediaPart(body: string): MediaPart {
+  if (!body.startsWith(MEDIA_MARKER_BODY_PREFIX)) {
     throw new Error('Invalid media piece');
   }
-  const [_, url, contentType] = piece.split(' ');
+  const [_, url, contentType] = body.split(' ');
   const part: MediaPart = { media: { url } };
   if (contentType) {
     part.media.contentType = contentType;
@@ -420,16 +362,16 @@ export function parseMediaPart(piece: string): MediaPart {
 }
 
 /**
- * Parses a section part from a string.
+ * Parses a section part from a marker body (`section <name>`).
  *
- * @param piece The piece to parse
+ * @param body The marker body to parse
  * @return Parsed section part
  */
-export function parseSectionPart(piece: string): PendingPart {
-  if (!piece.startsWith(SECTION_MARKER_PREFIX)) {
+export function parseSectionPart(body: string): PendingPart {
+  if (!body.startsWith(SECTION_MARKER_BODY_PREFIX)) {
     throw new Error('Invalid section piece');
   }
-  const [_, sectionType] = piece.split(' ');
+  const [_, sectionType] = body.split(' ');
   return { metadata: { purpose: sectionType, pending: true } };
 }
 

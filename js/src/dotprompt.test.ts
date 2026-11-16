@@ -221,6 +221,7 @@ describe('Dotprompt', () => {
       expect(mockCompiledTemplate).toHaveBeenCalled();
       expect(toMessagesMock).toHaveBeenCalledWith(
         'Hello World!',
+        expect.stringMatching(/^[0-9a-f]{32}$/),
         expect.anything()
       );
       expect(result.messages).toEqual([
@@ -257,6 +258,7 @@ describe('Dotprompt', () => {
       expect(mockCompiledTemplate).toHaveBeenCalled();
       expect(toMessagesMock).toHaveBeenCalledWith(
         'Hello World!',
+        expect.stringMatching(/^[0-9a-f]{32}$/),
         expect.anything()
       );
       expect(result.messages).toEqual([

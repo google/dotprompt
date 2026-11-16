@@ -26,6 +26,7 @@ import {
   section,
   unlessEquals,
 } from './helpers';
+import { MARKER_NONCE_DATA_KEY } from './markers';
 
 describe('helpers', () => {
   describe('json', () => {
@@ -79,57 +80,55 @@ describe('helpers', () => {
     });
   });
 
-  describe('role', () => {
-    it('should return a role marker for system', () => {
-      const result = role('system');
-      expect(result.toString()).toBe('<<<dotprompt:role:system>>>');
-    });
+  describe('marker helpers', () => {
+    const NONCE = '0123456789abcdef0123456789abcdef';
+    const options = (hash: Record<string, unknown> = {}) =>
+      ({
+        hash,
+        data: { [MARKER_NONCE_DATA_KEY]: NONCE },
+      }) as Handlebars.HelperOptions;
 
-    it('should return a role marker for user', () => {
-      const result = role('user');
-      expect(result.toString()).toBe('<<<dotprompt:role:user>>>');
-    });
-
-    it('should return a role marker for model', () => {
-      const result = role('model');
-      expect(result.toString()).toBe('<<<dotprompt:role:model>>>');
-    });
-  });
-
-  describe('history', () => {
-    it('should return a history marker', () => {
-      const result = history();
-      expect(result.toString()).toBe('<<<dotprompt:history>>>');
-    });
-  });
-
-  describe('section', () => {
-    it('should return a section marker', () => {
-      const result = section('examples');
-      expect(result.toString()).toBe('<<<dotprompt:section examples>>>');
-    });
-  });
-
-  describe('media', () => {
-    it('should return a media marker with url only', () => {
-      const result = media({
-        hash: { url: 'https://example.com/image.png' },
-      } as Handlebars.HelperOptions);
-      expect(result.toString()).toBe(
-        '<<<dotprompt:media:url https://example.com/image.png>>>'
+    it('role emits a nonced role marker', () => {
+      expect(role('system', options()).toString()).toBe(
+        `<<<dotprompt:${NONCE}:role:system>>>`
       );
     });
 
-    it('should return a media marker with url and contentType', () => {
-      const result = media({
-        hash: {
+    it('history emits a nonced history marker', () => {
+      expect(history(options()).toString()).toBe(
+        `<<<dotprompt:${NONCE}:history>>>`
+      );
+    });
+
+    it('section emits a nonced section marker', () => {
+      expect(section('examples', options()).toString()).toBe(
+        `<<<dotprompt:${NONCE}:section examples>>>`
+      );
+    });
+
+    it('media emits a nonced media marker with url only', () => {
+      const result = media(options({ url: 'https://example.com/image.png' }));
+      expect(result.toString()).toBe(
+        `<<<dotprompt:${NONCE}:media:url https://example.com/image.png>>>`
+      );
+    });
+
+    it('media emits a nonced media marker with url and contentType', () => {
+      const result = media(
+        options({
           url: 'https://example.com/image.png',
           contentType: 'image/png',
-        },
-      } as Handlebars.HelperOptions);
-      expect(result.toString()).toBe(
-        '<<<dotprompt:media:url https://example.com/image.png image/png>>>'
+        })
       );
+      expect(result.toString()).toBe(
+        `<<<dotprompt:${NONCE}:media:url https://example.com/image.png image/png>>>`
+      );
+    });
+
+    it('throws when the nonce is missing from the data frame', () => {
+      const noNonce = { hash: {}, data: {} } as Handlebars.HelperOptions;
+      expect(() => role('system', noNonce)).toThrow(/must be rendered/);
+      expect(() => history(noNonce)).toThrow(/must be rendered/);
     });
   });
 

@@ -18,6 +18,7 @@
 
 import Handlebars from 'handlebars/dist/cjs/handlebars.js';
 import * as builtinHelpers from './helpers';
+import { generateMarkerNonce, MARKER_NONCE_DATA_KEY } from './markers';
 import { parseDocument, toMessages } from './parse';
 import { picoschema } from './picoschema';
 import type {
@@ -205,6 +206,9 @@ export class Dotprompt {
       const { input, ...mergedMetadata } =
         await this.renderMetadata(parsedSource);
 
+      // Fresh per render so user-supplied values can't forge role/media/etc.
+      // markers in the rendered string. See markers.ts.
+      const nonce = generateMarkerNonce();
       const renderedString = renderString(
         { ...(options?.input?.default || {}), ...data.input },
         {
@@ -215,13 +219,15 @@ export class Dotprompt {
               messages: data.messages,
             },
             ...(data.context || {}),
+            // Must come after `data.context` so it can't be overridden.
+            [MARKER_NONCE_DATA_KEY]: nonce,
           },
         }
       );
 
       return {
         ...mergedMetadata,
-        messages: toMessages<ModelConfig>(renderedString, data),
+        messages: toMessages<ModelConfig>(renderedString, nonce, data),
       };
     };
 
