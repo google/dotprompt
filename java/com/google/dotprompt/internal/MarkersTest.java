@@ -16,12 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.google.dotprompt.parser;
+package com.google.dotprompt.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -108,6 +109,30 @@ public class MarkersTest {
             "section code")) {
       assertThat(matches(pattern, m(body))).isTrue();
     }
+  }
+
+  @Test
+  public void mediaAndSectionMarkerPattern_matchesBodiesWithNewlines() {
+    // User-supplied values (media url, section name) may contain line breaks; the trusted marker
+    // must still match, otherwise it would be emitted as text and leak the nonce.
+    Pattern pattern = Markers.mediaAndSectionMarkerPattern(NONCE);
+    for (String body :
+        List.of(
+            "media:url https://example.com/a\nb.png",
+            "media:url https://example.com/a\r\nb.png image/png",
+            "section a\nb")) {
+      Matcher matcher = pattern.matcher(m(body));
+      assertThat(matcher.matches()).isTrue();
+      assertThat(matcher.group(1)).isEqualTo(body);
+    }
+  }
+
+  @Test
+  public void mediaAndSectionMarkerPattern_bodyEndsAtFirstClosingDelimiter() {
+    Pattern pattern = Markers.mediaAndSectionMarkerPattern(NONCE);
+    Matcher matcher = pattern.matcher(m("media:url https://example.com/a>b\nc.png") + " >>> tail");
+    assertThat(matcher.find()).isTrue();
+    assertThat(matcher.group(1)).isEqualTo("media:url https://example.com/a>b\nc.png");
   }
 
   @Test

@@ -20,6 +20,8 @@ package com.google.dotprompt.parser;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.google.dotprompt.internal.MarkerPiece;
+import com.google.dotprompt.internal.Markers;
 import com.google.dotprompt.models.DataArgument;
 import com.google.dotprompt.models.MediaContent;
 import com.google.dotprompt.models.MediaPart;
@@ -54,7 +56,8 @@ import java.util.stream.Collectors;
  *   <li>Handling chat history insertion
  * </ul>
  *
- * <p>Marker processing only honors markers carrying the per-render nonce; see {@link Markers}.
+ * <p>Marker processing only honors markers of the form {@code <<<dotprompt:{nonce}:{body}>>>}
+ * carrying the per-render nonce; anything else that looks like a marker stays text.
  */
 public class Parser {
 
@@ -303,10 +306,13 @@ public class Parser {
   /**
    * Parses a part from a split piece.
    *
+   * <p>Package-private (not public) because {@link MarkerPiece} is an internal type that must not
+   * leak into the public API; callers outside the parser use {@link #toParts}.
+   *
    * @param piece The piece to parse.
    * @return Parsed part (TextPart, MediaPart, or PendingPart).
    */
-  public static Part parsePart(MarkerPiece piece) {
+  static Part parsePart(MarkerPiece piece) {
     if (piece instanceof MarkerPiece.Marker marker) {
       // The pattern guarantees the body is a media or section body here.
       String body = marker.body();

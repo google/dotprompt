@@ -26,7 +26,7 @@ import com.github.jknack.handlebars.EscapingStrategy;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.HandlebarsException;
 import com.github.jknack.handlebars.Template;
-import com.google.dotprompt.parser.Markers;
+import com.google.dotprompt.internal.Markers;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;

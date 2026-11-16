@@ -19,8 +19,6 @@ load("@rules_java//java:defs.bzl", "java_library", "java_test")
 java_library(
     name = "parser",
     srcs = [
-        "MarkerPiece.java",
-        "Markers.java",
         "MessageSource.java",
         "Parser.java",
         "Picoschema.java",
@@ -28,6 +26,7 @@ java_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "//java/com/google/dotprompt/internal",
         "//java/com/google/dotprompt/models",
         "//java/com/google/dotprompt/resolvers",
         "@maven//:com_fasterxml_jackson_core_jackson_databind",
@@ -41,18 +40,8 @@ java_test(
     test_class = "com.google.dotprompt.parser.ParserTest",
     deps = [
         ":parser",
+        "//java/com/google/dotprompt/internal",
         "//java/com/google/dotprompt/models",
-        "@maven//:com_google_truth_truth",
-        "@maven//:junit_junit",
-    ],
-)
-
-java_test(
-    name = "MarkersTest",
-    srcs = ["MarkersTest.java"],
-    test_class = "com.google.dotprompt.parser.MarkersTest",
-    deps = [
-        ":parser",
         "@maven//:com_google_truth_truth",
         "@maven//:junit_junit",
     ],

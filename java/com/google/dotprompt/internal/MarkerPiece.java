@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.google.dotprompt.parser;
+package com.google.dotprompt.internal;
 
 /**
  * A piece of a rendered template string: either literal text or a trusted marker.
@@ -24,6 +24,9 @@ package com.google.dotprompt.parser;
  * <p>Produced by {@link Markers#splitByMarkers}. A {@link Marker} is only ever produced for a
  * marker carrying the per-render nonce, so its body can be trusted; everything else is {@link
  * Text}.
+ *
+ * <p><b>Internal implementation detail, not a public API.</b> This type may change or be removed in
+ * any release with no compatibility guarantees.
  */
 public sealed interface MarkerPiece permits MarkerPiece.Text, MarkerPiece.Marker {
 

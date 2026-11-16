@@ -28,6 +28,7 @@ import com.github.jknack.handlebars.io.StringTemplateSource;
 import com.github.jknack.handlebars.io.TemplateLoader;
 import com.github.jknack.handlebars.io.TemplateSource;
 import com.google.dotprompt.helpers.Helpers;
+import com.google.dotprompt.internal.Markers;
 import com.google.dotprompt.models.MediaPart;
 import com.google.dotprompt.models.Message;
 import com.google.dotprompt.models.ParsedPrompt;
@@ -40,7 +41,6 @@ import com.google.dotprompt.models.RenderedPrompt;
 import com.google.dotprompt.models.Role;
 import com.google.dotprompt.models.TextPart;
 import com.google.dotprompt.models.ToolDefinition;
-import com.google.dotprompt.parser.Markers;
 import com.google.dotprompt.parser.Parser;
 import com.google.dotprompt.parser.Picoschema;
 import com.google.dotprompt.resolvers.PartialResolver;
@@ -890,8 +890,14 @@ public class Dotprompt {
   // Body of role, history, media and section markers, matched in a single pass. This parser
   // predates Parser.toMessages and differs from it (Map-based history, a single combined pattern,
   // broader role names), so it is kept separate. Both only honor markers carrying the nonce.
+  // Media and section bodies embed user-supplied values (URLs, section names) that may contain
+  // '>' or newlines, so they match lazily up to the first ">>>" (markerPattern compiles with
+  // DOTALL). A narrower body regex would fail to match and leak the raw marker, nonce included.
   private static final String MARKER_BODY_REGEX =
-      "role:[a-zA-Z0-9_]+|history|media:[^>]+|section\\s+[a-zA-Z0-9_]+";
+      "role:[a-zA-Z0-9_]+|history|media:.+?|section .*?";
+
+  private static final String MEDIA_URL_BODY_PREFIX = "media:url ";
+  private static final String SECTION_BODY_PREFIX = "section ";
 
   /**
    * Converts a rendered string into a list of messages.
@@ -1012,20 +1018,20 @@ public class Dotprompt {
             }
           }
         } else if (markerContent.startsWith("media:")) {
-          // Format: media:url URL [TYPE]
-          String mediaPayload = markerContent.substring(6).trim();
-          if (mediaPayload.startsWith("url ")) {
-            String[] parts = mediaPayload.substring(4).split("\\s+");
+          // Format: media:url URL [TYPE]. Split on spaces only (the helper's separator), as in
+          // Parser, so a URL containing other whitespace such as newlines is kept intact.
+          if (markerContent.startsWith(MEDIA_URL_BODY_PREFIX)) {
+            String[] parts = markerContent.substring(MEDIA_URL_BODY_PREFIX.length()).split(" ");
             String url = parts[0];
             String contentType = parts.length > 1 ? parts[1] : "";
             currentMessage.addPart(new MediaPart(contentType, url));
           }
-        } else if (markerContent.startsWith("section")) {
+        } else if (markerContent.startsWith(SECTION_BODY_PREFIX)) {
           // Format: section NAME. Emitted as a pending part (as in Parser and the other runtimes)
           // rather than the raw marker text, which would leak the nonce.
-          String[] parts = markerContent.split("\\s+");
+          String[] parts = markerContent.substring(SECTION_BODY_PREFIX.length()).split(" ");
           Map<String, Object> metadata = new HashMap<>();
-          metadata.put("purpose", parts.length > 1 ? parts[1] : "");
+          metadata.put("purpose", parts[0]);
           metadata.put("pending", true);
           currentMessage.addPart(new PendingPart(metadata));
         }

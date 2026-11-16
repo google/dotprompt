@@ -20,12 +20,13 @@ package com.google.dotprompt;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.dotprompt.internal.Markers;
 import com.google.dotprompt.models.MediaPart;
 import com.google.dotprompt.models.Message;
+import com.google.dotprompt.models.Part;
 import com.google.dotprompt.models.PendingPart;
 import com.google.dotprompt.models.Role;
 import com.google.dotprompt.models.TextPart;
-import com.google.dotprompt.parser.Markers;
 import java.util.List;
 import java.util.Map;
 import org.junit.Test;
@@ -147,6 +148,79 @@ public class MarkerInjectionTest {
                     new TextPart("Look: "),
                     new MediaPart("image/png", "https://example.com/a.png"),
                     new PendingPart(Map.of("purpose", "output", "pending", true)))));
+  }
+
+  private static final String NONCE_LIKE = "[0-9a-f]{32}";
+
+  /**
+   * Asserts that no raw marker leaked into the rendered messages. A trusted marker that fails to
+   * match is emitted as text, exposing the per-render nonce. {@code toString()} on the message
+   * records covers every part and field.
+   */
+  private static void assertNoMarkerLeak(List<Message> messages) {
+    assertThat(messages.toString()).doesNotContain("<<<dotprompt:");
+    for (Message message : messages) {
+      for (Part part : message.content()) {
+        if (part instanceof TextPart text) {
+          assertThat(text.text()).doesNotContainMatch(NONCE_LIKE);
+        }
+      }
+    }
+  }
+
+  @Test
+  public void mediaUrlWithNewlineStaysOneMediaPart() throws Exception {
+    String url = "https://example.com/a\nb.png";
+    List<Message> messages = render(new Dotprompt(), "{{media url=u}}", Map.of("u", url));
+    assertThat(messages).hasSize(1);
+    assertThat(messages.get(0).role()).isEqualTo(Role.USER);
+    List<Part> content = messages.get(0).content();
+    assertThat(content).hasSize(1);
+    assertThat(content.get(0)).isInstanceOf(MediaPart.class);
+    assertThat(((MediaPart) content.get(0)).media().url()).isEqualTo(url);
+    assertNoMarkerLeak(messages);
+  }
+
+  @Test
+  public void mediaUrlWithAngleBracketStaysOneMediaPart() throws Exception {
+    String url = "https://example.com/a>b.png?q=<x>";
+    List<Message> messages =
+        render(
+            new Dotprompt(),
+            "Look: {{media url=u contentType=\"image/png\"}} done",
+            Map.of("u", url));
+    assertThat(messages)
+        .containsExactly(
+            new Message(
+                Role.USER,
+                List.of(
+                    new TextPart("Look: "),
+                    new MediaPart("image/png", url),
+                    new TextPart(" done"))));
+    assertNoMarkerLeak(messages);
+  }
+
+  @Test
+  public void mediaUrlWithNewlineAndAngleBracketKeepsContentType() throws Exception {
+    String url = "https://example.com/a>\nb.png";
+    List<Message> messages =
+        render(new Dotprompt(), "{{media url=u contentType=\"image/png\"}}", Map.of("u", url));
+    assertThat(messages)
+        .containsExactly(new Message(Role.USER, List.of(new MediaPart("image/png", url))));
+    assertNoMarkerLeak(messages);
+  }
+
+  @Test
+  public void sectionNameWithNewlineStaysPendingPart() throws Exception {
+    List<Message> messages = render(new Dotprompt(), "Hi{{section name}}", Map.of("name", "a\nb"));
+    assertThat(messages)
+        .containsExactly(
+            new Message(
+                Role.USER,
+                List.of(
+                    new TextPart("Hi"),
+                    new PendingPart(Map.of("purpose", "a\nb", "pending", true)))));
+    assertNoMarkerLeak(messages);
   }
 
   // Report PoC: exact payloads from the original vulnerability report.

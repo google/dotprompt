@@ -24,7 +24,7 @@ import com.fasterxml.jackson.core.util.Separators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Options;
-import com.google.dotprompt.parser.Markers;
+import com.google.dotprompt.internal.Markers;
 import java.io.IOException;
 
 /**
@@ -42,9 +42,9 @@ import java.io.IOException;
  * </ul>
  *
  * <p>The marker helpers ({@code media}, {@code role}, {@code history}, {@code section}) embed the
- * per-render nonce from the Handlebars data frame (key {@link Markers#MARKER_NONCE_DATA_KEY}) in
- * every marker, so they only work when rendered via {@code Dotprompt}, which sets it. See {@link
- * Markers} for the marker format.
+ * per-render nonce that {@code Dotprompt} stores in the Handlebars data frame in every marker, so
+ * they only work when rendered via {@code Dotprompt}. The marker format and nonce key are internal
+ * implementation details, not an extension point for custom helpers.
  */
 public class Helpers {
 

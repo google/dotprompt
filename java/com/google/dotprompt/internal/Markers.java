@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.google.dotprompt.parser;
+package com.google.dotprompt.internal;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -27,6 +27,11 @@ import java.util.regex.Pattern;
 
 /**
  * In-band markers used to turn a rendered template string into messages.
+ *
+ * <p><b>Internal implementation detail, not a public API.</b> This class may change or be removed
+ * in any release with no compatibility guarantees. It is {@code public} only so the {@code
+ * helpers}, {@code parser} and root dotprompt packages can share it; emitting markers from custom
+ * helpers is not supported.
  *
  * <p>The {@code role}, {@code history}, {@code section} and {@code media} helpers emit markers into
  * the rendered string, which is then split back apart into messages and parts. Because the rendered
@@ -47,6 +52,8 @@ import java.util.regex.Pattern;
  *  └─────────────────────────────────┴───────────────────────────────────┘
  *
  *  nonce: 32 lowercase hex chars (128 bits from SecureRandom), fresh per render.
+ *  body:  may contain any character, including newlines (from user-supplied values),
+ *         and ends at the first &gt;&gt;&gt;.
  * </pre>
  *
  * <p>Example:
@@ -107,6 +114,12 @@ public final class Markers {
    * Builds a pattern matching markers with the given nonce whose body matches {@code bodyRegex}.
    * The pattern has exactly one capture group: the marker body.
    *
+   * <p>The pattern is compiled with {@link Pattern#DOTALL}, so {@code .} in {@code bodyRegex} also
+   * matches line breaks. Bodies embed user-supplied values (media URLs, section names) that may
+   * contain newlines; without DOTALL such a trusted marker would not match and would be emitted as
+   * text, leaking the nonce. Use a lazy quantifier ({@code .*?}) so the body ends at the first
+   * {@code >>>}.
+   *
    * @param nonce The per-render nonce.
    * @param bodyRegex Regex for the marker body. Must not contain capture groups (use {@code (?:
    *     ...)}), otherwise {@link #splitByMarkers} would read the wrong group.
@@ -115,7 +128,7 @@ public final class Markers {
    */
   public static Pattern markerPattern(String nonce, String bodyRegex) {
     checkNonce(nonce);
-    return Pattern.compile("<<<dotprompt:" + nonce + ":(" + bodyRegex + ")>>>");
+    return Pattern.compile("<<<dotprompt:" + nonce + ":(" + bodyRegex + ")>>>", Pattern.DOTALL);
   }
 
   /**
@@ -132,7 +145,8 @@ public final class Markers {
 
   /**
    * Matches media and section markers for the given nonce. The capture group is the marker body
-   * ({@code media:url https://... image/png}, {@code section code}).
+   * ({@code media:url https://... image/png}, {@code section code}), which may span lines and ends
+   * at the first {@code >>>}.
    *
    * @param nonce The per-render nonce.
    * @return The compiled pattern.

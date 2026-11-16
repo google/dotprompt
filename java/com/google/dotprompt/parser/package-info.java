@@ -88,8 +88,8 @@
  * <h3>Marker Processing</h3>
  *
  * <p>Helpers emit marker strings of the form {@code <<<dotprompt:{nonce}:{body}>>>} that the parser
- * processes. The nonce is generated per render ({@link com.google.dotprompt.parser.Markers}) and
- * only markers carrying it are honored, so user-supplied values that look like markers stay text.
+ * processes. The nonce is generated per render and only markers carrying it are honored, so
+ * user-supplied values that look like markers stay text.
  *
  * <pre>
  *  ┌─────────────────┬───────────────────────────────┐

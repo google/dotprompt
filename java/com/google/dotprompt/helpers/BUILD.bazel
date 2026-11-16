@@ -24,7 +24,7 @@ java_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//java/com/google/dotprompt/parser",
+        "//java/com/google/dotprompt/internal",
         "@maven//:com_fasterxml_jackson_core_jackson_core",
         "@maven//:com_fasterxml_jackson_core_jackson_databind",
         "@maven//:com_github_jknack_handlebars",
@@ -37,7 +37,7 @@ java_test(
     test_class = "com.google.dotprompt.helpers.HelpersTest",
     deps = [
         ":helpers",
-        "//java/com/google/dotprompt/parser",
+        "//java/com/google/dotprompt/internal",
         "@maven//:com_github_jknack_handlebars",
         "@maven//:com_google_truth_truth",
         "@maven//:junit_junit",
