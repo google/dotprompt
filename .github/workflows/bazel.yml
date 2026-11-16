@@ -23,8 +23,7 @@ on:
     branches: [ main ]
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   build_and_test:
@@ -39,9 +38,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          ref: ${{ startsWith(github.head_ref, 'release-please--') && github.head_ref || '' }}
-          token: ${{ startsWith(github.head_ref, 'release-please--') && secrets.RELEASE_PLEASE_TOKEN || github.token }}
 
       # Bazel needs a JDK. Setup Java from matrix.
       - name: Setup Java JDK ${{ matrix.java-version }}
@@ -63,35 +59,10 @@ jobs:
           repository-cache: true
           cache-save: true
 
-      - name: Check if this is a release-please PR
-        id: check-release-please
-        run: |
-          if [[ "${GITHUB_HEAD_REF}" == release-please--* ]]; then
-            echo "is_release_please=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_release_please=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Pin Java dependencies
         run: bazelisk run @maven//:pin
 
-      - name: Commit maven_install.json updates for release-please PR
-        if: steps.check-release-please.outputs.is_release_please == 'true' && matrix.java-version == 17
-        run: |
-          # Use CLA-covered maintainer identity from MAINTAINERS.yaml
-          git config user.name "$(yq '.ci.commit_author.name' MAINTAINERS.yaml)"
-          git config user.email "$(yq '.ci.commit_author.email' MAINTAINERS.yaml)"
-          if ! git diff --quiet maven_install.json; then
-            git add maven_install.json
-            git commit -m "chore: update maven_install.json"
-            git push
-            echo "maven_install.json updated and pushed"
-          else
-            echo "No maven_install.json changes needed"
-          fi
-
       - name: Check for changes in maven_install.json
-        if: steps.check-release-please.outputs.is_release_please != 'true'
         id: git-check
         run: |
           if [[ -n "$(git status --porcelain maven_install.json)" ]]; then
