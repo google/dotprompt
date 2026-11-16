@@ -20,13 +20,16 @@
 //! compilation, rendering, and metadata resolution.
 
 use crate::error::{DotpromptError, Result};
-use crate::helpers::register_builtin_helpers;
+use crate::helpers::{register_builtin_helpers, register_marker_helpers};
+use crate::markers::MarkerNonce;
 use crate::parse::{parse_document, to_messages};
 use crate::types::{
     DataArgument, JsonSchema, ParsedPrompt, PartialResolver, PromptFunction, PromptMetadata,
     RenderedPrompt, SchemaResolver, ToolDefinition, ToolResolver,
 };
-use handlebars::{Handlebars, HelperDef};
+use handlebars::{
+    Context, Handlebars, HelperDef, RenderContext, RenderError, Renderable, Template,
+};
 use std::collections::HashMap;
 
 /// Options for configuring a Dotprompt instance.
@@ -73,7 +76,7 @@ pub struct DotpromptOptions {
 /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// let dotprompt = Dotprompt::new(None);
 /// let template = r#"---
-/// model: gemini-pro
+/// model: gemini-flash-latest
 /// ---
 /// Hello {{name}}!"#;
 ///
@@ -351,7 +354,7 @@ impl Dotprompt {
             for (key, value) in context {
                 // Use __ctx_{key} as workaround since Handlebars treats @ as private data prefix
                 let internal_key = format!("__ctx_{key}");
-                map.insert(internal_key.clone(), value.clone());
+                map.insert(internal_key, value.clone());
 
                 // Replace all occurrences of @{key} with __ctx_{key} in template
                 template_to_render = template_to_render
@@ -368,19 +371,43 @@ impl Dotprompt {
             }
         }
 
+        // Fresh per render so user-supplied values can't forge role/media/etc.
+        // markers in the rendered string; see `crate::markers`.
+        let nonce = MarkerNonce::generate()?;
+
         // Render template
         let rendered_string = self
-            .handlebars
-            .render_template(&template_to_render, &render_context)
+            .render_with_nonce(&template_to_render, &render_context, &nonce)
             .map_err(|e| DotpromptError::RenderError(e.to_string()))?;
 
         // Convert to messages (passing data for history)
-        let messages = to_messages(&rendered_string, Some(data));
+        let messages = to_messages(&rendered_string, &nonce, Some(data));
 
         Ok(RenderedPrompt {
             metadata: parsed.metadata,
             messages,
         })
+    }
+
+    /// Renders `template` with the marker helpers bound to `nonce`.
+    ///
+    /// This mirrors `Handlebars::render_template`, except that it owns the
+    /// `RenderContext` so the nonce can be bound as local helpers. Keeping the
+    /// nonce out of the template data means `{{json this}}` and `#each this`
+    /// don't see it and input/context can't override it. Registry options that
+    /// `render_template` would forward (`prevent_indent`, `dev_mode`,
+    /// `recursive_lookup`) are never enabled on this private registry.
+    fn render_with_nonce(
+        &self,
+        template: &str,
+        data: &serde_json::Value,
+        nonce: &MarkerNonce,
+    ) -> std::result::Result<String, RenderError> {
+        let template = Template::compile(template).map_err(RenderError::from)?;
+        let ctx = Context::wraps(data)?;
+        let mut rc = RenderContext::new(None);
+        register_marker_helpers(&mut rc, nonce);
+        template.renders(&self.handlebars, &ctx, &mut rc)
     }
 
     /// Registers a schema definition.

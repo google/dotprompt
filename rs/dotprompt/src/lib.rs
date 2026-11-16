@@ -35,7 +35,7 @@
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! let dotprompt = Dotprompt::new(None);
 //! let template = r#"---
-//! model: gemini-pro
+//! model: gemini-flash-latest
 //! ---
 //! Hello {{name}}!"#;
 //!
@@ -54,6 +54,7 @@
 pub mod dotprompt;
 pub mod error;
 pub mod helpers;
+pub mod markers;
 pub mod parse;
 pub mod picoschema;
 pub mod store;

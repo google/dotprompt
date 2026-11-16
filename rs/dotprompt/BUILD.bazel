@@ -24,6 +24,7 @@ rust_library(
     edition = "2024",
     visibility = ["//visibility:public"],
     deps = [
+        "@crates//:getrandom",
         "@crates//:handlebars",
         "@crates//:hex",
         "@crates//:regex",
@@ -42,6 +43,16 @@ rust_library(
 rust_test(
     name = "dotprompt_test",
     crate = ":dotprompt",
+)
+
+# End-to-end marker injection tests
+rust_test(
+    name = "marker_injection_test",
+    srcs = ["tests/marker_injection_test.rs"],
+    deps = [
+        ":dotprompt",
+        "@crates//:serde_json",
+    ],
 )
 
 # Spec-based tests - one target per spec file (following Java pattern)

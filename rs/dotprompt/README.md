@@ -21,7 +21,7 @@ use dotprompt::{Dotprompt, DataArgument, RenderedPrompt};
 
 let dotprompt = Dotprompt::new(None);
 let template = r#"---
-model: gemini-pro
+model: gemini-flash-latest
 ---
 Hello {{name}}!"#;
 

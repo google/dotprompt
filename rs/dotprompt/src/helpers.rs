@@ -18,25 +18,147 @@
 //!
 //! This module provides custom Handlebars helpers that enable dotprompt-specific
 //! functionality like role markers, media references, and JSON serialization.
+//!
+//! The marker helpers (`role`, `history`, `section`, `media`) emit nonce-bearing
+//! markers (see [`crate::markers`]). The nonce changes on every render, so they
+//! are bound per render as local helpers on the [`RenderContext`] by
+//! [`register_marker_helpers`], which [`Dotprompt`](crate::Dotprompt) calls.
+//! Local helpers take precedence over registry helpers and are visible inside
+//! blocks (`#each`, `#with`, ...) and partials, which share the render context.
+//!
+//! ```text
+//! Registry (shared)                    RenderContext (one per render)
+//! +-------------------------------+    +----------------------------------+
+//! | json, ifEquals, unlessEquals  |    | role, history, section, media    |
+//! | role, history, section, media |    |   bound to this render's nonce   |
+//! |   (unbound: always error)     |    |   (shadow the registry entries)  |
+//! +-------------------------------+    +----------------------------------+
+//! ```
 
-use handlebars::{Context, Handlebars, Helper, HelperResult, Output, RenderContext, Renderable};
+use crate::markers::{MarkerNonce, format_marker};
+use handlebars::{
+    Context, Handlebars, Helper, HelperDef, HelperResult, Output, RenderContext, RenderErrorReason,
+    Renderable,
+};
 
 /// Registers all built-in helpers with a Handlebars instance.
+///
+/// The marker helpers registered here are unbound: they fail when called, so a
+/// template rendered without [`register_marker_helpers`] errors instead of
+/// emitting markers the parser would not trust.
 ///
 /// # Arguments
 ///
 /// * `handlebars` - The Handlebars instance to register helpers with
 pub fn register_builtin_helpers(handlebars: &mut Handlebars) {
     handlebars.register_helper("json", Box::new(json_helper));
-    handlebars.register_helper("role", Box::new(role_helper));
-    handlebars.register_helper("history", Box::new(history_helper));
-    handlebars.register_helper("section", Box::new(section_helper));
-    handlebars.register_helper("media", Box::new(media_helper));
+    for kind in MarkerKind::ALL {
+        handlebars.register_helper(kind.name(), Box::new(MarkerHelper { kind, nonce: None }));
+    }
     handlebars.register_helper("ifEquals", Box::new(if_equals_helper));
     handlebars.register_helper("unlessEquals", Box::new(unless_equals_helper));
 
     // Register @ prefix variable helpers
     // Note: Handlebars treats @var as private data, but we expose @state via local path
+}
+
+/// Binds the marker helpers (`role`, `history`, `section`, `media`) to `nonce`
+/// for a single render.
+///
+/// They are registered as local helpers on `rc`, shadowing the unbound ones
+/// from [`register_builtin_helpers`]. Pair this with
+/// [`to_messages`](crate::parse::to_messages) using the same nonce.
+///
+/// # Examples
+///
+/// ```
+/// use dotprompt::helpers::{register_builtin_helpers, register_marker_helpers};
+/// use dotprompt::markers::{MarkerNonce, format_marker};
+/// use handlebars::{Context, Handlebars, RenderContext, Renderable, Template};
+///
+/// # fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut hbs = Handlebars::new();
+/// register_builtin_helpers(&mut hbs);
+///
+/// let nonce = MarkerNonce::generate()?;
+/// let template = Template::compile(r#"{{role "system"}}"#)?;
+/// let ctx = Context::null();
+/// let mut rc = RenderContext::new(None);
+/// register_marker_helpers(&mut rc, &nonce);
+///
+/// let rendered = template.renders(&hbs, &ctx, &mut rc)?;
+/// assert_eq!(rendered, format_marker(&nonce, "role:system"));
+/// # Ok(())
+/// # }
+/// # example().unwrap();
+/// ```
+pub fn register_marker_helpers(rc: &mut RenderContext<'_, '_>, nonce: &MarkerNonce) {
+    for kind in MarkerKind::ALL {
+        let helper = MarkerHelper {
+            kind,
+            nonce: Some(nonce.clone()),
+        };
+        rc.register_local_helper(kind.name(), Box::new(helper));
+    }
+}
+
+/// The helpers that emit in-band markers.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum MarkerKind {
+    Role,
+    History,
+    Section,
+    Media,
+}
+
+impl MarkerKind {
+    const ALL: [Self; 4] = [Self::Role, Self::History, Self::Section, Self::Media];
+
+    /// Template-facing helper name.
+    const fn name(self) -> &'static str {
+        match self {
+            Self::Role => "role",
+            Self::History => "history",
+            Self::Section => "section",
+            Self::Media => "media",
+        }
+    }
+}
+
+/// Error raised when a marker helper runs without a per-render nonce.
+const UNBOUND_MARKER_HELPER_ERROR: &str =
+    "dotprompt: marker helpers (role, history, section, media) must be rendered via Dotprompt";
+
+/// A marker helper, optionally bound to a per-render nonce.
+#[derive(Debug)]
+struct MarkerHelper {
+    kind: MarkerKind,
+    /// `None` for the registry-level fallback, which always errors.
+    nonce: Option<MarkerNonce>,
+}
+
+impl HelperDef for MarkerHelper {
+    fn call<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'rc>,
+        _: &'reg Handlebars<'reg>,
+        _: &'rc Context,
+        _: &mut RenderContext<'reg, 'rc>,
+        out: &mut dyn Output,
+    ) -> HelperResult {
+        let nonce = self
+            .nonce
+            .as_ref()
+            .ok_or_else(|| RenderErrorReason::Other(UNBOUND_MARKER_HELPER_ERROR.to_string()))?;
+        let body = match self.kind {
+            MarkerKind::Role => role_body(h)?,
+            MarkerKind::History => "history".to_string(),
+            MarkerKind::Section => section_body(h)?,
+            MarkerKind::Media => media_body(h)?,
+        };
+        out.write(&format_marker(nonce, &body))?;
+        Ok(())
+    }
 }
 
 /// JSON serialization helper.
@@ -93,22 +215,14 @@ fn json_helper(
     Ok(())
 }
 
-/// Role marker helper.
-///
-/// Creates a dotprompt role marker.
+/// Role marker body (`role:{name}`).
 ///
 /// # Example
 ///
 /// ```handlebars
 /// {{role "system"}}
 /// ```
-fn role_helper(
-    h: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _: &mut RenderContext,
-    out: &mut dyn Output,
-) -> HelperResult {
+fn role_body(h: &Helper) -> Result<String, RenderErrorReason> {
     let role = h.param(0).ok_or_else(|| {
         handlebars::RenderErrorReason::Other("role helper requires a role parameter".to_string())
     })?;
@@ -118,46 +232,17 @@ fn role_helper(
         .as_str()
         .ok_or_else(|| handlebars::RenderErrorReason::Other("role must be a string".to_string()))?;
 
-    out.write(&format!("<<<dotprompt:role:{role_str}>>>"))?;
-    Ok(())
+    Ok(format!("role:{role_str}"))
 }
 
-/// History marker helper.
-///
-/// Creates a dotprompt history placeholder.
-///
-/// # Example
-///
-/// ```handlebars
-/// {{history}}
-/// ```
-fn history_helper(
-    _: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _: &mut RenderContext,
-    out: &mut dyn Output,
-) -> HelperResult {
-    out.write("<<<dotprompt:history>>>")?;
-    Ok(())
-}
-
-/// Section marker helper.
-///
-/// Creates a dotprompt section marker.
+/// Section marker body (`section {name}`).
 ///
 /// # Example
 ///
 /// ```handlebars
 /// {{section "examples"}}
 /// ```
-fn section_helper(
-    h: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _: &mut RenderContext,
-    out: &mut dyn Output,
-) -> HelperResult {
+fn section_body(h: &Helper) -> Result<String, RenderErrorReason> {
     let name = h.param(0).ok_or_else(|| {
         handlebars::RenderErrorReason::Other("section helper requires a name parameter".to_string())
     })?;
@@ -166,13 +251,10 @@ fn section_helper(
         handlebars::RenderErrorReason::Other("section name must be a string".to_string())
     })?;
 
-    out.write(&format!("<<<dotprompt:section {name_str}>>>"))?;
-    Ok(())
+    Ok(format!("section {name_str}"))
 }
 
-/// Media reference helper.
-///
-/// Creates a dotprompt media marker with URL and optional content type.
+/// Media marker body (`media:url {url} [{contentType}]`).
 ///
 /// # Example
 ///
@@ -180,13 +262,7 @@ fn section_helper(
 /// {{media url="https://example.com/image.png"}}
 /// {{media url="https://example.com/image.png" contentType="image/png"}}
 /// ```
-fn media_helper(
-    h: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _: &mut RenderContext,
-    out: &mut dyn Output,
-) -> HelperResult {
+fn media_body(h: &Helper) -> Result<String, RenderErrorReason> {
     let url = h.hash_get("url").ok_or_else(|| {
         handlebars::RenderErrorReason::Other("media helper requires url parameter".to_string())
     })?;
@@ -196,17 +272,16 @@ fn media_helper(
         .as_str()
         .ok_or_else(|| handlebars::RenderErrorReason::Other("url must be a string".to_string()))?;
 
-    let marker = if let Some(content_type) = h.hash_get("contentType") {
+    let body = if let Some(content_type) = h.hash_get("contentType") {
         let ct_str = content_type.value().as_str().ok_or_else(|| {
             handlebars::RenderErrorReason::Other("contentType must be a string".to_string())
         })?;
-        format!("<<<dotprompt:media:url {url_str} {ct_str}>>>")
+        format!("media:url {url_str} {ct_str}")
     } else {
-        format!("<<<dotprompt:media:url {url_str}>>>")
+        format!("media:url {url_str}")
     };
 
-    out.write(&marker)?;
-    Ok(())
+    Ok(body)
 }
 
 /// Conditional equality block helper.
@@ -391,102 +466,118 @@ mod tests {
         assert_eq!(result, "[]");
     }
 
-    // Role helper tests
+    // Marker helper tests
+
+    const NONCE: &str = "0123456789abcdef0123456789abcdef";
+
+    /// Renders `template` with the marker helpers bound to [`NONCE`].
+    fn render_marker(hbs: &Handlebars, template: &str, data: &serde_json::Value) -> String {
+        let nonce = MarkerNonce::parse(NONCE).expect("valid nonce");
+        let template = handlebars::Template::compile(template).expect("template should compile");
+        let ctx = Context::wraps(data).expect("context should wrap");
+        let mut rc = RenderContext::new(None);
+        register_marker_helpers(&mut rc, &nonce);
+        template
+            .renders(hbs, &ctx, &mut rc)
+            .expect("render should succeed")
+    }
+
+    fn render_marker_simple(template: &str) -> String {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+        render_marker(&hbs, template, &json!({}))
+    }
 
     #[test]
     fn test_role_helper_system() {
-        let mut hbs = Handlebars::new();
-        register_builtin_helpers(&mut hbs);
-
-        let template = "{{role \"system\"}}";
-        let result = hbs
-            .render_template(template, &json!({}))
-            .expect("render should succeed");
-        assert_eq!(result, "<<<dotprompt:role:system>>>");
+        assert_eq!(
+            render_marker_simple("{{role \"system\"}}"),
+            format!("<<<dotprompt:{NONCE}:role:system>>>")
+        );
     }
 
     #[test]
     fn test_role_helper_user() {
-        let mut hbs = Handlebars::new();
-        register_builtin_helpers(&mut hbs);
-
-        let template = "{{role \"user\"}}";
-        let result = hbs
-            .render_template(template, &json!({}))
-            .expect("render should succeed");
-        assert_eq!(result, "<<<dotprompt:role:user>>>");
+        assert_eq!(
+            render_marker_simple("{{role \"user\"}}"),
+            format!("<<<dotprompt:{NONCE}:role:user>>>")
+        );
     }
 
     #[test]
     fn test_role_helper_model() {
-        let mut hbs = Handlebars::new();
-        register_builtin_helpers(&mut hbs);
-
-        let template = "{{role \"model\"}}";
-        let result = hbs
-            .render_template(template, &json!({}))
-            .expect("render should succeed");
-        assert_eq!(result, "<<<dotprompt:role:model>>>");
+        assert_eq!(
+            render_marker_simple("{{role \"model\"}}"),
+            format!("<<<dotprompt:{NONCE}:role:model>>>")
+        );
     }
-
-    // History helper tests
 
     #[test]
     fn test_history_helper() {
-        let mut hbs = Handlebars::new();
-        register_builtin_helpers(&mut hbs);
-
-        let template = "{{history}}";
-        let result = hbs
-            .render_template(template, &json!({}))
-            .expect("render should succeed");
-        assert_eq!(result, "<<<dotprompt:history>>>");
+        assert_eq!(
+            render_marker_simple("{{history}}"),
+            format!("<<<dotprompt:{NONCE}:history>>>")
+        );
     }
-
-    // Section helper tests
 
     #[test]
     fn test_section_helper() {
-        let mut hbs = Handlebars::new();
-        register_builtin_helpers(&mut hbs);
-
-        let template = "{{section \"examples\"}}";
-        let result = hbs
-            .render_template(template, &json!({}))
-            .expect("render should succeed");
-        assert_eq!(result, "<<<dotprompt:section examples>>>");
+        assert_eq!(
+            render_marker_simple("{{section \"examples\"}}"),
+            format!("<<<dotprompt:{NONCE}:section examples>>>")
+        );
     }
-
-    // Media helper tests
 
     #[test]
     fn test_media_helper_url_only() {
-        let mut hbs = Handlebars::new();
-        register_builtin_helpers(&mut hbs);
-
-        let template = r#"{{media url="https://example.com/image.png"}}"#;
-        let result = hbs
-            .render_template(template, &json!({}))
-            .expect("render should succeed");
         assert_eq!(
-            result,
-            "<<<dotprompt:media:url https://example.com/image.png>>>"
+            render_marker_simple(r#"{{media url="https://example.com/image.png"}}"#),
+            format!("<<<dotprompt:{NONCE}:media:url https://example.com/image.png>>>")
         );
     }
 
     #[test]
     fn test_media_helper_url_and_content_type() {
+        assert_eq!(
+            render_marker_simple(
+                r#"{{media url="https://example.com/image.png" contentType="image/png"}}"#,
+            ),
+            format!("<<<dotprompt:{NONCE}:media:url https://example.com/image.png image/png>>>")
+        );
+    }
+
+    #[test]
+    fn test_marker_helpers_are_bound_inside_blocks_and_partials() {
         let mut hbs = Handlebars::new();
         register_builtin_helpers(&mut hbs);
-
-        let template = r#"{{media url="https://example.com/image.png" contentType="image/png"}}"#;
-        let result = hbs
-            .render_template(template, &json!({}))
-            .expect("render should succeed");
+        hbs.register_template_string("turn", "{{role this}}")
+            .expect("partial should compile");
+        let result = render_marker(
+            &hbs,
+            "{{#each roles}}{{> turn}}{{/each}}{{#with obj}}{{history}}{{/with}}",
+            &json!({ "roles": ["user"], "obj": {"k": 1} }),
+        );
         assert_eq!(
             result,
-            "<<<dotprompt:media:url https://example.com/image.png image/png>>>"
+            format!("<<<dotprompt:{NONCE}:role:user>>><<<dotprompt:{NONCE}:history>>>")
         );
+    }
+
+    #[test]
+    fn test_marker_helpers_fail_when_unbound() {
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+        for template in [
+            "{{role \"system\"}}",
+            "{{history}}",
+            "{{section \"output\"}}",
+            r#"{{media url="https://example.com/a.png"}}"#,
+        ] {
+            assert!(
+                hbs.render_template(template, &json!({})).is_err(),
+                "{template} should fail without a bound nonce"
+            );
+        }
     }
 
     // ifEquals helper tests
