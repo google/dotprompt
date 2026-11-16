@@ -52,12 +52,6 @@ jobs:
     name: pnpm-lock.yaml Check
     steps:
       - uses: actions/checkout@v6
-        with:
-          # Only check out head_ref directly on release-please branches that push commits back;
-          # fork PRs do not have a matching branch ref on the base repository.
-          ref: ${{ startsWith(github.head_ref, 'release-please--') && github.head_ref || '' }}
-          # Use a token that can push to the branch (for release-please PRs)
-          token: ${{ startsWith(github.head_ref, 'release-please--') && secrets.RELEASE_PLEASE_TOKEN || github.token }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -66,36 +60,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-
-      - name: Check if this is a release-please PR
-        id: check-release-please
-        run: |
-          if [[ "${GITHUB_HEAD_REF}" == release-please--* ]]; then
-            echo "is_release_please=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_release_please=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Update lockfiles for release-please PR
-        if: steps.check-release-please.outputs.is_release_please == 'true'
-        run: |
-          echo "Updating pnpm-lock.yaml for release-please PR..."
-          pnpm install --lockfile-only
-
-      - name: Commit lockfile updates
-        if: steps.check-release-please.outputs.is_release_please == 'true'
-        run: |
-          # Use CLA-covered maintainer identity from MAINTAINERS.yaml
-          git config user.name "$(yq '.ci.commit_author.name' MAINTAINERS.yaml)"
-          git config user.email "$(yq '.ci.commit_author.email' MAINTAINERS.yaml)"
-          if ! git diff --quiet pnpm-lock.yaml js/pnpm-lock.yaml; then
-            git add pnpm-lock.yaml js/pnpm-lock.yaml 2>/dev/null || true
-            git commit -m "chore: update pnpm lockfiles" || echo "No changes to commit"
-            git push || echo "Nothing to push"
-            echo "Lockfiles updated and pushed"
-          else
-            echo "No lockfile changes needed"
-          fi
 
       - name: Check pnpm-lock.yaml is up to date
         run: |

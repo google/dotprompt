@@ -50,48 +50,11 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v6
-        with:
-          # Only check out head_ref directly on release-please branches that push commits back;
-          # fork PRs do not have a matching branch ref on the base repository.
-          ref: ${{ startsWith(github.head_ref, 'release-please--') && github.head_ref || '' }}
-          # Use a token that can push to the branch (for release-please PRs)
-          token: ${{ startsWith(github.head_ref, 'release-please--') && secrets.RELEASE_PLEASE_TOKEN || github.token }}
 
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version: stable
-
-      - name: Check if this is a release-please PR
-        id: check-release-please
-        run: |
-          if [[ "${GITHUB_HEAD_REF}" == release-please--* ]]; then
-            echo "is_release_please=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_release_please=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Update go.sum for release-please PR
-        if: steps.check-release-please.outputs.is_release_please == 'true'
-        working-directory: go
-        run: |
-          echo "Updating go.sum for release-please PR..."
-          go mod tidy
-
-      - name: Commit go.sum updates
-        if: steps.check-release-please.outputs.is_release_please == 'true'
-        run: |
-          # Use CLA-covered maintainer identity from MAINTAINERS.yaml
-          git config user.name "$(yq '.ci.commit_author.name' MAINTAINERS.yaml)"
-          git config user.email "$(yq '.ci.commit_author.email' MAINTAINERS.yaml)"
-          if ! git diff --quiet go/go.sum go/go.mod; then
-            git add go/go.sum go/go.mod
-            git commit -m "chore: update go.mod and go.sum"
-            git push
-            echo "go.sum updated and pushed"
-          else
-            echo "No go.sum changes needed"
-          fi
 
       - name: Check go.mod and go.sum are tidy
         working-directory: go
