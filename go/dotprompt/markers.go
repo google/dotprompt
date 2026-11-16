@@ -89,11 +89,15 @@ func roleAndHistoryMarkerRegex(nonce string) (*regexp.Regexp, error) {
 // mediaAndSectionMarkerRegex matches media and section markers for the given
 // nonce. The single capture group is the marker body
 // ("media:url https://... image/png", "section code").
+//
+// The body comes from user-controlled values (media url, section name) and
+// may contain newlines, so (?s) lets it span lines. Otherwise such a marker
+// would fail to match and leak into the output as text, nonce included.
 func mediaAndSectionMarkerRegex(nonce string) (*regexp.Regexp, error) {
 	if err := validateMarkerNonce(nonce); err != nil {
 		return nil, err
 	}
-	return regexp.MustCompile(`<<<dotprompt:` + nonce + `:((?:media:url|section) .*?)>>>`), nil
+	return regexp.MustCompile(`(?s)<<<dotprompt:` + nonce + `:((?:media:url|section) .*?)>>>`), nil
 }
 
 // markerPiece is a piece of a rendered string: either literal text or the body

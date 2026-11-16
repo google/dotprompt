@@ -136,6 +136,8 @@ func TestMediaAndSectionMarkerRegex(t *testing.T) {
 		"media:url https://example.com/a.png",
 		"media:url https://example.com/a.png image/png",
 		"section code",
+		"media:url https://example.com/a\nb.png", // newline in user-controlled url
+		"section co\nde",                         // newline in user-controlled name
 	}
 	for _, body := range valid {
 		t.Run("matches "+body, func(t *testing.T) {
@@ -241,6 +243,17 @@ func TestSplitByMarkers(t *testing.T) {
 				{value: " World "},
 				{isMarker: true, value: "section code"},
 				{value: "!"},
+			},
+		},
+		{
+			// The body may span lines but still stops at the first >>>.
+			name:   "multiline media and section bodies",
+			source: tm("media:url https://a.example/x\ny.png") + "\nmid\n" + tm("section co\nde"),
+			re:     mediaRe,
+			want: []markerPiece{
+				{isMarker: true, value: "media:url https://a.example/x\ny.png"},
+				{value: "\nmid\n"},
+				{isMarker: true, value: "section co\nde"},
 			},
 		},
 	}

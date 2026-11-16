@@ -18,6 +18,8 @@ package dotprompt
 
 import (
 	"encoding/json"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -175,6 +177,44 @@ func TestMarkerHelpers_mediaAndSection(t *testing.T) {
 	}}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("messages mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// A newline in a user-controlled media url must not break the trusted marker,
+// which would drop the media part and leak the raw marker (nonce included)
+// into the output as text.
+func TestMarkerHelpers_mediaURLWithNewline(t *testing.T) {
+	const url = "https://example.com/a\nb.png"
+	got := renderMessages(t, nil, `{{media url=u}}`, &DataArgument{Input: map[string]any{"u": url}})
+
+	want := []Message{{
+		Role:    RoleUser,
+		Content: []Part{&MediaPart{Media: Media{URL: url}}},
+	}}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("messages mismatch (-want +got):\n%s", diff)
+	}
+
+	// Redundant with the exact comparison above, but states the security
+	// property directly: no marker text and no nonce anywhere in the output.
+	nonceRe := regexp.MustCompile(`[0-9a-f]{32}`)
+	for _, msg := range got {
+		for _, part := range msg.Content {
+			text, ok := part.(*TextPart)
+			if !ok {
+				continue
+			}
+			if strings.Contains(text.Text, "<<<dotprompt:") || nonceRe.MatchString(text.Text) {
+				t.Errorf("text part leaks a marker or nonce: %q", text.Text)
+			}
+		}
+	}
+	serialized, err := json.Marshal(got)
+	if err != nil {
+		t.Fatalf("json.Marshal() error: %v", err)
+	}
+	if strings.Contains(string(serialized), "<<<dotprompt:") {
+		t.Errorf("rendered messages contain %q: %s", "<<<dotprompt:", serialized)
 	}
 }
 
