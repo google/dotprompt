@@ -126,9 +126,6 @@ jobs:
         with:
           version: '28.x'
 
-      - name: Install protoc-gen-dart
-        run: dart pub global activate protoc_plugin
-
       - name: Setup gRPC example
         working-directory: bazel/rules_flutter/examples/grpc_app
         run: |
@@ -139,11 +136,15 @@ jobs:
           # Add platform support
           flutter create --platforms=web,linux . 2>/dev/null || true
 
-          # Generate proto files
+          # Generate proto files. The client is pinned to protobuf 4.x (Flutter 3.27 /
+          # Dart 3.6) and the server to protobuf 6.0.x (see the pubspec.lock files), so
+          # each gets code from the matching protoc_plugin release instead of sharing one.
           mkdir -p lib/generated server/lib/generated
           export PATH="$HOME/.pub-cache/bin:$PATH"
+          dart pub global activate protoc_plugin 22.4.0
           protoc --dart_out=grpc:lib/generated -Iproto proto/helloworld.proto
-          cp lib/generated/*.dart server/lib/generated/
+          dart pub global activate protoc_plugin 25.0.0
+          protoc --dart_out=grpc:server/lib/generated -Iproto proto/helloworld.proto
 
       - name: Analyze Flutter client
         working-directory: bazel/rules_flutter/examples/grpc_app
