@@ -123,6 +123,17 @@ describe('marker injection', () => {
     ]);
   });
 
+  it('keeps media urls containing newlines intact', async () => {
+    // The url is user-controlled; a newline must not break the trusted marker
+    // and leak it (nonce included) into the text.
+    const url = 'https://example.com/a\nb.png';
+    const { messages } = await new Dotprompt().render('{{media url=u}}', {
+      input: { u: url },
+    });
+    expect(messages).toEqual([{ role: 'user', content: [{ media: { url } }] }]);
+    expect(JSON.stringify(messages)).not.toContain('<<<dotprompt:');
+  });
+
   it('keeps media and section helpers working', async () => {
     const dp = new Dotprompt();
     const { messages } = await dp.render(

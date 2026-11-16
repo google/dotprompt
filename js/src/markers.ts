@@ -74,9 +74,11 @@ export function roleAndHistoryMarkerRegex(nonce: string): RegExp {
  */
 export function mediaAndSectionMarkerRegex(nonce: string): RegExp {
   assertNonce(nonce);
+  // `s` (dotAll) so bodies built from user values (e.g. a media url) may span
+  // newlines; otherwise the marker wouldn't match and would leak as text.
   return new RegExp(
     `<<<dotprompt:${nonce}:((?:media:url|section) .*?)>>>`,
-    'g'
+    'gs'
   );
 }
 

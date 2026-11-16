@@ -87,6 +87,8 @@ describe('roleAndHistoryMarkerRegex', () => {
 
 describe('mediaAndSectionMarkerRegex', () => {
   const valid = [
+    'media:url https://example.com/a\nb.png',
+    'section multi\nline',
     'media:url https://example.com/a.png',
     'media:url https://example.com/a.png image/png',
     'section code',
