@@ -48,7 +48,11 @@ verbose = false
 color = "auto"
 
 [ignore]
-ids = []
+# soupsieve is a dev-only transitive dependency (jupyter -> nbconvert ->
+# beautifulsoup4), not shipped with dotpromptz. The lock resolves the fixed
+# soupsieve 4.x on Python >= 3.11.5; these advisories remain only for the
+# older-Python fork (soupsieve 2.10), where no fixed release is installable.
+ids = ["GHSA-mmhr-3c5m-f64f", "GHSA-7g44-g9rc-x53w", "GHSA-6655-6qjp-jx7x"]
 while_no_fix = ["GHSA-xm59-rqc7-hhvf"]
 patterns = []
 packages = []

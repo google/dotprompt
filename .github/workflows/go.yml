@@ -21,8 +21,7 @@ on:
     branches: [ main ]
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   check-paths:
@@ -30,12 +29,12 @@ jobs:
     outputs:
       any_changed: ${{ steps.changed-files.outputs.any_changed }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v45
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files: |
             go/**
@@ -49,46 +48,12 @@ jobs:
     name: go.sum Check
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.head_ref }}
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: stable
-
-      - name: Check if this is a release-please PR
-        id: check-release-please
-        run: |
-          if [[ "${GITHUB_HEAD_REF}" == release-please--* ]]; then
-            echo "is_release_please=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_release_please=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Update go.sum for release-please PR
-        if: steps.check-release-please.outputs.is_release_please == 'true'
-        working-directory: go
-        run: |
-          echo "Updating go.sum for release-please PR..."
-          go mod tidy
-
-      - name: Commit go.sum updates
-        if: steps.check-release-please.outputs.is_release_please == 'true'
-        run: |
-          # Use CLA-covered maintainer identity from MAINTAINERS.yaml
-          git config user.name "$(yq '.ci.commit_author.name' MAINTAINERS.yaml)"
-          git config user.email "$(yq '.ci.commit_author.email' MAINTAINERS.yaml)"
-          if ! git diff --quiet go/go.sum go/go.mod; then
-            git add go/go.sum go/go.mod
-            git commit -m "chore: update go.mod and go.sum"
-            git push
-            echo "go.sum updated and pushed"
-          else
-            echo "No go.sum changes needed"
-          fi
 
       - name: Check go.mod and go.sum are tidy
         working-directory: go
@@ -108,10 +73,10 @@ jobs:
     name: Go Format Check
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: stable
 
@@ -139,15 +104,17 @@ jobs:
     name: Go ${{ matrix.go-version }} Tests
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Set up Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: ${{ matrix.go-version }}
 
       - name: Install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+        # v1.7.0 is the last release that builds on Go 1.25 (v1.8.0+ require Go 1.26).
+        # The vulnerability database is fetched at run time, so pinning doesn't age the scan.
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
 
       - name: Check build
         run: go build -C go -v ./...
