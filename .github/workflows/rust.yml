@@ -48,15 +48,9 @@ jobs:
     if: needs.check-paths.outputs.any_changed == 'true'
     name: Cargo.lock Check
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          ref: ${{ github.head_ref }}
-          token: ${{ startsWith(github.head_ref, 'release-please--') && secrets.RELEASE_PLEASE_TOKEN || github.token }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
@@ -64,36 +58,6 @@ jobs:
           toolchain: stable
         env:
           RUSTUP_MAX_RETRIES: 3
-
-      - name: Check if this is a release-please PR
-        id: check-release-please
-        run: |
-          if [[ "${GITHUB_HEAD_REF}" == release-please--* ]]; then
-            echo "is_release_please=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_release_please=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Update Cargo.lock for release-please PR
-        if: steps.check-release-please.outputs.is_release_please == 'true'
-        run: |
-          echo "Updating Cargo.lock for release-please PR..."
-          cargo update --workspace
-
-      - name: Commit Cargo.lock updates
-        if: steps.check-release-please.outputs.is_release_please == 'true'
-        run: |
-          # Use CLA-covered maintainer identity from MAINTAINERS.yaml
-          git config user.name "$(yq '.ci.commit_author.name' MAINTAINERS.yaml)"
-          git config user.email "$(yq '.ci.commit_author.email' MAINTAINERS.yaml)"
-          if ! git diff --quiet Cargo.lock; then
-            git add Cargo.lock
-            git commit -m "chore: update Cargo.lock"
-            git push
-            echo "Cargo.lock updated and pushed"
-          else
-            echo "No Cargo.lock changes needed"
-          fi
 
       - name: Check Cargo.lock is up to date
         run: |

@@ -46,54 +46,13 @@ jobs:
     needs: check-paths
     if: needs.check-paths.outputs.any_changed == 'true'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          # Only check out head_ref directly on release-please branches that push commits back;
-          # fork PRs do not have a matching branch ref on the base repository.
-          ref: ${{ startsWith(github.head_ref, 'release-please--') && github.head_ref || '' }}
-          # Use a token that can push to the branch (for release-please PRs)
-          token: ${{ startsWith(github.head_ref, 'release-please--') && secrets.RELEASE_PLEASE_TOKEN || github.token }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
         with:
           enable-cache: true
-
-      - name: Check if this is a release-please PR
-        id: check-release-please
-        run: |
-          if [[ "${GITHUB_HEAD_REF}" == release-please--* ]]; then
-            echo "is_release_please=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_release_please=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Update lockfiles for release-please PR
-        if: steps.check-release-please.outputs.is_release_please == 'true'
-        working-directory: python
-        run: |
-          echo "Updating uv.lock for release-please PR..."
-          uv lock
-          ../scripts/export_requirements
-
-      - name: Commit lockfile updates
-        if: steps.check-release-please.outputs.is_release_please == 'true'
-        run: |
-          # Use CLA-covered maintainer identity from MAINTAINERS.yaml
-          git config user.name "$(yq '.ci.commit_author.name' MAINTAINERS.yaml)"
-          git config user.email "$(yq '.ci.commit_author.email' MAINTAINERS.yaml)"
-          if ! git diff --quiet python/uv.lock python/requirements.txt; then
-            git add python/uv.lock python/requirements.txt
-            git commit -m "chore: update Python lockfiles"
-            git push
-            echo "Lockfiles updated and pushed"
-          else
-            echo "No lockfile changes needed"
-          fi
 
       - name: Check uv.lock is up to date
         working-directory: python

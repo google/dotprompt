@@ -16,6 +16,9 @@
 
 name: Rules Dart Tests
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ main ]
@@ -41,10 +44,12 @@ jobs:
         shell: bash
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
       
       - name: Setup Bazel
-        uses: bazel-contrib/setup-bazel@0.18.0
+        uses: bazel-contrib/setup-bazel@083175551ceeceebc757ebee2127fde78840ca77 # 0.18.0
         with:
           bazelisk-cache: true
           disk-cache: ${{ github.workflow }}-${{ matrix.os }}

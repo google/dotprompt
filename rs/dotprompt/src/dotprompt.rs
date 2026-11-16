@@ -351,7 +351,7 @@ impl Dotprompt {
             for (key, value) in context {
                 // Use __ctx_{key} as workaround since Handlebars treats @ as private data prefix
                 let internal_key = format!("__ctx_{key}");
-                map.insert(internal_key.clone(), value.clone());
+                map.insert(internal_key, value.clone());
 
                 // Replace all occurrences of @{key} with __ctx_{key} in template
                 template_to_render = template_to_render
