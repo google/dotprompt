@@ -33,6 +33,7 @@
 /// where each message has `role` and `content` fields.
 library;
 
+import "../markers.dart";
 import "../types.dart";
 
 /// Marker class for the history helper.
@@ -45,6 +46,12 @@ class HistoryHelper {
 
   /// The name of this helper in templates.
   static const String name = "history";
+
+  /// Creates the marker at which conversation history is inserted, carrying
+  /// the per-render [nonce].
+  ///
+  /// Throws [ArgumentError] if [nonce] is not 32 lowercase hex chars.
+  static String createMarker(String nonce) => formatMarker(nonce, historyMarkerBody);
 
   /// Renders conversation history from the data context.
   ///

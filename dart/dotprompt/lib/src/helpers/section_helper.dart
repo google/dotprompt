@@ -27,7 +27,15 @@
 /// {{section "main"}}
 /// Main content here
 /// ```
+///
+/// ## Markers
+///
+/// The helper emits `<<<dotprompt:{nonce}:section {name}>>>`, where `nonce`
+/// is the per-render nonce that the part splitter also uses. Markers without
+/// the right nonce (e.g. typed by an end user) stay plain text.
 library;
+
+import "../markers.dart";
 
 /// Marker class for the section helper.
 ///
@@ -40,28 +48,19 @@ class SectionHelper {
   /// The name of this helper in templates.
   static const String name = "section";
 
-  /// The special marker prefix used in rendered output.
-  static const String markerPrefix = "<<<dotprompt:section ";
-
-  /// The special marker suffix used in rendered output.
-  static const String markerSuffix = ">>>";
-
-  /// Creates a section marker for the given section name.
-  static String createMarker(String sectionName) => "$markerPrefix$sectionName$markerSuffix";
-
-  /// Checks if a string contains a section marker.
-  static bool containsMarker(String text) => text.contains(markerPrefix);
-
-  /// Extracts the section name from a marker string.
+  /// Creates a section marker for [sectionName] carrying the per-render
+  /// [nonce].
   ///
-  /// Returns null if the marker is invalid.
-  static String? extractSectionName(String marker) {
-    if (!marker.startsWith(markerPrefix) || !marker.endsWith(markerSuffix)) {
-      return null;
-    }
-    return marker.substring(
-      markerPrefix.length,
-      marker.length - markerSuffix.length,
-    );
+  /// Throws [ArgumentError] if [nonce] is not 32 lowercase hex chars.
+  static String createMarker(String nonce, String sectionName) =>
+      formatMarker(nonce, "$sectionMarkerBodyPrefix$sectionName");
+
+  /// Extracts the section name from a marker body (`section {name}`), as
+  /// produced by splitting with [mediaAndSectionMarkerRegex].
+  ///
+  /// Returns null if [body] is not a section marker body.
+  static String? sectionNameFromBody(String body) {
+    if (!body.startsWith(sectionMarkerBodyPrefix)) return null;
+    return body.substring(sectionMarkerBodyPrefix.length);
   }
 }

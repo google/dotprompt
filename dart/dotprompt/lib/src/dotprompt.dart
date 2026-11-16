@@ -56,9 +56,11 @@ import "dart:convert";
 import "package:handlebars_dart/handlebars_dart.dart";
 
 import "error.dart";
+import "helpers/history_helper.dart";
 import "helpers/media_helper.dart";
 import "helpers/role_helper.dart";
 import "helpers/section_helper.dart";
+import "markers.dart";
 import "models/models.dart";
 import "parse.dart";
 import "picoschema.dart";
@@ -379,26 +381,32 @@ class Dotprompt {
     // Context data is passed as the data parameter to template rendering
     // for access via @ variables (e.g., @auth.email, @user.role)
 
+    // Fresh per render so user-supplied values can't forge role/media/etc.
+    // markers in the rendered string (see markers.dart). The marker helpers
+    // below are registered per render and capture it directly, so it never
+    // passes through template data or context and can't be overridden there.
+    final nonce = generateMarkerNonce();
+
     // Render template using Handlebars
     final hb = Handlebars(escapeHtml: false)
       // Register built-in Dotprompt helpers
       ..registerHelper("role", (args, options) {
         final role = args.isNotEmpty ? args[0].toString() : "user";
-        return SafeString("<<<dotprompt:role:$role>>>");
+        return SafeString(RoleHelper.createMarkerFromString(nonce, role));
       })
       ..registerHelper(
         "history",
-        (args, options) => const SafeString("<<<dotprompt:history>>>"),
+        (args, options) => SafeString(HistoryHelper.createMarker(nonce)),
       )
       ..registerHelper("section", (args, options) {
         final name = args.isNotEmpty ? args[0].toString() : "default";
-        return SafeString("<<<dotprompt:section $name>>>");
+        return SafeString(SectionHelper.createMarker(nonce, name));
       })
       ..registerHelper("media", (args, options) {
         final url = options.hash["url"]?.toString() ?? "";
         final contentType = options.hash["contentType"]?.toString();
         return SafeString(
-          MediaHelper.createMarker(url: url, contentType: contentType),
+          MediaHelper.createMarker(nonce, url: url, contentType: contentType),
         );
       })
       ..registerHelper("json", (args, options) {
@@ -444,7 +452,7 @@ class Dotprompt {
     final renderedString = renderFn(mergedData, data: data.context?.toJson());
 
     // Convert rendered string to messages
-    var messages = _toMessages(renderedString, historyMessages: data.messages);
+    var messages = _toMessages(renderedString, nonce, historyMessages: data.messages);
 
     // Fallback: If history was provided but no history marker in template,
     // insert history after any system messages
@@ -504,170 +512,96 @@ class Dotprompt {
     return RenderedPrompt(config: resultConfig, messages: messages);
   }
 
-  /// Converts rendered template string to messages.
+  /// Converts a rendered template string to messages.
   ///
-  /// If [historyMessages] is provided and the template contains a
-  /// `<<<dotprompt:history>>>` marker, the history will be inserted there.
-  List<Message> _toMessages(String rendered, {List<Message>? historyMessages}) {
-    const historyMarker = "<<<dotprompt:history>>>";
+  /// Only markers carrying [nonce] are honored; anything else, including
+  /// marker look-alikes in user-supplied values, stays text. If
+  /// [historyMessages] is provided and the template contains a history
+  /// marker, the history is inserted there.
+  ///
+  /// ```text
+  /// "<<<..:role:system>>>Be safe.\n<<<..:history>>>\n<<<..:role:user>>>Hi"
+  ///   -> [system "Be safe.\n"], ...history, [user "Hi"]
+  /// ```
+  List<Message> _toMessages(String rendered, String nonce, {List<Message>? historyMessages}) {
     final messages = <Message>[];
     var currentRole = Role.user; // Default role
-    final currentParts = <Part>[];
     final currentText = StringBuffer();
     var historyInserted = false;
 
-    void flushText() {
-      final text = currentText.toString();
-      if (text.isNotEmpty) {
-        // Check for media or section markers in text
-        if (MediaHelper.containsMarker(text) || SectionHelper.containsMarker(text)) {
-          final parts = _parseMarkers(text);
-          currentParts.addAll(parts);
-        } else {
-          currentParts.add(TextPart(text: text));
-        }
-        currentText.clear();
-      }
-    }
-
     void flushMessage() {
-      flushText();
-      if (currentParts.isNotEmpty) {
-        messages.add(
-          Message(role: currentRole, content: List.from(currentParts)),
-        );
-        currentParts.clear();
+      final text = currentText.toString();
+      currentText.clear();
+      if (text.isEmpty) return;
+      final parts = _toParts(text, nonce);
+      if (parts.isNotEmpty) {
+        messages.add(Message(role: currentRole, content: parts));
       }
     }
 
-    // Process the rendered string
-    final lines = rendered.split("\n");
-    for (var i = 0; i < lines.length; i++) {
-      final line = lines[i];
-
-      // Check for history marker
-      if (line.contains(historyMarker)) {
-        // Remove history marker from the line
-        final cleanLine = line.replaceAll(historyMarker, "");
-
-        // Add trailing newline to previous content (the newline before this marker)
-        if (currentText.isNotEmpty) {
-          currentText.write("\n");
-        }
-
-        // Add remaining content before history (if any text on same line as marker)
-        if (cleanLine.trim().isNotEmpty) {
-          currentText.write(cleanLine);
-        }
-        flushMessage();
-
-        // Insert history messages with purpose metadata
-        if (historyMessages != null && historyMessages.isNotEmpty && !historyInserted) {
-          for (final msg in historyMessages) {
-            messages.add(
-              Message(
-                role: msg.role,
-                content: msg.content,
-                metadata: {...?msg.metadata, "purpose": "history"},
-              ),
-            );
-          }
-          historyInserted = true;
-        }
-
-        // Reset to model role after history
-        currentRole = Role.model;
-        continue;
-      }
-
-      // Check for role markers
-      if (RoleHelper.containsMarker(line)) {
-        final roleMatch = RegExp(
-          "${RegExp.escape(RoleHelper.markerPrefix)}([^>]+)${RegExp.escape(RoleHelper.markerSuffix)}",
-        ).firstMatch(line);
-        if (roleMatch != null) {
-          // Before switching roles, add trailing newline if not at start
-          // (the newline that was between previous content and this role marker)
-          if (currentText.isNotEmpty) {
-            currentText.write("\n");
-          }
+    for (final piece in splitByMarkers(rendered, roleAndHistoryMarkerRegex(nonce))) {
+      switch (piece) {
+        case TextPiece(:final text):
+          // Newlines are dropped while the current message is still empty, so
+          // a marker on its own line doesn't leave a leading "\n" behind.
+          currentText.write(currentText.isEmpty ? text.replaceFirst(_leadingNewlines, "") : text);
+        case MarkerBodyPiece(body: historyMarkerBody):
+          // Whitespace-only text before the history marker is discarded.
+          if (currentText.toString().trim().isEmpty) currentText.clear();
           flushMessage();
-          currentRole = Role.fromString(roleMatch.group(1)!);
-          final remaining = line.replaceAll(roleMatch.group(0)!, "");
-          // Don't trim - preserve leading/trailing whitespace in content
-          if (remaining.isNotEmpty) {
-            currentText.write(remaining);
-          }
-          continue;
-        }
-      }
 
-      // Regular line
-      if (currentText.isNotEmpty) {
-        currentText.write("\n");
+          // Insert history messages with purpose metadata
+          if (historyMessages != null && historyMessages.isNotEmpty && !historyInserted) {
+            for (final msg in historyMessages) {
+              messages.add(
+                Message(
+                  role: msg.role,
+                  content: msg.content,
+                  metadata: {...?msg.metadata, "purpose": "history"},
+                ),
+              );
+            }
+            historyInserted = true;
+          }
+
+          // Reset to model role after history
+          currentRole = Role.model;
+        case MarkerBodyPiece(:final body):
+          // The regex guarantees a `role:{name}` body here.
+          final role = Role.fromString(body.substring(roleMarkerBodyPrefix.length));
+          // Whitespace-only text doesn't start a message of its own; it is
+          // carried over into the new role's message.
+          if (currentText.toString().trim().isNotEmpty) flushMessage();
+          currentRole = role;
       }
-      currentText.write(line);
     }
 
     flushMessage();
-
-    // If no messages were created, create a single user message
-    if (messages.isEmpty && rendered.trim().isNotEmpty) {
-      return [
-        Message(
-          role: Role.user,
-          content: [TextPart(text: rendered.trim())],
-        ),
-      ];
-    }
-
     return messages;
   }
 
-  /// Parses media and section markers in text into parts.
-  List<Part> _parseMarkers(String text) {
-    final parts = <Part>[];
-    // Combined pattern for both media and section markers
-    final pattern = RegExp("<<<dotprompt:(media:[^>]+|section [^>]+)>>>");
+  static final RegExp _leadingNewlines = RegExp(r"^\n+");
 
-    var lastEnd = 0;
-    for (final match in pattern.allMatches(text)) {
-      // Add text before marker
-      if (match.start > lastEnd) {
-        final textBefore = text.substring(lastEnd, match.start);
-        if (textBefore.isNotEmpty) {
-          parts.add(TextPart(text: textBefore));
-        }
-      }
+  /// Converts message text into parts, turning media and section markers
+  /// carrying [nonce] into media and pending metadata parts.
+  List<Part> _toParts(String text, String nonce) => [
+        for (final piece in splitByMarkers(text, mediaAndSectionMarkerRegex(nonce)))
+          switch (piece) {
+            TextPiece(:final text) => TextPart(text: text),
+            MarkerBodyPiece(:final body) => _markerPart(body),
+          },
+      ];
 
-      final markerContent = match.group(1)!;
-
-      if (markerContent.startsWith("media:")) {
-        // Parse media marker
-        final media = MediaHelper.extractMedia(match.group(0)!);
-        if (media != null) {
-          parts.add(MediaPart(media: media));
-        }
-      } else if (markerContent.startsWith("section ")) {
-        // Parse section marker
-        final sectionName = markerContent.substring("section ".length);
-        parts.add(
-          MetadataPart(metadata: {"pending": true, "purpose": sectionName}),
-        );
-      }
-
-      lastEnd = match.end;
+  /// Converts a media or section marker body into a part.
+  Part _markerPart(String body) {
+    final media = MediaHelper.mediaFromBody(body);
+    if (media != null) return MediaPart(media: media);
+    final section = SectionHelper.sectionNameFromBody(body);
+    if (section != null) {
+      return MetadataPart(metadata: {"pending": true, "purpose": section});
     }
-
-    // Add remaining text
-    if (lastEnd < text.length) {
-      final remaining = text.substring(lastEnd);
-      if (remaining.isNotEmpty) {
-        parts.add(TextPart(text: remaining));
-      }
-    }
-
-    return parts;
+    // Unreachable: mediaAndSectionMarkerRegex only captures the bodies above.
+    throw StateError("Unexpected dotprompt marker body: $body");
   }
 }
 

@@ -16,26 +16,31 @@
 
 /// Role helper for specifying message roles in prompts.
 ///
-/// The {{#role}} helper sets the role for a message section.
+/// The {{role}} helper switches the role for the content that follows it.
 ///
 /// ## Usage
 ///
 /// ```handlebars
-/// {{#role "system"}}
+/// {{role "system"}}
 /// You are a helpful assistant.
-/// {{/role}}
-///
-/// {{#role "user"}}
+/// {{role "user"}}
 /// Hello!
-/// {{/role}}
 /// ```
+///
+/// ## Markers
+///
+/// The helper emits `<<<dotprompt:{nonce}:role:{name}>>>`, where `nonce` is
+/// the per-render nonce that the message splitter also uses. Markers without
+/// the right nonce (e.g. typed by an end user) stay plain text.
 library;
 
+import "../markers.dart";
 import "../types.dart";
 
 /// Marker class for the role helper.
 ///
-/// This helper wraps content to indicate which role it belongs to.
+/// This helper emits a marker indicating which role the following content
+/// belongs to.
 class RoleHelper {
   /// Private constructor to prevent instantiation.
   RoleHelper._();
@@ -43,30 +48,13 @@ class RoleHelper {
   /// The name of this helper in templates.
   static const String name = "role";
 
-  /// The special marker prefix used in rendered output.
-  static const String markerPrefix = "<<<dotprompt:role:";
+  /// Creates a role marker for [role] carrying the per-render [nonce].
+  ///
+  /// Throws [ArgumentError] if [nonce] is not 32 lowercase hex chars.
+  static String createMarker(String nonce, Role role) => createMarkerFromString(nonce, role.value);
 
-  /// The special marker suffix used in rendered output.
-  static const String markerSuffix = ">>>";
-
-  /// Creates a role marker for the given role.
-  static String createMarker(Role role) => "$markerPrefix${role.value}$markerSuffix";
-
-  /// Creates a role marker from a role string.
-  static String createMarkerFromString(String role) => "$markerPrefix$role$markerSuffix";
-
-  /// Checks if a string contains a role marker.
-  static bool containsMarker(String text) => text.contains(markerPrefix);
-
-  /// Extracts the role from a marker string.
-  static Role? extractRole(String marker) {
-    if (!marker.startsWith(markerPrefix) || !marker.endsWith(markerSuffix)) {
-      return null;
-    }
-    final roleStr = marker.substring(
-      markerPrefix.length,
-      marker.length - markerSuffix.length,
-    );
-    return Role.tryParse(roleStr);
-  }
+  /// Creates a role marker from a role string carrying the per-render [nonce].
+  ///
+  /// Throws [ArgumentError] if [nonce] is not 32 lowercase hex chars.
+  static String createMarkerFromString(String nonce, String role) => formatMarker(nonce, "$roleMarkerBodyPrefix$role");
 }
