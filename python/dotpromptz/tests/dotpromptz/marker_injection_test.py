@@ -176,6 +176,36 @@ async def test_keeps_media_and_section_helpers_working() -> None:
     ]
 
 
+def _assert_no_marker_text(messages: list[Message]) -> None:
+    """Assert no message carries a marker (and so no nonce) into the output."""
+    for message in messages:
+        assert '<<<dotprompt:' not in message.model_dump_json()
+
+
+@pytest.mark.asyncio
+async def test_media_url_with_newline_stays_a_media_part() -> None:
+    # A newline in a user-supplied URL must not break the trusted marker and
+    # leak it (nonce included) as text.
+    url = 'https://example.com/a\nb.png'
+    result = await Dotprompt().render('{{media url=u}}', DataArgument(input={'u': url}))
+
+    assert result.messages == [Message(role=Role.USER, content=[MediaPart(media=MediaContent(url=url))])]
+    _assert_no_marker_text(result.messages)
+
+
+@pytest.mark.asyncio
+async def test_section_name_with_newline_stays_a_pending_part() -> None:
+    result = await Dotprompt().render('Hi {{section s}}', DataArgument(input={'s': 'a\nb'}))
+
+    assert result.messages == [
+        Message(
+            role=Role.USER,
+            content=[TextPart(text='Hi '), PendingPart(metadata=PendingMetadata.with_purpose('a\nb'))],
+        )
+    ]
+    _assert_no_marker_text(result.messages)
+
+
 # Report PoC: the exact payloads from the vulnerability report, rendered through
 # the public API. Each one must come out as plain user text.
 

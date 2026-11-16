@@ -104,12 +104,26 @@ def test_role_and_history_marker_regex_does_not_match(text: str) -> None:
         'media:url https://example.com/a.png',
         'media:url https://example.com/a.png image/png',
         'section code',
+        # Bodies can carry user-supplied values, so newlines must not break the match.
+        'media:url https://example.com/a\nb.png',
+        'media:url https://example.com/a\nb.png image/png',
+        'section a\nb',
     ],
 )
 def test_media_and_section_marker_regex_matches(body: str) -> None:
     match = media_and_section_marker_regex(NONCE).search(m(body))
     assert match is not None
     assert match.group(1) == body
+
+
+def test_media_and_section_marker_regex_stops_at_first_close_across_newlines() -> None:
+    # Not an f-string: backslashes in f-string expressions need Python 3.12.
+    source = m('section a\nb') + '\ntext\n' + m('section c')
+    assert split_by_markers(source, media_and_section_marker_regex(NONCE)) == [
+        MarkerPiece(body='section a\nb'),
+        TextPiece(text='\ntext\n'),
+        MarkerPiece(body='section c'),
+    ]
 
 
 @pytest.mark.parametrize(

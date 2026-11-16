@@ -45,7 +45,9 @@ missing rather than emit a marker the parser would not honor.
 import json
 from typing import Any
 
-from dotpromptz._markers import MARKER_NONCE_DATA_KEY, format_marker
+# Imported as a module (not `from ... import`) so the legacy star-import shim
+# doesn't re-export marker internals; see compat_shims_test.py.
+from dotpromptz import _markers
 from dotpromptz_handlebars import Handlebars, HelperFn, HelperOptions, SafeString
 
 
@@ -64,7 +66,7 @@ def _marker_nonce(options: HelperOptions) -> str:
     Raises:
         RuntimeError: If no nonce is present in the data frame.
     """
-    nonce = options.data.get(MARKER_NONCE_DATA_KEY)
+    nonce = options.data.get(_markers.MARKER_NONCE_DATA_KEY)
     if not isinstance(nonce, str):
         raise RuntimeError('dotprompt: marker helpers (role, history, section, media) must be rendered via Dotprompt')
     return nonce
@@ -123,7 +125,7 @@ def role_helper(params: list[Any], options: HelperOptions) -> str:
         return ''
 
     role_name = str(params[0])
-    return SafeString(format_marker(_marker_nonce(options), f'role:{role_name}'))
+    return SafeString(_markers.format_marker(_marker_nonce(options), f'role:{role_name}'))
 
 
 def history_helper(params: list[Any], options: HelperOptions) -> str:
@@ -144,7 +146,7 @@ def history_helper(params: list[Any], options: HelperOptions) -> str:
     Raises:
         RuntimeError: If rendered outside `Dotprompt` (no nonce).
     """
-    return SafeString(format_marker(_marker_nonce(options), 'history'))
+    return SafeString(_markers.format_marker(_marker_nonce(options), 'history'))
 
 
 def section_helper(params: list[Any], options: HelperOptions) -> str:
@@ -169,7 +171,7 @@ def section_helper(params: list[Any], options: HelperOptions) -> str:
         return ''
 
     section_name = str(params[0])
-    return SafeString(format_marker(_marker_nonce(options), f'section {section_name}'))
+    return SafeString(_markers.format_marker(_marker_nonce(options), f'section {section_name}'))
 
 
 def media_helper(params: list[Any], options: HelperOptions) -> str:
@@ -196,7 +198,7 @@ def media_helper(params: list[Any], options: HelperOptions) -> str:
 
     content_type = options.hash_value('contentType')
     body = f'media:url {url} {content_type}' if content_type else f'media:url {url}'
-    return SafeString(format_marker(_marker_nonce(options), body))
+    return SafeString(_markers.format_marker(_marker_nonce(options), body))
 
 
 def if_equals_helper(params: list[Any], options: HelperOptions) -> str:

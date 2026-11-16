@@ -48,15 +48,10 @@ from yaml.composer import ComposerError
 from yaml.events import AliasEvent, NodeEvent
 from yaml.nodes import MappingNode, Node, ScalarNode, SequenceNode
 
+# Imported as a module (not `from ... import`) so the legacy star-import shim
+# doesn't re-export marker internals; see compat_shims_test.py.
+from dotpromptz import _markers
 from dotpromptz._errors import FrontmatterError
-from dotpromptz._markers import (
-    MarkerPiece,
-    Piece,
-    TextPiece,
-    media_and_section_marker_regex,
-    role_and_history_marker_regex,
-    split_by_markers,
-)
 from dotpromptz._typing import (
     DataArgument,
     MediaContent,
@@ -450,8 +445,8 @@ def to_messages(
 
     Examples:
         ```python
-        nonce = generate_marker_nonce()
-        rendered = format_marker(nonce, 'role:system') + 'Be safe.'
+        nonce = _markers.generate_marker_nonce()
+        rendered = _markers.format_marker(nonce, 'role:system') + 'Be safe.'
         to_messages(rendered, nonce)
         # => [Message(role=Role.SYSTEM, content=[TextPart(text='Be safe.')])]
         ```
@@ -459,8 +454,8 @@ def to_messages(
     current_message = MessageSource(role=Role.USER, source='')
     message_sources = [current_message]
 
-    for piece in split_by_markers(rendered_string, role_and_history_marker_regex(nonce)):
-        if isinstance(piece, TextPiece):
+    for piece in _markers.split_by_markers(rendered_string, _markers.role_and_history_marker_regex(nonce)):
+        if isinstance(piece, _markers.TextPiece):
             current_message.source = (current_message.source or '') + piece.text
 
         elif piece.body.startswith(_ROLE_MARKER_BODY_PREFIX):
@@ -616,10 +611,12 @@ def to_parts(source: str, nonce: str) -> list[Part]:
     Raises:
         ValueError: If the nonce is malformed.
     """
-    return [parse_part(piece) for piece in split_by_markers(source, media_and_section_marker_regex(nonce))]
+    return [
+        parse_part(piece) for piece in _markers.split_by_markers(source, _markers.media_and_section_marker_regex(nonce))
+    ]
 
 
-def parse_part(piece: Piece) -> Part:
+def parse_part(piece: _markers.Piece) -> Part:
     """Parses a part from a split piece of rendered template.
 
     Args:
@@ -629,7 +626,7 @@ def parse_part(piece: Piece) -> Part:
     Returns:
         Part, PendingPart, TextPart, or MediaPart
     """
-    if isinstance(piece, MarkerPiece):
+    if isinstance(piece, _markers.MarkerPiece):
         if piece.body.startswith(_MEDIA_MARKER_BODY_PREFIX):
             return parse_media_part(piece.body)
         return parse_section_part(piece.body)

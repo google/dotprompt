@@ -44,9 +44,11 @@ from typing import Any
 
 import anyio
 
+# Imported as a private module alias (not by name) so the legacy
+# `dotpromptz.dotprompt` star-import shim doesn't re-export marker internals.
+from dotpromptz import _markers
 from dotpromptz._errors import PartialCycleError
 from dotpromptz._helpers import BUILTIN_HELPERS
-from dotpromptz._markers import MARKER_NONCE_DATA_KEY, generate_marker_nonce
 from dotpromptz._parse import parse_document, to_messages
 from dotpromptz._picoschema import picoschema_to_json_schema
 from dotpromptz._resolvers import resolve_json_schema, resolve_partial, resolve_tool
@@ -262,12 +264,12 @@ class RenderFunc(PromptFunction[ModelConfigT]):
 
         # Fresh per render so user-supplied values can't forge role/media/etc.
         # markers in the rendered string. See dotpromptz._markers.
-        nonce = generate_marker_nonce()
+        nonce = _markers.generate_marker_nonce()
 
         # Prepare runtime options. The nonce goes after `data.context` so the
         # caller can't override it.
         runtime_options: RuntimeOptions = {
-            'data': {**(data.context or {}), MARKER_NONCE_DATA_KEY: nonce},
+            'data': {**(data.context or {}), _markers.MARKER_NONCE_DATA_KEY: nonce},
         }
 
         # Render the string.

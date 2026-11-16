@@ -60,12 +60,29 @@ Q: {{q}}
   override it. Rendering the helpers outside `Dotprompt` raises.
 - A marker emitted by a custom helper (or written literally in the template)
   without the current nonce is plain text.
+- Media and section bodies can carry user-supplied values (URLs, section
+  names), so their regex matches across newlines up to the first `>>>`.
+- This module is internal. `__all__` lists its names for in-package use; the
+  legacy star-import shims (`dotpromptz.parse`, `dotpromptz.helpers`, ...)
+  must not re-export them.
 """
 
 import re
 import secrets
 from dataclasses import dataclass
 from typing import TypeAlias
+
+__all__ = [
+    'MARKER_NONCE_DATA_KEY',
+    'MarkerPiece',
+    'Piece',
+    'TextPiece',
+    'format_marker',
+    'generate_marker_nonce',
+    'media_and_section_marker_regex',
+    'role_and_history_marker_regex',
+    'split_by_markers',
+]
 
 MARKER_NONCE_DATA_KEY = '__dotpromptMarkerNonce'
 """Key under which the per-render nonce is stored in the Handlebars data frame.
@@ -156,7 +173,10 @@ def media_and_section_marker_regex(nonce: str) -> re.Pattern[str]:
     """Build the regex matching media and section markers for `nonce`.
 
     The single capture group is the marker body
-    (`media:url https://... image/png`, `section code`).
+    (`media:url https://... image/png`, `section code`). The body is lazily
+    matched up to the first `>>>` and may span newlines: it can carry
+    user-supplied values (e.g. a media URL), and a newline there must not stop
+    the trusted marker from matching and leak it, nonce included, as text.
 
     Args:
         nonce: The per-render nonce.
@@ -168,7 +188,7 @@ def media_and_section_marker_regex(nonce: str) -> re.Pattern[str]:
         ValueError: If the nonce is malformed.
     """
     _check_nonce(nonce)
-    return re.compile(rf'<<<dotprompt:{nonce}:((?:media:url|section) .*?)>>>')
+    return re.compile(rf'<<<dotprompt:{nonce}:((?:media:url|section) .*?)>>>', re.DOTALL)
 
 
 @dataclass(frozen=True)
