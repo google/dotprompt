@@ -34,6 +34,8 @@
 /// the right nonce (e.g. typed by an end user) stay plain text.
 library;
 
+import "package:meta/meta.dart";
+
 import "../markers.dart";
 import "../types.dart";
 
@@ -51,10 +53,18 @@ class RoleHelper {
   /// Creates a role marker for [role] carrying the per-render [nonce].
   ///
   /// Throws [ArgumentError] if [nonce] is not 32 lowercase hex chars.
+  ///
+  /// Internal: only the renderer holds the per-render nonce, so this is not
+  /// usable from outside `package:dotprompt`.
+  @internal
   static String createMarker(String nonce, Role role) => createMarkerFromString(nonce, role.value);
 
   /// Creates a role marker from a role string carrying the per-render [nonce].
   ///
   /// Throws [ArgumentError] if [nonce] is not 32 lowercase hex chars.
+  ///
+  /// Internal: only the renderer holds the per-render nonce, so this is not
+  /// usable from outside `package:dotprompt`.
+  @internal
   static String createMarkerFromString(String nonce, String role) => formatMarker(nonce, "$roleMarkerBodyPrefix$role");
 }

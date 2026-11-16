@@ -35,6 +35,15 @@ const _system = Message(role: Role.system, content: [TextPart(text: "Be safe.")]
 
 Message _user(String text) => Message(role: Role.user, content: [TextPart(text: text)]);
 
+/// Asserts no text part in [messages] contains marker syntax (and so no nonce).
+void _expectNoMarkerText(List<Message> messages) {
+  for (final message in messages) {
+    for (final part in message.content) {
+      if (part is TextPart) expect(part.text, isNot(contains("<<<dotprompt:")));
+    }
+  }
+}
+
 void main() {
   group("marker injection", () {
     test("ignores forged markers in {{var}}", () async {
@@ -163,6 +172,49 @@ void main() {
           ),
         ]),
       );
+    });
+
+    // Newlines in helper arguments come from user data; the trusted marker
+    // must still match, or the part is lost and the nonce leaks as text.
+    test("keeps a media part whose url contains a newline", () async {
+      const url = "https://example.com/a\nb.png";
+      final result = await Dotprompt().render(
+        "{{media url=u}}",
+        const DataArgument(input: {"u": url}),
+      );
+      expect(
+        result.messages,
+        equals([
+          const Message(
+            role: Role.user,
+            content: [
+              MediaPart(media: MediaContent(url: url, contentType: "image/png")),
+            ],
+          ),
+        ]),
+      );
+      _expectNoMarkerText(result.messages);
+    });
+
+    test("keeps a section whose name contains a newline", () async {
+      const name = "out\nput";
+      final result = await Dotprompt().render(
+        "Hi{{section s}}",
+        const DataArgument(input: {"s": name}),
+      );
+      expect(
+        result.messages,
+        equals([
+          const Message(
+            role: Role.user,
+            content: [
+              TextPart(text: "Hi"),
+              MetadataPart(metadata: {"purpose": name, "pending": true}),
+            ],
+          ),
+        ]),
+      );
+      _expectNoMarkerText(result.messages);
     });
 
     test("still honors a real history marker", () async {

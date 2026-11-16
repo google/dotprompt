@@ -36,6 +36,8 @@
 /// (falling back to `application/octet-stream`).
 library;
 
+import "package:meta/meta.dart";
+
 import "../markers.dart";
 import "../types.dart";
 
@@ -57,6 +59,10 @@ class MediaHelper {
   /// per-render [nonce].
   ///
   /// Throws [ArgumentError] if [nonce] is not 32 lowercase hex chars.
+  ///
+  /// Internal: only the renderer holds the per-render nonce, so this is not
+  /// usable from outside `package:dotprompt`.
+  @internal
   static String createMarker(String nonce, {required String url, String? contentType}) {
     final ct = contentType ?? _inferContentType(url);
     return formatMarker(nonce, "$mediaMarkerBodyPrefix$url $ct");
@@ -70,6 +76,10 @@ class MediaHelper {
   /// type, which may itself contain spaces (e.g. `text/plain; charset=utf-8`).
   ///
   /// Returns null if [body] is not a media marker body.
+  ///
+  /// Internal: marker bodies only come from splitting with the per-render
+  /// nonce, so this is not meaningful outside `package:dotprompt`.
+  @internal
   static MediaContent? mediaFromBody(String body) {
     if (!body.startsWith(mediaMarkerBodyPrefix)) return null;
     final rest = body.substring(mediaMarkerBodyPrefix.length);

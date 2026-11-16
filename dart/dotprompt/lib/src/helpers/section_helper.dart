@@ -35,6 +35,8 @@
 /// the right nonce (e.g. typed by an end user) stay plain text.
 library;
 
+import "package:meta/meta.dart";
+
 import "../markers.dart";
 
 /// Marker class for the section helper.
@@ -52,6 +54,10 @@ class SectionHelper {
   /// [nonce].
   ///
   /// Throws [ArgumentError] if [nonce] is not 32 lowercase hex chars.
+  ///
+  /// Internal: only the renderer holds the per-render nonce, so this is not
+  /// usable from outside `package:dotprompt`.
+  @internal
   static String createMarker(String nonce, String sectionName) =>
       formatMarker(nonce, "$sectionMarkerBodyPrefix$sectionName");
 
@@ -59,6 +65,10 @@ class SectionHelper {
   /// produced by splitting with [mediaAndSectionMarkerRegex].
   ///
   /// Returns null if [body] is not a section marker body.
+  ///
+  /// Internal: marker bodies only come from splitting with the per-render
+  /// nonce, so this is not meaningful outside `package:dotprompt`.
+  @internal
   static String? sectionNameFromBody(String body) {
     if (!body.startsWith(sectionMarkerBodyPrefix)) return null;
     return body.substring(sectionMarkerBodyPrefix.length);

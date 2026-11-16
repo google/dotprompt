@@ -87,6 +87,9 @@ void main() {
       "media:url https://example.com/a.png",
       "media:url https://example.com/a.png image/png",
       "section code",
+      // Bodies come from template data and may contain newlines.
+      "media:url https://example.com/a\nb.png image/png",
+      "section multi\nline",
     ]) {
       test('matches "$body"', () {
         final match = regex.firstMatch(_m(body));
@@ -94,6 +97,11 @@ void main() {
         expect(match!.group(1), equals(body));
       });
     }
+
+    test("stops a multi-line body at the first >>>", () {
+      final matches = regex.allMatches("${_m("section a\nb")}\n${_m("section c")}").toList();
+      expect(matches.map((m) => m.group(1)), equals(["section a\nb", "section c"]));
+    });
 
     final invalid = [
       "<<<dotprompt:media:url https://example.com/a.png>>>", // no nonce

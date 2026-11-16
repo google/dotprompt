@@ -41,6 +41,13 @@
 ///                       |
 ///          [TextPiece | MarkerBodyPiece, ...]
 /// ```
+///
+/// ## Visibility
+///
+/// This library is internal: it is deliberately not exported from
+/// `package:dotprompt` (keep it that way). The nonce-taking members of the
+/// exported `RoleHelper`, `HistoryHelper`, `SectionHelper` and `MediaHelper`
+/// are annotated `@internal` for the same reason.
 library;
 
 import "dart:math";
@@ -111,10 +118,15 @@ RegExp roleAndHistoryMarkerRegex(String nonce) {
 /// The single capture group is the marker body
 /// (`media:url https://... image/png`, `section code`).
 ///
+/// The body is matched lazily up to the first `>>>`, across newlines
+/// (`dotAll`): media URLs and section names come from template data, and a
+/// newline in one must not make the trusted marker fall through as text
+/// (which would drop the part and leak the nonce into the output).
+///
 /// Throws [ArgumentError] if [nonce] is not 32 lowercase hex chars.
 RegExp mediaAndSectionMarkerRegex(String nonce) {
   _checkNonce(nonce);
-  return RegExp("<<<dotprompt:$nonce:((?:media:url|section) .*?)>>>");
+  return RegExp("<<<dotprompt:$nonce:((?:media:url|section) .*?)>>>", dotAll: true);
 }
 
 /// A piece of a rendered string: either literal text or a trusted marker.

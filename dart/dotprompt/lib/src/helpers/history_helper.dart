@@ -33,6 +33,8 @@
 /// where each message has `role` and `content` fields.
 library;
 
+import "package:meta/meta.dart";
+
 import "../markers.dart";
 import "../types.dart";
 
@@ -51,6 +53,10 @@ class HistoryHelper {
   /// the per-render [nonce].
   ///
   /// Throws [ArgumentError] if [nonce] is not 32 lowercase hex chars.
+  ///
+  /// Internal: only the renderer holds the per-render nonce, so this is not
+  /// usable from outside `package:dotprompt`.
+  @internal
   static String createMarker(String nonce) => formatMarker(nonce, historyMarkerBody);
 
   /// Renders conversation history from the data context.
