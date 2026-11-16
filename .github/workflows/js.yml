@@ -53,8 +53,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.head_ref }}
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          # Only check out head_ref directly on release-please branches that push commits back;
+          # fork PRs do not have a matching branch ref on the base repository.
+          ref: ${{ startsWith(github.head_ref, 'release-please--') && github.head_ref || '' }}
+          # Use a token that can push to the branch (for release-please PRs)
+          token: ${{ startsWith(github.head_ref, 'release-please--') && secrets.RELEASE_PLEASE_TOKEN || github.token }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -119,7 +122,8 @@ jobs:
         run: pnpm -C js install
 
       - name: Check formatting with Biome
-        run: pnpm dlx @biomejs/biome check --formatter-enabled=true --linter-enabled=false js/
+        # Pinned to match biome.json's $schema; unpinned dlx picks up new formatter rules.
+        run: pnpm dlx @biomejs/biome@2.3.15 check --formatter-enabled=true --linter-enabled=false js/
 
   test:
     name: Run tests (Node ${{ matrix.node-version }}, ${{ matrix.typescript-compiler }})

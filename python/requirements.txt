@@ -1066,7 +1066,7 @@ psutil==7.2.2 ; python_full_version >= '3.11' \
     # via
     #   ipykernel
     #   ipython
-ptyprocess==0.7.0 ; (python_full_version >= '3.11' and os_name != 'nt') or (sys_platform != 'emscripten' and sys_platform != 'win32') \
+ptyprocess==0.7.0 ; (python_full_version >= '3.11' and os_name != 'nt' and sys_platform == 'emscripten') or (python_full_version >= '3.11' and os_name != 'nt' and sys_platform == 'win32') or (sys_platform != 'emscripten' and sys_platform != 'win32') \
     --hash=sha256:4b41f3967fce3af57cc7e94b888626c18bf37a083e3651ca8feeb66d492fef35 \
     --hash=sha256:5c5d0a3b48ceee0b48485e0c26037c0acd7d29765ca3fbb5cb3831d347423220
     # via
@@ -1739,9 +1739,13 @@ six==1.17.0 ; python_full_version >= '3.11' \
     # via
     #   python-dateutil
     #   rfc3339-validator
-soupsieve==2.9.2 ; python_full_version >= '3.11' \
-    --hash=sha256:4a55d8cf158a9c2e587fa4922f1bbb91d68ac829e2d6f25403a85747c71daf74 \
-    --hash=sha256:8089a26fd974ca7a1f30276d3d8492ab266ab15af581642dfe8aa162e0c1c823
+soupsieve==2.10 ; python_full_version >= '3.11' and python_full_version < '3.11.5' \
+    --hash=sha256:49e9380d7d2905463583bafe285e818c7366a9ed7b3aee221c1ac79c905d8bc0 \
+    --hash=sha256:8596eb8967d744174820280fa62b4542a2e955bfaccca73ed8a13c6eb8e9b502
+    # via beautifulsoup4
+soupsieve==4.1.1 ; python_full_version >= '3.11.5' \
+    --hash=sha256:8ff3422dab0b720fb667ee79864d80531a0e57994a13eb701697719ffcb751f6 \
+    --hash=sha256:b296bd2d2f65b1a78149f3d7bf6736a147d2c9e2dfbde0e4404639d748a02e03
     # via beautifulsoup4
 stack-data==0.6.3 \
     --hash=sha256:836a778de4fec4dcd1dcd89ed8abff8a221f58308462e1c4aa2a3cf30148f0b9 \
