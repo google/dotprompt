@@ -49,16 +49,35 @@ export function json(
   );
 }
 
-export function role(role: string, options: Handlebars.HelperOptions) {
-  return new SafeString(formatMarker(markerNonce(options), `role:${role}`));
+/**
+ * With no positional argument (`{{role}}`), Handlebars passes the options
+ * object as the first parameter and leaves the second undefined.
+ */
+function requireName(
+  helper: string,
+  example: string,
+  options: Handlebars.HelperOptions | undefined
+): Handlebars.HelperOptions {
+  if (options === undefined) {
+    throw new Error(
+      `dotprompt: {{${helper}}} requires a name, e.g. {{${helper} "${example}"}}`
+    );
+  }
+  return options;
+}
+
+export function role(role: string, options?: Handlebars.HelperOptions) {
+  const opts = requireName('role', 'system', options);
+  return new SafeString(formatMarker(markerNonce(opts), `role:${role}`));
 }
 
 export function history(options: Handlebars.HelperOptions) {
   return new SafeString(formatMarker(markerNonce(options), 'history'));
 }
 
-export function section(name: string, options: Handlebars.HelperOptions) {
-  return new SafeString(formatMarker(markerNonce(options), `section ${name}`));
+export function section(name: string, options?: Handlebars.HelperOptions) {
+  const opts = requireName('section', 'output', options);
+  return new SafeString(formatMarker(markerNonce(opts), `section ${name}`));
 }
 
 export function media(options: Handlebars.HelperOptions) {

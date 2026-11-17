@@ -123,6 +123,16 @@ describe('marker injection', () => {
     ]);
   });
 
+  it('rejects {{role}} and {{section}} without a name', async () => {
+    const dp = new Dotprompt();
+    await expect(dp.render('{{role}}hi', {})).rejects.toThrow(
+      /\{\{role\}\} requires a name/
+    );
+    await expect(dp.render('{{section}}hi', {})).rejects.toThrow(
+      /\{\{section\}\} requires a name/
+    );
+  });
+
   it('keeps media urls containing newlines intact', async () => {
     // The url is user-controlled; a newline must not break the trusted marker
     // and leak it (nonce included) into the text.
