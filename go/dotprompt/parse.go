@@ -268,7 +268,14 @@ func ParseDocument(source string) (ParsedPrompt, error) {
 // that looks like a marker stays literal text. The nonce must be 32 lowercase
 // hex characters; otherwise an error is returned.
 func ToMessages(renderedString string, nonce string, data *DataArgument) ([]Message, error) {
-	re, err := roleAndHistoryMarkerRegex(nonce)
+	// Both regexps embed the nonce, so they can't be package-level. Compile
+	// them once here rather than per message source; toParts runs for every
+	// message on the render hot path.
+	roleRe, err := roleAndHistoryMarkerRegex(nonce)
+	if err != nil {
+		return nil, err
+	}
+	mediaRe, err := mediaAndSectionMarkerRegex(nonce)
 	if err != nil {
 		return nil, err
 	}
@@ -280,7 +287,7 @@ func ToMessages(renderedString string, nonce string, data *DataArgument) ([]Mess
 	}
 	messageSources := []*MessageSource{ms}
 
-	for _, piece := range splitByMarkers(renderedString, re) {
+	for _, piece := range splitByMarkers(renderedString, roleRe) {
 		switch {
 		case !piece.isMarker:
 			// Add the text to the current message source.
@@ -329,7 +336,7 @@ func ToMessages(renderedString string, nonce string, data *DataArgument) ([]Mess
 		}
 	}
 
-	messages, err := messageSourcesToMessages(messageSources, nonce)
+	messages, err := messageSourcesToMessages(messageSources, mediaRe)
 	if err != nil {
 		return nil, err
 	}
@@ -341,10 +348,11 @@ func ToMessages(renderedString string, nonce string, data *DataArgument) ([]Mess
 }
 
 // messageSourcesToMessages converts an array of message sources to an array of
-// messages. nonce is the marker nonce used when rendering the sources.
+// messages. mediaRe is the render's media and section marker regexp (see
+// mediaAndSectionMarkerRegex).
 func messageSourcesToMessages(
 	messageSources []*MessageSource,
-	nonce string,
+	mediaRe *regexp.Regexp,
 ) ([]Message, error) {
 	messages := []Message{}
 
@@ -361,7 +369,7 @@ func messageSourcesToMessages(
 		if m.Content != nil {
 			out.Content = m.Content
 		} else {
-			parts, err := toParts(m.Source, nonce)
+			parts, err := toParts(m.Source, mediaRe)
 			if err != nil {
 				return nil, err
 			}
@@ -454,15 +462,11 @@ func insertHistory(messages []Message, history []Message) ([]Message, error) {
 // toParts converts a source string into an array of parts (text, media, or
 // metadata).
 //
-// Also processes media and section markers carrying nonce.
-func toParts(source string, nonce string) ([]Part, error) {
-	re, err := mediaAndSectionMarkerRegex(nonce)
-	if err != nil {
-		return nil, err
-	}
-
+// Also processes media and section markers matched by mediaRe, the render's
+// media and section marker regexp (see mediaAndSectionMarkerRegex).
+func toParts(source string, mediaRe *regexp.Regexp) ([]Part, error) {
 	parts := []Part{}
-	for _, piece := range splitByMarkers(source, re) {
+	for _, piece := range splitByMarkers(source, mediaRe) {
 		part, err := parsePart(piece)
 		if err != nil {
 			return nil, err

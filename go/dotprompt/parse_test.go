@@ -300,9 +300,11 @@ func TestTransformMessagesToHistory(t *testing.T) {
 }
 
 func TestMessageSourcesToMessages(t *testing.T) {
+	testMediaRe := mustRegex(t, mediaAndSectionMarkerRegex, testMarkerNonce)
+
 	t.Run("should handle empty array", func(t *testing.T) {
 		messageSources := []*MessageSource{}
-		messages, err := messageSourcesToMessages(messageSources, testMarkerNonce)
+		messages, err := messageSourcesToMessages(messageSources, testMediaRe)
 		if err != nil {
 			t.Errorf("messageSourcesToMessages() returned error: %v", err)
 		}
@@ -319,7 +321,7 @@ func TestMessageSourcesToMessages(t *testing.T) {
 			},
 		}
 
-		messages, err := messageSourcesToMessages(messageSources, testMarkerNonce)
+		messages, err := messageSourcesToMessages(messageSources, testMediaRe)
 		if err != nil {
 			t.Errorf("messageSourcesToMessages() returned error: %v", err)
 		}
@@ -350,7 +352,7 @@ func TestMessageSourcesToMessages(t *testing.T) {
 			},
 		}
 
-		messages, err := messageSourcesToMessages(messageSources, testMarkerNonce)
+		messages, err := messageSourcesToMessages(messageSources, testMediaRe)
 		if err != nil {
 			t.Errorf("messageSourcesToMessages() returned error: %v", err)
 		}
@@ -384,7 +386,7 @@ func TestMessageSourcesToMessages(t *testing.T) {
 			},
 		}
 
-		messages, err := messageSourcesToMessages(messageSources, testMarkerNonce)
+		messages, err := messageSourcesToMessages(messageSources, testMediaRe)
 		if err != nil {
 			t.Errorf("messageSourcesToMessages() returned error: %v", err)
 		}
@@ -426,7 +428,7 @@ func TestMessageSourcesToMessages(t *testing.T) {
 			},
 		}
 
-		messages, err := messageSourcesToMessages(messageSources, testMarkerNonce)
+		messages, err := messageSourcesToMessages(messageSources, testMediaRe)
 		if err != nil {
 			t.Errorf("messageSourcesToMessages() returned error: %v", err)
 		}
