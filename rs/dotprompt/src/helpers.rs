@@ -27,12 +27,18 @@
 //! Local helpers take precedence over registry helpers and are visible inside
 //! blocks (`#each`, `#with`, ...) and partials, which share the render context.
 //!
+//! A user helper registered under one of these names replaces the builtin in
+//! the registry, and no local helper is bound for that name, so the user's
+//! helper is what runs. Its output is not nonce-bound: any marker it writes is
+//! treated as plain text.
+//!
 //! ```text
 //! Registry (shared)                    RenderContext (one per render)
 //! +-------------------------------+    +----------------------------------+
 //! | json, ifEquals, unlessEquals  |    | role, history, section, media    |
 //! | role, history, section, media |    |   bound to this render's nonce   |
-//! |   (unbound: always error)     |    |   (shadow the registry entries)  |
+//! |   (unbound: always error,     |    |   (shadow the registry entries,  |
+//! |    or the user's override)    |    |    skipped for user overrides)   |
 //! +-------------------------------+    +----------------------------------+
 //! ```
 
@@ -41,6 +47,7 @@ use handlebars::{
     Context, Handlebars, Helper, HelperDef, HelperResult, Output, RenderContext, RenderErrorReason,
     Renderable,
 };
+use std::collections::HashSet;
 
 /// Registers all built-in helpers with a Handlebars instance.
 ///
@@ -70,10 +77,22 @@ pub fn register_builtin_helpers(handlebars: &mut Handlebars) {
 /// from [`register_builtin_helpers`]. Pair this with
 /// [`to_messages`](crate::parse::to_messages) using the same nonce.
 ///
+/// Names in `user_overrides` are skipped so a helper the user registered under
+/// that name (which replaced the unbound builtin in the registry) runs
+/// instead. Overrides take full responsibility for their output; it isn't
+/// nonce-bound, so markers they emit are not honored.
+///
 /// Crate-private because callers would otherwise have to manage nonces and
 /// the marker format themselves; see the unit tests for usage.
-pub(crate) fn register_marker_helpers(rc: &mut RenderContext<'_, '_>, nonce: &MarkerNonce) {
+pub(crate) fn register_marker_helpers(
+    rc: &mut RenderContext<'_, '_>,
+    nonce: &MarkerNonce,
+    user_overrides: &HashSet<String>,
+) {
     for kind in MarkerKind::ALL {
+        if user_overrides.contains(kind.name()) {
+            continue;
+        }
         let helper = MarkerHelper {
             kind,
             nonce: Some(nonce.clone()),
@@ -452,11 +471,21 @@ mod tests {
 
     /// Renders `template` with the marker helpers bound to [`NONCE`].
     fn render_marker(hbs: &Handlebars, template: &str, data: &serde_json::Value) -> String {
+        render_marker_with_overrides(hbs, template, data, &HashSet::new())
+    }
+
+    /// Like [`render_marker`], but skips binding the names in `user_overrides`.
+    fn render_marker_with_overrides(
+        hbs: &Handlebars,
+        template: &str,
+        data: &serde_json::Value,
+        user_overrides: &HashSet<String>,
+    ) -> String {
         let nonce = MarkerNonce::parse(NONCE).expect("valid nonce");
         let template = handlebars::Template::compile(template).expect("template should compile");
         let ctx = Context::wraps(data).expect("context should wrap");
         let mut rc = RenderContext::new(None);
-        register_marker_helpers(&mut rc, &nonce);
+        register_marker_helpers(&mut rc, &nonce, user_overrides);
         template
             .renders(hbs, &ctx, &mut rc)
             .expect("render should succeed")
@@ -540,6 +569,35 @@ mod tests {
         assert_eq!(
             result,
             format!("<<<dotprompt:{NONCE}:role:user>>><<<dotprompt:{NONCE}:history>>>")
+        );
+    }
+
+    #[test]
+    fn test_marker_helpers_skip_user_overrides() {
+        fn media_override(
+            _: &Helper,
+            _: &Handlebars,
+            _: &Context,
+            _: &mut RenderContext,
+            out: &mut dyn Output,
+        ) -> HelperResult {
+            out.write("[user media]")?;
+            Ok(())
+        }
+
+        let mut hbs = Handlebars::new();
+        register_builtin_helpers(&mut hbs);
+        hbs.register_helper("media", Box::new(media_override));
+        let overrides = HashSet::from(["media".to_string()]);
+        let result = render_marker_with_overrides(
+            &hbs,
+            r#"{{media url="https://example.com/a.png"}}{{history}}"#,
+            &json!({}),
+            &overrides,
+        );
+        assert_eq!(
+            result,
+            format!("[user media]<<<dotprompt:{NONCE}:history>>>")
         );
     }
 

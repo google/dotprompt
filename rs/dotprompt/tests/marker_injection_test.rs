@@ -19,11 +19,12 @@
 //!
 //! Every render uses a fresh nonce (see the crate-private `markers` module),
 //! so markers typed by an end user, with or without a guessed nonce, stay
-//! literal text.
+//! literal text. User-registered overrides of the marker helpers still win.
 
 #![allow(clippy::expect_used)]
 
 use dotprompt::{DataArgument, Dotprompt, DotpromptOptions, Message, RenderedPrompt};
+use handlebars::{Context, Handlebars, Helper, HelperDef, HelperResult, Output, RenderContext};
 use serde_json::{Value, json};
 use std::collections::HashMap;
 
@@ -269,6 +270,92 @@ fn marker_helpers_work_for_non_object_input() {
     assert_eq!(
         to_json(&messages),
         json!([{"role": "system", "content": [{"text": format!("a{FORGED}")}]}])
+    );
+}
+
+// User overrides of marker helpers.
+
+/// A `media` override that renders the URL as text.
+fn text_media(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+    let url = h
+        .hash_get("url")
+        .and_then(|v| v.value().as_str())
+        .unwrap_or_default();
+    out.write(&format!("[image: {url}]"))?;
+    Ok(())
+}
+
+/// A `role` override that writes the old, nonce-less marker format.
+fn legacy_role(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+    let role = h
+        .param(0)
+        .and_then(|v| v.value().as_str())
+        .unwrap_or_default();
+    out.write(&format!("<<<dotprompt:role:{role}>>>"))?;
+    Ok(())
+}
+
+#[test]
+fn user_media_override_via_define_helper_wins() {
+    let mut dp = Dotprompt::new(None);
+    dp.define_helper("media", Box::new(text_media));
+    let template =
+        r#"{{role "system"}}Be safe.{{role "user"}}Look: {{media url=img}}{{section "output"}}"#;
+    let messages = render(
+        &dp,
+        template,
+        &input(json!({ "img": "https://example.com/a.png" })),
+    );
+    // The override's output is used; role and section are still bound.
+    assert_eq!(
+        to_json(&messages),
+        json!([
+            {"role": "system", "content": [{"text": "Be safe."}]},
+            {"role": "user", "content": [
+                {"text": "Look: [image: https://example.com/a.png]"},
+                {"metadata": {"purpose": "output", "pending": true}}
+            ]}
+        ])
+    );
+}
+
+#[test]
+fn user_role_override_via_options_wins_and_is_not_nonce_bound() {
+    let role: Box<dyn HelperDef + Send + Sync> = Box::new(legacy_role);
+    let helpers = HashMap::from([("role".to_string(), role)]);
+    let dp = Dotprompt::new(Some(DotpromptOptions {
+        helpers: Some(helpers),
+        ..Default::default()
+    }));
+    let template = r#"{{role "system"}}Hi {{media url=img contentType="image/png"}}"#;
+    let messages = render(
+        &dp,
+        template,
+        &input(json!({ "img": "https://example.com/a.png" })),
+    );
+    // The override runs, but its marker lacks the render's nonce, so it stays
+    // text instead of starting a system message. `media` is still bound.
+    assert_eq!(
+        to_json(&messages),
+        json!([{
+            "role": "user",
+            "content": [
+                {"text": "<<<dotprompt:role:system>>>Hi "},
+                {"media": {"url": "https://example.com/a.png", "contentType": "image/png"}}
+            ]
+        }])
     );
 }
 

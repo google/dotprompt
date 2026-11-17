@@ -51,6 +51,7 @@ rust_test(
     srcs = ["tests/marker_injection_test.rs"],
     deps = [
         ":dotprompt",
+        "@crates//:handlebars",
         "@crates//:serde_json",
     ],
 )

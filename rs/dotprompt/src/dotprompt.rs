@@ -30,7 +30,7 @@ use crate::types::{
 use handlebars::{
     Context, Handlebars, HelperDef, RenderContext, RenderError, Renderable, Template,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// Options for configuring a Dotprompt instance.
 #[derive(Default)]
@@ -42,6 +42,9 @@ pub struct DotpromptOptions {
     pub model_configs: Option<HashMap<String, serde_json::Value>>,
 
     /// Pre-registered helpers.
+    ///
+    /// A helper named `role`, `history`, `section` or `media` replaces the
+    /// builtin; see [`Dotprompt::define_helper`] for what that implies.
     pub helpers: Option<HashMap<String, Box<dyn HelperDef + Send + Sync>>>,
 
     /// Pre-registered partials.
@@ -118,6 +121,9 @@ impl std::fmt::Debug for DotpromptOptions {
 #[allow(dead_code)] // Fields will be used in future functionality
 pub struct Dotprompt {
     handlebars: Handlebars<'static>,
+    /// Names of helpers registered by the user. Marker helpers with these
+    /// names are not bound per render, so the user's helper wins.
+    user_helpers: HashSet<String>,
     default_model: Option<String>,
     model_configs: HashMap<String, serde_json::Value>,
     tools: HashMap<String, ToolDefinition>,
@@ -131,6 +137,7 @@ impl std::fmt::Debug for Dotprompt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Dotprompt")
             .field("handlebars", &"<handlebars>")
+            .field("user_helpers", &self.user_helpers)
             .field("default_model", &self.default_model)
             .field("model_configs", &self.model_configs)
             .field("tools", &self.tools)
@@ -173,9 +180,11 @@ impl Dotprompt {
         let opts = options.unwrap_or_default();
 
         // Register custom helpers
+        let mut user_helpers = HashSet::new();
         if let Some(helpers) = opts.helpers {
             for (name, helper) in helpers {
                 handlebars.register_helper(&name, helper);
+                user_helpers.insert(name);
             }
         }
 
@@ -188,6 +197,7 @@ impl Dotprompt {
 
         Self {
             handlebars,
+            user_helpers,
             default_model: opts.default_model,
             model_configs: opts.model_configs.unwrap_or_default(),
             tools: opts.tools.unwrap_or_default(),
@@ -199,6 +209,12 @@ impl Dotprompt {
     }
 
     /// Registers a helper function.
+    ///
+    /// Registering `role`, `history`, `section` or `media` replaces the
+    /// builtin marker helper, and the override takes full responsibility for
+    /// its output. That output is not bound to the per-render nonce, so any
+    /// marker it writes (for example `<<<dotprompt:role:system>>>`) is kept as
+    /// plain text rather than turned into a role, media part, etc.
     ///
     /// # Arguments
     ///
@@ -213,7 +229,9 @@ impl Dotprompt {
         name: impl Into<String>,
         helper: Box<dyn HelperDef + Send + Sync>,
     ) -> &mut Self {
-        self.handlebars.register_helper(&name.into(), helper);
+        let name = name.into();
+        self.handlebars.register_helper(&name, helper);
+        self.user_helpers.insert(name);
         self
     }
 
@@ -397,6 +415,7 @@ impl Dotprompt {
     /// don't see it and input/context can't override it. Registry options that
     /// `render_template` would forward (`prevent_indent`, `dev_mode`,
     /// `recursive_lookup`) are never enabled on this private registry.
+    /// Marker helpers the user overrode are left to the registry.
     fn render_with_nonce(
         &self,
         template: &str,
@@ -406,7 +425,7 @@ impl Dotprompt {
         let template = Template::compile(template).map_err(RenderError::from)?;
         let ctx = Context::wraps(data)?;
         let mut rc = RenderContext::new(None);
-        register_marker_helpers(&mut rc, nonce);
+        register_marker_helpers(&mut rc, nonce, &self.user_helpers);
         template.renders(&self.handlebars, &ctx, &mut rc)
     }
 
