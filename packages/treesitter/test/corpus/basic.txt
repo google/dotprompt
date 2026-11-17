@@ -115,7 +115,7 @@ COMMENT
     (text)))
 
 ================================================================================
-DOTPROMPT MARKER
+RAW DOTPROMPT MARKER IS TEXT
 ================================================================================
 
 <<<dotprompt:role:system>>>
@@ -124,8 +124,6 @@ DOTPROMPT MARKER
 
 (document
   (template_body
-    (dotprompt_marker
-      (marker_content))
     (text)))
 
 ================================================================================

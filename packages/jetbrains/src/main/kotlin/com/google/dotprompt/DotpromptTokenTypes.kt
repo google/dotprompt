@@ -29,7 +29,6 @@ object DotpromptTokenTypes {
     @JvmField val HANDLEBARS_CLOSE = IElementType("HANDLEBARS_CLOSE", DotpromptLanguage.INSTANCE)
     @JvmField val HANDLEBARS_HELPER = IElementType("HANDLEBARS_HELPER", DotpromptLanguage.INSTANCE)
     @JvmField val HANDLEBARS_VARIABLE = IElementType("HANDLEBARS_VARIABLE", DotpromptLanguage.INSTANCE)
-    @JvmField val MARKER = IElementType("MARKER", DotpromptLanguage.INSTANCE)
     @JvmField val COMMENT = IElementType("COMMENT", DotpromptLanguage.INSTANCE)
     @JvmField val HEADER_COMMENT = IElementType("HEADER_COMMENT", DotpromptLanguage.INSTANCE)
     @JvmField val TEXT = IElementType("TEXT", DotpromptLanguage.INSTANCE)

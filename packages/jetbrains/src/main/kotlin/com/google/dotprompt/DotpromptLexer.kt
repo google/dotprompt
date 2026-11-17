@@ -25,8 +25,11 @@ import com.intellij.psi.tree.IElementType
  * This lexer recognizes:
  * - YAML frontmatter delimiters (---)
  * - Handlebars expressions ({{ ... }})
- * - Dotprompt markers (<<<dotprompt:...>>>)
  * - Comments ({{! ... }})
+ *
+ * Raw `<<<dotprompt:...>>>` text is deliberately lexed as TEXT: runtimes only
+ * honor nonce-tagged markers emitted by the helpers ({{role}}, {{history}},
+ * {{section}}, {{media}}), so a literal marker in a template is plain text.
  */
 class DotpromptLexer : LexerBase() {
     private var buffer: CharSequence = ""
@@ -85,14 +88,6 @@ class DotpromptLexer : LexerBase() {
             return
         }
 
-        // Check for Dotprompt marker
-        if (lookingAt("<<<dotprompt:")) {
-            val end = findEndOfMarker()
-            tokenEnd = end
-            tokenType = DotpromptTokenTypes.MARKER
-            return
-        }
-
         // Check for Handlebars comment
         if (lookingAt("{{!")) {
             val end = findEndOfHandlebars()
@@ -141,17 +136,6 @@ class DotpromptLexer : LexerBase() {
         return true
     }
 
-    private fun findEndOfMarker(): Int {
-        var pos = tokenStart
-        while (pos < bufferEnd - 2) {
-            if (buffer[pos] == '>' && buffer[pos + 1] == '>' && buffer[pos + 2] == '>') {
-                return pos + 3
-            }
-            pos++
-        }
-        return bufferEnd
-    }
-
     private fun findEndOfHandlebars(): Int {
         var pos = tokenStart
         while (pos < bufferEnd - 1) {
@@ -175,8 +159,7 @@ class DotpromptLexer : LexerBase() {
         var pos = tokenStart + 1
         while (pos < bufferEnd) {
             if (lookingAtPos(pos, "---") || 
-                lookingAtPos(pos, "{{") || 
-                lookingAtPos(pos, "<<<dotprompt:")) {
+                lookingAtPos(pos, "{{")) {
                 return pos
             }
             if (buffer[pos] == '\n' && state == STATE_FRONTMATTER) {

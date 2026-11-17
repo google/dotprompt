@@ -155,11 +155,6 @@ export const dotpromptStreamParser = {
         return 'comment';
       }
 
-      // Dotprompt markers
-      if (stream.match(/<<<dotprompt:[^>]+>>>/)) {
-        return 'keyword';
-      }
-
       // Handlebars block start {{#helper
       if (stream.match(/\{\{#/)) {
         state.context = 'handlebars';

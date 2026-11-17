@@ -77,8 +77,8 @@ const DOTPROMPT_HELPERS: Completion[] = [
   {
     label: 'role',
     type: 'keyword',
-    info: 'Defines a message with a specific role (system, user, model).',
-    apply: '{{#role "${role}"}}\n\t\n{{/role}}',
+    info: 'Starts a message with a specific role (system, user, model).',
+    apply: '{{role "${role}"}}\n',
     boost: 10,
   },
   {
@@ -96,8 +96,8 @@ const DOTPROMPT_HELPERS: Completion[] = [
   {
     label: 'section',
     type: 'keyword',
-    info: 'Defines a named section that can be referenced elsewhere.',
-    apply: '{{#section "${name}"}}\n\t\n{{/section}}',
+    info: 'Starts a named section that can be referenced elsewhere.',
+    apply: '{{section "${name}"}}\n',
   },
   {
     label: 'media',
@@ -126,22 +126,22 @@ const ROLE_SNIPPETS: Completion[] = [
   {
     label: 'system',
     type: 'text',
-    info: "System role block - sets the AI's behavior and context.",
-    apply: '{{#role "system"}}\n\t\n{{/role}}',
+    info: "System message - sets the AI's behavior and context.",
+    apply: '{{role "system"}}\n',
     boost: 5,
   },
   {
     label: 'user',
     type: 'text',
-    info: 'User role block - represents user input.',
-    apply: '{{#role "user"}}\n\t\n{{/role}}',
+    info: 'User message - represents user input.',
+    apply: '{{role "user"}}\n',
     boost: 5,
   },
   {
     label: 'model',
     type: 'text',
-    info: 'Model role block - represents AI responses (for few-shot examples).',
-    apply: '{{#role "model"}}\n\t\n{{/role}}',
+    info: 'Model message - represents AI responses (for few-shot examples).',
+    apply: '{{role "model"}}\n',
     boost: 5,
   },
 ];
@@ -316,14 +316,15 @@ export function dotpromptCompletions(
     const [, prefix, word] = handlebarsMatch;
     const from = pos - word.length;
 
-    // After {{# - block helpers
+    // After {{# - block helpers. `role` and `section` are inline helpers (a
+    // block form would discard its content), so they are not offered here.
     if (prefix === '#') {
       const blockHelpers = [
         ...HANDLEBARS_HELPERS.filter((h) =>
           ['if', 'unless', 'each', 'with'].includes(h.label)
         ),
         ...DOTPROMPT_HELPERS.filter((h) =>
-          ['role', 'section', 'ifEquals', 'unlessEquals'].includes(h.label)
+          ['ifEquals', 'unlessEquals'].includes(h.label)
         ),
       ].map((h) => ({
         ...h,
@@ -343,8 +344,6 @@ export function dotpromptCompletions(
         'unless',
         'each',
         'with',
-        'role',
-        'section',
         'ifEquals',
         'unlessEquals',
       ].map((name) => ({

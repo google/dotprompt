@@ -6,8 +6,7 @@ This extension provides syntax highlighting, diagnostics, formatting, and langua
 
 - **Syntax Highlighting**:
     - YAML Frontmatter
-    - Dotprompt Markers (e.g., `<<<dotprompt:role:user>>>`)
-    - Handlebars syntax (`{{...}}`)
+    - Handlebars syntax (`{{...}}`) and Dotprompt helpers (`role`, `history`, `section`, `media`)
 - **Autocomplete**: Context-aware completion for Handlebars and Dotprompt helpers
 - **Diagnostics** (requires `promptly`): Real-time error detection for YAML and Handlebars syntax
 - **Formatting** (requires `promptly`): Automatic formatting of `.prompt` files
@@ -86,7 +85,7 @@ Open this folder in VS Code and press `F5` to launch an Extension Development Ho
 ## Syntax Support
 
 - **Frontmatter**: The extension detects YAML frontmatter enclosed in `---` at the beginning of the file.
-- **Markers**: Special Dotprompt markers like `<<<dotprompt:role:system>>>` are highlighted.
+- **Helpers**: Use `{{role "system"}}`, `{{history}}`, `{{section "name"}}` and `{{media url=...}}` to structure messages. Raw `<<<dotprompt:...>>>` text is not highlighted: runtimes only honor the nonce-tagged markers these helpers emit, so a literal marker renders as plain text.
 - **Handlebars**: Standard Handlebars syntax is supported for dynamic prompt generation.
 
 ## Contributing

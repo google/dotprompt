@@ -23,7 +23,10 @@
 ;;; Commentary:
 
 ;; Major mode for editing Dotprompt files (.prompt).
-;; Provides syntax highlighting for markers, helpers, and partials.
+;; Provides syntax highlighting for helpers and partials.  Raw
+;; `<<<dotprompt:...>>>' text is intentionally left unhighlighted: runtimes
+;; only honor nonce-tagged markers emitted by the helpers, so a literal
+;; marker in a template is plain text.
 ;; Includes LSP integration via eglot or lsp-mode for diagnostics,
 ;; formatting, and hover documentation when `promptly` is installed.
 ;;
@@ -68,9 +71,6 @@
    
    ;; YAML numeric values
    '(":\\s-+\\([0-9]+\\.?[0-9]*\\)$" 1 font-lock-constant-face)
-   
-   ;; Dotprompt markers <<<dotprompt:role:system>>> etc.
-   '("<<<dotprompt:[^>]+>>>" . font-lock-preprocessor-face)
    
    ;; Handlebars block comments {{!-- ... --}}
    '("{{!--\\(.\\|\n\\)*?--}}" . font-lock-comment-face)

@@ -55,7 +55,6 @@ class DotpromptSyntaxHighlighter : SyntaxHighlighterBase() {
             DotpromptTokenTypes.HANDLEBARS_CLOSE -> HANDLEBARS_BRACE_KEYS
             DotpromptTokenTypes.HANDLEBARS_HELPER -> HANDLEBARS_HELPER_KEYS
             DotpromptTokenTypes.HANDLEBARS_VARIABLE -> HANDLEBARS_VARIABLE_KEYS
-            DotpromptTokenTypes.MARKER -> MARKER_KEYS
             DotpromptTokenTypes.COMMENT -> COMMENT_KEYS
             DotpromptTokenTypes.HEADER_COMMENT -> COMMENT_KEYS
             else -> EMPTY_KEYS
@@ -89,10 +88,6 @@ class DotpromptSyntaxHighlighter : SyntaxHighlighterBase() {
             "DOTPROMPT_HANDLEBARS_VARIABLE",
             DefaultLanguageHighlighterColors.IDENTIFIER
         )
-        private val MARKER = TextAttributesKey.createTextAttributesKey(
-            "DOTPROMPT_MARKER",
-            DefaultLanguageHighlighterColors.METADATA
-        )
         private val COMMENT = TextAttributesKey.createTextAttributesKey(
             "DOTPROMPT_COMMENT",
             DefaultLanguageHighlighterColors.LINE_COMMENT
@@ -104,7 +99,6 @@ class DotpromptSyntaxHighlighter : SyntaxHighlighterBase() {
         private val HANDLEBARS_BRACE_KEYS = arrayOf(HANDLEBARS_BRACE)
         private val HANDLEBARS_HELPER_KEYS = arrayOf(HANDLEBARS_HELPER)
         private val HANDLEBARS_VARIABLE_KEYS = arrayOf(HANDLEBARS_VARIABLE)
-        private val MARKER_KEYS = arrayOf(MARKER)
         private val COMMENT_KEYS = arrayOf(COMMENT)
     }
 }

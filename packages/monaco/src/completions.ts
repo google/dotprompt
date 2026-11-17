@@ -82,10 +82,10 @@ const DOTPROMPT_HELPERS = [
   {
     label: 'role',
     kind: 1,
-    insertText: '{{#role "${1|system,user,model|}"}}}\n\t$0\n{{/role}}',
+    insertText: '{{role "${1|system,user,model|}"}}\n$0',
     insertTextRules: 4,
     documentation:
-      'Defines a message with a specific role (system, user, or model).',
+      'Starts a message with a specific role (system, user, or model).',
   },
   {
     label: 'json',
@@ -103,9 +103,9 @@ const DOTPROMPT_HELPERS = [
   {
     label: 'section',
     kind: 1,
-    insertText: '{{#section "${1:name}"}}\n\t$0\n{{/section}}',
+    insertText: '{{section "${1:name}"}}\n$0',
     insertTextRules: 4,
-    documentation: 'Defines a named section that can be referenced elsewhere.',
+    documentation: 'Starts a named section that can be referenced elsewhere.',
   },
   {
     label: 'media',
@@ -138,24 +138,24 @@ const ROLE_SNIPPETS = [
   {
     label: 'system',
     kind: 15, // Snippet
-    insertText: '{{#role "system"}}\n\t$0\n{{/role}}',
+    insertText: '{{role "system"}}\n$0',
     insertTextRules: 4,
-    documentation: "System role block - sets the AI's behavior and context.",
+    documentation: "System message - sets the AI's behavior and context.",
   },
   {
     label: 'user',
     kind: 15,
-    insertText: '{{#role "user"}}\n\t$0\n{{/role}}',
+    insertText: '{{role "user"}}\n$0',
     insertTextRules: 4,
-    documentation: 'User role block - represents user input.',
+    documentation: 'User message - represents user input.',
   },
   {
     label: 'model',
     kind: 15,
-    insertText: '{{#role "model"}}\n\t$0\n{{/role}}',
+    insertText: '{{role "model"}}\n$0',
     insertTextRules: 4,
     documentation:
-      'Model role block - represents AI responses (for few-shot examples).',
+      'Model message - represents AI responses (for few-shot examples).',
   },
 ];
 
@@ -166,7 +166,7 @@ const FRONTMATTER_FIELDS = [
   {
     label: 'model',
     kind: 5, // Field
-    insertText: 'model: ${1:gemini-2.5-flash}',
+    insertText: 'model: ${1:gemini-flash-latest}',
     insertTextRules: 4,
     documentation: 'The AI model to use for this prompt.',
   },
@@ -340,14 +340,15 @@ export function createCompletionProvider(
       const isInHandlebars = /\{\{[^}]*$/.test(linePrefix);
 
       if (isInHandlebars) {
-        // After {{# - block helpers
+        // After {{# - block helpers. `role` and `section` are inline helpers
+        // (a block form would discard its content), so they are not offered.
         if (/\{\{#\s*$/.test(linePrefix)) {
           const blockHelpers = [
             ...HANDLEBARS_HELPERS.filter((h) =>
               ['if', 'unless', 'each', 'with'].includes(h.label)
             ),
             ...DOTPROMPT_HELPERS.filter((h) =>
-              ['role', 'section', 'ifEquals', 'unlessEquals'].includes(h.label)
+              ['ifEquals', 'unlessEquals'].includes(h.label)
             ),
           ].map((item) => ({
             ...item,

@@ -23,8 +23,10 @@ if exists("b:current_syntax")
   finish
 endif
 
-" Define Dotprompt specifics
-syntax match dotpromptMarker "<<<dotprompt:[^>]\+>>>"
+" Define Dotprompt specifics. Raw `<<<dotprompt:...>>>` text is deliberately
+" not highlighted: runtimes only honor nonce-tagged markers emitted by the
+" helpers ({{role}}, {{history}}, {{section}}, {{media}}), so a literal marker
+" in a template is plain text.
 syntax match dotpromptPartial "{{>.\\+}}"
 
 " License header comments (lines starting with #)
@@ -45,7 +47,6 @@ syntax match dotpromptNumber "\d\+" contained
 syntax keyword dotpromptBoolean contained true false null undefined
 
 " Highlight links
-highlight default link dotpromptMarker PreProc
 highlight default link dotpromptPartial Structure
 highlight default link dotpromptTag Delimiter
 highlight default link dotpromptKeyword Keyword

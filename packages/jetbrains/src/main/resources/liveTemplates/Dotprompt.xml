@@ -17,8 +17,8 @@
  SPDX-License-Identifier: Apache-2.0
 -->
 <templateSet group="Dotprompt">
-    <!-- Role blocks -->
-    <template name="role" value="{{#role &quot;$ROLE$&quot;}}&#10;$CONTENT$&#10;{{/role}}" description="Handlebars role block" toReformat="false" toShortenFQNames="true">
+    <!-- Roles. Inline helpers: a {{#role}}...{{/role}} block would discard its content. -->
+    <template name="role" value="{{role &quot;$ROLE$&quot;}}&#10;$CONTENT$" description="Start a message with a role" toReformat="false" toShortenFQNames="true">
         <variable name="ROLE" expression="" defaultValue="&quot;user&quot;" alwaysStopAt="true"/>
         <variable name="CONTENT" expression="" defaultValue="" alwaysStopAt="true"/>
         <context>
@@ -26,21 +26,21 @@
         </context>
     </template>
 
-    <template name="system" value="{{#role &quot;system&quot;}}&#10;$CONTENT$&#10;{{/role}}" description="System role block" toReformat="false" toShortenFQNames="true">
+    <template name="system" value="{{role &quot;system&quot;}}&#10;$CONTENT$" description="Start a system message" toReformat="false" toShortenFQNames="true">
         <variable name="CONTENT" expression="" defaultValue="" alwaysStopAt="true"/>
         <context>
             <option name="OTHER" value="true"/>
         </context>
     </template>
 
-    <template name="user" value="{{#role &quot;user&quot;}}&#10;$CONTENT$&#10;{{/role}}" description="User role block" toReformat="false" toShortenFQNames="true">
+    <template name="user" value="{{role &quot;user&quot;}}&#10;$CONTENT$" description="Start a user message" toReformat="false" toShortenFQNames="true">
         <variable name="CONTENT" expression="" defaultValue="" alwaysStopAt="true"/>
         <context>
             <option name="OTHER" value="true"/>
         </context>
     </template>
 
-    <template name="model" value="{{#role &quot;model&quot;}}&#10;$CONTENT$&#10;{{/role}}" description="Model role block" toReformat="false" toShortenFQNames="true">
+    <template name="model" value="{{role &quot;model&quot;}}&#10;$CONTENT$" description="Start a model message" toReformat="false" toShortenFQNames="true">
         <variable name="CONTENT" expression="" defaultValue="" alwaysStopAt="true"/>
         <context>
             <option name="OTHER" value="true"/>
@@ -129,7 +129,7 @@
         </context>
     </template>
 
-    <template name="section" value="{{#section &quot;$NAME$&quot;}}&#10;$CONTENT$&#10;{{/section}}" description="Named section block" toReformat="false" toShortenFQNames="true">
+    <template name="section" value="{{section &quot;$NAME$&quot;}}&#10;$CONTENT$" description="Start a named section" toReformat="false" toShortenFQNames="true">
         <variable name="NAME" expression="" defaultValue="" alwaysStopAt="true"/>
         <variable name="CONTENT" expression="" defaultValue="" alwaysStopAt="true"/>
         <context>
@@ -154,8 +154,8 @@
     </template>
 
     <!-- Full template -->
-    <template name="prompt" value="---&#10;model: $MODEL$&#10;config:&#10;  temperature: $TEMPERATURE$&#10;input:&#10;  schema:&#10;    $VARIABLE$: string&#10;---&#10;&#10;{{#role &quot;system&quot;}}&#10;$SYSTEM_PROMPT$&#10;{{/role}}&#10;&#10;{{#role &quot;user&quot;}}&#10;$USER_PROMPT$&#10;{{/role}}" description="Complete prompt template" toReformat="false" toShortenFQNames="true">
-        <variable name="MODEL" expression="" defaultValue="&quot;gemini-2.5-flash&quot;" alwaysStopAt="true"/>
+    <template name="prompt" value="---&#10;model: $MODEL$&#10;config:&#10;  temperature: $TEMPERATURE$&#10;input:&#10;  schema:&#10;    $VARIABLE$: string&#10;---&#10;&#10;{{role &quot;system&quot;}}&#10;$SYSTEM_PROMPT$&#10;&#10;{{role &quot;user&quot;}}&#10;$USER_PROMPT$" description="Complete prompt template" toReformat="false" toShortenFQNames="true">
+        <variable name="MODEL" expression="" defaultValue="&quot;gemini-flash-latest&quot;" alwaysStopAt="true"/>
         <variable name="TEMPERATURE" expression="" defaultValue="&quot;0.7&quot;" alwaysStopAt="true"/>
         <variable name="VARIABLE" expression="" defaultValue="&quot;name&quot;" alwaysStopAt="true"/>
         <variable name="SYSTEM_PROMPT" expression="" defaultValue="&quot;You are a helpful assistant.&quot;" alwaysStopAt="true"/>
@@ -167,7 +167,7 @@
 
     <!-- Frontmatter -->
     <template name="frontmatter" value="---&#10;model: $MODEL$&#10;config:&#10;  temperature: $TEMPERATURE$&#10;---" description="YAML frontmatter" toReformat="false" toShortenFQNames="true">
-        <variable name="MODEL" expression="" defaultValue="&quot;gemini-2.5-flash&quot;" alwaysStopAt="true"/>
+        <variable name="MODEL" expression="" defaultValue="&quot;gemini-flash-latest&quot;" alwaysStopAt="true"/>
         <variable name="TEMPERATURE" expression="" defaultValue="&quot;0.7&quot;" alwaysStopAt="true"/>
         <context>
             <option name="OTHER" value="true"/>

@@ -25,7 +25,10 @@ export const LANGUAGE_ID = 'dotprompt';
 
 /**
  * Monarch tokenizer for Dotprompt syntax highlighting.
- * Handles YAML frontmatter, Handlebars templates, and Dotprompt markers.
+ * Handles YAML frontmatter and Handlebars templates (including Dotprompt
+ * helpers). Raw `<<<dotprompt:...>>>` text is deliberately not tokenized:
+ * runtimes only honor nonce-tagged markers emitted by the helpers, so a
+ * literal marker in a template is plain text.
  */
 export const monarchLanguage: monaco.languages.IMonarchLanguage = {
   defaultToken: '',
@@ -78,9 +81,6 @@ export const monarchLanguage: monaco.languages.IMonarchLanguage = {
 
       // Frontmatter delimiter
       [/^---\s*$/, { token: 'delimiter.frontmatter', next: '@frontmatter' }],
-
-      // Dotprompt markers <<<dotprompt:...>>>
-      [/<<<dotprompt:[^>]+>>>/, 'keyword.marker'],
 
       // Include template tokens
       { include: '@template' },
