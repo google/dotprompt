@@ -23,11 +23,14 @@ public before the marker nonce change must stay importable.
 """
 
 import importlib
+import re
+from collections.abc import Callable
 from types import ModuleType
 
 import pytest
 
 from dotpromptz import _helpers, _markers, _parse
+from dotpromptz._typing import DataArgument, Message, Role, TextPart
 
 SHIMS = [
     'dotpromptz.dotprompt',
@@ -64,6 +67,23 @@ PARSE_PUBLIC = [
     'to_messages',
     'to_parts',
     'transform_messages_to_history',
+]
+
+# Pre-nonce marker names restored as deprecated aliases. Pinned with their
+# original values so `from dotpromptz.parse import ...` keeps working in 1.x.
+PARSE_LEGACY_CONSTANTS: dict[str, str | re.Pattern[str]] = {
+    'ROLE_MARKER_PREFIX': '<<<dotprompt:role:',
+    'HISTORY_MARKER_PREFIX': '<<<dotprompt:history',
+    'MEDIA_MARKER_PREFIX': '<<<dotprompt:media:',
+    'SECTION_MARKER_PREFIX': '<<<dotprompt:section',
+    'ROLE_AND_HISTORY_MARKER_REGEX': re.compile(r'(<<<dotprompt:(?:role:[a-z]+|history))>>>'),
+    'MEDIA_AND_SECTION_MARKER_REGEX': re.compile(r'(<<<dotprompt:(?:media:url|section).*?)>>>'),
+}
+
+PARSE_LEGACY_FUNCTIONS = [
+    'split_by_media_and_section_markers',
+    'split_by_regex',
+    'split_by_role_and_history_markers',
 ]
 
 HELPERS_PUBLIC = [
@@ -120,3 +140,80 @@ def test_dotprompt_shim_still_exposes_dotprompt() -> None:
     from dotpromptz._dotprompt import Dotprompt
 
     assert _shim('dotpromptz.dotprompt').Dotprompt is Dotprompt
+
+
+@pytest.mark.parametrize('name', [*PARSE_LEGACY_CONSTANTS, *PARSE_LEGACY_FUNCTIONS])
+def test_parse_shim_still_exposes_legacy_marker_names(name: str) -> None:
+    assert getattr(_shim('dotpromptz.parse'), name) is getattr(_parse, name)
+
+
+@pytest.mark.parametrize(('name', 'expected'), PARSE_LEGACY_CONSTANTS.items())
+def test_legacy_marker_constants_keep_original_values(name: str, expected: str | re.Pattern[str]) -> None:
+    value = getattr(_parse, name)
+    if isinstance(expected, re.Pattern):
+        assert isinstance(value, re.Pattern)
+        assert (value.pattern, value.flags) == (expected.pattern, expected.flags)
+    else:
+        assert value == expected
+
+
+def test_legacy_split_by_regex_keeps_original_behavior() -> None:
+    with pytest.deprecated_call():
+        assert _parse.split_by_regex(' a,  ,b ', re.compile(',')) == [' a', 'b ']
+
+
+def test_legacy_split_by_role_and_history_markers_keeps_original_behavior() -> None:
+    rendered = '<<<dotprompt:role:system>>>Be safe.<<<dotprompt:history>>>  <<<dotprompt:role:user>>>Hi'
+    with pytest.deprecated_call():
+        assert _parse.split_by_role_and_history_markers(rendered) == [
+            '<<<dotprompt:role:system',
+            'Be safe.',
+            '<<<dotprompt:history',
+            '<<<dotprompt:role:user',
+            'Hi',
+        ]
+
+
+def test_legacy_split_by_media_and_section_markers_keeps_original_behavior() -> None:
+    source = 'Look: <<<dotprompt:media:url https://example.com/a.png image/png>>><<<dotprompt:section output>>>'
+    with pytest.deprecated_call():
+        assert _parse.split_by_media_and_section_markers(source) == [
+            'Look: ',
+            '<<<dotprompt:media:url https://example.com/a.png image/png',
+            '<<<dotprompt:section output',
+        ]
+
+
+@pytest.mark.asyncio
+async def test_render_does_not_use_legacy_marker_helpers(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fail(*_args: object) -> list[str]:
+        raise AssertionError('legacy marker helper used on the render path')
+
+    for name in PARSE_LEGACY_FUNCTIONS:
+        monkeypatch.setattr(_parse, name, fail)
+
+    from dotpromptz._dotprompt import Dotprompt
+
+    result = await Dotprompt().render(
+        '{{role "system"}}Be safe.{{history}}{{role "user"}}{{media url="https://example.com/a.png"}}{{section "x"}}',
+        DataArgument(messages=[Message(role=Role.MODEL, content=[TextPart(text='Earlier')])]),
+    )
+    assert [m.role for m in result.messages] == [Role.SYSTEM, Role.MODEL, Role.USER]
+
+
+@pytest.mark.parametrize(
+    'call',
+    [
+        # Pre-nonce positional calls. `nonce` is keyword-only so these fail
+        # loudly instead of binding `data` (or nothing) to the nonce. Called
+        # through the shim module so type checkers accept the invalid calls.
+        lambda: _shim('dotpromptz.parse').to_messages('Hello', DataArgument()),
+        lambda: _shim('dotpromptz.parse').to_messages('Hello'),
+        lambda: _shim('dotpromptz.parse').to_parts('Hello'),
+        lambda: _shim('dotpromptz.parse').message_sources_to_messages([]),
+    ],
+    ids=['to_messages_with_data', 'to_messages', 'to_parts', 'message_sources_to_messages'],
+)
+def test_legacy_positional_calls_raise_type_error(call: Callable[[], object]) -> None:
+    with pytest.raises(TypeError, match="keyword-only argument: 'nonce'"):
+        call()

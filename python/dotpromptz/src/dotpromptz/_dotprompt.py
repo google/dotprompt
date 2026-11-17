@@ -276,7 +276,7 @@ class RenderFunc(PromptFunction[ModelConfigT]):
         rendered_string = self._render_string(context, runtime_options)
 
         # Parse the rendered string into messages.
-        messages = to_messages(rendered_string, nonce, data)
+        messages = to_messages(rendered_string, data, nonce=nonce)
 
         # Construct and return the final RenderedPrompt.
         return RenderedPrompt[ModelConfigT](
