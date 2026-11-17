@@ -27,8 +27,11 @@
 ///
 /// ## Markers
 ///
-/// The helper emits `<<<dotprompt:{nonce}:media:url {url} {contentType}>>>`,
+/// The helper emits `<<<dotprompt:{nonce}:media:{url}|{contentType}>>>`,
 /// where `nonce` is the per-render nonce that the part splitter also uses.
+/// The body format is runtime-internal (it never leaves the process); `|`
+/// separates the fields so URLs with spaces and content types with
+/// parameters (`text/plain; charset=utf-8`) both survive.
 /// Markers without the right nonce (e.g. typed by an end user) stay plain
 /// text, so user input can't inject media parts with arbitrary URLs.
 ///
@@ -65,15 +68,17 @@ class MediaHelper {
   @internal
   static String createMarker(String nonce, {required String url, String? contentType}) {
     final ct = contentType ?? _inferContentType(url);
-    return formatMarker(nonce, "$mediaMarkerBodyPrefix$url $ct");
+    return formatMarker(nonce, "$mediaMarkerBodyPrefix$url|$ct");
   }
 
   /// Extracts media content from a marker body
-  /// (`media:url {url} [{contentType}]`), as produced by splitting with
+  /// (`media:{url}[|{contentType}]`), as produced by splitting with
   /// [mediaAndSectionMarkerRegex].
   ///
-  /// The URL ends at the first space; everything after it is the content
-  /// type, which may itself contain spaces (e.g. `text/plain; charset=utf-8`).
+  /// The fields are split at the last `|`: URLs may legitimately contain
+  /// `|` (e.g. map API query strings), content types in practice don't.
+  /// Without a `|` the whole rest is the URL and the content type defaults
+  /// to `application/octet-stream`.
   ///
   /// Returns null if [body] is not a media marker body.
   ///
@@ -83,11 +88,11 @@ class MediaHelper {
   static MediaContent? mediaFromBody(String body) {
     if (!body.startsWith(mediaMarkerBodyPrefix)) return null;
     final rest = body.substring(mediaMarkerBodyPrefix.length);
-    final space = rest.indexOf(" ");
-    if (space < 0) {
+    final sep = rest.lastIndexOf("|");
+    if (sep < 0) {
       return MediaContent(url: rest, contentType: _defaultContentType);
     }
-    return MediaContent(url: rest.substring(0, space), contentType: rest.substring(space + 1));
+    return MediaContent(url: rest.substring(0, sep), contentType: rest.substring(sep + 1));
   }
 
   /// Infers content type from URL extension.

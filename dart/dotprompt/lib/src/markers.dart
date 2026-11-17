@@ -29,7 +29,7 @@
 /// <<<dotprompt:{nonce}:{body}>>>
 ///
 /// nonce: 32 lowercase hex chars (128 bits), fresh per render
-/// body:  role:{name} | history | section {name} | media:url {url} {contentType}
+/// body:  role:{name} | history | section {name} | media:{url}|{contentType}
 /// ```
 ///
 /// ## Flow
@@ -63,8 +63,8 @@ const String historyMarkerBody = "history";
 /// Marker body prefix for section markers (`section {name}`).
 const String sectionMarkerBodyPrefix = "section ";
 
-/// Marker body prefix for media markers (`media:url {url} {contentType}`).
-const String mediaMarkerBodyPrefix = "media:url ";
+/// Marker body prefix for media markers (`media:{url}|{contentType}`).
+const String mediaMarkerBodyPrefix = "media:";
 
 final RegExp _noncePattern = RegExp(r"^[0-9a-f]{32}$");
 
@@ -116,17 +116,22 @@ RegExp roleAndHistoryMarkerRegex(String nonce) {
 /// Matches media and section markers carrying [nonce].
 ///
 /// The single capture group is the marker body
-/// (`media:url https://... image/png`, `section code`).
+/// (`media:https://...|image/png`, `section code`).
 ///
 /// The body is matched lazily up to the first `>>>`, across newlines
 /// (`dotAll`): media URLs and section names come from template data, and a
 /// newline in one must not make the trusted marker fall through as text
 /// (which would drop the part and leak the nonce into the output).
+/// Values containing `>>>` still end the marker early; nothing else does.
 ///
 /// Throws [ArgumentError] if [nonce] is not 32 lowercase hex chars.
 RegExp mediaAndSectionMarkerRegex(String nonce) {
   _checkNonce(nonce);
-  return RegExp("<<<dotprompt:$nonce:((?:media:url|section) .*?)>>>", dotAll: true);
+  // Both prefixes are plain literals with no regex metacharacters.
+  return RegExp(
+    "<<<dotprompt:$nonce:((?:$mediaMarkerBodyPrefix|$sectionMarkerBodyPrefix).*?)>>>",
+    dotAll: true,
+  );
 }
 
 /// A piece of a rendered string: either literal text or a trusted marker.

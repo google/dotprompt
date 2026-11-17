@@ -84,11 +84,15 @@ void main() {
     final regex = mediaAndSectionMarkerRegex(_nonce);
 
     for (final body in [
-      "media:url https://example.com/a.png",
-      "media:url https://example.com/a.png image/png",
+      "media:https://example.com/a.png",
+      "media:https://example.com/a.png|image/png",
       "section code",
-      // Bodies come from template data and may contain newlines.
-      "media:url https://example.com/a\nb.png image/png",
+      // Bodies come from template data and may contain spaces, newlines and
+      // single `>`s.
+      "media:https://example.com/my file.png|image/png",
+      "media:https://example.com/a\nb.png|image/png",
+      "media:https://example.com/a>b>>c.png|image/png",
+      "media:https://example.com/a.txt|text/plain; charset=utf-8",
       "section multi\nline",
     ]) {
       test('matches "$body"', () {
@@ -104,10 +108,10 @@ void main() {
     });
 
     final invalid = [
-      "<<<dotprompt:media:url https://example.com/a.png>>>", // no nonce
+      "<<<dotprompt:media:https://example.com/a.png>>>", // no nonce
       "<<<dotprompt:section code>>>", // no nonce
       formatMarker(_otherNonce, "section code"), // wrong nonce
-      formatMarker(_otherNonce, "media:url https://example.com/a.png"), // wrong nonce
+      formatMarker(_otherNonce, "media:https://example.com/a.png"), // wrong nonce
       _m("role:user"), // not a media/section body
     ];
     for (final s in invalid) {
@@ -171,12 +175,12 @@ void main() {
     test("splits media and section markers", () {
       expect(
         splitByMarkers(
-          "Hello ${_m("media:url https://a.example/x.png")} World ${_m("section code")}!",
+          "Hello ${_m("media:https://a.example/x.png|image/png")} World ${_m("section code")}!",
           mediaAndSectionMarkerRegex(_nonce),
         ),
         equals([
           const TextPiece("Hello "),
-          const MarkerBodyPiece("media:url https://a.example/x.png"),
+          const MarkerBodyPiece("media:https://a.example/x.png|image/png"),
           const TextPiece(" World "),
           const MarkerBodyPiece("section code"),
           const TextPiece("!"),
@@ -204,36 +208,54 @@ void main() {
     test("SectionHelper creates and parses section markers", () {
       expect(SectionHelper.createMarker(_nonce, "code"), equals(_m("section code")));
       expect(SectionHelper.sectionNameFromBody("section code"), equals("code"));
-      expect(SectionHelper.sectionNameFromBody("media:url x"), isNull);
+      expect(SectionHelper.sectionNameFromBody("media:x|image/png"), isNull);
       expect(() => SectionHelper.createMarker("bad", "code"), throwsArgumentError);
     });
 
     test("MediaHelper creates media markers, inferring the content type", () {
       expect(
         MediaHelper.createMarker(_nonce, url: "https://a.example/x.png"),
-        equals(_m("media:url https://a.example/x.png image/png")),
+        equals(_m("media:https://a.example/x.png|image/png")),
       );
       expect(
         MediaHelper.createMarker(_nonce, url: "https://a.example/x", contentType: "video/mp4"),
-        equals(_m("media:url https://a.example/x video/mp4")),
+        equals(_m("media:https://a.example/x|video/mp4")),
       );
       expect(() => MediaHelper.createMarker("bad", url: "https://a.example/x.png"), throwsArgumentError);
     });
 
     test("MediaHelper parses media marker bodies", () {
       expect(
-        MediaHelper.mediaFromBody("media:url https://a.example/x image/png"),
+        MediaHelper.mediaFromBody("media:https://a.example/x|image/png"),
         equals(const MediaContent(url: "https://a.example/x", contentType: "image/png")),
       );
       expect(
-        MediaHelper.mediaFromBody("media:url https://a.example/x text/plain; charset=utf-8"),
+        MediaHelper.mediaFromBody("media:https://a.example/x|text/plain; charset=utf-8"),
         equals(const MediaContent(url: "https://a.example/x", contentType: "text/plain; charset=utf-8")),
       );
       expect(
-        MediaHelper.mediaFromBody("media:url https://a.example/x"),
+        MediaHelper.mediaFromBody("media:https://a.example/x"),
         equals(const MediaContent(url: "https://a.example/x", contentType: "application/octet-stream")),
       );
       expect(MediaHelper.mediaFromBody("section code"), isNull);
     });
+
+    // Round trip through the marker, the regex and the parser.
+    for (final (url, contentType) in [
+      ("https://a.example/my file.png", "image/png"),
+      ("https://a.example/a\nb.png", "image/png"),
+      ("https://a.example/a>b>>c.png", "image/png"),
+      ("https://a.example/map?markers=a|b", "image/png"),
+      ("https://a.example/x.txt", "text/plain; charset=utf-8"),
+      ("", "application/octet-stream"),
+    ]) {
+      test('MediaHelper round-trips url "$url" with content type "$contentType"', () {
+        final marker = MediaHelper.createMarker(_nonce, url: url, contentType: contentType);
+        final pieces = splitByMarkers("a${marker}b", mediaAndSectionMarkerRegex(_nonce));
+        expect(pieces, hasLength(3));
+        final body = (pieces[1] as MarkerBodyPiece).body;
+        expect(MediaHelper.mediaFromBody(body), equals(MediaContent(url: url, contentType: contentType)));
+      });
+    }
   });
 }
