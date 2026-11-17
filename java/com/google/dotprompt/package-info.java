@@ -66,14 +66,14 @@
  * // Define a prompt template
  * String template = """
  *     ---
- *     model: gemini-2.5-pro
+ *     model: gemini-flash-latest
  *     ---
  *     Hello, {{name}}! How can I help you today?
  *     """;
  *
  * // Compile and render
  * PromptFunction promptFn = dotprompt.compile(template).get();
- * RenderedPrompt rendered = promptFn.render(Map.of("name", "World")).get();
+ * RenderedPrompt rendered = promptFn.render(new DataArgument(Map.of("name", "World"))).get();
  *
  * // Access rendered messages
  * for (Message message : rendered.messages()) {

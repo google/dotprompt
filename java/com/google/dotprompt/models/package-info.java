@@ -78,6 +78,8 @@
  *   <li>{@link com.google.dotprompt.models.Prompt} - Parsed template with config
  *   <li>{@link com.google.dotprompt.models.RenderedPrompt} - Fully rendered prompt ready for LLM
  *   <li>{@link com.google.dotprompt.models.PromptFunction} - Compiled prompt for repeated use
+ *   <li>{@link com.google.dotprompt.models.DataArgument} - Runtime input, context and history for
+ *       rendering
  * </ul>
  *
  * <h3>Storage Types</h3>

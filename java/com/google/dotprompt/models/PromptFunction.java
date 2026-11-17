@@ -31,12 +31,14 @@ import java.util.concurrent.CompletableFuture;
  * <h2>Usage Example</h2>
  *
  * <pre>{@code
- * Dotprompt dotprompt = new Dotprompt(loader);
- * PromptFunction fn = dotprompt.compile("---\nmodel: gemini\n---\nHello {{name}}").get();
+ * Dotprompt dotprompt = new Dotprompt();
+ * PromptFunction fn = dotprompt.compile("Hello {{name}}!").get();
  *
  * // Render multiple times with different data
- * RenderedPrompt result1 = fn.render(Map.of("name", "Alice")).get();
- * RenderedPrompt result2 = fn.render(Map.of("name", "Bob")).get();
+ * RenderedPrompt result1 = fn.render(new DataArgument(Map.of("name", "Alice"))).get();
+ * RenderedPrompt result2 =
+ *     fn.render(DataArgument.builder().input(Map.of("name", "Bob")).messages(history).build())
+ *         .get();
  * }</pre>
  *
  * @see com.google.dotprompt.Dotprompt#compile(String)
@@ -46,10 +48,13 @@ public interface PromptFunction {
   /**
    * Renders the compiled prompt with the provided data.
    *
+   * <p>Template variables come only from {@link DataArgument#input()}, {@code @} data only from
+   * {@link DataArgument#context()} and history only from {@link DataArgument#messages()}.
+   *
    * @param data The data to use for rendering the template.
    * @return A future containing the rendered prompt.
    */
-  CompletableFuture<RenderedPrompt> render(Map<String, Object> data);
+  CompletableFuture<RenderedPrompt> render(DataArgument data);
 
   /**
    * Renders the compiled prompt with the provided data and options.
@@ -58,6 +63,32 @@ public interface PromptFunction {
    * @param options Additional options to merge into the render context.
    * @return A future containing the rendered prompt.
    */
+  CompletableFuture<RenderedPrompt> render(DataArgument data, Map<String, Object> options);
+
+  /**
+   * Renders the compiled prompt with a single map of template variables.
+   *
+   * @param data Template variables. The reserved keys {@code "context"} and {@code "messages"} are
+   *     also read as {@code @} data and conversation history.
+   * @return A future containing the rendered prompt.
+   * @deprecated Every key of {@code data} is a template variable, and the {@code "context"} and
+   *     {@code "messages"} keys additionally set {@code @} data and history. If {@code data}
+   *     contains user-controlled input, a user can inject a system turn, arbitrary media URLs or
+   *     {@code @} data. Use {@link #render(DataArgument)}, which keeps these in separate fields.
+   */
+  @Deprecated
+  CompletableFuture<RenderedPrompt> render(Map<String, Object> data);
+
+  /**
+   * Renders the compiled prompt with a single map of template variables and options.
+   *
+   * @param data Template variables. The reserved keys {@code "context"} and {@code "messages"} are
+   *     also read as {@code @} data and conversation history.
+   * @param options Additional options to merge into the render context.
+   * @return A future containing the rendered prompt.
+   * @deprecated See {@link #render(Map)}. Use {@link #render(DataArgument, Map)}.
+   */
+  @Deprecated
   CompletableFuture<RenderedPrompt> render(Map<String, Object> data, Map<String, Object> options);
 
   /**

@@ -33,7 +33,7 @@ public class Example {
     public static void main(String[] args) {
         String source = """
             ---
-            model: gemini-pro
+            model: gemini-flash-latest
             input:
               schema:
                 name: string
@@ -47,10 +47,10 @@ public class Example {
             .input(Map.of("name", "World"))
             .build();
 
-        RenderedPrompt rendered = dotprompt.render(source, data, null);
+        RenderedPrompt rendered = dotprompt.render(source, data).join();
 
-        rendered.getMessages().forEach(message -> {
-            System.out.printf("%s: %s%n", message.getRole(), message.getContent());
+        rendered.messages().forEach(message -> {
+            System.out.printf("%s: %s%n", message.role(), message.content());
         });
     }
 }
@@ -76,8 +76,9 @@ public class Dotprompt {
     public PromptFunction compile(String source, PromptMetadata additionalMetadata);
 
     // Rendering
-    public RenderedPrompt render(String source, DataArgument data);
-    public RenderedPrompt render(String source, DataArgument data, PromptMetadata options);
+    public CompletableFuture<RenderedPrompt> render(String source, DataArgument data);
+    public CompletableFuture<RenderedPrompt> render(
+        String source, DataArgument data, Map<String, Object> options);
 
     // Registration
     public Dotprompt defineHelper(String name, HelperFn fn);
@@ -92,9 +93,9 @@ Builder for configuring a Dotprompt instance.
 
 ```java
 DotpromptOptions options = DotpromptOptions.builder()
-    .defaultModel("gemini-pro")
+    .defaultModel("gemini-flash-latest")
     .modelConfigs(Map.of(
-        "gemini-pro", Map.of("temperature", 0.7)
+        "gemini-flash-latest", Map.of("temperature", 0.7)
     ))
     .helpers(Map.of(
         "uppercase", (params, options) -> params.get(0).toString().toUpperCase()
@@ -180,18 +181,32 @@ public record DataPart(Map<String, Object> data, Map<String, Object> metadata) i
 
 ### DataArgument
 
-Runtime data for rendering a template.
+Runtime data for rendering a template. Each kind of data has its own field:
+`input` supplies template variables, `context` supplies `@` variables (e.g.
+`context: {state: ...}` is `@state`) and `messages` supplies conversation
+history.
 
 ```java
-public class DataArgument {
+DataArgument data = DataArgument.builder()
+    .input(Map.of("question", userQuestion))
+    .messages(history)
+    .context(Map.of("state", sessionState))
+    .build();
+
+RenderedPrompt rendered = dotprompt.render(source, data).join();
+```
+
+```java
+public record DataArgument(
+    Map<String, Object> input,
+    List<Document> docs,
+    List<Message> messages,
+    Map<String, Object> context) {
+
+    public DataArgument(Map<String, Object> input);
     public static Builder builder();
 
-    public Map<String, Object> getInput();
-    public List<Document> getDocs();
-    public List<Message> getMessages();
-    public Map<String, Object> getContext();
-
-    public static class Builder {
+    public static final class Builder {
         public Builder input(Map<String, Object> input);
         public Builder docs(List<Document> docs);
         public Builder messages(List<Message> messages);
@@ -200,6 +215,15 @@ public class DataArgument {
     }
 }
 ```
+
+!!! warning "Deprecated `Map` overloads"
+
+    `Dotprompt.render(String, Map)` and `PromptFunction.render(Map)` (and their
+    `options` variants) treat every key as a template variable and also read the
+    reserved `context` and `messages` keys as `@` data and history. If the map
+    holds user-controlled input, a user can inject a system turn, media URLs or
+    `@` data. Use the `DataArgument` overloads instead, where input keys named
+    `context` or `messages` are plain template variables.
 
 ### ToolDefinition
 
@@ -322,7 +346,7 @@ import com.google.dotprompt.models.DataArgument
 fun main() {
     val source = """
         ---
-        model: gemini-pro
+        model: gemini-flash-latest
         ---
         Hello, {{name}}!
     """.trimIndent()
@@ -333,10 +357,10 @@ fun main() {
         .input(mapOf("name" to "World"))
         .build()
 
-    val rendered = dotprompt.render(source, data, null)
+    val rendered = dotprompt.render(source, data).join()
 
-    rendered.messages.forEach { message ->
-        println("${message.role}: ${message.content}")
+    rendered.messages().forEach { message ->
+        println("${message.role()}: ${message.content()}")
     }
 }
 ```
