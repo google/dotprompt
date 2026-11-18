@@ -184,7 +184,8 @@ public record DataPart(Map<String, Object> data, Map<String, Object> metadata) i
 Runtime data for rendering a template. Each kind of data has its own field:
 `input` supplies template variables, `context` supplies `@` variables (e.g.
 `context: {state: ...}` is `@state`) and `messages` supplies conversation
-history.
+history. Input keys named `context` or `messages` are ordinary template
+variables.
 
 ```java
 DataArgument data = DataArgument.builder()
@@ -215,15 +216,6 @@ public record DataArgument(
     }
 }
 ```
-
-!!! warning "Deprecated `Map` overloads"
-
-    `Dotprompt.render(String, Map)` and `PromptFunction.render(Map)` (and their
-    `options` variants) treat every key as a template variable and also read the
-    reserved `context` and `messages` keys as `@` data and history. If the map
-    holds user-controlled input, a user can inject a system turn, media URLs or
-    `@` data. Use the `DataArgument` overloads instead, where input keys named
-    `context` or `messages` are plain template variables.
 
 ### ToolDefinition
 

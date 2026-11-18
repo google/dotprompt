@@ -67,32 +67,6 @@ public interface PromptRefFunction {
   CompletableFuture<RenderedPrompt> render(DataArgument data, Map<String, Object> options);
 
   /**
-   * Renders the referenced prompt with a single map of template variables.
-   *
-   * @param data Template variables. The reserved keys {@code "context"} and {@code "messages"} are
-   *     also read as {@code @} data and conversation history.
-   * @return A future containing the rendered prompt.
-   * @deprecated Every key of {@code data} is a template variable, and the {@code "context"} and
-   *     {@code "messages"} keys additionally set {@code @} data and history. If {@code data}
-   *     contains user-controlled input, a user can inject a system turn, arbitrary media URLs or
-   *     {@code @} data. Use {@link #render(DataArgument)}, which keeps these in separate fields.
-   */
-  @Deprecated
-  CompletableFuture<RenderedPrompt> render(Map<String, Object> data);
-
-  /**
-   * Renders the referenced prompt with a single map of template variables and options.
-   *
-   * @param data Template variables. The reserved keys {@code "context"} and {@code "messages"} are
-   *     also read as {@code @} data and conversation history.
-   * @param options Additional options to merge into the render context.
-   * @return A future containing the rendered prompt.
-   * @deprecated See {@link #render(Map)}. Use {@link #render(DataArgument, Map)}.
-   */
-  @Deprecated
-  CompletableFuture<RenderedPrompt> render(Map<String, Object> data, Map<String, Object> options);
-
-  /**
    * Gets the prompt reference used to load this function.
    *
    * @return The PromptRef containing name, variant, and version.
