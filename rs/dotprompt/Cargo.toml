@@ -26,6 +26,7 @@ repository  = "https://github.com/google/dotprompt"
 version     = "0.1.0"
 
 [dependencies]
+getrandom.workspace   = true
 handlebars.workspace  = true
 hex                   = "0.4.3"
 regex                 = "1.11"
