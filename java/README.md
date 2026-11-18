@@ -69,25 +69,13 @@ Configure these secrets in the repository settings (Settings → Secrets and var
 
 ## Release Process
 
-Releases are managed by [release-please](https://github.com/googleapis/release-please).
+Releases are manual (see `docs/contributing/releases.md`):
 
-### Automated Flow
-
-1.  **Commit changes** to `main` using conventional commit messages with the `java` scope:
-    ```
-    feat(java): add new template helper
-    fix(java): resolve parsing issue
-    ```
-
-2.  **Release-please creates a PR** automatically with:
-    *   Updated version in `BUILD.bazel`
-    *   Generated `CHANGELOG.md`
-
-3.  **Merge the release PR** when ready.
-
-4.  **Publishing is automated** via `.github/workflows/publish_java.yml`:
-    *   Triggers on release creation
-    *   Signs and uploads to Maven Central
+1.  **Bump the version** in the `maven_coordinates` of `dotprompt_pkg` in
+    `java/com/google/dotprompt/BUILD.bazel` in a PR, and merge it.
+2.  **Create a GitHub release** tagged `dotprompt-java-X.Y.Z`.
+3.  **Publishing is automated** via `.github/workflows/publish_java.yml`, which
+    triggers on the release, signs and uploads to Maven Central.
 
 ### Verification
 
