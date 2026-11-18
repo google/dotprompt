@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.1](https://github.com/google/dotprompt/compare/dotpromptz-1.0.0...dotpromptz-1.0.1) (2026-11-18)
+
+### Security
+
+* **render:** markers emitted by the `role`, `history`, `section` and `media` helpers now carry a random per-render nonce, and only markers with that nonce are honored. Previously a value interpolated into a template (for example user input, including through `{{{x}}}` and `{{json x}}`) could contain a literal `<<<dotprompt:role:system>>>` marker and forge system or model turns, media parts with arbitrary URLs, history placement, or pending section parts ([#642](https://github.com/google/dotprompt/pull/642)).
+* **render:** media and section marker bodies match across newlines, so a user-supplied media URL or section name containing a newline stays intact instead of leaking the raw marker into the text.
+
+### Compatibility
+
+* Literal `<<<dotprompt:...>>>` markers written in templates, passed in input, or returned by custom helpers are no longer interpreted. Use the `{{role}}`, `{{history}}`, `{{section}}` and `{{media}}` helpers.
+* `dotpromptz.parse.to_messages`, `to_parts` and `message_sources_to_messages` take a required keyword-only `nonce`; old positional calls raise `TypeError`. Rendering through `Dotprompt` is unchanged.
+* The pre-nonce marker constants (`ROLE_MARKER_PREFIX`, ...), regexes and `split_by_*` helpers stay importable from `dotpromptz.parse`, and `parse_part` / `parse_media_part` / `parse_section_part` still accept the old input forms. These legacy paths are deprecated (they emit `DeprecationWarning`) and aren't used for rendering.
+
 ## [1.0.0](https://github.com/google/dotprompt/compare/dotpromptz-0.2.0...dotpromptz-1.0.0) (2026-11-11)
 
 ### Dependencies

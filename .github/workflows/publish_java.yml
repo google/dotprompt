@@ -39,7 +39,7 @@ on:
 jobs:
   publish-java:
     runs-on: ubuntu-latest
-    # Only run for releases tagged with dotprompt-java- prefix (per release-please config)
+    # Only run for releases tagged with dotprompt-java- prefix
     if: startsWith(github.event.release.tag_name, 'dotprompt-java-')
     permissions:
       contents: read

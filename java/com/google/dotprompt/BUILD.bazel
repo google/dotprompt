@@ -44,9 +44,7 @@ java_library(
 
 java_export(
     name = "dotprompt_pkg",
-    # x-release-please-start-version
     maven_coordinates = "com.google.dotprompt:dotprompt:0.1.0",
-    # x-release-please-end
     pom_template = "pom_template.xml",
     visibility = ["//visibility:public"],
     runtime_deps = [":dotprompt"],

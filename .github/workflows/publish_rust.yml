@@ -26,7 +26,7 @@ on:
 jobs:
   publish-cargo:
     runs-on: ubuntu-latest
-    # Only run for releases tagged with dotprompt-rs- prefix (per release-please config)
+    # Only run for releases tagged with dotprompt-rs- prefix
     if: startsWith(github.event.release.tag_name, 'dotprompt-rs-')
     permissions:
       contents: read

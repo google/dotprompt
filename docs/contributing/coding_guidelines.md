@@ -492,8 +492,8 @@ Include the Apache 2.0 license header at the top of each file (update year as ne
 ## Git Commit Message Guidelines
 
 Use [Conventional Commits](https://www.conventionalcommits.org/) format with the
-package name as the scope. This ensures release-please correctly attributes
-commits to packages and generates accurate changelogs.
+package name as the scope, so commits are attributed to the right package when
+writing changelogs.
 
 ### Format
 
@@ -522,8 +522,7 @@ commits to packages and generates accurate changelogs.
 
 ### Commit Scopes (Package Names)
 
-**IMPORTANT**: Use the exact scope from the table below. These match the package
-names in `.release-please-config.json` and are used to generate release PRs.
+**IMPORTANT**: Use the exact scope from the table below.
 
 | Scope | Package/Directory | Description |
 |-------|-------------------|-------------|
