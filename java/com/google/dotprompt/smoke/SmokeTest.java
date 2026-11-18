@@ -21,6 +21,7 @@ package com.google.dotprompt.smoke;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.dotprompt.Dotprompt;
+import com.google.dotprompt.models.DataArgument;
 import com.google.dotprompt.models.PromptFunction;
 import com.google.dotprompt.models.RenderedPrompt;
 import com.google.dotprompt.models.TextPart;
@@ -38,7 +39,7 @@ public final class SmokeTest {
     Dotprompt dotprompt = new Dotprompt();
     PromptFunction promptFn = dotprompt.compile("Hello {{name}}!").get();
 
-    RenderedPrompt result = promptFn.render(Map.of("name", "World")).get();
+    RenderedPrompt result = promptFn.render(new DataArgument(Map.of("name", "World"))).get();
 
     assertThat(result.messages()).hasSize(1);
     assertThat(((TextPart) result.messages().get(0).content().get(0)).text())

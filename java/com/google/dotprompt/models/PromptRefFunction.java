@@ -35,7 +35,7 @@ import java.util.concurrent.CompletableFuture;
  * PromptRefFunction fn = dotprompt.loadRef(ref);
  *
  * // Render the prompt
- * RenderedPrompt result = fn.render(Map.of("name", "Alice")).get();
+ * RenderedPrompt result = fn.render(new DataArgument(Map.of("name", "Alice"))).get();
  *
  * // Access the reference
  * PromptRef loadedRef = fn.getPromptRef();
@@ -49,10 +49,13 @@ public interface PromptRefFunction {
   /**
    * Renders the referenced prompt with the provided data.
    *
+   * <p>Template variables come only from {@link DataArgument#input()}, {@code @} data only from
+   * {@link DataArgument#context()} and history only from {@link DataArgument#messages()}.
+   *
    * @param data The data to use for rendering the template.
    * @return A future containing the rendered prompt.
    */
-  CompletableFuture<RenderedPrompt> render(Map<String, Object> data);
+  CompletableFuture<RenderedPrompt> render(DataArgument data);
 
   /**
    * Renders the referenced prompt with the provided data and options.
@@ -61,7 +64,7 @@ public interface PromptRefFunction {
    * @param options Additional options to merge into the render context.
    * @return A future containing the rendered prompt.
    */
-  CompletableFuture<RenderedPrompt> render(Map<String, Object> data, Map<String, Object> options);
+  CompletableFuture<RenderedPrompt> render(DataArgument data, Map<String, Object> options);
 
   /**
    * Gets the prompt reference used to load this function.

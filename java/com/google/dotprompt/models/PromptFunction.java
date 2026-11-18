@@ -31,12 +31,14 @@ import java.util.concurrent.CompletableFuture;
  * <h2>Usage Example</h2>
  *
  * <pre>{@code
- * Dotprompt dotprompt = new Dotprompt(loader);
- * PromptFunction fn = dotprompt.compile("---\nmodel: gemini\n---\nHello {{name}}").get();
+ * Dotprompt dotprompt = new Dotprompt();
+ * PromptFunction fn = dotprompt.compile("Hello {{name}}!").get();
  *
  * // Render multiple times with different data
- * RenderedPrompt result1 = fn.render(Map.of("name", "Alice")).get();
- * RenderedPrompt result2 = fn.render(Map.of("name", "Bob")).get();
+ * RenderedPrompt result1 = fn.render(new DataArgument(Map.of("name", "Alice"))).get();
+ * RenderedPrompt result2 =
+ *     fn.render(DataArgument.builder().input(Map.of("name", "Bob")).messages(history).build())
+ *         .get();
  * }</pre>
  *
  * @see com.google.dotprompt.Dotprompt#compile(String)
@@ -46,10 +48,13 @@ public interface PromptFunction {
   /**
    * Renders the compiled prompt with the provided data.
    *
+   * <p>Template variables come only from {@link DataArgument#input()}, {@code @} data only from
+   * {@link DataArgument#context()} and history only from {@link DataArgument#messages()}.
+   *
    * @param data The data to use for rendering the template.
    * @return A future containing the rendered prompt.
    */
-  CompletableFuture<RenderedPrompt> render(Map<String, Object> data);
+  CompletableFuture<RenderedPrompt> render(DataArgument data);
 
   /**
    * Renders the compiled prompt with the provided data and options.
@@ -58,7 +63,7 @@ public interface PromptFunction {
    * @param options Additional options to merge into the render context.
    * @return A future containing the rendered prompt.
    */
-  CompletableFuture<RenderedPrompt> render(Map<String, Object> data, Map<String, Object> options);
+  CompletableFuture<RenderedPrompt> render(DataArgument data, Map<String, Object> options);
 
   /**
    * Gets the parsed prompt metadata from the compiled template.

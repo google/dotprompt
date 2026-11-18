@@ -20,6 +20,7 @@ package com.google.dotprompt.smoke
 
 import com.google.dotprompt.Dotprompt
 import com.google.dotprompt.DotpromptOptions
+import com.google.dotprompt.models.DataArgument
 import com.google.dotprompt.models.RenderedPrompt
 import com.google.dotprompt.models.TextPart
 import com.google.common.truth.Truth.assertThat
@@ -36,7 +37,7 @@ class KotlinSmokeTest {
         dotprompt.definePartial("greeting", "Hello, {{name}}!")
 
         val promptFn = dotprompt.compile("{{> greeting}}").get()
-        val rendered: RenderedPrompt = promptFn.render(mapOf("name" to "Kotlin")).get()
+        val rendered: RenderedPrompt = promptFn.render(DataArgument(mapOf("name" to "Kotlin"))).get()
 
         assertThat(rendered.messages()).hasSize(1)
         val firstPart = rendered.messages()[0].content()[0]
@@ -52,7 +53,7 @@ class KotlinSmokeTest {
         val dotprompt = Dotprompt(options)
 
         val promptFn = dotprompt.compile("---\nmodel: test-model\n---\nBody").get()
-        val rendered = promptFn.render(emptyMap<String, Any>()).get()
+        val rendered = promptFn.render(DataArgument.builder().build()).get()
 
         assertThat(rendered.config()).containsEntry("model", "test-model")
         assertThat(rendered.config()).containsEntry("temperature", 0.7)

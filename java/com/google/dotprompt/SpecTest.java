@@ -22,6 +22,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.google.dotprompt.models.DataArgument;
 import com.google.dotprompt.models.MediaPart;
 import com.google.dotprompt.models.Message;
 import com.google.dotprompt.models.Part;
@@ -142,24 +143,19 @@ public class SpecTest {
       Map<String, Object> options = (Map<String, Object>) test.get("options");
       Map<String, Object> expect = (Map<String, Object>) test.get("expect");
 
-      // Build render data: merge input values into top-level, but also preserve context
-      // for @-prefixed variable access and messages for history helper
-      Map<String, Object> renderData = new HashMap<>();
-      if (data != null && data.containsKey("input")) {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> inputData = (Map<String, Object>) data.get("input");
-        if (inputData != null) {
-          renderData.putAll(inputData);
-        }
-      }
-      // Preserve context for @-prefixed variables (e.g., @auth, @state, @user)
-      if (data != null && data.containsKey("context")) {
-        renderData.put("context", data.get("context"));
-      }
-      // Preserve messages for {{history}} helper
-      if (data != null && data.containsKey("messages")) {
-        renderData.put("messages", data.get("messages"));
-      }
+      // Spec data has the DataArgument shape: input, context and messages are separate fields.
+      List<Message> history =
+          data.get("messages") == null
+              ? null
+              : mapper.convertValue(
+                  data.get("messages"),
+                  mapper.getTypeFactory().constructCollectionType(List.class, Message.class));
+      DataArgument renderData =
+          DataArgument.builder()
+              .input((Map<String, Object>) data.get("input"))
+              .context((Map<String, Object>) data.get("context"))
+              .messages(history)
+              .build();
 
       try {
         RenderedPrompt result = promptFn.render(renderData, options).get();

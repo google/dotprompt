@@ -28,6 +28,7 @@ import com.github.jknack.handlebars.io.StringTemplateSource;
 import com.github.jknack.handlebars.io.TemplateLoader;
 import com.github.jknack.handlebars.io.TemplateSource;
 import com.google.dotprompt.helpers.Helpers;
+import com.google.dotprompt.models.DataArgument;
 import com.google.dotprompt.models.MediaPart;
 import com.google.dotprompt.models.Message;
 import com.google.dotprompt.models.ParsedPrompt;
@@ -240,13 +241,13 @@ public class Dotprompt {
 
                   return new PromptFunction() {
                     @Override
-                    public CompletableFuture<RenderedPrompt> render(Map<String, Object> data) {
+                    public CompletableFuture<RenderedPrompt> render(DataArgument data) {
                       return render(data, null);
                     }
 
                     @Override
                     public CompletableFuture<RenderedPrompt> render(
-                        Map<String, Object> data, Map<String, Object> options) {
+                        DataArgument data, Map<String, Object> options) {
                       return CompletableFuture.supplyAsync(
                           () -> {
                             try {
@@ -684,7 +685,7 @@ public class Dotprompt {
 
   /** Internal render method used by compiled PromptFunction. */
   private RenderedPrompt renderWithTemplate(
-      Template template, Prompt prompt, Map<String, Object> data, Map<String, Object> options)
+      Template template, Prompt prompt, DataArgument data, Map<String, Object> options)
       throws IOException {
 
     Map<String, Object> mergedData = new HashMap<>();
@@ -718,22 +719,18 @@ public class Dotprompt {
       mergedData.putAll(options);
     }
 
-    // Data
-    if (data != null) {
-      mergedData.putAll(data);
+    // Data. Template variables come only from input; context and history have their own fields so
+    // input keys named "context" or "messages" stay plain variables.
+    if (data != null && data.input() != null) {
+      mergedData.putAll(data.input());
     }
 
     // Context handling: Add all context entries as @-prefixed variables
     // Each key in context becomes accessible as @key in templates
     // e.g., context: {state: {...}, auth: {...}} creates @state and @auth
     Map<String, Object> contextData = new HashMap<>();
-    if (data != null && data.containsKey("context")) {
-      @SuppressWarnings("unchecked")
-      Map<String, Object> ctx = (Map<String, Object>) data.get("context");
-      if (ctx != null) {
-        // Add all context entries, not just state
-        contextData.putAll(ctx);
-      }
+    if (data != null && data.context() != null) {
+      contextData.putAll(data.context());
     }
 
     Context context = Context.newBuilder(mergedData).build();
@@ -743,7 +740,8 @@ public class Dotprompt {
 
     String renderedString = template.apply(context);
 
-    List<Message> messages = toMessages(renderedString, mergedData);
+    List<Message> history = data != null && data.messages() != null ? data.messages() : List.of();
+    List<Message> messages = toMessages(renderedString, history);
 
     // Construct result config
     Map<String, Object> resultConfig = new HashMap<>();
@@ -769,40 +767,42 @@ public class Dotprompt {
    * Renders a prompt template with the provided data.
    *
    * <p>This method matches the JavaScript and Python API where {@code render()} takes a template
-   * source string directly.
+   * source string directly. Template variables come only from {@link DataArgument#input()}, context
+   * data only from {@link DataArgument#context()} and history only from {@link
+   * DataArgument#messages()}, so user-controlled input can't inject turns or context data.
+   *
+   * <pre>{@code
+   * RenderedPrompt rendered =
+   *     dotprompt
+   *         .render(
+   *             source,
+   *             DataArgument.builder()
+   *                 .input(Map.of("question", userQuestion))
+   *                 .messages(history)
+   *                 .context(Map.of("state", state))
+   *                 .build())
+   *         .get();
+   * }</pre>
    *
    * @param source The template source string to render.
    * @param data The data to use for rendering.
    * @return A future containing the rendered prompt.
    */
-  public CompletableFuture<RenderedPrompt> render(String source, Map<String, Object> data) {
+  public CompletableFuture<RenderedPrompt> render(String source, DataArgument data) {
     return render(source, data, null);
   }
 
   /**
    * Renders a prompt template with the provided data and options.
    *
-   * <p>This method matches the JavaScript and Python API where {@code render()} takes a template
-   * source string directly.
-   *
    * @param source The template source string to render.
-   * @param data The data to use for rendering.
+   * @param data The data to use for rendering. See {@link #render(String, DataArgument)}.
    * @param options Additional options (overrides/defaults).
    * @return A future containing the rendered prompt.
    */
   public CompletableFuture<RenderedPrompt> render(
-      String source, Map<String, Object> data, Map<String, Object> options) {
-    return compile(source)
-        .thenCompose(
-            promptFn -> {
-              try {
-                return promptFn.render(data, options);
-              } catch (Exception e) {
-                CompletableFuture<RenderedPrompt> failed = new CompletableFuture<>();
-                failed.completeExceptionally(e);
-                return failed;
-              }
-            });
+      String source, DataArgument data, Map<String, Object> options) {
+    return compile(source).thenCompose(promptFn -> promptFn.render(data, options));
   }
 
   /** registry for named Picoschema definitions. */
@@ -890,11 +890,10 @@ public class Dotprompt {
    * Converts a rendered string into a list of messages.
    *
    * @param renderedString The rendered template string.
-   * @param data The data map (used to extract potential history).
+   * @param historyMessages Conversation history to place at {@code {{history}}} or insert.
    * @return A list of parsed Message objects.
    */
-  @SuppressWarnings("unchecked")
-  private List<Message> toMessages(String renderedString, Map<String, Object> data) {
+  private List<Message> toMessages(String renderedString, List<Message> historyMessages) {
     if (renderedString == null) {
       return List.of();
     }
@@ -904,52 +903,6 @@ public class Dotprompt {
     MessageBuilder currentMessage = new MessageBuilder(Role.USER);
     messageSources.add(currentMessage);
 
-    // Extract history messages from data if available
-    List<Message> historyMessages = new ArrayList<>();
-    if (data != null && data.containsKey("messages")) {
-      Object msgsObj = data.get("messages");
-      if (msgsObj instanceof List) {
-        List<?> rawList = (List<?>) msgsObj;
-        for (Object item : rawList) {
-          if (item instanceof Message) {
-            historyMessages.add((Message) item);
-          } else if (item instanceof Map) {
-            try {
-              Map<String, Object> map = (Map<String, Object>) item;
-              String roleStr = (String) map.get("role");
-              Role role = Role.fromString(roleStr != null ? roleStr : "user");
-
-              Object contentObj = map.get("content");
-              List<Part> parts = new ArrayList<>();
-
-              if (contentObj instanceof String) {
-                parts.add(new TextPart((String) contentObj));
-              } else if (contentObj instanceof List) {
-                List<?> contentList = (List<?>) contentObj;
-                for (Object partObj : contentList) {
-                  if (partObj instanceof Map) {
-                    Map<String, Object> partMap = (Map<String, Object>) partObj;
-                    if (partMap.containsKey("text")) {
-                      parts.add(new TextPart((String) partMap.get("text")));
-                    } else if (partMap.containsKey("media")) {
-                      Map<String, String> mediaMap = (Map<String, String>) partMap.get("media");
-                      parts.add(new MediaPart(mediaMap.get("contentType"), mediaMap.get("url")));
-                    }
-                  }
-                }
-              }
-              Map<String, Object> metadata = null;
-              if (map.containsKey("metadata")) {
-                metadata = (Map<String, Object>) map.get("metadata");
-              }
-              historyMessages.add(new Message(role, parts, metadata));
-            } catch (Exception e) {
-              // ignore
-            }
-          }
-        }
-      }
-    }
     List<Message> historySources = Parser.transformMessagesToHistory(historyMessages);
 
     boolean historyInjected = false;
