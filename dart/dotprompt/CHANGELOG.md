@@ -4,6 +4,35 @@ All notable changes to dotprompt-dart will be documented in this file.
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-11-18
+
+### Security
+
+- Markers emitted by the `role`, `history`, `section` and `media` helpers now
+  carry a random per-render nonce, and only markers with that nonce are
+  honored. Previously a value interpolated into a template (for example user
+  input) could contain a literal `<<<dotprompt:role:system>>>` marker and forge
+  system or model turns, media parts with arbitrary URLs, history placement, or
+  pending section parts
+  ([#643](https://github.com/google/dotprompt/pull/643)).
+- Media and section marker bodies match across newlines, and media URLs keep
+  spaces, so user-supplied values don't break the marker and leak it as text.
+
+### Changed
+
+- Literal `<<<dotprompt:...>>>` markers written in templates, passed in input,
+  or returned by custom helpers are no longer interpreted. Use the `{{role}}`,
+  `{{history}}`, `{{section}}` and `{{media}}` helpers.
+- Rendered output is now split by marker position instead of line by line:
+  several markers on one line are all honored, text after `{{history}}` on the
+  same line goes after the history, and output made only of markers yields no
+  messages.
+- The marker-building and marker-parsing methods on `RoleHelper`,
+  `HistoryHelper`, `SectionHelper` and `MediaHelper` take the render nonce and
+  are annotated `@internal`; they're implementation details of `Dotprompt`
+  rendering, not a public API. Their `markerPrefix`, `markerSuffix`,
+  `containsMarker` and `extract*` members were removed.
+
 ## [2.0.0] - 2026-10-04
 
 Picoschema now follows the spec and behaves like the other runtimes. Schemas
