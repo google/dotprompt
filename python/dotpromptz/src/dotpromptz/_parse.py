@@ -31,9 +31,34 @@ Key functionalities include:
 - Converting message sources into structured messages, processing media and
   section markers within the content.
 - Handling the insertion of historical messages into the conversation flow.
+
+Only markers carrying the per-render nonce are honored; see
+`dotpromptz._markers` for the marker format and why the nonce is needed.
+
+## Compatibility (dotpromptz 1.x)
+
+This module is re-exported by the legacy `dotpromptz.parse` path, which stays
+stable for all of 1.x.
+
+| Name                                  | Status                                     |
+|---------------------------------------|--------------------------------------------|
+| `to_messages`, `to_parts`,            | `nonce` is a required keyword-only         |
+| `message_sources_to_messages`         | argument. Pre-nonce positional calls such  |
+|                                       | as `to_messages(rendered, data)` raise     |
+|                                       | `TypeError` instead of misbinding `data`.  |
+| `ROLE_MARKER_PREFIX`,                 | Deprecated. Kept with their original       |
+| `HISTORY_MARKER_PREFIX`,              | values; they describe the pre-nonce marker |
+| `MEDIA_MARKER_PREFIX`,                | format `<<<dotprompt:{body}>>>` and are    |
+| `SECTION_MARKER_PREFIX`,              | not used for rendering.                    |
+| `ROLE_AND_HISTORY_MARKER_REGEX`,      |                                            |
+| `MEDIA_AND_SECTION_MARKER_REGEX`      |                                            |
+| `split_by_regex`,                     | Deprecated; emit `DeprecationWarning`.     |
+| `split_by_role_and_history_markers`,  | Original behavior, pre-nonce markers only, |
+| `split_by_media_and_section_markers`  | not used for rendering.                    |
 """
 
 import re
+import warnings
 from collections.abc import Hashable
 from dataclasses import dataclass, field
 from enum import Enum
@@ -45,6 +70,9 @@ from yaml.composer import ComposerError
 from yaml.events import AliasEvent, NodeEvent
 from yaml.nodes import MappingNode, Node, ScalarNode, SequenceNode
 
+# Imported as a module (not `from ... import`) so the legacy star-import shim
+# doesn't re-export marker internals; see compat_shims_test.py.
+from dotpromptz import _markers
 from dotpromptz._errors import FrontmatterError
 from dotpromptz._typing import (
     DataArgument,
@@ -72,17 +100,12 @@ class MessageSource:
     metadata: dict[str, Any] | None = field(default_factory=dict)
 
 
-# Prefixes for the role markers in the template.
-ROLE_MARKER_PREFIX = '<<<dotprompt:role:'
-
-# Prefixes for the history markers in the template.
-HISTORY_MARKER_PREFIX = '<<<dotprompt:history'
-
-# Prefixes for the media markers in the template.
-MEDIA_MARKER_PREFIX = '<<<dotprompt:media:'
-
-# Prefixes for the section markers in the template.
-SECTION_MARKER_PREFIX = '<<<dotprompt:section'
+# Marker bodies and body prefixes; see `dotpromptz._markers` for the full
+# marker format.
+_ROLE_MARKER_BODY_PREFIX = 'role:'
+_HISTORY_MARKER_BODY = 'history'
+_MEDIA_MARKER_BODY_PREFIX = 'media:url '
+_SECTION_MARKER_BODY_PREFIX = 'section '
 
 # Regular expression to match YAML frontmatter delineated by `---` markers.
 # Allows blank lines and license headers (lines starting with #) before the first ---.
@@ -91,25 +114,6 @@ FRONTMATTER_AND_BODY_REGEX = re.compile(
 )
 DELIMITER_REGEX = re.compile(r'^---[ \t]*$')
 LINE_BREAK_REGEX = re.compile(r'\r\n|\r|\n')
-
-# Regular expression to match <<<dotprompt:role:xxx>>> and
-# <<<dotprompt:history>>> markers in the template.
-#
-# Examples of matching patterns:
-# - <<<dotprompt:role:user>>>
-# - <<<dotprompt:role:system>>>
-# - <<<dotprompt:history>>>
-#
-# Note: Only lowercase letters are allowed after 'role:'.
-ROLE_AND_HISTORY_MARKER_REGEX = re.compile(r'(<<<dotprompt:(?:role:[a-z]+|history))>>>')
-
-# Regular expression to match <<<dotprompt:media:url>>> and
-# <<<dotprompt:section>>> markers in the template.
-#
-# Examples of matching patterns:
-# - <<<dotprompt:media:url>>>
-# - <<<dotprompt:section>>>
-MEDIA_AND_SECTION_MARKER_REGEX = re.compile(r'(<<<dotprompt:(?:media:url|section).*?)>>>')
 
 # List of reserved keywords that are handled specially in the metadata of a
 # .prompt file. These keys are processed differently from extension metadata.
@@ -185,51 +189,6 @@ class RestrictedFrontmatterLoader(yaml.SafeLoader):
                 raise ComposerError(None, None, _FrontmatterReason.DUPLICATE_KEYS.value, key_node.start_mark)
             result[key] = self.construct_object(value_node, deep=deep)
         return result
-
-
-def split_by_regex(source: str, regex: re.Pattern[str]) -> list[str]:
-    """Splits string by regexp while filtering out empty/whitespace-only pieces.
-
-    Args:
-        source: The source string to split into parts.
-        regex: The regular expression to use for splitting.
-
-    Returns:
-        An array of non-empty string pieces.
-    """
-
-    def filter_empty(s: str) -> bool:
-        return bool(s.strip())
-
-    return list(filter(filter_empty, regex.split(source)))
-
-
-def split_by_role_and_history_markers(rendered_string: str) -> list[str]:
-    """Splits a rendered string into pieces based on role and history markers.
-
-    Empty/whitespace-only pieces are filtered out.
-
-    Args:
-        rendered_string: The template string to split.
-
-    Returns:
-        Array of non-empty string pieces.
-    """
-    return split_by_regex(rendered_string, ROLE_AND_HISTORY_MARKER_REGEX)
-
-
-def split_by_media_and_section_markers(source: str) -> list[str]:
-    """Split the source into pieces based on media and section markers.
-
-    Empty/whitespace-only pieces are filtered out.
-
-    Args:
-        source: The source string to split into parts
-
-    Returns:
-        An array of string parts
-    """
-    return split_by_regex(source, MEDIA_AND_SECTION_MARKER_REGEX)
 
 
 def convert_namespaced_entry_to_nested_object(
@@ -487,25 +446,45 @@ def parse_document(source: str, *, source_name: str | None = None) -> ParsedProm
 def to_messages(
     rendered_string: str,
     data: DataArgument[Any] | None = None,
+    *,
+    nonce: str,
 ) -> list[Message]:
     """Converts a rendered template string into an array of messages.
 
     Processes role markers and history placeholders to structure the
-    conversation.
+    conversation. Only markers carrying `nonce` are honored; anything else
+    that looks like a marker stays text.
 
     Args:
         rendered_string: The rendered template string to convert
         data: Optional data containing message history
+        nonce: The marker nonce used when rendering the template. Keyword-only
+            so a pre-nonce positional call `to_messages(rendered, data)` fails
+            with `TypeError` rather than treating `data` as the nonce.
 
     Returns:
         List of structured messages
+
+    Raises:
+        ValueError: If the nonce is malformed.
+
+    Examples:
+        ```python
+        nonce = _markers.generate_marker_nonce()
+        rendered = _markers.format_marker(nonce, 'role:system') + 'Be safe.'
+        to_messages(rendered, nonce=nonce)
+        # => [Message(role=Role.SYSTEM, content=[TextPart(text='Be safe.')])]
+        ```
     """
     current_message = MessageSource(role=Role.USER, source='')
     message_sources = [current_message]
 
-    for piece in split_by_role_and_history_markers(rendered_string):
-        if piece.startswith(ROLE_MARKER_PREFIX):
-            role = piece[len(ROLE_MARKER_PREFIX) :]
+    for piece in _markers.split_by_markers(rendered_string, _markers.role_and_history_marker_regex(nonce)):
+        if isinstance(piece, _markers.TextPiece):
+            current_message.source = (current_message.source or '') + piece.text
+
+        elif piece.body.startswith(_ROLE_MARKER_BODY_PREFIX):
+            role = piece.body[len(_ROLE_MARKER_BODY_PREFIX) :]
 
             if current_message.source and current_message.source.strip():
                 # If the current message has content, create a new message
@@ -515,7 +494,7 @@ def to_messages(
                 # Otherwise, update the role of the current message
                 current_message.role = Role(role)
 
-        elif piece.startswith(HISTORY_MARKER_PREFIX):
+        elif piece.body == _HISTORY_MARKER_BODY:
             # Add the history messages to the message sources
             msgs: list[Message] = []
             if data and data.messages:
@@ -535,21 +514,20 @@ def to_messages(
             current_message = MessageSource(role=Role.MODEL, source='')
             message_sources.append(current_message)
 
-        else:
-            # Otherwise, add the piece to the current message source
-            current_message.source = (current_message.source or '') + piece
-
-    messages = message_sources_to_messages(message_sources)
+    messages = message_sources_to_messages(message_sources, nonce=nonce)
     return insert_history(messages, data.messages if data else None)
 
 
 def message_sources_to_messages(
     message_sources: list[MessageSource],
+    *,
+    nonce: str,
 ) -> list[Message]:
     """Processes an array of message sources into an array of messages.
 
     Args:
         message_sources: List of message sources
+        nonce: The marker nonce used when rendering the sources (keyword-only)
 
     Returns:
         List of structured messages
@@ -559,7 +537,7 @@ def message_sources_to_messages(
         if m.content or m.source:
             message = Message(
                 role=m.role,
-                content=(m.content if m.content is not None else to_parts(m.source or '')),
+                content=(m.content if m.content is not None else to_parts(m.source or '', nonce=nonce)),
             )
 
             if m.metadata:
@@ -644,53 +622,90 @@ def insert_history(
     return messages
 
 
-def to_parts(source: str) -> list[Part]:
+def to_parts(source: str, *, nonce: str) -> list[Part]:
     """Converts a source string into an array of parts.
 
-    Also processes media and section markers.
+    Also processes media and section markers carrying `nonce`.
 
     Args:
         source: The source string to convert into parts
+        nonce: The marker nonce used when rendering the source (keyword-only)
 
     Returns:
         Array of structured parts (text, media, or metadata)
+
+    Raises:
+        ValueError: If the nonce is malformed.
     """
-    return [parse_part(piece) for piece in split_by_media_and_section_markers(source)]
+    return [
+        parse_part(piece) for piece in _markers.split_by_markers(source, _markers.media_and_section_marker_regex(nonce))
+    ]
 
 
-def parse_part(piece: str) -> Part:
-    """Parses a part from a piece of rendered template.
+def parse_part(piece: _markers.Piece | str) -> Part:
+    """Parses a part from a split piece of rendered template.
 
     Args:
-        piece: The piece to parse
+        piece: The piece to parse; text pieces become text parts and marker
+            pieces become media or pending (section) parts. A plain `str` is
+            the deprecated pre-nonce form (a piece from
+            `split_by_media_and_section_markers`) and is parsed with the legacy
+            prefixes, emitting a DeprecationWarning.
 
     Returns:
         Part, PendingPart, TextPart, or MediaPart
     """
-    if piece.startswith(MEDIA_MARKER_PREFIX):
-        return parse_media_part(piece)
-    elif piece.startswith(SECTION_MARKER_PREFIX):
-        return parse_section_part(piece)
-    else:
+    if isinstance(piece, str):
+        _warn_legacy('parse_part(str)')
+        if piece.startswith(MEDIA_MARKER_PREFIX):
+            return _media_part_from_fields(piece)
+        if piece.startswith(SECTION_MARKER_PREFIX):
+            return _section_part_from_fields(piece)
         return parse_text_part(piece)
+    if isinstance(piece, _markers.MarkerPiece):
+        if piece.body.startswith(_MEDIA_MARKER_BODY_PREFIX):
+            return parse_media_part(piece.body)
+        return parse_section_part(piece.body)
+    return parse_text_part(piece.text)
 
 
-def parse_media_part(piece: str) -> MediaPart:
-    """Parses a media part from a piece of rendered template.
+def parse_media_part(body: str) -> MediaPart:
+    """Parses a media part from a marker body.
 
     Args:
-        piece: The piece to parse
+        body: The marker body, `media:url <url> [<contentType>]`. The deprecated
+            pre-nonce form `<<<dotprompt:media:url <url> [<contentType>]` is
+            still accepted (with a DeprecationWarning).
 
     Returns:
         Media part
 
     Raises:
-        ValueError: If the media piece is invalid
+        ValueError: If the media body is invalid
     """
-    if not piece.startswith(MEDIA_MARKER_PREFIX):
-        raise ValueError(f'Invalid media piece: {piece}; expected prefix {MEDIA_MARKER_PREFIX}')
+    if body.startswith(MEDIA_MARKER_PREFIX):
+        _warn_legacy('parse_media_part with a pre-nonce marker')
+    elif not body.startswith(_MEDIA_MARKER_BODY_PREFIX):
+        raise ValueError(f'Invalid media piece: {body}; expected prefix {_MEDIA_MARKER_BODY_PREFIX!r}')
+    return _media_part_from_fields(body)
 
-    fields = piece.split(' ')
+
+def _media_part_from_fields(body: str) -> MediaPart:
+    """Builds a media part from `<prefix> <url> [<contentType>]`.
+
+    Shared by the nonced body form and the deprecated pre-nonce form, which
+    differ only in the first space-separated field.
+
+    Args:
+        body: The media body in either form.
+
+    Returns:
+        Media part
+
+    Raises:
+        ValueError: If the body doesn't have 2 or 3 space-separated fields.
+    """
+    fields = body.split(' ')
     n = len(fields)
     if n == 3:
         _, url, content_type = fields
@@ -698,7 +713,7 @@ def parse_media_part(piece: str) -> MediaPart:
         _, url = fields
         content_type = None
     else:
-        raise ValueError(f'Invalid media piece: {piece}; expected 2 or 3 fields, found {n}')
+        raise ValueError(f'Invalid media piece: {body}; expected 2 or 3 fields, found {n}')
 
     media_content = MediaContent(
         url=url,
@@ -707,26 +722,44 @@ def parse_media_part(piece: str) -> MediaPart:
     return MediaPart(media=media_content)
 
 
-def parse_section_part(piece: str) -> PendingPart:
-    """Parses a section part from a piece of rendered template.
+def parse_section_part(body: str) -> PendingPart:
+    """Parses a section part from a marker body.
 
     Args:
-        piece: The piece to parse
+        body: The marker body, `section <name>`. The deprecated pre-nonce form
+            `<<<dotprompt:section <name>` is still accepted (with a
+            DeprecationWarning).
 
     Returns:
         Section part
 
     Raises:
-        ValueError: If the section piece is invalid
+        ValueError: If the section body is invalid
     """
-    if not piece.startswith(SECTION_MARKER_PREFIX):
-        raise ValueError(f'Invalid section piece: {piece}; expected prefix {SECTION_MARKER_PREFIX}')
+    if body.startswith(SECTION_MARKER_PREFIX):
+        _warn_legacy('parse_section_part with a pre-nonce marker')
+    elif not body.startswith(_SECTION_MARKER_BODY_PREFIX):
+        raise ValueError(f'Invalid section piece: {body}; expected prefix {_SECTION_MARKER_BODY_PREFIX!r}')
+    return _section_part_from_fields(body)
 
-    fields = piece.split(' ')
+
+def _section_part_from_fields(body: str) -> PendingPart:
+    """Builds a pending part from `<prefix> <name>` (nonced or pre-nonce form).
+
+    Args:
+        body: The section body in either form.
+
+    Returns:
+        Section part
+
+    Raises:
+        ValueError: If the body doesn't have exactly 2 space-separated fields.
+    """
+    fields = body.split(' ')
     if len(fields) == 2:
         section_type = fields[1]
     else:
-        raise ValueError(f'Invalid section piece: {piece}; expected 2 fields, found {len(fields)}')
+        raise ValueError(f'Invalid section piece: {body}; expected 2 fields, found {len(fields)}')
 
     # Use the helper method to set purpose
     pending_metadata = PendingMetadata.with_purpose(section_type)
@@ -743,3 +776,121 @@ def parse_text_part(piece: str) -> TextPart:
         Text part
     """
     return TextPart(text=piece)
+
+
+# ---------------------------------------------------------------------------
+# Deprecated legacy marker helpers.
+#
+# Kept only so `from dotpromptz.parse import ...` keeps working for all of 1.x.
+# They describe the pre-nonce marker format `<<<dotprompt:{body}>>>`, which
+# the render path no longer honors, and nothing in dotpromptz uses them:
+# changing or calling them has no effect on rendering. The constants keep
+# their original values; the functions keep their original signatures and
+# behavior but emit a DeprecationWarning.
+# ---------------------------------------------------------------------------
+
+# Deprecated: pre-nonce role marker prefix; not used for rendering.
+ROLE_MARKER_PREFIX = '<<<dotprompt:role:'
+
+# Deprecated: pre-nonce history marker prefix; not used for rendering.
+HISTORY_MARKER_PREFIX = '<<<dotprompt:history'
+
+# Deprecated: pre-nonce media marker prefix; not used for rendering.
+MEDIA_MARKER_PREFIX = '<<<dotprompt:media:'
+
+# Deprecated: pre-nonce section marker prefix; not used for rendering.
+SECTION_MARKER_PREFIX = '<<<dotprompt:section'
+
+# Deprecated: matches pre-nonce `<<<dotprompt:role:xxx>>>` and
+# `<<<dotprompt:history>>>` markers; not used for rendering.
+ROLE_AND_HISTORY_MARKER_REGEX = re.compile(r'(<<<dotprompt:(?:role:[a-z]+|history))>>>')
+
+# Deprecated: matches pre-nonce `<<<dotprompt:media:url ...>>>` and
+# `<<<dotprompt:section ...>>>` markers; not used for rendering.
+MEDIA_AND_SECTION_MARKER_REGEX = re.compile(r'(<<<dotprompt:(?:media:url|section).*?)>>>')
+
+_LEGACY_MARKER_WARNING = (
+    '{name} is deprecated and may be removed in a future major release. It only understands the pre-nonce '
+    'marker format and does not reflect how rendered prompts are parsed.'
+)
+
+
+def _warn_legacy(name: str) -> None:
+    """Emit the DeprecationWarning for a legacy marker helper.
+
+    Args:
+        name: The public name of the deprecated helper.
+    """
+    # stacklevel=3: skip this function and the deprecated helper itself.
+    warnings.warn(_LEGACY_MARKER_WARNING.format(name=name), DeprecationWarning, stacklevel=3)
+
+
+def _legacy_split_by_regex(source: str, regex: re.Pattern[str]) -> list[str]:
+    """Original `split_by_regex` behavior, without the warning.
+
+    Args:
+        source: The source string to split into parts.
+        regex: The regular expression to use for splitting.
+
+    Returns:
+        An array of non-empty string pieces.
+    """
+    return [s for s in regex.split(source) if s.strip()]
+
+
+def split_by_regex(source: str, regex: re.Pattern[str]) -> list[str]:
+    """Splits string by regexp while filtering out empty/whitespace-only pieces.
+
+    Deprecated: legacy helper kept for `dotpromptz.parse` compatibility. It is
+    not used for rendering, and marker pieces and text pieces are returned
+    as indistinguishable strings.
+
+    Args:
+        source: The source string to split into parts.
+        regex: The regular expression to use for splitting.
+
+    Returns:
+        An array of non-empty string pieces.
+    """
+    _warn_legacy('split_by_regex')
+    return _legacy_split_by_regex(source, regex)
+
+
+def split_by_role_and_history_markers(rendered_string: str) -> list[str]:
+    """Splits a rendered string into pieces based on role and history markers.
+
+    Deprecated: legacy helper kept for `dotpromptz.parse` compatibility. It
+    only recognizes the pre-nonce `<<<dotprompt:role:...>>>` and
+    `<<<dotprompt:history>>>` markers and is not used for rendering; output
+    from the current renderer is not split by it.
+
+    Empty/whitespace-only pieces are filtered out.
+
+    Args:
+        rendered_string: The template string to split.
+
+    Returns:
+        Array of non-empty string pieces.
+    """
+    _warn_legacy('split_by_role_and_history_markers')
+    return _legacy_split_by_regex(rendered_string, ROLE_AND_HISTORY_MARKER_REGEX)
+
+
+def split_by_media_and_section_markers(source: str) -> list[str]:
+    """Split the source into pieces based on media and section markers.
+
+    Deprecated: legacy helper kept for `dotpromptz.parse` compatibility. It
+    only recognizes the pre-nonce `<<<dotprompt:media:url ...>>>` and
+    `<<<dotprompt:section ...>>>` markers and is not used for rendering;
+    output from the current renderer is not split by it.
+
+    Empty/whitespace-only pieces are filtered out.
+
+    Args:
+        source: The source string to split into parts
+
+    Returns:
+        An array of string parts
+    """
+    _warn_legacy('split_by_media_and_section_markers')
+    return _legacy_split_by_regex(source, MEDIA_AND_SECTION_MARKER_REGEX)

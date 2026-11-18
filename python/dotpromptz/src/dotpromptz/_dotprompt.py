@@ -44,6 +44,9 @@ from typing import Any
 
 import anyio
 
+# Imported as a private module alias (not by name) so the legacy
+# `dotpromptz.dotprompt` star-import shim doesn't re-export marker internals.
+from dotpromptz import _markers
 from dotpromptz._errors import PartialCycleError
 from dotpromptz._helpers import BUILTIN_HELPERS
 from dotpromptz._parse import parse_document, to_messages
@@ -259,16 +262,21 @@ class RenderFunc(PromptFunction[ModelConfigT]):
             if _template_reads_root(self.prompt.template, self._dotprompt._partials):
                 raise ValueError("runtime data key 'root' is reserved")
 
-        # Prepare runtime options.
+        # Fresh per render so user-supplied values can't forge role/media/etc.
+        # markers in the rendered string. See dotpromptz._markers.
+        nonce = _markers.generate_marker_nonce()
+
+        # Prepare runtime options. The nonce goes after `data.context` so the
+        # caller can't override it.
         runtime_options: RuntimeOptions = {
-            'data': data.context or {},
+            'data': {**(data.context or {}), _markers.MARKER_NONCE_DATA_KEY: nonce},
         }
 
         # Render the string.
         rendered_string = self._render_string(context, runtime_options)
 
         # Parse the rendered string into messages.
-        messages = to_messages(rendered_string, data)
+        messages = to_messages(rendered_string, data, nonce=nonce)
 
         # Construct and return the final RenderedPrompt.
         return RenderedPrompt[ModelConfigT](

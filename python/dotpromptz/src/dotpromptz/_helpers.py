@@ -34,12 +34,42 @@
 |------------------------|-------------------------------------------|
 | `register_all_helpers` | Registers all the helpers in this module. |
 
+## Marker helpers
+
+`role`, `history`, `section` and `media` emit nonce-carrying markers (see
+`dotpromptz._markers`). They read the per-render nonce from the Handlebars data
+frame, which `Dotprompt` populates for every render, and raise if it is
+missing rather than emit a marker the parser would not honor.
 """
 
 import json
 from typing import Any
 
+# Imported as a module (not `from ... import`) so the legacy star-import shim
+# doesn't re-export marker internals; see compat_shims_test.py.
+from dotpromptz import _markers
 from dotpromptz_handlebars import Handlebars, HelperFn, HelperOptions, SafeString
+
+
+def _marker_nonce(options: HelperOptions) -> str:
+    """Read the per-render marker nonce from the Handlebars data frame.
+
+    Data frames are inherited by blocks (`#each`, `#if`, ...) and partials, so
+    this only fails if the helper runs outside `Dotprompt` rendering.
+
+    Args:
+        options: Handlebars helper options.
+
+    Returns:
+        The nonce for the current render.
+
+    Raises:
+        RuntimeError: If no nonce is present in the data frame.
+    """
+    nonce = options.data.get(_markers.MARKER_NONCE_DATA_KEY)
+    if not isinstance(nonce, str):
+        raise RuntimeError('dotprompt: marker helpers (role, history, section, media) must be rendered via Dotprompt')
+    return nonce
 
 
 def json_helper(params: list[Any], options: HelperOptions) -> str:
@@ -86,13 +116,16 @@ def role_helper(params: list[Any], options: HelperOptions) -> str:
         options: Handlebars helper options.
 
     Returns:
-        Role marker of the form `<<<dotprompt:role:...>>>`.
+        Role marker of the form `<<<dotprompt:{nonce}:role:...>>>`.
+
+    Raises:
+        RuntimeError: If rendered outside `Dotprompt` (no nonce).
     """
     if not params or len(params) < 1:
         return ''
 
     role_name = str(params[0])
-    return SafeString(f'<<<dotprompt:role:{role_name}>>>')
+    return SafeString(_markers.format_marker(_marker_nonce(options), f'role:{role_name}'))
 
 
 def history_helper(params: list[Any], options: HelperOptions) -> str:
@@ -108,9 +141,12 @@ def history_helper(params: list[Any], options: HelperOptions) -> str:
         options: Handlebars helper options.
 
     Returns:
-        History marker of the form `<<<dotprompt:history>>>`.
+        History marker of the form `<<<dotprompt:{nonce}:history>>>`.
+
+    Raises:
+        RuntimeError: If rendered outside `Dotprompt` (no nonce).
     """
-    return SafeString('<<<dotprompt:history>>>')
+    return SafeString(_markers.format_marker(_marker_nonce(options), 'history'))
 
 
 def section_helper(params: list[Any], options: HelperOptions) -> str:
@@ -126,13 +162,16 @@ def section_helper(params: list[Any], options: HelperOptions) -> str:
         options: Handlebars helper options.
 
     Returns:
-        Section marker of the form `<<<dotprompt:section ...>>>`.
+        Section marker of the form `<<<dotprompt:{nonce}:section ...>>>`.
+
+    Raises:
+        RuntimeError: If rendered outside `Dotprompt` (no nonce).
     """
     if not params or len(params) < 1:
         return ''
 
     section_name = str(params[0])
-    return SafeString(f'<<<dotprompt:section {section_name}>>>')
+    return SafeString(_markers.format_marker(_marker_nonce(options), f'section {section_name}'))
 
 
 def media_helper(params: list[Any], options: HelperOptions) -> str:
@@ -148,16 +187,18 @@ def media_helper(params: list[Any], options: HelperOptions) -> str:
         options: Handlebars helper options.
 
     Returns:
-        Media marker of the form `<<<dotprompt:media:url ...>>>`).
+        Media marker of the form `<<<dotprompt:{nonce}:media:url ...>>>`.
+
+    Raises:
+        RuntimeError: If rendered outside `Dotprompt` (no nonce).
     """
     url = options.hash_value('url')
     if not url:
         return ''
 
     content_type = options.hash_value('contentType')
-    if content_type:
-        return SafeString(f'<<<dotprompt:media:url {url} {content_type}>>>')
-    return SafeString(f'<<<dotprompt:media:url {url}>>>')
+    body = f'media:url {url} {content_type}' if content_type else f'media:url {url}'
+    return SafeString(_markers.format_marker(_marker_nonce(options), body))
 
 
 def if_equals_helper(params: list[Any], options: HelperOptions) -> str:

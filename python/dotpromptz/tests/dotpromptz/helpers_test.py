@@ -28,7 +28,12 @@ from dotpromptz._helpers import (
     section_helper,
     unless_equals_helper,
 )
+from dotpromptz._markers import MARKER_NONCE_DATA_KEY
 from dotpromptz_handlebars import Handlebars
+
+NONCE = '0123456789abcdef0123456789abcdef'
+# Marker helpers need the per-render nonce that Dotprompt puts in the data frame.
+NONCE_DATA = {MARKER_NONCE_DATA_KEY: NONCE}
 
 
 class TestDotpromptHelpers(unittest.TestCase):
@@ -69,36 +74,60 @@ class TestDotpromptHelpers(unittest.TestCase):
 
     def test_role_helper_system(self) -> None:
         self.handlebars.register_template('role_test', '{{role "system"}}')
-        result = self.handlebars.render('role_test', {})
-        self.assertEqual(result, '<<<dotprompt:role:system>>>')
+        result = self.handlebars.render('role_test', {}, data=NONCE_DATA)
+        self.assertEqual(result, f'<<<dotprompt:{NONCE}:role:system>>>')
 
     def test_role_helper_user(self) -> None:
         self.handlebars.register_template('role_test', '{{role "user"}}')
-        result = self.handlebars.render('role_test', {})
-        self.assertEqual(result, '<<<dotprompt:role:user>>>')
+        result = self.handlebars.render('role_test', {}, data=NONCE_DATA)
+        self.assertEqual(result, f'<<<dotprompt:{NONCE}:role:user>>>')
 
     def test_history_helper(self) -> None:
         self.handlebars.register_template('history_test', '{{history}}')
-        result = self.handlebars.render('history_test', {})
-        self.assertEqual(result, '<<<dotprompt:history>>>')
+        result = self.handlebars.render('history_test', {}, data=NONCE_DATA)
+        self.assertEqual(result, f'<<<dotprompt:{NONCE}:history>>>')
 
     def test_section_helper(self) -> None:
         self.handlebars.register_template('section_test', '{{section "example"}}')
-        result = self.handlebars.render('section_test', {})
-        self.assertEqual(result, '<<<dotprompt:section example>>>')
+        result = self.handlebars.render('section_test', {}, data=NONCE_DATA)
+        self.assertEqual(result, f'<<<dotprompt:{NONCE}:section example>>>')
 
     def test_media_helper_with_url(self) -> None:
         template = '{{media url="https://example.com/img.png"}}'
         self.handlebars.register_template('media_test1', template)
-        result = self.handlebars.render('media_test1', {})
-        self.assertEqual(result, '<<<dotprompt:media:url https://example.com/img.png>>>')
+        result = self.handlebars.render('media_test1', {}, data=NONCE_DATA)
+        self.assertEqual(result, f'<<<dotprompt:{NONCE}:media:url https://example.com/img.png>>>')
 
     def test_media_helper_with_url_and_content_type(self) -> None:
         template = '{{media url="https://example.com/img.png" contentType="image/png"}}'
         self.handlebars.register_template('media_test2', template)
-        result = self.handlebars.render('media_test2', {})
-        expected = '<<<dotprompt:media:url https://example.com/img.png image/png>>>'
+        result = self.handlebars.render('media_test2', {}, data=NONCE_DATA)
+        expected = f'<<<dotprompt:{NONCE}:media:url https://example.com/img.png image/png>>>'
         self.assertEqual(result, expected)
+
+    def test_marker_helpers_inherit_nonce_in_blocks_and_partials(self) -> None:
+        self.handlebars.register_partial('turn', '{{role this}}')
+        self.handlebars.register_template('nested', '{{#each roles}}{{#if this}}{{> turn}}{{/if}}{{/each}}')
+        result = self.handlebars.render('nested', {'roles': ['user', 'model']}, data=NONCE_DATA)
+        self.assertEqual(result, f'<<<dotprompt:{NONCE}:role:user>>><<<dotprompt:{NONCE}:role:model>>>')
+
+    def test_marker_helpers_raise_without_nonce(self) -> None:
+        templates = {
+            'no_nonce_role': '{{role "system"}}',
+            'no_nonce_history': '{{history}}',
+            'no_nonce_section': '{{section "code"}}',
+            'no_nonce_media': '{{media url="https://example.com/img.png"}}',
+        }
+        for name, source in templates.items():
+            with self.subTest(name=name):
+                self.handlebars.register_template(name, source)
+                with self.assertRaises(RuntimeError):
+                    self.handlebars.render(name, {})
+
+    def test_marker_helpers_reject_malformed_nonce(self) -> None:
+        self.handlebars.register_template('bad_nonce', '{{role "system"}}')
+        with self.assertRaises(ValueError):
+            self.handlebars.render('bad_nonce', {}, data={MARKER_NONCE_DATA_KEY: '.*'})
 
     def test_unless_equals_helper_unequal_values(self) -> None:
         """Test unlessEquals helper with unequal integer values."""
