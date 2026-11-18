@@ -642,16 +642,26 @@ def to_parts(source: str, *, nonce: str) -> list[Part]:
     ]
 
 
-def parse_part(piece: _markers.Piece) -> Part:
+def parse_part(piece: _markers.Piece | str) -> Part:
     """Parses a part from a split piece of rendered template.
 
     Args:
         piece: The piece to parse; text pieces become text parts and marker
-            pieces become media or pending (section) parts.
+            pieces become media or pending (section) parts. A plain `str` is
+            the deprecated pre-nonce form (a piece from
+            `split_by_media_and_section_markers`) and is parsed with the legacy
+            prefixes, emitting a DeprecationWarning.
 
     Returns:
         Part, PendingPart, TextPart, or MediaPart
     """
+    if isinstance(piece, str):
+        _warn_legacy('parse_part(str)')
+        if piece.startswith(MEDIA_MARKER_PREFIX):
+            return _media_part_from_fields(piece)
+        if piece.startswith(SECTION_MARKER_PREFIX):
+            return _section_part_from_fields(piece)
+        return parse_text_part(piece)
     if isinstance(piece, _markers.MarkerPiece):
         if piece.body.startswith(_MEDIA_MARKER_BODY_PREFIX):
             return parse_media_part(piece.body)
@@ -663,7 +673,9 @@ def parse_media_part(body: str) -> MediaPart:
     """Parses a media part from a marker body.
 
     Args:
-        body: The marker body, `media:url <url> [<contentType>]`
+        body: The marker body, `media:url <url> [<contentType>]`. The deprecated
+            pre-nonce form `<<<dotprompt:media:url <url> [<contentType>]` is
+            still accepted (with a DeprecationWarning).
 
     Returns:
         Media part
@@ -671,9 +683,28 @@ def parse_media_part(body: str) -> MediaPart:
     Raises:
         ValueError: If the media body is invalid
     """
-    if not body.startswith(_MEDIA_MARKER_BODY_PREFIX):
+    if body.startswith(MEDIA_MARKER_PREFIX):
+        _warn_legacy('parse_media_part with a pre-nonce marker')
+    elif not body.startswith(_MEDIA_MARKER_BODY_PREFIX):
         raise ValueError(f'Invalid media piece: {body}; expected prefix {_MEDIA_MARKER_BODY_PREFIX!r}')
+    return _media_part_from_fields(body)
 
+
+def _media_part_from_fields(body: str) -> MediaPart:
+    """Builds a media part from `<prefix> <url> [<contentType>]`.
+
+    Shared by the nonced body form and the deprecated pre-nonce form, which
+    differ only in the first space-separated field.
+
+    Args:
+        body: The media body in either form.
+
+    Returns:
+        Media part
+
+    Raises:
+        ValueError: If the body doesn't have 2 or 3 space-separated fields.
+    """
     fields = body.split(' ')
     n = len(fields)
     if n == 3:
@@ -695,7 +726,9 @@ def parse_section_part(body: str) -> PendingPart:
     """Parses a section part from a marker body.
 
     Args:
-        body: The marker body, `section <name>`
+        body: The marker body, `section <name>`. The deprecated pre-nonce form
+            `<<<dotprompt:section <name>` is still accepted (with a
+            DeprecationWarning).
 
     Returns:
         Section part
@@ -703,9 +736,25 @@ def parse_section_part(body: str) -> PendingPart:
     Raises:
         ValueError: If the section body is invalid
     """
-    if not body.startswith(_SECTION_MARKER_BODY_PREFIX):
+    if body.startswith(SECTION_MARKER_PREFIX):
+        _warn_legacy('parse_section_part with a pre-nonce marker')
+    elif not body.startswith(_SECTION_MARKER_BODY_PREFIX):
         raise ValueError(f'Invalid section piece: {body}; expected prefix {_SECTION_MARKER_BODY_PREFIX!r}')
+    return _section_part_from_fields(body)
 
+
+def _section_part_from_fields(body: str) -> PendingPart:
+    """Builds a pending part from `<prefix> <name>` (nonced or pre-nonce form).
+
+    Args:
+        body: The section body in either form.
+
+    Returns:
+        Section part
+
+    Raises:
+        ValueError: If the body doesn't have exactly 2 space-separated fields.
+    """
     fields = body.split(' ')
     if len(fields) == 2:
         section_type = fields[1]

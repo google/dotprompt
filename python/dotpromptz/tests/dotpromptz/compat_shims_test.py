@@ -217,3 +217,42 @@ async def test_render_does_not_use_legacy_marker_helpers(monkeypatch: pytest.Mon
 def test_legacy_positional_calls_raise_type_error(call: Callable[[], object]) -> None:
     with pytest.raises(TypeError, match="keyword-only argument: 'nonce'"):
         call()
+
+
+def test_parse_part_accepts_legacy_str_pieces() -> None:
+    from dotpromptz._typing import MediaPart, PendingPart, TextPart
+
+    legacy = _shim('dotpromptz.parse')
+    with pytest.warns(DeprecationWarning):
+        media = legacy.parse_part('<<<dotprompt:media:url https://example.com/a.png image/png')
+    with pytest.warns(DeprecationWarning):
+        section = legacy.parse_part('<<<dotprompt:section output')
+    with pytest.warns(DeprecationWarning):
+        text = legacy.parse_part('Hello')
+    assert isinstance(media, MediaPart)
+    assert media.media.url == 'https://example.com/a.png'
+    assert media.media.content_type == 'image/png'
+    assert isinstance(section, PendingPart)
+    assert section.metadata == {'purpose': 'output', 'pending': True}
+    assert text == TextPart(text='Hello')
+
+
+def test_parse_media_and_section_part_accept_legacy_markers() -> None:
+    legacy = _shim('dotpromptz.parse')
+    with pytest.warns(DeprecationWarning):
+        media = legacy.parse_media_part('<<<dotprompt:media:url https://example.com/a.png')
+    with pytest.warns(DeprecationWarning):
+        section = legacy.parse_section_part('<<<dotprompt:section code')
+    assert media.media.url == 'https://example.com/a.png'
+    assert media.media.content_type is None
+    assert section.metadata == {'purpose': 'code', 'pending': True}
+
+
+def test_parse_media_and_section_part_bodies_do_not_warn() -> None:
+    import warnings
+
+    legacy = _shim('dotpromptz.parse')
+    with warnings.catch_warnings():
+        warnings.simplefilter('error')
+        assert legacy.parse_media_part('media:url https://example.com/a.png').media.url == 'https://example.com/a.png'
+        assert legacy.parse_section_part('section code').metadata == {'purpose': 'code', 'pending': True}
