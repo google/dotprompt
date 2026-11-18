@@ -24,9 +24,28 @@
 /// {{media url=imageUrl}}
 /// {{media url="https://example.com/image.png" contentType="image/png"}}
 /// ```
+///
+/// ## Markers
+///
+/// The helper emits `<<<dotprompt:{nonce}:media:{url}|{contentType}>>>`,
+/// where `nonce` is the per-render nonce that the part splitter also uses.
+/// The body format is runtime-internal (it never leaves the process); `|`
+/// separates the fields so URLs with spaces and content types with
+/// parameters (`text/plain; charset=utf-8`) both survive.
+/// Markers without the right nonce (e.g. typed by an end user) stay plain
+/// text, so user input can't inject media parts with arbitrary URLs.
+///
+/// When `contentType` is omitted it is inferred from the URL extension
+/// (falling back to `application/octet-stream`).
 library;
 
+import "package:meta/meta.dart";
+
+import "../markers.dart";
 import "../types.dart";
+
+/// Content type used when none is given and none can be inferred.
+const String _defaultContentType = "application/octet-stream";
 
 /// Marker class for the media helper.
 ///
@@ -39,37 +58,41 @@ class MediaHelper {
   /// The name of this helper in templates.
   static const String name = "media";
 
-  /// The special marker prefix used in rendered output.
-  static const String markerPrefix = "<<<dotprompt:media:";
-
-  /// The special marker suffix used in rendered output.
-  static const String markerSuffix = ">>>";
-
-  /// Creates a media marker for the given URL and content type.
-  static String createMarker({required String url, String? contentType}) {
+  /// Creates a media marker for [url] and [contentType] carrying the
+  /// per-render [nonce].
+  ///
+  /// Throws [ArgumentError] if [nonce] is not 32 lowercase hex chars.
+  ///
+  /// Internal: only the renderer holds the per-render nonce, so this is not
+  /// usable from outside `package:dotprompt`.
+  @internal
+  static String createMarker(String nonce, {required String url, String? contentType}) {
     final ct = contentType ?? _inferContentType(url);
-    return "$markerPrefix$url|$ct$markerSuffix";
+    return formatMarker(nonce, "$mediaMarkerBodyPrefix$url|$ct");
   }
 
-  /// Checks if a string contains a media marker.
-  static bool containsMarker(String text) => text.contains(markerPrefix);
-
-  /// Extracts media content from a marker string.
-  static MediaContent? extractMedia(String marker) {
-    if (!marker.startsWith(markerPrefix) || !marker.endsWith(markerSuffix)) {
-      return null;
+  /// Extracts media content from a marker body
+  /// (`media:{url}[|{contentType}]`), as produced by splitting with
+  /// [mediaAndSectionMarkerRegex].
+  ///
+  /// The fields are split at the last `|`: URLs may legitimately contain
+  /// `|` (e.g. map API query strings), content types in practice don't.
+  /// Without a `|` the whole rest is the URL and the content type defaults
+  /// to `application/octet-stream`.
+  ///
+  /// Returns null if [body] is not a media marker body.
+  ///
+  /// Internal: marker bodies only come from splitting with the per-render
+  /// nonce, so this is not meaningful outside `package:dotprompt`.
+  @internal
+  static MediaContent? mediaFromBody(String body) {
+    if (!body.startsWith(mediaMarkerBodyPrefix)) return null;
+    final rest = body.substring(mediaMarkerBodyPrefix.length);
+    final sep = rest.lastIndexOf("|");
+    if (sep < 0) {
+      return MediaContent(url: rest, contentType: _defaultContentType);
     }
-    final content = marker.substring(
-      markerPrefix.length,
-      marker.length - markerSuffix.length,
-    );
-    final parts = content.split("|");
-    if (parts.isEmpty) return null;
-
-    return MediaContent(
-      url: parts[0],
-      contentType: parts.length > 1 ? parts[1] : "application/octet-stream",
-    );
+    return MediaContent(url: rest.substring(0, sep), contentType: rest.substring(sep + 1));
   }
 
   /// Infers content type from URL extension.
@@ -84,6 +107,6 @@ class MediaHelper {
     if (lower.endsWith(".wav")) return "audio/wav";
     if (lower.endsWith(".mp4")) return "video/mp4";
     if (lower.endsWith(".webm")) return "video/webm";
-    return "application/octet-stream";
+    return _defaultContentType;
   }
 }

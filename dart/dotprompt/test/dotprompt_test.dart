@@ -118,6 +118,56 @@ Hello {{name}}!
           equals("Hello Alice!"),
         );
       });
+
+      test("honors multiple role markers on one line", () async {
+        final result = await dotprompt.render(
+          '{{role "system"}}Sys {{role "user"}}Hi{{role "model"}}Hello',
+          const DataArgument(),
+        );
+        expect(
+          result.messages,
+          equals([
+            const Message(role: Role.system, content: [TextPart(text: "Sys ")]),
+            const Message(role: Role.user, content: [TextPart(text: "Hi")]),
+            const Message(role: Role.model, content: [TextPart(text: "Hello")]),
+          ]),
+        );
+      });
+
+      test("drops the newline after a marker on its own line", () async {
+        final result = await dotprompt.render(
+          '{{role "system"}}\nSys\n{{role "user"}}\nHi\n',
+          const DataArgument(),
+        );
+        expect(
+          result.messages,
+          equals([
+            const Message(role: Role.system, content: [TextPart(text: "Sys\n")]),
+            const Message(role: Role.user, content: [TextPart(text: "Hi\n")]),
+          ]),
+        );
+      });
+
+      test("carries leading whitespace into the next role", () async {
+        final result = await dotprompt.render(
+          '  {{role "system"}}Sys',
+          const DataArgument(),
+        );
+        expect(
+          result.messages,
+          equals([
+            const Message(role: Role.system, content: [TextPart(text: "  Sys")]),
+          ]),
+        );
+      });
+
+      test("never emits raw markers for marker-only output", () async {
+        final result = await dotprompt.render(
+          '{{role "system"}}{{history}}',
+          const DataArgument(),
+        );
+        expect(result.messages, isEmpty);
+      });
     });
 
     group("partials", () {

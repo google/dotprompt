@@ -56,6 +56,20 @@ dart_test(
 )
 
 dart_test(
+    name = "marker_injection_test",
+    data = ["//dart/handlebars_dart"],
+    main = "test/marker_injection_test.dart",
+    deps = [":dotprompt"],
+)
+
+dart_test(
+    name = "markers_test",
+    data = ["//dart/handlebars_dart"],
+    main = "test/markers_test.dart",
+    deps = [":dotprompt"],
+)
+
+dart_test(
     name = "parse_test",
     data = ["//dart/handlebars_dart"],
     main = "test/parse_test.dart",
