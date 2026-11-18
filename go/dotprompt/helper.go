@@ -18,6 +18,7 @@ package dotprompt
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -57,29 +58,51 @@ func JSON(serializable any, options *raymond.Options) raymond.SafeString {
 	return raymond.SafeString(string(jsonData))
 }
 
-// Role returns a formatted role string.
-func RoleFn(role string) raymond.SafeString {
-	return raymond.SafeString(fmt.Sprintf("<<<dotprompt:role:%s>>>", role))
-}
-
-// History returns a formatted history string.
-func History() raymond.SafeString {
-	return raymond.SafeString("<<<dotprompt:history>>>")
-}
-
-// Section returns a formatted section string.
-func Section(name string) raymond.SafeString {
-	return raymond.SafeString(fmt.Sprintf("<<<dotprompt:section %s>>>", name))
-}
-
-// Media returns a formatted media string.
-func MediaFn(options *raymond.Options) raymond.SafeString {
-	url := options.HashStr("url")
-	contentType := options.HashStr("contentType")
-	if contentType != "" {
-		return raymond.SafeString(fmt.Sprintf("<<<dotprompt:media:url %s %s>>>", url, contentType))
+// markerHelperOutput formats a marker for body using the per-render nonce from
+// the private data frame (see markers.go).
+//
+// Data frames are inherited by blocks (#each, #if, ...) and partials, so the
+// nonce is only missing if the helper runs outside Dotprompt rendering or a
+// custom block helper passes a fresh raymond.NewDataFrame() instead of
+// options.NewDataFrame(). In that case it panics with an error, which
+// raymond's Exec/ExecWith recover and return as the render error. Raymond
+// helpers can't return errors directly.
+func markerHelperOutput(options *raymond.Options, body string) raymond.SafeString {
+	nonce, ok := options.Data(markerNonceDataKey).(string)
+	if !ok {
+		panic(errors.New("dotprompt: marker helpers (role, history, section, media) must be rendered via Dotprompt"))
 	}
-	return raymond.SafeString(fmt.Sprintf("<<<dotprompt:media:url %s>>>", url))
+	marker, err := formatMarker(nonce, body)
+	if err != nil {
+		panic(err)
+	}
+	return raymond.SafeString(marker)
+}
+
+// RoleFn returns a role marker that starts a new message with the given role.
+func RoleFn(role string, options *raymond.Options) raymond.SafeString {
+	return markerHelperOutput(options, "role:"+role)
+}
+
+// History returns a history marker where the conversation history is inserted.
+func History(options *raymond.Options) raymond.SafeString {
+	return markerHelperOutput(options, "history")
+}
+
+// Section returns a section marker that becomes a pending part with the given
+// purpose.
+func Section(name string, options *raymond.Options) raymond.SafeString {
+	return markerHelperOutput(options, "section "+name)
+}
+
+// MediaFn returns a media marker that becomes a media part with the given url
+// and optional contentType hash arguments.
+func MediaFn(options *raymond.Options) raymond.SafeString {
+	body := "media:url " + options.HashStr("url")
+	if contentType := options.HashStr("contentType"); contentType != "" {
+		body += " " + contentType
+	}
+	return markerHelperOutput(options, body)
 }
 
 // IfEquals compares two values and returns the appropriate template content.

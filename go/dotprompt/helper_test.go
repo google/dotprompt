@@ -17,74 +17,119 @@
 package dotprompt
 
 import (
+	"strings"
 	"testing"
+
+	"github.com/mbleigh/raymond"
 )
 
-// Tests for role helper
+const testMarkerNonce = "0123456789abcdef0123456789abcdef"
 
-func TestRoleFn(t *testing.T) {
-	role := "admin"
-	expected := "<<<dotprompt:role:admin>>>"
-	result := RoleFn(role)
-	if string(result) != expected {
-		t.Errorf("RoleFn(%q) = %q, want %q", role, result, expected)
+// execWithMarkerHelpers renders source with the marker helpers registered and
+// the given private data frame (nil for none).
+func execWithMarkerHelpers(t *testing.T, source string, ctx map[string]any, df *raymond.DataFrame) (string, error) {
+	t.Helper()
+	tpl, err := raymond.Parse(source)
+	if err != nil {
+		t.Fatalf("raymond.Parse(%q) error: %v", source, err)
+	}
+	tpl.RegisterHelpers(map[string]any{
+		"role":    RoleFn,
+		"history": History,
+		"section": Section,
+		"media":   MediaFn,
+	})
+	tpl.RegisterPartial("turn", `{{role this.role}}{{this.text}}`)
+	return tpl.ExecWith(ctx, df, &raymond.ExecOptions{NoEscape: true})
+}
+
+func nonceDataFrame() *raymond.DataFrame {
+	df := raymond.NewDataFrame()
+	df.Set(markerNonceDataKey, testMarkerNonce)
+	return df
+}
+
+func TestMarkerHelpers(t *testing.T) {
+	m := func(body string) string {
+		return "<<<dotprompt:" + testMarkerNonce + ":" + body + ">>>"
+	}
+	testCases := []struct {
+		name   string
+		source string
+		ctx    map[string]any
+		want   string
+	}{
+		{name: "role admin", source: `{{role "admin"}}`, want: m("role:admin")},
+		{name: "role system", source: `{{role "system"}}`, want: m("role:system")},
+		{name: "role user", source: `{{role "user"}}`, want: m("role:user")},
+		{name: "role model", source: `{{role "model"}}`, want: m("role:model")},
+		{name: "history", source: `{{history}}`, want: m("history")},
+		{name: "section", source: `{{section "Introduction"}}`, want: m("section Introduction")},
+		{name: "section examples", source: `{{section "examples"}}`, want: m("section examples")},
+		{
+			name:   "media url",
+			source: `{{media url="https://example.com/a.png"}}`,
+			want:   m("media:url https://example.com/a.png"),
+		},
+		{
+			name:   "media url and content type",
+			source: `{{media url="https://example.com/a.png" contentType="image/png"}}`,
+			want:   m("media:url https://example.com/a.png image/png"),
+		},
+		{
+			name:   "inside each and partial",
+			source: `{{#each turns}}{{> turn}}{{/each}}`,
+			ctx: map[string]any{"turns": []map[string]any{
+				{"role": "user", "text": "hi"},
+				{"role": "model", "text": "hello"},
+			}},
+			want: m("role:user") + "hi" + m("role:model") + "hello",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := execWithMarkerHelpers(t, tc.source, tc.ctx, nonceDataFrame())
+			if err != nil {
+				t.Fatalf("render error: %v", err)
+			}
+			if got != tc.want {
+				t.Errorf("got %q, want %q", got, tc.want)
+			}
+		})
 	}
 }
 
-func TestRoleFn_system(t *testing.T) {
-	result := RoleFn("system")
-	expected := "<<<dotprompt:role:system>>>"
-	if string(result) != expected {
-		t.Errorf("RoleFn(\"system\") = %q, want %q", result, expected)
+func TestMarkerHelpers_missingNonce(t *testing.T) {
+	sources := []string{
+		`{{role "system"}}`,
+		`{{history}}`,
+		`{{section "output"}}`,
+		`{{media url="https://example.com/a.png"}}`,
+	}
+	for _, source := range sources {
+		t.Run(source, func(t *testing.T) {
+			got, err := execWithMarkerHelpers(t, source, nil, nil)
+			if err == nil {
+				t.Fatalf("expected error, got output %q", got)
+			}
+			if !strings.Contains(err.Error(), "must be rendered via Dotprompt") {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
 	}
 }
 
-func TestRoleFn_user(t *testing.T) {
-	result := RoleFn("user")
-	expected := "<<<dotprompt:role:user>>>"
-	if string(result) != expected {
-		t.Errorf("RoleFn(\"user\") = %q, want %q", result, expected)
+func TestMarkerHelpers_invalidNonce(t *testing.T) {
+	df := raymond.NewDataFrame()
+	df.Set(markerNonceDataKey, ".*")
+	got, err := execWithMarkerHelpers(t, `{{role "system"}}`, nil, df)
+	if err == nil {
+		t.Fatalf("expected error, got output %q", got)
 	}
 }
 
-func TestRoleFn_model(t *testing.T) {
-	result := RoleFn("model")
-	expected := "<<<dotprompt:role:model>>>"
-	if string(result) != expected {
-		t.Errorf("RoleFn(\"model\") = %q, want %q", result, expected)
-	}
-}
-
-// Tests for history helper
-
-func TestHistory(t *testing.T) {
-	expected := "<<<dotprompt:history>>>"
-	result := History()
-	if string(result) != expected {
-		t.Errorf("History() = %q, want %q", result, expected)
-	}
-}
-
-// Tests for section helper
-
-func TestSection(t *testing.T) {
-	name := "Introduction"
-	expected := "<<<dotprompt:section Introduction>>>"
-	result := Section(name)
-	if string(result) != expected {
-		t.Errorf("Section(%q) = %q, want %q", name, result, expected)
-	}
-}
-
-func TestSection_examples(t *testing.T) {
-	result := Section("examples")
-	expected := "<<<dotprompt:section examples>>>"
-	if string(result) != expected {
-		t.Errorf("Section(\"examples\") = %q, want %q", result, expected)
-	}
-}
-
-// Note: JSON, Media, IfEquals, UnlessEquals helpers require raymond.Options
+// Note: JSON, IfEquals, UnlessEquals helpers require raymond.Options
 // which is complex to mock in unit tests. These functions are thoroughly tested
 // via the spec tests in go/test/spec_test.go which exercise them through the
 // full template rendering pipeline.

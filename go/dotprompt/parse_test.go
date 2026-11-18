@@ -17,7 +17,6 @@
 package dotprompt
 
 import (
-	"regexp"
 	"strings"
 	"testing"
 
@@ -130,215 +129,6 @@ func TestFrontmatterAndBodyRegex(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestRoleAndHistoryMarkerRegex(t *testing.T) {
-	t.Run("test valid patterns", func(t *testing.T) {
-		// NOTE: currently this doesn't validate the role.
-		validPatterns := []string{
-			"<<<dotprompt:role:user>>>",
-			"<<<dotprompt:role:model>>>",
-			"<<<dotprompt:role:system>>>",
-			"<<<dotprompt:history>>>",
-			"<<<dotprompt:role:bot>>>",
-			"<<<dotprompt:role:human>>>",
-			"<<<dotprompt:role:customer>>>",
-		}
-
-		for _, pattern := range validPatterns {
-			if RoleAndHistoryMarkerRegex.FindStringSubmatch(pattern) == nil {
-				t.Errorf("Pattern should match: %s", pattern)
-			}
-		}
-	})
-
-	t.Run("test invalid patterns", func(t *testing.T) {
-		invalidPatterns := []string{
-			"<<<dotprompt:role:USER>>>",   // uppercase not allowed
-			"<<<dotprompt:role:model1>>>", // numbers not allowed
-			"<<<dotprompt:role:>>>",       // needs at least one letter
-			"<<<dotprompt:role>>>",        // missing role value
-			"<<<dotprompt:history123>>>",  // history should be exact
-			"<<<dotprompt:HISTORY>>>",     // history must be lowercase
-			"dotprompt:role:user",         // missing brackets
-			"<<<dotprompt:role:user",      // incomplete closing
-			"dotprompt:role:user>>>",      // incomplete opening
-		}
-
-		for _, pattern := range invalidPatterns {
-			if RoleAndHistoryMarkerRegex.FindStringSubmatch(pattern) != nil {
-				t.Errorf("Pattern should not match: %s", pattern)
-			}
-		}
-	})
-
-	t.Run("multiple markers", func(t *testing.T) {
-		text := `
-		<<<dotprompt:role:user>>> Hello
-		<<<dotprompt:role:model>>> Hi there
-		<<<dotprompt:history>>>
-		<<<dotprompt:role:user>>> How are you?
-	`
-
-		matches := RoleAndHistoryMarkerRegex.FindAllString(text, -1)
-		if len(matches) != 4 {
-			t.Errorf("len(matches) = %d, want 4", len(matches))
-		}
-	})
-}
-
-func TestMediaAndSectionMarkerRegex(t *testing.T) {
-	t.Run("test valid patterns", func(t *testing.T) {
-		validPatterns := []string{
-			"<<<dotprompt:media:url>>>",
-			"<<<dotprompt:section>>>",
-		}
-
-		for _, pattern := range validPatterns {
-			if MediaAndSectionMarkerRegex.FindStringSubmatch(pattern) == nil {
-				t.Errorf("Pattern should match: %s", pattern)
-			}
-		}
-	})
-
-	t.Run("multiple matches", func(t *testing.T) {
-		text := `
-		<<<dotprompt:media:url>>> https://example.com/image.jpg
-		<<<dotprompt:section>>> Section 1
-		<<<dotprompt:media:url>>> https://example.com/video.mp4
-		<<<dotprompt:section>>> Section 2
-	`
-
-		matches := MediaAndSectionMarkerRegex.FindAllString(text, -1)
-		if len(matches) != 4 {
-			t.Errorf("len(matches) = %d, want 4", len(matches))
-		}
-	})
-}
-
-func TestSplitByRegex(t *testing.T) {
-	inputStr := "  one  ,  ,  two  ,  three  "
-	output := splitByRegex(inputStr, regexp.MustCompile(`,`))
-	want := []string{"  one  ", "  two  ", "  three  "}
-	if diff := cmp.Diff(want, output); diff != "" {
-		t.Errorf("splitByRegex() mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestSplitByMediaAndSectionMarkers(t *testing.T) {
-	t.Run("BasicMarker", func(t *testing.T) {
-		inputStr := "<<<dotprompt:media:url>>> https://example.com/image.jpg"
-		output := splitByMediaAndSectionMarkers(inputStr)
-		expected := []string{
-			"<<<dotprompt:media:url",
-			" https://example.com/image.jpg",
-		}
-
-		if diff := cmp.Diff(expected, output); diff != "" {
-			t.Errorf("splitByMediaAndSectionMarkers() mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("MultipleMarkers", func(t *testing.T) {
-		inputStr := "Start <<<dotprompt:media:url>>> https://example.com/image.jpg End <<<dotprompt:section>>> Code"
-		output := splitByMediaAndSectionMarkers(inputStr)
-		expected := []string{
-			"Start ",
-			"<<<dotprompt:media:url",
-			" https://example.com/image.jpg End ",
-			"<<<dotprompt:section",
-			" Code",
-		}
-
-		if diff := cmp.Diff(expected, output); diff != "" {
-			t.Errorf("splitByMediaAndSectionMarkers() mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("NoMarkers", func(t *testing.T) {
-		inputStr := "Hello World"
-		output := splitByMediaAndSectionMarkers(inputStr)
-		expected := []string{"Hello World"}
-
-		if diff := cmp.Diff(expected, output); diff != "" {
-			t.Errorf("splitByMediaAndSectionMarkers() mismatch (-want +got):\n%s", diff)
-		}
-	})
-}
-
-func TestSplitByRoleAndHistoryMarkers(t *testing.T) {
-	t.Run("NoMarkers", func(t *testing.T) {
-		inputStr := "Hello World"
-		output := splitByRoleAndHistoryMarkers(inputStr)
-		expected := []string{"Hello World"}
-
-		if diff := cmp.Diff(expected, output); diff != "" {
-			t.Errorf("splitByRoleAndHistoryMarkers() mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("SingleMarker", func(t *testing.T) {
-		inputStr := "Hello <<<dotprompt:role:model>>> world"
-		output := splitByRoleAndHistoryMarkers(inputStr)
-		expected := []string{
-			"Hello ",
-			"<<<dotprompt:role:model",
-			" world",
-		}
-
-		if diff := cmp.Diff(expected, output); diff != "" {
-			t.Errorf("splitByRoleAndHistoryMarkers() mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("FilterEmpty", func(t *testing.T) {
-		inputStr := "  <<<dotprompt:role:system>>>   "
-		output := splitByRoleAndHistoryMarkers(inputStr)
-		expected := []string{"<<<dotprompt:role:system"}
-
-		if diff := cmp.Diff(expected, output); diff != "" {
-			t.Errorf("splitByRoleAndHistoryMarkers() mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("AdjacentMarkers", func(t *testing.T) {
-		inputStr := "<<<dotprompt:role:user>>><<<dotprompt:history>>>"
-		output := splitByRoleAndHistoryMarkers(inputStr)
-		expected := []string{
-			"<<<dotprompt:role:user",
-			"<<<dotprompt:history",
-		}
-
-		if diff := cmp.Diff(expected, output); diff != "" {
-			t.Errorf("splitByRoleAndHistoryMarkers() mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("InvalidFormat", func(t *testing.T) {
-		inputStr := "<<<dotprompt:ROLE:user>>>"
-		output := splitByRoleAndHistoryMarkers(inputStr)
-		expected := []string{"<<<dotprompt:ROLE:user>>>"}
-
-		if diff := cmp.Diff(expected, output); diff != "" {
-			t.Errorf("splitByRoleAndHistoryMarkers() mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("MultipleMarkers", func(t *testing.T) {
-		inputStr := "Start <<<dotprompt:role:user>>> middle <<<dotprompt:history>>> end"
-		output := splitByRoleAndHistoryMarkers(inputStr)
-		expected := []string{
-			"Start ",
-			"<<<dotprompt:role:user",
-			" middle ",
-			"<<<dotprompt:history",
-			" end",
-		}
-
-		if diff := cmp.Diff(expected, output); diff != "" {
-			t.Errorf("splitByRoleAndHistoryMarkers() mismatch (-want +got):\n%s", diff)
-		}
-	})
 }
 
 func TestConvertNamespacedEntryToNestedObject(t *testing.T) {
@@ -510,9 +300,11 @@ func TestTransformMessagesToHistory(t *testing.T) {
 }
 
 func TestMessageSourcesToMessages(t *testing.T) {
+	testMediaRe := mustRegex(t, mediaAndSectionMarkerRegex, testMarkerNonce)
+
 	t.Run("should handle empty array", func(t *testing.T) {
 		messageSources := []*MessageSource{}
-		messages, err := messageSourcesToMessages(messageSources)
+		messages, err := messageSourcesToMessages(messageSources, testMediaRe)
 		if err != nil {
 			t.Errorf("messageSourcesToMessages() returned error: %v", err)
 		}
@@ -529,7 +321,7 @@ func TestMessageSourcesToMessages(t *testing.T) {
 			},
 		}
 
-		messages, err := messageSourcesToMessages(messageSources)
+		messages, err := messageSourcesToMessages(messageSources, testMediaRe)
 		if err != nil {
 			t.Errorf("messageSourcesToMessages() returned error: %v", err)
 		}
@@ -560,7 +352,7 @@ func TestMessageSourcesToMessages(t *testing.T) {
 			},
 		}
 
-		messages, err := messageSourcesToMessages(messageSources)
+		messages, err := messageSourcesToMessages(messageSources, testMediaRe)
 		if err != nil {
 			t.Errorf("messageSourcesToMessages() returned error: %v", err)
 		}
@@ -594,7 +386,7 @@ func TestMessageSourcesToMessages(t *testing.T) {
 			},
 		}
 
-		messages, err := messageSourcesToMessages(messageSources)
+		messages, err := messageSourcesToMessages(messageSources, testMediaRe)
 		if err != nil {
 			t.Errorf("messageSourcesToMessages() returned error: %v", err)
 		}
@@ -636,7 +428,7 @@ func TestMessageSourcesToMessages(t *testing.T) {
 			},
 		}
 
-		messages, err := messageSourcesToMessages(messageSources)
+		messages, err := messageSourcesToMessages(messageSources, testMediaRe)
 		if err != nil {
 			t.Errorf("messageSourcesToMessages() returned error: %v", err)
 		}
@@ -703,7 +495,7 @@ func TestMessagesHaveHistory(t *testing.T) {
 func TestToMessages(t *testing.T) {
 	t.Run("should handle a simple string with no markers", func(t *testing.T) {
 		renderedString := "Hello world"
-		result, err := ToMessages(renderedString, nil)
+		result, err := ToMessages(renderedString, testMarkerNonce, nil)
 
 		if err != nil {
 			t.Errorf("ToMessages() returned error: %v", err)
@@ -725,8 +517,8 @@ func TestToMessages(t *testing.T) {
 	})
 
 	t.Run("should handle a string with a single role marker", func(t *testing.T) {
-		renderedString := "<<<dotprompt:role:model>>>Hello world"
-		result, err := ToMessages(renderedString, nil)
+		renderedString := tm("role:model") + "Hello world"
+		result, err := ToMessages(renderedString, testMarkerNonce, nil)
 
 		if err != nil {
 			t.Errorf("ToMessages() returned error: %v", err)
@@ -748,10 +540,10 @@ func TestToMessages(t *testing.T) {
 	})
 
 	t.Run("should handle a string with multiple role markers", func(t *testing.T) {
-		renderedString := "<<<dotprompt:role:system>>>System instructions\n" +
-			"<<<dotprompt:role:user>>>User query\n" +
-			"<<<dotprompt:role:model>>>Model response"
-		result, err := ToMessages(renderedString, nil)
+		renderedString := tm("role:system") + "System instructions\n" +
+			tm("role:user") + "User query\n" +
+			tm("role:model") + "Model response"
+		result, err := ToMessages(renderedString, testMarkerNonce, nil)
 
 		if err != nil {
 			t.Errorf("ToMessages() returned error: %v", err)
@@ -795,8 +587,8 @@ func TestToMessages(t *testing.T) {
 	})
 
 	t.Run("should update the role of an empty message instead of creating a new one", func(t *testing.T) {
-		renderedString := "<<<dotprompt:role:user>>><<<dotprompt:role:model>>>Response"
-		result, err := ToMessages(renderedString, nil)
+		renderedString := tm("role:user") + tm("role:model") + "Response"
+		result, err := ToMessages(renderedString, testMarkerNonce, nil)
 
 		if err != nil {
 			t.Errorf("ToMessages() returned error: %v", err)
@@ -819,7 +611,7 @@ func TestToMessages(t *testing.T) {
 	})
 
 	t.Run("should handle history markers and add metadata", func(t *testing.T) {
-		renderedString := "<<<dotprompt:role:user>>>Query<<<dotprompt:history>>>Follow-up"
+		renderedString := tm("role:user") + "Query" + tm("history") + "Follow-up"
 		historyMessages := []Message{
 			{
 				Role: RoleUser,
@@ -836,7 +628,7 @@ func TestToMessages(t *testing.T) {
 		}
 
 		data := &DataArgument{Messages: historyMessages}
-		result, err := ToMessages(renderedString, data)
+		result, err := ToMessages(renderedString, testMarkerNonce, data)
 
 		if err != nil {
 			t.Errorf("ToMessages() returned error: %v", err)
@@ -886,9 +678,9 @@ func TestToMessages(t *testing.T) {
 	})
 
 	t.Run("should handle empty history gracefully", func(t *testing.T) {
-		renderedString := "<<<dotprompt:role:user>>>Query<<<dotprompt:history>>>Follow-up"
+		renderedString := tm("role:user") + "Query" + tm("history") + "Follow-up"
 		data := &DataArgument{Messages: []Message{}}
-		result, err := ToMessages(renderedString, data)
+		result, err := ToMessages(renderedString, testMarkerNonce, data)
 
 		if err != nil {
 			t.Errorf("ToMessages() returned error: %v", err)
@@ -921,8 +713,8 @@ func TestToMessages(t *testing.T) {
 	})
 
 	t.Run("should handle nil data gracefully", func(t *testing.T) {
-		renderedString := "<<<dotprompt:role:user>>>Query<<<dotprompt:history>>>Follow-up"
-		result, err := ToMessages(renderedString, nil)
+		renderedString := tm("role:user") + "Query" + tm("history") + "Follow-up"
+		result, err := ToMessages(renderedString, testMarkerNonce, nil)
 
 		if err != nil {
 			t.Errorf("ToMessages() returned error: %v", err)
@@ -955,10 +747,10 @@ func TestToMessages(t *testing.T) {
 	})
 
 	t.Run("should filter out empty messages", func(t *testing.T) {
-		renderedString := "<<<dotprompt:role:user>>> " +
-			"<<<dotprompt:role:system>>> " +
-			"<<<dotprompt:role:model>>>Response"
-		result, err := ToMessages(renderedString, nil)
+		renderedString := tm("role:user") + " " +
+			tm("role:system") + " " +
+			tm("role:model") + "Response"
+		result, err := ToMessages(renderedString, testMarkerNonce, nil)
 
 		if err != nil {
 			t.Errorf("ToMessages() returned error: %v", err)
@@ -980,7 +772,7 @@ func TestToMessages(t *testing.T) {
 	})
 
 	t.Run("should handle multiple history markers by treating each as a separate insertion point", func(t *testing.T) {
-		renderedString := "<<<dotprompt:history>>>First<<<dotprompt:history>>>Second"
+		renderedString := tm("history") + "First" + tm("history") + "Second"
 		historyMessages := []Message{
 			{
 				Role: RoleUser,
@@ -991,7 +783,7 @@ func TestToMessages(t *testing.T) {
 		}
 
 		data := &DataArgument{Messages: historyMessages}
-		result, err := ToMessages(renderedString, data)
+		result, err := ToMessages(renderedString, testMarkerNonce, data)
 
 		if err != nil {
 			t.Errorf("ToMessages() returned error: %v", err)
@@ -1026,11 +818,11 @@ func TestToMessages(t *testing.T) {
 	})
 
 	t.Run("should support complex interleaving of role and history markers", func(t *testing.T) {
-		renderedString := "<<<dotprompt:role:system>>>Instructions\n" +
-			"<<<dotprompt:role:user>>>Initial Query\n" +
-			"<<<dotprompt:history>>>\n" +
-			"<<<dotprompt:role:user>>>Follow-up Question\n" +
-			"<<<dotprompt:role:model>>>Final Response"
+		renderedString := tm("role:system") + "Instructions\n" +
+			tm("role:user") + "Initial Query\n" +
+			tm("history") + "\n" +
+			tm("role:user") + "Follow-up Question\n" +
+			tm("role:model") + "Final Response"
 
 		historyMessages := []Message{
 			{
@@ -1048,7 +840,7 @@ func TestToMessages(t *testing.T) {
 		}
 
 		data := &DataArgument{Messages: historyMessages}
-		result, err := ToMessages(renderedString, data)
+		result, err := ToMessages(renderedString, testMarkerNonce, data)
 
 		if err != nil {
 			t.Errorf("ToMessages() returned error: %v", err)
@@ -1117,7 +909,7 @@ func TestToMessages(t *testing.T) {
 	})
 
 	t.Run("should handle an empty input string", func(t *testing.T) {
-		result, err := ToMessages("", nil)
+		result, err := ToMessages("", testMarkerNonce, nil)
 
 		if err != nil {
 			t.Errorf("ToMessages() returned error: %v", err)
@@ -1128,7 +920,7 @@ func TestToMessages(t *testing.T) {
 	})
 
 	t.Run("should properly call insertHistory with data.messages", func(t *testing.T) {
-		renderedString := "<<<dotprompt:role:user>>>Question"
+		renderedString := tm("role:user") + "Question"
 		historyMessages := []Message{
 			{
 				Role: RoleUser,
@@ -1139,7 +931,7 @@ func TestToMessages(t *testing.T) {
 		}
 
 		data := &DataArgument{Messages: historyMessages}
-		result, err := ToMessages(renderedString, data)
+		result, err := ToMessages(renderedString, testMarkerNonce, data)
 
 		if err != nil {
 			t.Errorf("ToMessages() returned error: %v", err)
@@ -1385,19 +1177,19 @@ func TestInsertHistory(t *testing.T) {
 func TestParsePart(t *testing.T) {
 	testCases := []struct {
 		name     string
-		piece    string
+		piece    markerPiece
 		expected Part
 		hasError bool
 	}{
 		{
 			name:     "Text part",
-			piece:    "Hello World",
+			piece:    markerPiece{value: "Hello World"},
 			expected: &TextPart{Text: "Hello World"},
 			hasError: false,
 		},
 		{
 			name:  "Media part",
-			piece: "<<<dotprompt:media:url>>> https://example.com/image.jpg",
+			piece: markerPiece{isMarker: true, value: "media:url https://example.com/image.jpg"},
 			expected: &MediaPart{
 				Media: struct {
 					URL         string `json:"url"`
@@ -1410,7 +1202,7 @@ func TestParsePart(t *testing.T) {
 		},
 		{
 			name:  "Media part with content type",
-			piece: "<<<dotprompt:media:url>>> https://example.com/image.jpg image/jpeg",
+			piece: markerPiece{isMarker: true, value: "media:url https://example.com/image.jpg image/jpeg"},
 			expected: &MediaPart{
 				Media: struct {
 					URL         string `json:"url"`
@@ -1424,7 +1216,7 @@ func TestParsePart(t *testing.T) {
 		},
 		{
 			name:  "Section part",
-			piece: "<<<dotprompt:section>>> code",
+			piece: markerPiece{isMarker: true, value: "section code"},
 			expected: &PendingPart{
 				HasMetadata: HasMetadata{
 					Metadata: map[string]any{
@@ -1443,11 +1235,11 @@ func TestParsePart(t *testing.T) {
 
 			if tc.hasError {
 				if err == nil {
-					t.Errorf("parsePart(%q) expected error, got nil", tc.piece)
+					t.Errorf("parsePart(%+v) expected error, got nil", tc.piece)
 				}
 			} else {
 				if err != nil {
-					t.Errorf("parsePart(%q) expected no error, got %v", tc.piece, err)
+					t.Errorf("parsePart(%+v) expected no error, got %v", tc.piece, err)
 				}
 
 				switch expected := tc.expected.(type) {
@@ -1489,7 +1281,7 @@ func TestParsePart(t *testing.T) {
 
 func TestParseMediaPiece(t *testing.T) {
 	t.Run("parse media piece", func(t *testing.T) {
-		piece := "<<<dotprompt:media:url>>> https://example.com/image.jpg"
+		piece := "media:url https://example.com/image.jpg"
 		result, err := parseMediaPart(piece)
 		if err != nil {
 			t.Errorf("parseMediaPart() returned error: %v", err)

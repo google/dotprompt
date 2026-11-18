@@ -34,20 +34,6 @@ type MessageSource struct {
 	Metadata map[string]any `json:"metadata" yaml:"metadata"`
 }
 
-const (
-	// Prefixes for the role markers in the template.
-	RoleMarkerPrefix = "<<<dotprompt:role:"
-
-	// Prefixes for the history markers in the template.
-	HistoryMarkerPrefix = "<<<dotprompt:history"
-
-	// Prefixes for the media markers in the template.
-	MediaMarkerPrefix = "<<<dotprompt:media:"
-
-	// Prefixes for the section markers in the template.
-	SectionMarkerPrefix = "<<<dotprompt:section"
-)
-
 var (
 	// FrontmatterAndBodyRegex is a regular expression to match YAML frontmatter
 	// delineated by `---` markers. Allows blank lines and license headers (lines
@@ -59,29 +45,13 @@ var (
 	// frontmatter (where there's no content between the frontmatter markers).
 	// Also allows blank lines and license headers before the first ---.
 	EmptyFrontmatterRegex = regexp.MustCompile(`^(?:(?:#[^\n]*|[ \t]*)\n)*---\s*\n---\s*\n([\s\S]*)$`)
+)
 
-	// RoleAndHistoryMarkerRegex is a regular expression to match
-	// <<<dotprompt:role:xxx>>> and <<<dotprompt:history>>> markers in the
-	// template.
-	//
-	// Note: Only lowercase letters are allowed after 'role:'.
-	//
-	// Examples of matching patterns:
-	// - <<<dotprompt:role:user>>>
-	// - <<<dotprompt:role:system>>>
-	// - <<<dotprompt:history>>>
-	RoleAndHistoryMarkerRegex = regexp.MustCompile(
-		`(<<<dotprompt:(?:role:[a-z]+|history))>>>`)
-
-	// MediaAndSectionMarkerRegex is a regular expression to match
-	// <<<dotprompt:media:url>>> and <<<dotprompt:section>>> markers in the
-	// template.
-	//
-	// Examples of matching patterns:
-	// - <<<dotprompt:media:url>>>
-	// - <<<dotprompt:section>>>
-	MediaAndSectionMarkerRegex = regexp.MustCompile(
-		`(<<<dotprompt:(?:media:url|section).*?)>>>`)
+// Marker body prefixes; see markers.go for the full marker format.
+const (
+	roleMarkerBodyPrefix    = "role:"
+	mediaMarkerBodyPrefix   = "media:url "
+	sectionMarkerBodyPrefix = "section "
 )
 
 // ReservedMetadataKeywords is a list of keywords that are reserved for metadata
@@ -102,95 +72,6 @@ var ReservedMetadataKeywords = []string{
 	"tools",
 	"variant",
 	"version",
-}
-
-// splitByRegex splits a string by a regular expression and includes the matched
-// regex patterns in the result while filtering out empty/whitespace-only
-// pieces.
-//
-// NOTE: Since the behavior of regexp.Split is different in Python, JS, and Go,
-// this function handles the different behavior between the specialized marker
-// regexes and simple splitting regexes to mimic their behavior.
-//
-// For marker regexes with capturing groups (delineated by parens), it includes
-// the capturing group in the result.  For simple regexes, it behaves like
-// regexp.Split, removing the matched separators.
-func splitByRegex(source string, regex *regexp.Regexp) []string {
-	// Check if the regex is one of the marker regexes by looking for capturing
-	// groups in the pattern.
-	hasCapturingGroups := strings.Contains(regex.String(), "(")
-
-	if !hasCapturingGroups {
-		pieces := regex.Split(source, -1)
-
-		// Filter out empty or whitespace-only pieces.
-		var result []string
-		for _, s := range pieces {
-			if strings.TrimSpace(s) != "" {
-				result = append(result, s)
-			}
-		}
-		return result
-	}
-
-	// For marker regexes with capturing groups, include the matched portions.
-	matches := regex.FindAllStringSubmatchIndex(source, -1)
-	if len(matches) == 0 {
-		if strings.TrimSpace(source) != "" {
-			return []string{source}
-		}
-		return []string{}
-	}
-
-	var result []string
-	lastEnd := 0
-
-	// Process each match and the text before it
-	for _, match := range matches {
-		start := match[0] // Start of the full match.
-		end := match[1]   // End of the full match.
-
-		// If there's text before the match that isn't empty...
-		if start > lastEnd {
-			textBefore := source[lastEnd:start]
-			if strings.TrimSpace(textBefore) != "" {
-				result = append(result, textBefore)
-			}
-		}
-
-		// Add the capturing group (not the full match).
-		groupStart := match[2] // Start of first capturing group.
-		groupEnd := match[3]   // End of first capturing group.
-
-		if groupStart >= 0 && groupEnd >= 0 {
-			matchText := source[groupStart:groupEnd]
-			if strings.TrimSpace(matchText) != "" {
-				result = append(result, matchText)
-			}
-		}
-
-		lastEnd = end
-	}
-
-	// If there's text after the last match that isn't empty...
-	if lastEnd < len(source) {
-		textAfter := source[lastEnd:]
-		if strings.TrimSpace(textAfter) != "" {
-			result = append(result, textAfter)
-		}
-	}
-
-	return result
-}
-
-// splitByRoleAndHistoryMarkers splits a string by role and history markers.
-func splitByRoleAndHistoryMarkers(source string) []string {
-	return splitByRegex(source, RoleAndHistoryMarkerRegex)
-}
-
-// splitByMediaAndSectionMarkers splits a string by media and section markers.
-func splitByMediaAndSectionMarkers(source string) []string {
-	return splitByRegex(source, MediaAndSectionMarkerRegex)
 }
 
 // convertNamespacedEntryToNestedObject converts a namespaced entry to a nested
@@ -380,7 +261,25 @@ func ParseDocument(source string) (ParsedPrompt, error) {
 }
 
 // ToMessages converts a rendered template string into an array of messages.
-func ToMessages(renderedString string, data *DataArgument) ([]Message, error) {
+//
+// Only markers carrying nonce are honored, i.e. those of the form
+// <<<dotprompt:{nonce}:{body}>>> emitted by the role, history, section and
+// media helpers during the render that produced renderedString. Anything else
+// that looks like a marker stays literal text. The nonce must be 32 lowercase
+// hex characters; otherwise an error is returned.
+func ToMessages(renderedString string, nonce string, data *DataArgument) ([]Message, error) {
+	// Both regexps embed the nonce, so they can't be package-level. Compile
+	// them once here rather than per message source; toParts runs for every
+	// message on the render hot path.
+	roleRe, err := roleAndHistoryMarkerRegex(nonce)
+	if err != nil {
+		return nil, err
+	}
+	mediaRe, err := mediaAndSectionMarkerRegex(nonce)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create the initial message source with empty content.
 	ms := &MessageSource{
 		Role:   RoleUser,
@@ -388,10 +287,39 @@ func ToMessages(renderedString string, data *DataArgument) ([]Message, error) {
 	}
 	messageSources := []*MessageSource{ms}
 
-	for _, piece := range splitByRoleAndHistoryMarkers(renderedString) {
-		if strings.HasPrefix(piece, RoleMarkerPrefix) {
-			roleStr := piece[len(RoleMarkerPrefix):]
-			role := Role(roleStr)
+	for _, piece := range splitByMarkers(renderedString, roleRe) {
+		switch {
+		case !piece.isMarker:
+			// Add the text to the current message source.
+			messageSources[len(messageSources)-1].Source += piece.value
+		case piece.value == "history":
+			// Add the history messages to the message sources.
+			var msgs []Message
+			if data != nil && data.Messages != nil {
+				msgs = data.Messages
+			}
+
+			historyMessages, err := transformMessagesToHistory(msgs)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, msg := range historyMessages {
+				messageSources = append(messageSources, &MessageSource{
+					Role:     msg.Role,
+					Content:  msg.Content,
+					Metadata: msg.Metadata,
+				})
+			}
+
+			newMs := &MessageSource{
+				Role:   RoleModel,
+				Source: "",
+			}
+			messageSources = append(messageSources, newMs)
+		default:
+			// The regex guarantees the body is "role:<name>" here.
+			role := Role(strings.TrimPrefix(piece.value, roleMarkerBodyPrefix))
 
 			if messageSources[len(messageSources)-1].Source != "" &&
 				trimUnicodeSpacesExceptNewlines(messageSources[len(messageSources)-1].Source) != "" {
@@ -405,40 +333,10 @@ func ToMessages(renderedString string, data *DataArgument) ([]Message, error) {
 				// Otherwise, update the role of the current message.
 				messageSources[len(messageSources)-1].Role = role
 			}
-		} else if strings.HasPrefix(piece, HistoryMarkerPrefix) {
-			// Add the history messages to the message sources.
-			var msgs []Message
-			if data != nil && data.Messages != nil {
-				msgs = data.Messages
-			}
-
-			historyMessages, err := transformMessagesToHistory(msgs)
-			if err != nil {
-				return nil, err
-			}
-
-			if len(historyMessages) > 0 {
-				for _, msg := range historyMessages {
-					messageSources = append(messageSources, &MessageSource{
-						Role:     msg.Role,
-						Content:  msg.Content,
-						Metadata: msg.Metadata,
-					})
-				}
-			}
-
-			newMs := &MessageSource{
-				Role:   RoleModel,
-				Source: "",
-			}
-			messageSources = append(messageSources, newMs)
-		} else {
-			// Otherwise, add the piece to the current message source.
-			messageSources[len(messageSources)-1].Source += piece
 		}
 	}
 
-	messages, err := messageSourcesToMessages(messageSources)
+	messages, err := messageSourcesToMessages(messageSources, mediaRe)
 	if err != nil {
 		return nil, err
 	}
@@ -450,9 +348,11 @@ func ToMessages(renderedString string, data *DataArgument) ([]Message, error) {
 }
 
 // messageSourcesToMessages converts an array of message sources to an array of
-// messages.
+// messages. mediaRe is the render's media and section marker regexp (see
+// mediaAndSectionMarkerRegex).
 func messageSourcesToMessages(
 	messageSources []*MessageSource,
+	mediaRe *regexp.Regexp,
 ) ([]Message, error) {
 	messages := []Message{}
 
@@ -469,7 +369,7 @@ func messageSourcesToMessages(
 		if m.Content != nil {
 			out.Content = m.Content
 		} else {
-			parts, err := toParts(m.Source)
+			parts, err := toParts(m.Source, mediaRe)
 			if err != nil {
 				return nil, err
 			}
@@ -562,11 +462,11 @@ func insertHistory(messages []Message, history []Message) ([]Message, error) {
 // toParts converts a source string into an array of parts (text, media, or
 // metadata).
 //
-// Also processes media and section markers.
-func toParts(source string) ([]Part, error) {
+// Also processes media and section markers matched by mediaRe, the render's
+// media and section marker regexp (see mediaAndSectionMarkerRegex).
+func toParts(source string, mediaRe *regexp.Regexp) ([]Part, error) {
 	parts := []Part{}
-
-	for _, piece := range splitByMediaAndSectionMarkers(source) {
+	for _, piece := range splitByMarkers(source, mediaRe) {
 		part, err := parsePart(piece)
 		if err != nil {
 			return nil, err
@@ -577,26 +477,29 @@ func toParts(source string) ([]Part, error) {
 	return parts, nil
 }
 
-// parsePart parses a part from piece of rendered template.
-func parsePart(piece string) (Part, error) {
-	if strings.HasPrefix(piece, MediaMarkerPrefix) {
-		return parseMediaPart(piece)
-	} else if strings.HasPrefix(piece, SectionMarkerPrefix) {
-		return parseSectionPart(piece)
-	} else {
-		return parseTextPart(piece)
+// parsePart parses a part from a piece of rendered template.
+func parsePart(piece markerPiece) (Part, error) {
+	switch {
+	case !piece.isMarker:
+		return parseTextPart(piece.value)
+	case strings.HasPrefix(piece.value, mediaMarkerBodyPrefix):
+		return parseMediaPart(piece.value)
+	default:
+		// The regex guarantees the body is "section <name>" here.
+		return parseSectionPart(piece.value)
 	}
 }
 
-// parseMediaPart parses a media part from a piece of rendered template.
-func parseMediaPart(piece string) (*MediaPart, error) {
-	if !strings.HasPrefix(piece, MediaMarkerPrefix) {
+// parseMediaPart parses a media part from a marker body
+// ("media:url <url> [<contentType>]").
+func parseMediaPart(body string) (*MediaPart, error) {
+	if !strings.HasPrefix(body, mediaMarkerBodyPrefix) {
 		return nil, fmt.Errorf(
 			"invalid media piece: %s; expected prefix %s",
-			piece, MediaMarkerPrefix)
+			body, mediaMarkerBodyPrefix)
 	}
 
-	fields := strings.Split(piece, " ")
+	fields := strings.Split(body, " ")
 	n := len(fields)
 
 	var url, contentType string
@@ -608,7 +511,7 @@ func parseMediaPart(piece string) (*MediaPart, error) {
 	default:
 		return nil, fmt.Errorf(
 			"invalid media piece: %s; expected 2 or 3 fields, found %d",
-			piece, n)
+			body, n)
 	}
 
 	mediaPart := &MediaPart{
@@ -626,19 +529,20 @@ func parseMediaPart(piece string) (*MediaPart, error) {
 	return mediaPart, nil
 }
 
-// parseSectionPart parses a section part from a piece of rendered template.
-func parseSectionPart(piece string) (*PendingPart, error) {
-	if !strings.HasPrefix(piece, SectionMarkerPrefix) {
+// parseSectionPart parses a section part from a marker body
+// ("section <name>").
+func parseSectionPart(body string) (*PendingPart, error) {
+	if !strings.HasPrefix(body, sectionMarkerBodyPrefix) {
 		return nil, fmt.Errorf(
 			"invalid section piece: %s; expected prefix %s",
-			piece, SectionMarkerPrefix)
+			body, sectionMarkerBodyPrefix)
 	}
 
-	fields := strings.Split(piece, " ")
+	fields := strings.Split(body, " ")
 	n := len(fields)
 	if n != 2 {
 		return nil, fmt.Errorf(
-			"invalid section piece: %s; expected 2 fields, found %d", piece, n)
+			"invalid section piece: %s; expected 2 fields, found %d", body, n)
 	}
 
 	sectionType := strings.TrimSpace(fields[1])

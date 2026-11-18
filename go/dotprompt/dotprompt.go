@@ -264,6 +264,11 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata) 
 		for k, v := range data.Context {
 			privDF.Set(k, v)
 		}
+		// Fresh per render so user-supplied values can't forge role/media/etc.
+		// markers in the rendered string. Set after data.Context so it can't
+		// be overridden. See markers.go.
+		nonce := generateMarkerNonce()
+		privDF.Set(markerNonceDataKey, nonce)
 
 		renderedString, err := localTemplate.ExecWith(inputContext, privDF, &raymond.ExecOptions{
 			NoEscape: true,
@@ -273,7 +278,7 @@ func (dp *Dotprompt) Compile(source string, additionalMetadata *PromptMetadata) 
 			return RenderedPrompt{}, err
 		}
 
-		messages, err := ToMessages(renderedString, data)
+		messages, err := ToMessages(renderedString, nonce, data)
 		if err != nil {
 			return RenderedPrompt{}, err
 		}
