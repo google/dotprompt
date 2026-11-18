@@ -166,7 +166,7 @@ The completion provider offers:
 | Context | Completions |
 |---------|-------------|
 | `{{` | Handlebars helpers, Dotprompt helpers |
-| `{{#` | Block helpers (if, each, role, section) |
+| `{{#` | Block helpers (if, unless, each, with, ifEquals, unlessEquals) |
 | `{{>` | Partial template reference |
 | `model:` | Model names (Gemini, GPT, Claude) |
 | Frontmatter | Field names (model, config, input, output) |

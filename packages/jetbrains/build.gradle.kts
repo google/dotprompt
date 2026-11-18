@@ -28,6 +28,8 @@ version = "0.1.0"
 
 repositories { mavenCentral() }
 
+dependencies { testImplementation("junit:junit:4.13.2") }
+
 intellij {
   version.set("2024.1")
   type.set("IC") // IntelliJ IDEA Community Edition

@@ -40,6 +40,12 @@ pnpm install
 pnpm run build
 ```
 
+Run the completion tests (uses the workspace root `vitest`):
+
+```bash
+pnpm exec vitest run
+```
+
 ## License
 
 Apache-2.0

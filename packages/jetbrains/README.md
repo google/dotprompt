@@ -4,7 +4,7 @@ Language support for Dotprompt (`.prompt`) files in JetBrains IDEs (IntelliJ IDE
 
 ## Features
 
-- **Syntax Highlighting**: YAML frontmatter, Handlebars templates, Dotprompt helpers
+- **Syntax Highlighting**: YAML frontmatter keys, Handlebars comments, braces, variables, and helper names (built-ins like `if`/`each` and Dotprompt helpers like `role`, `history`, `section`, `media`)
 - **LSP Integration**: Real-time diagnostics, formatting, and hover documentation (via LSP4IJ)
 - **Live Templates**: Type `role`, `if`, `each`, `json` + Tab for quick insertions
 - **Code Comments**: Block comment support using `{{! ... }}`
@@ -48,6 +48,12 @@ bazel build //packages/jetbrains:dotprompt-intellij
 ```
 
 This produces `bazel-bin/packages/jetbrains/dotprompt-intellij.jar`.
+
+Run the lexer tests with:
+
+```bash
+bazel test //packages/jetbrains:DotpromptLexerTest
+```
 
 > **Note**: For full plugin packaging (with plugin.xml, icons, LSP4IJ integration), 
 > use the Gradle build. The Bazel target is useful for incremental compilation 

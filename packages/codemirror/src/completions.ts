@@ -17,110 +17,128 @@
  */
 
 import {
-  Completion,
-  CompletionContext,
-  CompletionResult,
+  type Completion,
+  type CompletionContext,
+  type CompletionResult,
+  snippet,
 } from '@codemirror/autocomplete';
+
+/**
+ * Builds a completion for the helper name typed right after `{{`.
+ *
+ * The completion range covers only the typed word (not the `{{`), so templates
+ * start at the helper name and must not repeat the opening braces. Templates
+ * use CodeMirror snippet syntax: `${name}` is a field pre-filled with `name`,
+ * `${}` an empty one. Only `${` / `#{` start a field, so the literal Handlebars
+ * braces need no escaping.
+ *
+ * Every template closes its own expression, so a `}}` that already follows the
+ * cursor (e.g. auto-inserted by `closeBrackets` after typing `{{`) is replaced
+ * instead of doubled.
+ */
+function helperCompletion(
+  template: string,
+  completion: Completion
+): Completion {
+  const applySnippet = snippet(template);
+  return {
+    ...completion,
+    apply: (view, picked, from, to) => {
+      const end = view.state.sliceDoc(to, to + 2) === '}}' ? to + 2 : to;
+      applySnippet(view, picked, from, end);
+    },
+  };
+}
 
 /**
  * Handlebars helper completions.
  */
 const HANDLEBARS_HELPERS: Completion[] = [
-  {
+  helperCompletion('#if ${condition}}}\n\t${}\n{{/if}}', {
     label: 'if',
     type: 'keyword',
     info: 'Conditionally renders content when the condition is truthy.',
-    apply: '{{#if ${condition}}}\n\t\n{{/if}}',
-  },
-  {
+  }),
+  helperCompletion('#unless ${condition}}}\n\t${}\n{{/unless}}', {
     label: 'unless',
     type: 'keyword',
     info: 'Inverse of if - renders content when the condition is falsy.',
-    apply: '{{#unless ${condition}}}\n\t\n{{/unless}}',
-  },
-  {
+  }),
+  helperCompletion('#each ${items}}}\n\t{{this}}${}\n{{/each}}', {
     label: 'each',
     type: 'keyword',
     info: 'Iterates over arrays or objects.',
-    apply: '{{#each ${items}}}\n\t{{this}}\n{{/each}}',
-  },
-  {
+  }),
+  helperCompletion('#with ${context}}}\n\t${}\n{{/with}}', {
     label: 'with',
     type: 'keyword',
     info: 'Changes the current context for the enclosed block.',
-    apply: '{{#with ${context}}}\n\t\n{{/with}}',
-  },
-  {
+  }),
+  helperCompletion('else}}', {
     label: 'else',
     type: 'keyword',
     info: 'Else branch for if/unless blocks.',
-    apply: '{{else}}',
-  },
-  {
+  }),
+  helperCompletion('log ${value}}}', {
     label: 'log',
     type: 'function',
     info: 'Logs a value to the console for debugging.',
-    apply: '{{log ${value}}}',
-  },
-  {
+  }),
+  helperCompletion('lookup ${object} ${key}}}', {
     label: 'lookup',
     type: 'function',
     info: 'Dynamically looks up a value by key from an object.',
-    apply: '{{lookup ${object} ${key}}}',
-  },
+  }),
 ];
 
 /**
  * Dotprompt-specific helper completions.
  */
 const DOTPROMPT_HELPERS: Completion[] = [
-  {
+  helperCompletion('role "${system}"}}\n${}', {
     label: 'role',
     type: 'keyword',
     info: 'Starts a message with a specific role (system, user, model).',
-    apply: '{{role "${role}"}}\n',
     boost: 10,
-  },
-  {
+  }),
+  helperCompletion('json ${value}}}', {
     label: 'json',
     type: 'function',
     info: 'Serializes a value to JSON format.',
-    apply: '{{ json ${value} }}',
-  },
-  {
+  }),
+  helperCompletion('history}}', {
     label: 'history',
     type: 'function',
     info: 'Inserts the conversation history at this point.',
-    apply: '{{history}}',
-  },
-  {
+  }),
+  helperCompletion('section "${name}"}}\n${}', {
     label: 'section',
     type: 'keyword',
     info: 'Starts a named section that can be referenced elsewhere.',
-    apply: '{{section "${name}"}}\n',
-  },
-  {
+  }),
+  helperCompletion('media url=${url}}}', {
     label: 'media',
     type: 'function',
     info: 'Embeds media content (images, audio, video) by URL.',
-    apply: '{{media url=${url}}}',
-  },
-  {
+  }),
+  helperCompletion('#ifEquals ${value1} ${value2}}}\n\t${}\n{{/ifEquals}}', {
     label: 'ifEquals',
     type: 'keyword',
     info: 'Renders content when two values are equal.',
-    apply: '{{#ifEquals ${value1} ${value2}}}\n\t\n{{/ifEquals}}',
-  },
-  {
-    label: 'unlessEquals',
-    type: 'keyword',
-    info: 'Renders content when two values are NOT equal.',
-    apply: '{{#unlessEquals ${value1} ${value2}}}\n\t\n{{/unlessEquals}}',
-  },
+  }),
+  helperCompletion(
+    '#unlessEquals ${value1} ${value2}}}\n\t${}\n{{/unlessEquals}}',
+    {
+      label: 'unlessEquals',
+      type: 'keyword',
+      info: 'Renders content when two values are NOT equal.',
+    }
+  ),
 ];
 
 /**
- * Role snippet completions.
+ * Role snippet completions, offered for a bare word outside `{{ }}`. The range
+ * is that word, so a plain string `apply` inserting the whole helper is right.
  */
 const ROLE_SNIPPETS: Completion[] = [
   {

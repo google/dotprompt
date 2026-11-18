@@ -16,7 +16,7 @@
 
 """Build rules for the Dotprompt JetBrains plugin."""
 
-load("@rules_kotlin//kotlin:jvm.bzl", "kt_jvm_library")
+load("@rules_kotlin//kotlin:jvm.bzl", "kt_jvm_library", "kt_jvm_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -55,6 +55,21 @@ kt_jvm_library(
         "@intellij_maven//:com_jetbrains_intellij_platform_lang",
         "@intellij_maven//:com_jetbrains_intellij_platform_lang_impl",
         "@intellij_maven//:com_jetbrains_intellij_platform_util",
+    ],
+)
+
+# Lexer unit tests. The lexer only needs IElementType/LexerBase from the
+# platform jars, so this runs as a plain JUnit test without an IDE fixture.
+kt_jvm_test(
+    name = "DotpromptLexerTest",
+    size = "small",
+    srcs = ["src/test/kotlin/com/google/dotprompt/DotpromptLexerTest.kt"],
+    test_class = "com.google.dotprompt.DotpromptLexerTest",
+    deps = [
+        ":dotprompt-intellij",
+        "@intellij_maven//:com_jetbrains_intellij_platform_core",
+        "@intellij_maven//:com_jetbrains_intellij_platform_util",
+        "@maven//:junit_junit",
     ],
 )
 

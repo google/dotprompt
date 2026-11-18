@@ -20,12 +20,15 @@ import type * as monaco from 'monaco-editor';
 
 /**
  * Handlebars built-in helpers with documentation.
+ *
+ * These are offered right after `{{` and replace only the typed helper name, so
+ * insert texts start at the name and must not repeat the opening braces.
  */
 const HANDLEBARS_HELPERS = [
   {
     label: 'if',
     kind: 1, // Function
-    insertText: '{{#if ${1:condition}}}\n\t$0\n{{/if}}',
+    insertText: '#if ${1:condition}}}\n\t$0\n{{/if}}',
     insertTextRules: 4, // InsertAsSnippet
     documentation:
       'Conditionally renders content when the condition is truthy.',
@@ -33,7 +36,7 @@ const HANDLEBARS_HELPERS = [
   {
     label: 'unless',
     kind: 1,
-    insertText: '{{#unless ${1:condition}}}\n\t$0\n{{/unless}}',
+    insertText: '#unless ${1:condition}}}\n\t$0\n{{/unless}}',
     insertTextRules: 4,
     documentation:
       'Inverse of if - renders content when the condition is falsy.',
@@ -41,7 +44,7 @@ const HANDLEBARS_HELPERS = [
   {
     label: 'each',
     kind: 1,
-    insertText: '{{#each ${1:items}}}\n\t$0\n{{/each}}',
+    insertText: '#each ${1:items}}}\n\t$0\n{{/each}}',
     insertTextRules: 4,
     documentation:
       'Iterates over arrays or objects. Use @index, @first, @last inside.',
@@ -49,40 +52,41 @@ const HANDLEBARS_HELPERS = [
   {
     label: 'with',
     kind: 1,
-    insertText: '{{#with ${1:context}}}\n\t$0\n{{/with}}',
+    insertText: '#with ${1:context}}}\n\t$0\n{{/with}}',
     insertTextRules: 4,
     documentation: 'Changes the current context for the enclosed block.',
   },
   {
     label: 'else',
     kind: 14, // Keyword
-    insertText: '{{else}}',
+    insertText: 'else}}',
     documentation: 'Else branch for if/unless blocks.',
   },
   {
     label: 'log',
     kind: 1,
-    insertText: '{{log ${1:value}}}',
+    insertText: 'log ${1:value}}}',
     insertTextRules: 4,
     documentation: 'Logs a value to the console for debugging.',
   },
   {
     label: 'lookup',
     kind: 1,
-    insertText: '{{lookup ${1:object} ${2:key}}}',
+    insertText: 'lookup ${1:object} ${2:key}}}',
     insertTextRules: 4,
     documentation: 'Dynamically looks up a value by key from an object.',
   },
 ];
 
 /**
- * Dotprompt-specific helpers with documentation.
+ * Dotprompt-specific helpers with documentation. Same insert text convention as
+ * HANDLEBARS_HELPERS (no leading `{{`).
  */
 const DOTPROMPT_HELPERS = [
   {
     label: 'role',
     kind: 1,
-    insertText: '{{role "${1|system,user,model|}"}}\n$0',
+    insertText: 'role "${1|system,user,model|}"}}\n$0',
     insertTextRules: 4,
     documentation:
       'Starts a message with a specific role (system, user, or model).',
@@ -90,34 +94,34 @@ const DOTPROMPT_HELPERS = [
   {
     label: 'json',
     kind: 1,
-    insertText: '{{ json ${1:value} }}',
+    insertText: 'json ${1:value}}}',
     insertTextRules: 4,
     documentation: 'Serializes a value to JSON format.',
   },
   {
     label: 'history',
     kind: 1,
-    insertText: '{{history}}',
+    insertText: 'history}}',
     documentation: 'Inserts the conversation history at this point.',
   },
   {
     label: 'section',
     kind: 1,
-    insertText: '{{section "${1:name}"}}\n$0',
+    insertText: 'section "${1:name}"}}\n$0',
     insertTextRules: 4,
     documentation: 'Starts a named section that can be referenced elsewhere.',
   },
   {
     label: 'media',
     kind: 1,
-    insertText: '{{media url=${1:url}}}',
+    insertText: 'media url=${1:url}}}',
     insertTextRules: 4,
     documentation: 'Embeds media content (images, audio, video) by URL.',
   },
   {
     label: 'ifEquals',
     kind: 1,
-    insertText: '{{#ifEquals ${1:value1} ${2:value2}}}\n\t$0\n{{/ifEquals}}',
+    insertText: '#ifEquals ${1:value1} ${2:value2}}}\n\t$0\n{{/ifEquals}}',
     insertTextRules: 4,
     documentation: 'Renders content when two values are equal.',
   },
@@ -125,7 +129,7 @@ const DOTPROMPT_HELPERS = [
     label: 'unlessEquals',
     kind: 1,
     insertText:
-      '{{#unlessEquals ${1:value1} ${2:value2}}}\n\t$0\n{{/unlessEquals}}',
+      '#unlessEquals ${1:value1} ${2:value2}}}\n\t$0\n{{/unlessEquals}}',
     insertTextRules: 4,
     documentation: 'Renders content when two values are NOT equal.',
   },
@@ -250,7 +254,10 @@ const MODEL_NAMES = [
   },
   // Gemma 3 Series
   { label: 'gemma-3-27b-it', documentation: 'Large instruction-tuned Gemma 3' },
-  { label: 'gemma-3-12b-it', documentation: 'Medium instruction-tuned Gemma 3' },
+  {
+    label: 'gemma-3-12b-it',
+    documentation: 'Medium instruction-tuned Gemma 3',
+  },
   { label: 'gemma-3-4b-it', documentation: 'Small instruction-tuned Gemma 3' },
   { label: 'gemma-3-1b-it', documentation: 'Tiny instruction-tuned Gemma 3' },
   // OpenAI
@@ -340,9 +347,24 @@ export function createCompletionProvider(
       const isInHandlebars = /\{\{[^}]*$/.test(linePrefix);
 
       if (isInHandlebars) {
+        // Helper position: `{{`, `{{#` or `{{>` (optionally followed by
+        // spaces, as in `{{> partial}}`) plus the word typed so far. Items
+        // replace only that word, never the opener.
+        const head = linePrefix.match(/\{\{([#>]?)\s*(\w*)$/);
+        if (!head) {
+          // Argument position (e.g. `{{#if |`): helper templates would nest a
+          // second `{{` here, so offer nothing.
+          return { suggestions: [] };
+        }
+        const [, opener, word] = head;
+        const wordRange = {
+          ...range,
+          startColumn: position.column - word.length,
+        };
+
         // After {{# - block helpers. `role` and `section` are inline helpers
         // (a block form would discard its content), so they are not offered.
-        if (/\{\{#\s*$/.test(linePrefix)) {
+        if (opener === '#') {
           const blockHelpers = [
             ...HANDLEBARS_HELPERS.filter((h) =>
               ['if', 'unless', 'each', 'with'].includes(h.label)
@@ -353,14 +375,14 @@ export function createCompletionProvider(
           ].map((item) => ({
             ...item,
             insertText: item.label,
-            range,
+            range: wordRange,
           }));
 
           return { suggestions: blockHelpers };
         }
 
         // After {{> - partials
-        if (/\{\{>\s*$/.test(linePrefix)) {
+        if (opener === '>') {
           return {
             suggestions: [
               {
@@ -369,16 +391,25 @@ export function createCompletionProvider(
                 insertText: '${1:partialName}',
                 insertTextRules: 4,
                 documentation: 'Reference a partial template',
-                range,
+                range: wordRange,
               },
             ],
           };
         }
 
-        // General helpers after {{ or {{
+        // After {{ - full helper templates. They close the expression
+        // themselves, so also replace a `}}` right after the cursor (inserted
+        // by the `{{` auto-closing pair) instead of doubling it.
+        const hasCloser =
+          lineContent.substring(position.column - 1, position.column + 1) ===
+          '}}';
+        const helperRange = {
+          ...wordRange,
+          endColumn: hasCloser ? position.column + 2 : position.column,
+        };
         return {
           suggestions: [...HANDLEBARS_HELPERS, ...DOTPROMPT_HELPERS].map(
-            (item) => ({ ...item, range })
+            (item) => ({ ...item, range: helperRange })
           ),
         };
       }
@@ -423,9 +454,17 @@ export function createCompletionProvider(
         };
       }
 
-      // Role snippets as general completions
+      // Role snippets as general completions, replacing the word being typed
+      const typedWord = linePrefix.match(/\w*$/)?.[0] ?? '';
+      const roleRange = {
+        ...range,
+        startColumn: position.column - typedWord.length,
+      };
       return {
-        suggestions: [...ROLE_SNIPPETS].map((item) => ({ ...item, range })),
+        suggestions: [...ROLE_SNIPPETS].map((item) => ({
+          ...item,
+          range: roleRange,
+        })),
       };
     },
   };
