@@ -28,10 +28,12 @@ import com.github.jknack.handlebars.io.StringTemplateSource;
 import com.github.jknack.handlebars.io.TemplateLoader;
 import com.github.jknack.handlebars.io.TemplateSource;
 import com.google.dotprompt.helpers.Helpers;
+import com.google.dotprompt.internal.Markers;
 import com.google.dotprompt.models.MediaPart;
 import com.google.dotprompt.models.Message;
 import com.google.dotprompt.models.ParsedPrompt;
 import com.google.dotprompt.models.Part;
+import com.google.dotprompt.models.PendingPart;
 import com.google.dotprompt.models.Prompt;
 import com.google.dotprompt.models.PromptFunction;
 import com.google.dotprompt.models.PromptMetadata;
@@ -736,14 +738,21 @@ public class Dotprompt {
       }
     }
 
+    // Fresh per render so user-supplied values can't forge role/media/etc. markers in the rendered
+    // string. See Markers.
+    String nonce = Markers.generateMarkerNonce();
+
     Context context = Context.newBuilder(mergedData).build();
     for (Map.Entry<String, Object> entry : contextData.entrySet()) {
       context.data(entry.getKey(), entry.getValue());
     }
+    // Must come after the user context entries so they can't override it. The data frame is shared
+    // with blocks and partials, where the marker helpers read it.
+    context.data(Markers.MARKER_NONCE_DATA_KEY, nonce);
 
     String renderedString = template.apply(context);
 
-    List<Message> messages = toMessages(renderedString, mergedData);
+    List<Message> messages = toMessages(renderedString, nonce, mergedData);
 
     // Construct result config
     Map<String, Object> resultConfig = new HashMap<>();
@@ -878,23 +887,31 @@ public class Dotprompt {
     }
   }
 
-  private static final String ROLE_MARKER_PREFIX = "<<<dotprompt:role:";
-  private static final String HISTORY_MARKER_PREFIX = "<<<dotprompt:history";
+  // Body of role, history, media and section markers, matched in a single pass. This parser
+  // predates Parser.toMessages and differs from it (Map-based history, a single combined pattern,
+  // broader role names), so it is kept separate. Both only honor markers carrying the nonce.
+  // Media and section bodies embed user-supplied values (URLs, section names) that may contain
+  // '>' or newlines, so they match lazily up to the first ">>>" (markerPattern compiles with
+  // DOTALL). A narrower body regex would fail to match and leak the raw marker, nonce included.
+  private static final String MARKER_BODY_REGEX =
+      "role:[a-zA-Z0-9_]+|history|media:.+?|section .*?";
 
-  // Regex to match <<<dotprompt:(role:xxx|history|media:xxx|section:xxx)>>> markers.
-  private static final Pattern MARKER_PATTERN =
-      Pattern.compile(
-          "(?s)<<<dotprompt:(?:role:[a-zA-Z0-9_]+|history|media:[^>]+|section\\s+[a-zA-Z0-9_]+)>>>");
+  private static final String MEDIA_URL_BODY_PREFIX = "media:url ";
+  private static final String SECTION_BODY_PREFIX = "section ";
 
   /**
    * Converts a rendered string into a list of messages.
    *
+   * <p>Only markers carrying {@code nonce} are honored. Text between markers is classified by its
+   * position (outside any match), so values that merely look like markers stay text.
+   *
    * @param renderedString The rendered template string.
+   * @param nonce The marker nonce used when rendering the template.
    * @param data The data map (used to extract potential history).
    * @return A list of parsed Message objects.
    */
   @SuppressWarnings("unchecked")
-  private List<Message> toMessages(String renderedString, Map<String, Object> data) {
+  private List<Message> toMessages(String renderedString, String nonce, Map<String, Object> data) {
     if (renderedString == null) {
       return List.of();
     }
@@ -953,7 +970,7 @@ public class Dotprompt {
     List<Message> historySources = Parser.transformMessagesToHistory(historyMessages);
 
     boolean historyInjected = false;
-    Matcher matcher = MARKER_PATTERN.matcher(renderedString);
+    Matcher matcher = Markers.markerPattern(nonce, MARKER_BODY_REGEX).matcher(renderedString);
     int lastEnd = 0;
 
     ObjectMapper mapper = new ObjectMapper();
@@ -964,8 +981,8 @@ public class Dotprompt {
         currentMessage.appendSource(text);
       }
 
-      // Marker is inside <<<dotprompt: ... >>>
-      String markerContent = renderedString.substring(matcher.start() + 13, matcher.end() - 3);
+      // Body of <<<dotprompt:{nonce}:{body}>>>
+      String markerContent = matcher.group(1);
 
       try {
         if (markerContent.startsWith("role:")) {
@@ -1001,17 +1018,22 @@ public class Dotprompt {
             }
           }
         } else if (markerContent.startsWith("media:")) {
-          // Format: media:url URL [TYPE]
-          String mediaPayload = markerContent.substring(6).trim();
-          if (mediaPayload.startsWith("url ")) {
-            String[] parts = mediaPayload.substring(4).split("\\s+");
+          // Format: media:url URL [TYPE]. Split on spaces only (the helper's separator), as in
+          // Parser, so a URL containing other whitespace such as newlines is kept intact.
+          if (markerContent.startsWith(MEDIA_URL_BODY_PREFIX)) {
+            String[] parts = markerContent.substring(MEDIA_URL_BODY_PREFIX.length()).split(" ");
             String url = parts[0];
             String contentType = parts.length > 1 ? parts[1] : "";
             currentMessage.addPart(new MediaPart(contentType, url));
           }
-        } else if (markerContent.startsWith("section")) {
-          // Format: section NAME
-          currentMessage.addPart(new TextPart(matcher.group()));
+        } else if (markerContent.startsWith(SECTION_BODY_PREFIX)) {
+          // Format: section NAME. Emitted as a pending part (as in Parser and the other runtimes)
+          // rather than the raw marker text, which would leak the nonce.
+          String[] parts = markerContent.substring(SECTION_BODY_PREFIX.length()).split(" ");
+          Map<String, Object> metadata = new HashMap<>();
+          metadata.put("purpose", parts[0]);
+          metadata.put("pending", true);
+          currentMessage.addPart(new PendingPart(metadata));
         }
       } catch (Exception e) {
         // ignore parsing errors

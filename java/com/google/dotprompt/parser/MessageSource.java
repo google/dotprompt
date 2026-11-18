@@ -33,7 +33,7 @@ import java.util.Map;
  * <p>This class is mutable to allow building up the source string during parsing. The role can also
  * be updated after construction as the parser discovers role markers.
  *
- * @see Parser#toMessages(String)
+ * @see Parser#toMessages(String, String, com.google.dotprompt.models.DataArgument)
  */
 public final class MessageSource {
   /** The role of the message (user, model, system, tool). */

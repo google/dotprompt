@@ -28,6 +28,7 @@ java_library(
     visibility = ["//visibility:public"],
     deps = [
         "//java/com/google/dotprompt/helpers",
+        "//java/com/google/dotprompt/internal",
         "//java/com/google/dotprompt/models",
         "//java/com/google/dotprompt/parser",
         "//java/com/google/dotprompt/resolvers",
@@ -60,6 +61,19 @@ java_test(
         "//java/com/google/dotprompt/models",
         "@maven//:com_github_jknack_handlebars",
         "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_test(
+    name = "MarkerInjectionTest",
+    srcs = ["MarkerInjectionTest.java"],
+    test_class = "com.google.dotprompt.MarkerInjectionTest",
+    deps = [
+        ":dotprompt",
+        "//java/com/google/dotprompt/internal",
+        "//java/com/google/dotprompt/models",
         "@maven//:com_google_truth_truth",
         "@maven//:junit_junit",
     ],
