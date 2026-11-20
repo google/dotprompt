@@ -3,7 +3,7 @@
     "prefix": ["frontmatter", "---"],
     "body": [
       "---",
-      "model: ${1:gemini-2.5-flash}",
+      "model: ${1:gemini-flash-latest}",
       "config:",
       "  temperature: ${2:0.7}",
       "input:",
@@ -17,25 +17,25 @@
     ],
     "description": "Insert YAML frontmatter template"
   },
-  "Role Block": {
-    "prefix": ["role", "#role"],
-    "body": ["{{#role \"${1|system,user,model|}\"}}", "$0", "{{/role}}"],
-    "description": "Insert a role block (system, user, or model)"
+  "Role": {
+    "prefix": ["role"],
+    "body": ["{{role \"${1|system,user,model|}\"}}", "$0"],
+    "description": "Start a message with a role (system, user, or model)"
   },
   "System Role": {
     "prefix": ["system", "sysrole"],
-    "body": ["{{#role \"system\"}}", "$0", "{{/role}}"],
-    "description": "Insert a system role block"
+    "body": ["{{role \"system\"}}", "$0"],
+    "description": "Start a system message"
   },
   "User Role": {
     "prefix": ["user", "userrole"],
-    "body": ["{{#role \"user\"}}", "$0", "{{/role}}"],
-    "description": "Insert a user role block"
+    "body": ["{{role \"user\"}}", "$0"],
+    "description": "Start a user message"
   },
   "Model Role": {
     "prefix": ["model", "modelrole"],
-    "body": ["{{#role \"model\"}}", "$0", "{{/role}}"],
-    "description": "Insert a model role block"
+    "body": ["{{role \"model\"}}", "$0"],
+    "description": "Start a model message"
   },
   "If Block": {
     "prefix": ["if", "#if"],
@@ -100,9 +100,9 @@
     "description": "Insert a partial with context"
   },
   "Section": {
-    "prefix": ["section", "#section"],
-    "body": ["{{#section \"${1:sectionName}\"}}", "$0", "{{/section}}"],
-    "description": "Insert a section block"
+    "prefix": ["section"],
+    "body": ["{{section \"${1:sectionName}\"}}", "$0"],
+    "description": "Start a named section"
   },
   "History": {
     "prefix": ["history"],
@@ -133,18 +133,11 @@
     ],
     "description": "Insert unlessEquals helper"
   },
-  "Dotprompt Marker": {
-    "prefix": ["marker", "<<<"],
-    "body": [
-      "<<<dotprompt:${1|role:system,role:user,role:model,section:preamble|}>>>"
-    ],
-    "description": "Insert a Dotprompt marker"
-  },
   "Complete Prompt Template": {
     "prefix": ["prompt", "newprompt"],
     "body": [
       "---",
-      "model: ${1:gemini-2.5-flash}",
+      "model: ${1:gemini-flash-latest}",
       "config:",
       "  temperature: ${2:0.7}",
       "input:",
@@ -154,13 +147,11 @@
       "  format: ${4|text,json|}",
       "---",
       "",
-      "{{#role \"system\"}}",
+      "{{role \"system\"}}",
       "${5:You are a helpful assistant.}",
-      "{{/role}}",
       "",
-      "{{#role \"user\"}}",
+      "{{role \"user\"}}",
       "${6:{{query}}}",
-      "{{/role}}",
       ""
     ],
     "description": "Insert a complete prompt template"

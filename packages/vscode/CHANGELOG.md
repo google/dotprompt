@@ -5,6 +5,19 @@ All notable changes to the Dotprompt VS Code extension will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- Role and section snippets (`role`, `system`, `user`, `model`, `section`, `prompt`) now insert
+  the inline helpers (`{{role "system"}}`, `{{section "name"}}`). The block forms
+  (`{{#role}}...{{/role}}`) discarded their content when rendered.
+
+### Removed
+- `marker` / `<<<` snippet that inserted raw `<<<dotprompt:...>>>` markers, and highlighting of
+  raw markers. Runtimes only honor nonce-tagged markers emitted by the helpers, so literal
+  markers in a template render as plain text. Use `{{role}}`, `{{history}}`, `{{section}}` and
+  `{{media}}` instead.
+
 ## [0.2.0] - 2026-01-24
 
 ### Added

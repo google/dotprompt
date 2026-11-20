@@ -4,7 +4,7 @@ Language support for Dotprompt (`.prompt`) files in JetBrains IDEs (IntelliJ IDE
 
 ## Features
 
-- **Syntax Highlighting**: YAML frontmatter, Handlebars templates, Dotprompt markers
+- **Syntax Highlighting**: YAML frontmatter keys, Handlebars comments, braces, variables, and helper names (built-ins like `if`/`each` and Dotprompt helpers like `role`, `history`, `section`, `media`)
 - **LSP Integration**: Real-time diagnostics, formatting, and hover documentation (via LSP4IJ)
 - **Live Templates**: Type `role`, `if`, `each`, `json` + Tab for quick insertions
 - **Code Comments**: Block comment support using `{{! ... }}`
@@ -49,6 +49,12 @@ bazel build //packages/jetbrains:dotprompt-intellij
 
 This produces `bazel-bin/packages/jetbrains/dotprompt-intellij.jar`.
 
+Run the lexer tests with:
+
+```bash
+bazel test //packages/jetbrains:DotpromptLexerTest
+```
+
 > **Note**: For full plugin packaging (with plugin.xml, icons, LSP4IJ integration), 
 > use the Gradle build. The Bazel target is useful for incremental compilation 
 > during development and IDE integration.
@@ -80,10 +86,10 @@ Type these abbreviations and press Tab to expand:
 
 | Abbreviation | Expands To |
 |--------------|------------|
-| `role` | Role block with customizable role name |
-| `system` | System role block |
-| `user` | User role block |
-| `model` | Model role block |
+| `role` | `{{role "..."}}` with customizable role name |
+| `system` | `{{role "system"}}` |
+| `user` | `{{role "user"}}` |
+| `model` | `{{role "model"}}` |
 | `if` | Handlebars if block |
 | `ifelse` | Handlebars if-else block |
 | `unless` | Handlebars unless block |
@@ -92,7 +98,7 @@ Type these abbreviations and press Tab to expand:
 | `json` | JSON serialization helper |
 | `media` | Media embedding helper |
 | `history` | History insertion |
-| `section` | Named section block |
+| `section` | `{{section "..."}}` |
 | `partial` | Partial template inclusion |
 | `comment` | Handlebars comment |
 | `prompt` | Complete prompt template |

@@ -128,7 +128,6 @@ Let me analyze the project requirements:
 - Budget constraint: ${{budget}}
 {{/if}}
 {{/with}}
-{{/section}}
 
 Based on my analysis, here is the recommended project plan:
 

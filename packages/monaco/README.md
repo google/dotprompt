@@ -4,7 +4,7 @@ Monaco Editor language support for Dotprompt (`.prompt`) files.
 
 ## Features
 
-- **Syntax Highlighting**: YAML frontmatter, Handlebars templates, Dotprompt markers
+- **Syntax Highlighting**: YAML frontmatter, Handlebars templates, Dotprompt helpers
 - **Autocompletion**: Helpers, frontmatter fields, model names, role snippets
 - **Hover Documentation**: Helper and frontmatter field documentation
 - **Bracket Matching**: Auto-closing for `{{ }}`, `{{# }}`, etc.
@@ -33,18 +33,16 @@ registerDotpromptLanguage(monaco);
 // Create an editor
 const editor = monaco.editor.create(document.getElementById('container')!, {
   value: `---
-model: gemini-2.5-flash
+model: gemini-flash-latest
 config:
   temperature: 0.7
 ---
 
-{{#role "system"}}
+{{role "system"}}
 You are a helpful assistant.
-{{/role}}
 
-{{#role "user"}}
-Hello, {{ name }}!
-{{/role}}`,
+{{role "user"}}
+Hello, {{ name }}!`,
   language: 'dotprompt',
   theme: 'vs-dark',
 });
@@ -168,7 +166,7 @@ The completion provider offers:
 | Context | Completions |
 |---------|-------------|
 | `{{` | Handlebars helpers, Dotprompt helpers |
-| `{{#` | Block helpers (if, each, role, section) |
+| `{{#` | Block helpers (if, unless, each, with, ifEquals, unlessEquals) |
 | `{{>` | Partial template reference |
 | `model:` | Model names (Gemini, GPT, Claude) |
 | Frontmatter | Field names (model, config, input, output) |
@@ -185,7 +183,6 @@ Token types available for theming:
 | `keyword.handlebars` | if, each, with, etc. |
 | `keyword.dotprompt` | role, json, history, etc. |
 | `keyword.yaml` | YAML frontmatter keys |
-| `keyword.marker` | `<<<dotprompt:...>>>` |
 | `variable` | Template variables |
 | `variable.partial` | Partial names |
 | `variable.special` | @index, @first, etc. |

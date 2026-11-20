@@ -63,7 +63,6 @@ module.exports = grammar({
         $.handlebars_block,
         $.handlebars_expression,
         $.handlebars_comment,
-        $.dotprompt_marker,
         $.text
       ),
 
@@ -135,9 +134,9 @@ module.exports = grammar({
 
     boolean: ($) => choice('true', 'false'),
 
-    dotprompt_marker: ($) =>
-      seq('<<<dotprompt:', alias(/[^>]+/, $.marker_content), '>>>'),
-
-    text: ($) => /[^{<#]+|\{|<|#/,
+    // Raw `<<<dotprompt:...>>>` is plain text: runtimes only honor nonce-tagged
+    // markers emitted by the helpers ({{role}}, {{history}}, {{section}},
+    // {{media}}), so a literal marker in a template has no special meaning.
+    text: ($) => /[^{#]+|\{|#/,
   },
 });

@@ -32,7 +32,7 @@
  *
  * // Create an editor with Dotprompt support
  * const editor = monaco.editor.create(container, {
- *   value: '---\nmodel: gemini-2.5-flash\n---\nHello {{ name }}!',
+ *   value: '---\nmodel: gemini-flash-latest\n---\nHello {{ name }}!',
  *   language: 'dotprompt',
  * });
  * ```
@@ -191,9 +191,6 @@ export const dotpromptThemeRules: monaco.editor.ITokenThemeRule[] = [
   { token: 'variable', foreground: '9CDCFE' },
   { token: 'variable.partial', foreground: 'CE9178' },
   { token: 'variable.special', foreground: '4FC1FF' },
-
-  // Markers
-  { token: 'keyword.marker', foreground: '569CD6', fontStyle: 'bold' },
 
   // Comments
   { token: 'comment.block', foreground: '6A9955', fontStyle: 'italic' },

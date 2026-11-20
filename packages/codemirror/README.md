@@ -5,7 +5,7 @@ CodeMirror 6 language support for Dotprompt (`.prompt`) files.
 ## Features
 
 - **Syntax Highlighting**: YAML frontmatter, Handlebars templates, Dotprompt
-  markers
+  helpers
 - **Autocompletion**: Helpers, frontmatter fields, model names
 - **Theming**: Dark and light theme support
 
@@ -38,6 +38,12 @@ Hello, {{name}}!`,
 ```bash
 pnpm install
 pnpm run build
+```
+
+Run the completion tests (uses the workspace root `vitest`):
+
+```bash
+pnpm exec vitest run
 ```
 
 ## License
