@@ -112,6 +112,42 @@ func TestDefinePartial(t *testing.T) {
 	}
 }
 
+// TestRegisterHelper tests the public RegisterHelper API for registering a
+// custom helper before compiling a template.
+func TestRegisterHelper(t *testing.T) {
+	dp := NewDotprompt(nil)
+
+	shoutHelperFunc := func(s string) string {
+		return strings.ToUpper(s) + "!"
+	}
+
+	returned := dp.RegisterHelper("shout", shoutHelperFunc)
+	if returned != dp {
+		t.Fatalf("Expected RegisterHelper to return the same *Dotprompt for chaining")
+	}
+
+	if _, ok := dp.Helpers["shout"]; !ok {
+		t.Fatalf("Expected helper 'shout' to be present in dp.Helpers")
+	}
+
+	tpl, err := raymond.Parse("{{shout 'hello'}}")
+	if err != nil {
+		t.Fatalf("Failed to parse template: %v", err)
+	}
+
+	if err = dp.RegisterHelpers(tpl); err != nil {
+		t.Fatalf("RegisterHelpers failed: %v", err)
+	}
+
+	result, err := tpl.Exec(nil)
+	if err != nil {
+		t.Fatalf("Template execution failed: %v", err)
+	}
+	if result != "HELLO!" {
+		t.Errorf("Expected template output 'HELLO!', got '%s'", result)
+	}
+}
+
 // TestRegisterHelpers tests registering helpers from options and built-ins.
 func TestRegisterHelpers(t *testing.T) {
 	optionHelperName := "optionHelper"

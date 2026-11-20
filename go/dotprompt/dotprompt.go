@@ -159,7 +159,19 @@ func (dp *Dotprompt) DefinePartial(name string, source string, tpl *raymond.Temp
 	return nil
 }
 
-// TODO(#501): Add register helpers
+// RegisterHelper registers a custom helper function for use in templates,
+// mirroring the JS implementation's defineHelper API. The helper is applied
+// the next time a template is compiled via Compile or Render.
+func (dp *Dotprompt) RegisterHelper(name string, helper any) *Dotprompt {
+	if dp.Helpers == nil {
+		dp.Helpers = make(map[string]any)
+	}
+	dp.Helpers[name] = helper
+	return dp
+}
+
+// RegisterHelpers applies all pending custom helpers (from RegisterHelper or
+// DotpromptOptions.Helpers) plus the built-in template helpers to tpl.
 func (dp *Dotprompt) RegisterHelpers(tpl *raymond.Template) error {
 	if dp.Helpers != nil {
 		for key, helper := range dp.Helpers {
